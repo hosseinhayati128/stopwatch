@@ -5,70 +5,117 @@ using System.Windows.Input;
 
 namespace StopwatchOverlay
 {
-    // Modal editor for the global shortcuts. Edits a working copy and, on Save,
-    // exposes it via Result; the controller does the actual registration and persistence.
+    // Modal editor for the command mode leader shortcut (default Win+F2)
+    // and dedicated global shortcuts like ShowActiveOverlay (default Win+Shift+F7).
     public partial class ShortcutsWindow : Window
     {
-        private static readonly Dictionary<ShortcutAction, string> _boxNames = new()
+        private Shortcut _pendingLeader;
+        private Shortcut _pendingShowActiveOverlay;
+        private Shortcut _pendingOpenController;
+
+        public Shortcut ResultLeader => _pendingLeader;
+        public Shortcut ResultShowActiveOverlay => _pendingShowActiveOverlay;
+        public Shortcut ResultOpenController => _pendingOpenController;
+
+        // Retained for backward-compatibility with callers expecting a Dictionary.
+        public Dictionary<ShortcutAction, Shortcut> Result => new()
         {
-            [ShortcutAction.NewTimer] = "NewTimerShortcutBox",
-            [ShortcutAction.NextTimer] = "NextTimerShortcutBox",
-            [ShortcutAction.CloseTimer] = "CloseTimerShortcutBox",
-            [ShortcutAction.StartStop] = "StartStopShortcutBox",
-            [ShortcutAction.Reset] = "ResetShortcutBox",
-            [ShortcutAction.ToggleOverlay] = "ToggleOverlayShortcutBox",
-            [ShortcutAction.Lap] = "LapShortcutBox",
-            [ShortcutAction.ToggleClock] = "ToggleClockShortcutBox",
-            [ShortcutAction.RenameTimer] = "RenameTimerShortcutBox",
-            [ShortcutAction.OpenDashboard] = "OpenDashboardShortcutBox",
-            [ShortcutAction.ToggleCombinedOverlay] = "ToggleCombinedOverlayShortcutBox",
+            [ShortcutAction.CommandLeader] = _pendingLeader,
+            [ShortcutAction.ShowActiveOverlay] = _pendingShowActiveOverlay,
+            [ShortcutAction.OpenController] = _pendingOpenController
         };
 
-        private Dictionary<ShortcutAction, Shortcut> _pending;
-
-        // The edited assignments, valid only after the dialog returns true.
-        public Dictionary<ShortcutAction, Shortcut> Result => _pending;
-
-        public ShortcutsWindow(Dictionary<ShortcutAction, Shortcut> current)
+        public ShortcutsWindow(Shortcut currentLeader, Shortcut? currentShowActiveOverlay = null, Shortcut? currentOpenController = null)
         {
             InitializeComponent();
-            _pending = new Dictionary<ShortcutAction, Shortcut>(current);
-            RenderAll();
+            _pendingLeader = currentLeader ?? AppSettings.DefaultLeaderShortcut();
+            _pendingShowActiveOverlay = currentShowActiveOverlay ?? AppSettings.DefaultShowActiveOverlayShortcut();
+            _pendingOpenController = currentOpenController ?? AppSettings.DefaultOpenControllerShortcut();
+            RenderAllBoxes();
         }
 
-        private void RenderAll()
+        public ShortcutsWindow(Dictionary<ShortcutAction, Shortcut> current)
+            : this(ExtractLeader(current), ExtractShowActiveOverlay(current), ExtractOpenController(current))
         {
-            foreach (var action in _boxNames.Keys)
-                RenderShortcutBox(action);
         }
 
-        private System.Windows.Controls.TextBox? BoxFor(ShortcutAction action)
-            => FindName(_boxNames[action]) as System.Windows.Controls.TextBox;
-
-        private void RenderShortcutBox(ShortcutAction action)
+        private static Shortcut ExtractLeader(Dictionary<ShortcutAction, Shortcut> shortcuts)
         {
-            var box = BoxFor(action);
-            if (box == null) return;
-            var combo = _pending.TryGetValue(action, out var s) ? s.Format() : "";
-            box.Text = combo.Length > 0 ? combo : "(none)";
+            if (shortcuts != null && shortcuts.TryGetValue(ShortcutAction.CommandLeader, out var leader))
+            {
+                return leader;
+            }
+            return AppSettings.DefaultLeaderShortcut();
+        }
+
+        private static Shortcut ExtractShowActiveOverlay(Dictionary<ShortcutAction, Shortcut> shortcuts)
+        {
+            if (shortcuts != null && shortcuts.TryGetValue(ShortcutAction.ShowActiveOverlay, out var s))
+            {
+                return s;
+            }
+            return AppSettings.DefaultShowActiveOverlayShortcut();
+        }
+
+        private static Shortcut ExtractOpenController(Dictionary<ShortcutAction, Shortcut> shortcuts)
+        {
+            if (shortcuts != null && shortcuts.TryGetValue(ShortcutAction.OpenController, out var s))
+            {
+                return s;
+            }
+            return AppSettings.DefaultOpenControllerShortcut();
+        }
+
+        private void RenderAllBoxes()
+        {
+            RenderLeaderBox();
+            RenderShowActiveOverlayBox();
+            RenderOpenControllerBox();
+        }
+
+        private void RenderLeaderBox()
+        {
+            if (LeaderShortcutBox == null) return;
+            var combo = _pendingLeader != null ? _pendingLeader.Format() : "";
+            LeaderShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
+        }
+
+        private void RenderShowActiveOverlayBox()
+        {
+            if (ShowActiveOverlayShortcutBox == null) return;
+            var combo = _pendingShowActiveOverlay != null ? _pendingShowActiveOverlay.Format() : "";
+            ShowActiveOverlayShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
+        }
+
+        private void RenderOpenControllerBox()
+        {
+            if (OpenControllerShortcutBox == null) return;
+            var combo = _pendingOpenController != null ? _pendingOpenController.Format() : "";
+            OpenControllerShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
         }
 
         private void ShortcutBox_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.TextBox box) box.Text = "Press a key combo...";
+            if (sender is System.Windows.Controls.TextBox box)
+                box.Text = "Press a key combo...";
         }
 
         private void ShortcutBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.TextBox box && box.Tag is string tag
-                && Enum.TryParse<ShortcutAction>(tag, out var action))
-                RenderShortcutBox(action);
+            if (sender is System.Windows.Controls.TextBox box)
+            {
+                if (box.Tag as string == "ShowActiveOverlay")
+                    RenderShowActiveOverlayBox();
+                else if (box.Tag as string == "OpenController")
+                    RenderOpenControllerBox();
+                else
+                    RenderLeaderBox();
+            }
         }
 
         private void ShortcutBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (sender is not System.Windows.Controls.TextBox box || box.Tag is not string tag
-                || !Enum.TryParse<ShortcutAction>(tag, out var action))
+            if (sender is not System.Windows.Controls.TextBox box)
                 return;
 
             e.Handled = true;
@@ -89,25 +136,55 @@ namespace StopwatchOverlay
             if ((m & ModifierKeys.Windows) != 0) mods |= Shortcut.MOD_WIN;
 
             uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
-            _pending[action] = new Shortcut(mods, vk);
-            box.Text = _pending[action].Format();
+            var shortcut = new Shortcut(mods, vk);
+
+            if (box.Tag as string == "ShowActiveOverlay")
+            {
+                _pendingShowActiveOverlay = shortcut;
+                box.Text = _pendingShowActiveOverlay.Format();
+            }
+            else if (box.Tag as string == "OpenController")
+            {
+                _pendingOpenController = shortcut;
+                box.Text = _pendingOpenController.Format();
+            }
+            else
+            {
+                _pendingLeader = shortcut;
+                box.Text = _pendingLeader.Format();
+            }
+
             Keyboard.ClearFocus(); // commit visually; user clicks Save to persist
         }
 
         private void ClearShortcut_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement fe && fe.Tag is string tag
-                && Enum.TryParse<ShortcutAction>(tag, out var action))
+            if (sender is FrameworkElement fe)
             {
-                _pending[action] = new Shortcut(0, 0); // unbound
-                RenderShortcutBox(action);
+                if (fe.Tag as string == "ShowActiveOverlay")
+                {
+                    _pendingShowActiveOverlay = new Shortcut(0, 0); // unbound
+                    RenderShowActiveOverlayBox();
+                }
+                else if (fe.Tag as string == "OpenController")
+                {
+                    _pendingOpenController = new Shortcut(0, 0); // unbound
+                    RenderOpenControllerBox();
+                }
+                else
+                {
+                    _pendingLeader = new Shortcut(0, 0); // unbound
+                    RenderLeaderBox();
+                }
             }
         }
 
         private void ResetDefaults_Click(object sender, RoutedEventArgs e)
         {
-            _pending = AppSettings.DefaultShortcuts();
-            RenderAll();
+            _pendingLeader = AppSettings.DefaultLeaderShortcut();
+            _pendingShowActiveOverlay = AppSettings.DefaultShowActiveOverlayShortcut();
+            _pendingOpenController = AppSettings.DefaultOpenControllerShortcut();
+            RenderAllBoxes();
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)

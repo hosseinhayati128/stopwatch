@@ -19,7 +19,10 @@ namespace StopwatchOverlay
         CloseTimer = 8,
         RenameTimer = 9,
         OpenDashboard = 10,
-        ToggleCombinedOverlay = 11
+        ToggleCombinedOverlay = 11,
+        CommandLeader = 12,
+        ShowActiveOverlay = 13,
+        OpenController = 14
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -59,6 +62,8 @@ namespace StopwatchOverlay
         private const uint VK_F11 = 0x7A;
         private const uint VK_F12 = 0x7B;
 
+        public int ShortcutSchemaVersion { get; set; } = 2;
+        public Shortcut LeaderShortcut { get; set; } = DefaultLeaderShortcut();
         public Dictionary<ShortcutAction, Shortcut> Shortcuts { get; set; } = new();
 
         // Application chrome theme. Stable display names are kept in JSON for
@@ -119,34 +124,85 @@ namespace StopwatchOverlay
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
 
+        public static Shortcut DefaultLeaderShortcut() => new(Shortcut.MOD_WIN, VK_F2);
+        public static Shortcut DefaultShowActiveOverlayShortcut() => new(Shortcut.MOD_WIN | Shortcut.MOD_SHIFT, VK_F7);
+        public static Shortcut DefaultOpenControllerShortcut() => new(Shortcut.MOD_WIN | Shortcut.MOD_SHIFT, VK_F2);
+
         public static Dictionary<ShortcutAction, Shortcut> DefaultShortcuts() => new()
         {
-            [ShortcutAction.NewTimer] = new Shortcut(Shortcut.MOD_WIN, VK_F2),
-            [ShortcutAction.NextTimer] = new Shortcut(Shortcut.MOD_WIN, VK_F3),
-            [ShortcutAction.CloseTimer] = new Shortcut(Shortcut.MOD_WIN, VK_F4),
-            [ShortcutAction.StartStop] = new Shortcut(Shortcut.MOD_WIN, VK_F5),
-            [ShortcutAction.Reset] = new Shortcut(Shortcut.MOD_WIN, VK_F6),
-            [ShortcutAction.ToggleOverlay] = new Shortcut(Shortcut.MOD_WIN, VK_F7),
-            [ShortcutAction.Lap] = new Shortcut(Shortcut.MOD_WIN, VK_F8),
-            [ShortcutAction.ToggleClock] = new Shortcut(Shortcut.MOD_WIN, VK_F9),
-            [ShortcutAction.RenameTimer] = new Shortcut(Shortcut.MOD_WIN, VK_F10),
-            [ShortcutAction.OpenDashboard] = new Shortcut(Shortcut.MOD_WIN, VK_F11),
-            [ShortcutAction.ToggleCombinedOverlay] = new Shortcut(Shortcut.MOD_WIN, VK_F12),
+            [ShortcutAction.CommandLeader] = DefaultLeaderShortcut(),
+            [ShortcutAction.ShowActiveOverlay] = DefaultShowActiveOverlayShortcut(),
+            [ShortcutAction.OpenController] = DefaultOpenControllerShortcut(),
         };
 
-        // Fill any missing action with its default so the rest of the app can assume all keys exist.
+        // Ensure shortcuts dictionary, leader shortcut, ShowActiveOverlay, and OpenController are initialized.
         public void EnsureAllActions()
         {
             Shortcuts ??= new Dictionary<ShortcutAction, Shortcut>();
-            foreach (var kv in DefaultShortcuts())
+            if (!Shortcuts.ContainsKey(ShortcutAction.CommandLeader))
             {
-                if (!Shortcuts.ContainsKey(kv.Key))
-                    Shortcuts[kv.Key] = kv.Value;
+                Shortcuts[ShortcutAction.CommandLeader] = LeaderShortcut ?? DefaultLeaderShortcut();
+            }
+            LeaderShortcut ??= Shortcuts[ShortcutAction.CommandLeader];
+
+            if (!Shortcuts.ContainsKey(ShortcutAction.ShowActiveOverlay))
+            {
+                var def = DefaultShowActiveOverlayShortcut();
+                bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
+                Shortcuts[ShortcutAction.ShowActiveOverlay] = collides ? new Shortcut(0, 0) : def;
+            }
+
+            if (!Shortcuts.ContainsKey(ShortcutAction.OpenController))
+            {
+                var def = DefaultOpenControllerShortcut();
+                bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
+                Shortcuts[ShortcutAction.OpenController] = collides ? new Shortcut(0, 0) : def;
             }
         }
 
         public void NormalizeForRuntime()
         {
+            bool isLegacy = ShortcutSchemaVersion < 2 || !Shortcuts.ContainsKey(ShortcutAction.CommandLeader);
+            if (isLegacy)
+            {
+                LeaderShortcut ??= DefaultLeaderShortcut();
+                if (LeaderShortcut.VirtualKey == 0 && LeaderShortcut.Modifiers == 0)
+                {
+                    LeaderShortcut = DefaultLeaderShortcut();
+                }
+
+                Shortcuts.Remove(ShortcutAction.NewTimer);
+                Shortcuts.Remove(ShortcutAction.NextTimer);
+                Shortcuts.Remove(ShortcutAction.CloseTimer);
+                Shortcuts.Remove(ShortcutAction.StartStop);
+                Shortcuts.Remove(ShortcutAction.Reset);
+                Shortcuts.Remove(ShortcutAction.ToggleOverlay);
+                Shortcuts.Remove(ShortcutAction.Lap);
+                Shortcuts.Remove(ShortcutAction.ToggleClock);
+                Shortcuts.Remove(ShortcutAction.RenameTimer);
+                Shortcuts.Remove(ShortcutAction.OpenDashboard);
+                Shortcuts.Remove(ShortcutAction.ToggleCombinedOverlay);
+
+                Shortcuts[ShortcutAction.CommandLeader] = LeaderShortcut;
+                ShortcutSchemaVersion = 2;
+            }
+            LeaderShortcut ??= Shortcuts.TryGetValue(ShortcutAction.CommandLeader, out var s) ? s : DefaultLeaderShortcut();
+            Shortcuts[ShortcutAction.CommandLeader] = LeaderShortcut;
+
+            if (!Shortcuts.ContainsKey(ShortcutAction.ShowActiveOverlay))
+            {
+                var def = DefaultShowActiveOverlayShortcut();
+                bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
+                Shortcuts[ShortcutAction.ShowActiveOverlay] = collides ? new Shortcut(0, 0) : def;
+            }
+
+            if (!Shortcuts.ContainsKey(ShortcutAction.OpenController))
+            {
+                var def = DefaultOpenControllerShortcut();
+                bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
+                Shortcuts[ShortcutAction.OpenController] = collides ? new Shortcut(0, 0) : def;
+            }
+
             ThemeMode = AppThemeCatalog.Normalize(ThemeMode);
             OverlayTheme = OverlayThemeCatalog.Normalize(OverlayTheme);
             TextColor = NormalizeChoice(
@@ -284,7 +340,11 @@ namespace StopwatchOverlay
 
         private static AppSettings CreateDefaults()
         {
-            var fresh = new AppSettings { Shortcuts = AppSettings.DefaultShortcuts() };
+            var fresh = new AppSettings
+            {
+                ShortcutSchemaVersion = 2,
+                Shortcuts = AppSettings.DefaultShortcuts()
+            };
             fresh.NormalizeForRuntime();
             AppBackgroundCatalog.NormalizeSettings(fresh);
             return fresh;

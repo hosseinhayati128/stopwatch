@@ -1,0 +1,94 @@
+{
+  "figmaFileKey": "q1GhB2cTVZiVWhbajEGT4K",
+  "visualSourcePolicy": "Only frames inside sections whose names begin with Theme Study / Acanthus were used as appearance sources.",
+  "figmaNodesInspected": [
+    { "id": "88:879", "name": "Controller / Acanthus POC / Running Stopwatch", "section": "Theme Study / Acanthus" },
+    { "id": "105:368", "name": "Settings / Acanthus / 01 Overlay and Position", "section": "Theme Study / Acanthus / Settings and Overlay Inspector" },
+    { "id": "110:830", "name": "Settings / Acanthus / 02 Appearance and Background", "section": "Theme Study / Acanthus / Settings and Overlay Inspector" },
+    { "id": "114:367", "name": "Settings / Acanthus / 03 Light Ring, Behavior and Application", "section": "Theme Study / Acanthus / Settings and Overlay Inspector" },
+    { "id": "105:2490", "name": "Project Records / Acanthus / Populated", "section": "Theme Study / Acanthus / Project Records" },
+    { "id": "105:2494", "name": "Analytics / Acanthus / 01 Seven Days", "section": "Theme Study / Acanthus / Analytics Dashboard" },
+    { "id": "110:322", "name": "Analytics / Acanthus / 02 Thirty Days", "section": "Theme Study / Acanthus / Analytics Dashboard" },
+    { "id": "107:2577", "name": "Dialog / Acanthus / 01 Choose or Create Project", "section": "Theme Study / Acanthus / Dialogs" },
+    { "id": "107:2578", "name": "Dialog / Acanthus / 02 Add Project Record", "section": "Theme Study / Acanthus / Dialogs" },
+    { "id": "107:2545", "name": "Overlay / Acanthus / 01 Active Running", "section": "Theme Study / Acanthus / Floating Overlay States" },
+    { "id": "107:2546", "name": "Overlay / Acanthus / 02 Hover Controls", "section": "Theme Study / Acanthus / Floating Overlay States" }
+  ],
+  "assetsDownloaded": [
+    "StopwatchOverlay/Assets/Ornaments/acanthus-crest.svg",
+    "StopwatchOverlay/Assets/Ornaments/acanthus-hero-frame.svg",
+    "StopwatchOverlay/Assets/Ornaments/acanthus-divider.svg",
+    "StopwatchOverlay/Assets/Ornaments/acanthus-corner.svg"
+  ],
+  "filesChanged": [
+    "StopwatchOverlay/App.xaml",
+    "StopwatchOverlay/AppSettings.cs",
+    "StopwatchOverlay/AppThemeManager.cs",
+    "StopwatchOverlay/ControllerLayoutPolicy.cs",
+    "StopwatchOverlay/ConfirmationDialogWindow.xaml",
+    "StopwatchOverlay/ConfirmationDialogWindow.xaml.cs",
+    "StopwatchOverlay/ControllerWindow.xaml",
+    "StopwatchOverlay/ControllerWindow.xaml.cs",
+    "StopwatchOverlay/OverlayPresentationPolicy.cs",
+    "StopwatchOverlay/OverlayWindow.xaml",
+    "StopwatchOverlay/OverlayWindow.xaml.cs",
+    "StopwatchOverlay/ProjectDashboardWindow.xaml",
+    "StopwatchOverlay/ProjectDashboardWindow.xaml.cs",
+    "StopwatchOverlay/ProjectRecordDeleteWindow.xaml",
+    "StopwatchOverlay/ProjectRecordEditorWindow.xaml",
+    "StopwatchOverlay/SettingsWindow.xaml",
+    "StopwatchOverlay/SettingsWindow.xaml.cs",
+    "StopwatchOverlay/ShortcutsWindow.xaml",
+    "StopwatchOverlay/StopwatchOverlay.csproj",
+    "StopwatchOverlay/Themes/Acanthus.xaml",
+    "StopwatchOverlay/Themes/Daylight.xaml",
+    "StopwatchOverlay/Themes/Midnight.xaml",
+    "StopwatchOverlay/Themes/PixelDeck.xaml",
+    "StopwatchOverlay/Themes/PixelDeckDay.xaml",
+    "StopwatchOverlay/TimerNameWindow.xaml",
+    "StopwatchOverlay/TimerSession.cs",
+    "StopwatchOverlay.Tests/AppSettingsStoreTests.cs",
+    "StopwatchOverlay.Tests/ControllerLayoutPolicyTests.cs",
+    "StopwatchOverlay.Tests/OverlayPresentationPolicyTests.cs",
+    "design-to-code-state-acanthus.json"
+  ],
+  "phasesCompleted": [
+    "authoritative-specification-read",
+    "figma-design-to-code-guidance-loaded",
+    "baseline-local-project-inspection",
+    "baseline-debug-build-and-tests",
+    "figma-acanthus-preflight",
+    "figma-main-frame-design-context",
+    "figma-vector-extraction",
+    "acanthus-theme-catalog-and-resources",
+    "five-theme-semantic-token-contract",
+    "shared-controller-and-responsive-layout",
+    "dedicated-settings-overlay-inspector",
+    "shared-analytics-and-integrated-records-layout",
+    "shared-dialog-shells",
+    "corrected-floating-overlay",
+    "focused-tests",
+    "release-build-and-tests",
+    "wpf-rendered-visual-qa"
+  ],
+  "buildResults": [
+    { "command": "dotnet build StopwatchOverlay.sln", "configuration": "Debug baseline", "result": "passed with 2 NU1900 vulnerability-feed warnings" },
+    { "command": "dotnet build StopwatchOverlay.sln -c Release", "configuration": "Release final", "result": "passed with 2 NU1900 vulnerability-feed warnings" }
+  ],
+  "testResults": [
+    { "command": "dotnet test StopwatchOverlay.sln --no-build", "configuration": "Debug baseline", "passed": 243, "failed": 0, "skipped": 0 },
+    { "command": "dotnet test StopwatchOverlay.sln -c Release --no-build", "configuration": "Release final", "passed": 262, "failed": 0, "skipped": 0 }
+  ],
+  "visualChecksCompleted": [
+    "rendered Controller, Settings, Analytics, project chooser, record editor, shortcuts, and overlay under all five theme dictionaries",
+    "rendered Acanthus narrow Controller at 560 px",
+    "rendered all five Settings categories",
+    "rendered populated integrated Project Records",
+    "rendered named, unnamed, paused, and external icon-only overlay toolbar states",
+    "compared rendered Acanthus output with approved Figma screenshots"
+  ],
+  "visualQaArtifacts": "C:/Users/h128/.codex/visualizations/2026/09/03/01a06678-3df6-7d32-a103-73b4edc917b8/bin/Release/net10.0-windows",
+  "remainingIssues": [
+    "Manual OS-level checks remain for physical multi-monitor placement, click-through hit testing, capture exclusion, startup registration, and live popup no-activate behavior because an existing StopwatchOverlay instance held the app single-instance mutex during this task."
+  ]
+}

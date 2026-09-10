@@ -20,4 +20,32 @@ public static class OverlayPresentationPolicy
         IEnumerable<TimerSession> sessions,
         TimerSession? activeTimer)
         => activeTimer != null && sessions.Contains(activeTimer) ? activeTimer : null;
+
+    public enum ShowOverlayDecision
+    {
+        NoTimer,
+        AlreadyVisible,
+        ShowCombined,
+        ShowSeparate
+    }
+
+    public static ShowOverlayDecision DetermineShowDecision(
+        TimerSession? activeTimer,
+        bool isOverlayAlreadyVisible,
+        bool isCombinedMode)
+    {
+        if (activeTimer == null)
+            return ShowOverlayDecision.NoTimer;
+
+        if (isOverlayAlreadyVisible)
+            return ShowOverlayDecision.AlreadyVisible;
+
+        return isCombinedMode ? ShowOverlayDecision.ShowCombined : ShowOverlayDecision.ShowSeparate;
+    }
+
+    public static bool ShouldAutoStartOnShow(bool isShowOnlyAction, bool autoStartPreference, bool isTimerRunning, int timerMode)
+    {
+        if (isShowOnlyAction) return false;
+        return autoStartPreference && !isTimerRunning && timerMode != 1;
+    }
 }

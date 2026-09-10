@@ -145,6 +145,11 @@ namespace StopwatchOverlay
         private HwndSource? _hwndSource;
         private AppSettings _settings = new();
         private Dictionary<ShortcutAction, Shortcut> _shortcuts = new();
+        private Shortcut _leaderShortcut = AppSettings.DefaultLeaderShortcut();
+        private Shortcut _showActiveOverlayShortcut = AppSettings.DefaultShowActiveOverlayShortcut();
+        private Shortcut _openControllerShortcut = AppSettings.DefaultOpenControllerShortcut();
+        private ShortcutCommandMode? _commandMode;
+        private ShortcutCommandHintWindow? _commandHintWindow;
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
         private bool _isExiting;
@@ -190,6 +195,16 @@ namespace StopwatchOverlay
             InitializeComponent();
 
             _shortcuts = new Dictionary<ShortcutAction, Shortcut>(_settings.Shortcuts);
+            _leaderShortcut = _settings.LeaderShortcut ?? AppSettings.DefaultLeaderShortcut();
+            if (_shortcuts.TryGetValue(ShortcutAction.ShowActiveOverlay, out var showOverlay))
+                _showActiveOverlayShortcut = showOverlay;
+            else
+                _showActiveOverlayShortcut = AppSettings.DefaultShowActiveOverlayShortcut();
+            if (_shortcuts.TryGetValue(ShortcutAction.OpenController, out var openController))
+                _openControllerShortcut = openController;
+            else
+                _openControllerShortcut = AppSettings.DefaultOpenControllerShortcut();
+            InitializeCommandMode();
 
             DateTime startupUtc = DateTime.UtcNow;
             _workspaceWasRestored = _workspaceStore.TryLoad(
@@ -1766,117 +1781,239 @@ namespace StopwatchOverlay
                     : Brushes.OrangeRed);
         }
 
+        private void InitializeCommandMode()
+        {
+            _commandMode = new ShortcutCommandMode(Dispatcher, _leaderShortcut.VirtualKey);
+            _commandMode.ActionTriggered += OnCommandModeActionTriggered;
+            _commandMode.Cancelled += OnCommandModeCancelled;
+            _commandMode.TimedOut += OnCommandModeTimedOut;
+            _commandMode.UnknownCommand += OnCommandModeUnknownCommand;
+            _commandMode.ModeStarted += OnCommandModeStarted;
+        }
+
+        private void OnCommandModeStarted()
+        {
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus(ShortcutCommandMode.GuidanceStatusText, (Brush)FindResource("AccentBrush"));
+            }
+            else
+            {
+                CloseCommandHintWindow();
+                _commandHintWindow = new ShortcutCommandHintWindow();
+                _commandHintWindow.Show();
+            }
+        }
+
+        private void OnCommandModeActionTriggered(ShortcutAction action)
+        {
+            CloseCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
+            }
+            ExecuteShortcutAction(action);
+        }
+
+        private void OnCommandModeCancelled()
+        {
+            CloseCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Timer command cancelled", Brushes.SlateGray);
+            }
+        }
+
+        private void OnCommandModeTimedOut()
+        {
+            CloseCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Timer command timed out", Brushes.SlateGray);
+            }
+        }
+
+        private void OnCommandModeUnknownCommand()
+        {
+            CloseCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Unknown timer command", Brushes.OrangeRed);
+            }
+        }
+
+        private void CloseCommandHintWindow()
+        {
+            if (_commandHintWindow != null)
+            {
+                try { _commandHintWindow.Close(); } catch { }
+                _commandHintWindow = null;
+            }
+        }
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
             
-            // Register global hotkeys
+            // Register global leader hotkey
             var helper = new WindowInteropHelper(this);
             _hwndSource = HwndSource.FromHwnd(helper.Handle);
             _hwndSource?.AddHook(HwndHook);
 
-            var failures = ApplyShortcuts(_shortcuts);
+            var (leaderRegistered, showOverlayRegistered, openControllerRegistered) =
+                ApplyGlobalHotkeys(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
             UpdateShortcutLabels();
-            if (failures.Count > 0)
+            var unregistered = new List<string>();
+            if (!leaderRegistered && _leaderShortcut.VirtualKey != 0)
+                unregistered.Add(_leaderShortcut.Format());
+            if (!showOverlayRegistered && _showActiveOverlayShortcut.VirtualKey != 0)
+                unregistered.Add(_showActiveOverlayShortcut.Format());
+            if (!openControllerRegistered && _openControllerShortcut.VirtualKey != 0)
+                unregistered.Add(_openControllerShortcut.Format());
+
+            if (unregistered.Count > 0)
             {
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    string names = string.Join(", ", failures.Select(action =>
-                        _shortcuts.TryGetValue(action, out var shortcut)
-                            ? shortcut.Format() : action.ToString()));
+                    string names = string.Join(", ", unregistered);
                     UpdateStatus($"Shortcut unavailable: {names}", Brushes.OrangeRed);
                     _trayIcon?.ShowBalloonTip(
                         5000,
-                        "Some shortcuts are unavailable",
-                        $"Windows could not register: {names}. Change them in Shortcuts.",
+                        "Shortcut unavailable",
+                        $"Windows could not register: {names}. Change it in Shortcuts.",
                         ToolTipIcon.Warning);
                 }), DispatcherPriority.ContextIdle);
             }
         }
 
-        // Unregisters all hotkey ids, then registers each non-unbound shortcut.
-        // Returns the actions whose RegisterHotKey failed (combo held by another app).
-        private List<ShortcutAction> ApplyShortcuts(Dictionary<ShortcutAction, Shortcut> shortcuts)
+        // Unregisters all hotkey ids, then registers global shortcuts (CommandLeader, ShowActiveOverlay, and OpenController).
+        private (bool leaderOk, bool showOverlayOk, bool openControllerOk) ApplyGlobalHotkeys(
+            Shortcut leader,
+            Shortcut showOverlay,
+            Shortcut openController)
         {
-            var failures = new List<ShortcutAction>();
             var helper = new WindowInteropHelper(this);
-            if (helper.Handle == IntPtr.Zero) return failures; // HWND not ready yet
+            if (helper.Handle == IntPtr.Zero) return (false, false, false);
 
             foreach (ShortcutAction action in Enum.GetValues<ShortcutAction>())
                 UnregisterHotKey(helper.Handle, (int)action);
 
-            foreach (var (action, shortcut) in shortcuts)
+            bool leaderOk = true;
+            if (leader.VirtualKey != 0)
             {
-                if (shortcut.VirtualKey == 0) continue; // unbound
-                bool ok = RegisterHotKey(helper.Handle, (int)action,
-                    shortcut.Modifiers | MOD_NOREPEAT, shortcut.VirtualKey);
-                if (!ok) failures.Add(action);
+                leaderOk = RegisterHotKey(helper.Handle, (int)ShortcutAction.CommandLeader,
+                    leader.Modifiers | MOD_NOREPEAT, leader.VirtualKey);
             }
-            return failures;
+
+            bool showOverlayOk = true;
+            if (showOverlay.VirtualKey != 0)
+            {
+                showOverlayOk = RegisterHotKey(helper.Handle, (int)ShortcutAction.ShowActiveOverlay,
+                    showOverlay.Modifiers | MOD_NOREPEAT, showOverlay.VirtualKey);
+            }
+
+            bool openControllerOk = true;
+            if (openController.VirtualKey != 0)
+            {
+                openControllerOk = RegisterHotKey(helper.Handle, (int)ShortcutAction.OpenController,
+                    openController.Modifiers | MOD_NOREPEAT, openController.VirtualKey);
+            }
+
+            return (leaderOk, showOverlayOk, openControllerOk);
         }
+
+        private bool ApplyLeaderShortcut(Shortcut leader)
+            => ApplyGlobalHotkeys(leader, _showActiveOverlayShortcut, _openControllerShortcut).leaderOk;
 
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == WM_HOTKEY)
             {
                 ShortcutAction action = (ShortcutAction)wParam.ToInt32();
-                if (action != ShortcutAction.OpenDashboard
-                    && (_workspaceLoadRetryPending || _workspacePersistenceDisabled))
+                if (action == ShortcutAction.CommandLeader)
                 {
-                    ProjectTransitionIsTemporarilyBlocked(null, alwaysBlock: true);
+                    EnterShortcutCommandMode();
                     handled = true;
                     return IntPtr.Zero;
                 }
 
-                switch (action)
-                {
-                    case ShortcutAction.StartStop:
-                        StartStopButton_Click(this, new RoutedEventArgs());
-                        handled = true;
-                        break;
-                    case ShortcutAction.Reset:
-                        ResetButton_Click(this, new RoutedEventArgs());
-                        handled = true;
-                        break;
-                    case ShortcutAction.ToggleOverlay:
-                        ToggleOverlayButton_Click(this, new RoutedEventArgs());
-                        handled = true;
-                        break;
-                    case ShortcutAction.Lap:
-                        LapButton_Click(this, new RoutedEventArgs());
-                        handled = true;
-                        break;
-                    case ShortcutAction.ToggleClock:
-                        ToggleClockMode();
-                        handled = true;
-                        break;
-                    case ShortcutAction.NewTimer:
-                        CreateNewTimer();
-                        handled = true;
-                        break;
-                    case ShortcutAction.NextTimer:
-                        CycleActiveTimer();
-                        handled = true;
-                        break;
-                    case ShortcutAction.CloseTimer:
-                        CloseActiveTimer();
-                        handled = true;
-                        break;
-                    case ShortcutAction.RenameTimer:
-                        Dispatcher.BeginInvoke(new Action(RenameActiveTimer), DispatcherPriority.Input);
-                        handled = true;
-                        break;
-                    case ShortcutAction.OpenDashboard:
-                        ShowProjectDashboard();
-                        handled = true;
-                        break;
-                    case ShortcutAction.ToggleCombinedOverlay:
-                        ToggleCombinedOverlayMode();
-                        handled = true;
-                        break;
-                }
+                ExecuteShortcutAction(action);
+                handled = true;
             }
             return IntPtr.Zero;
+        }
+
+        private void EnterShortcutCommandMode()
+        {
+            if (_workspaceLoadRetryPending || _workspacePersistenceDisabled)
+            {
+                ProjectTransitionIsTemporarilyBlocked(null, alwaysBlock: true);
+                return;
+            }
+
+            if (_commandMode == null) return;
+
+            if (_commandMode.IsActive)
+            {
+                _commandMode.RestartTimeout();
+                return;
+            }
+
+            _commandMode.Enter();
+        }
+
+        private void ExecuteShortcutAction(ShortcutAction action)
+        {
+            if (action != ShortcutAction.OpenDashboard
+                && action != ShortcutAction.OpenController
+                && (_workspaceLoadRetryPending || _workspacePersistenceDisabled))
+            {
+                ProjectTransitionIsTemporarilyBlocked(null, alwaysBlock: true);
+                return;
+            }
+
+            switch (action)
+            {
+                case ShortcutAction.StartStop:
+                    StartStopButton_Click(this, new RoutedEventArgs());
+                    break;
+                case ShortcutAction.Reset:
+                    ResetButton_Click(this, new RoutedEventArgs());
+                    break;
+                case ShortcutAction.ToggleOverlay:
+                    ToggleOverlayButton_Click(this, new RoutedEventArgs());
+                    break;
+                case ShortcutAction.Lap:
+                    LapButton_Click(this, new RoutedEventArgs());
+                    break;
+                case ShortcutAction.ToggleClock:
+                    ToggleClockMode();
+                    break;
+                case ShortcutAction.NewTimer:
+                    CreateNewTimer();
+                    break;
+                case ShortcutAction.NextTimer:
+                    CycleActiveTimer();
+                    break;
+                case ShortcutAction.CloseTimer:
+                    CloseActiveTimer();
+                    break;
+                case ShortcutAction.RenameTimer:
+                    Dispatcher.BeginInvoke(new Action(RenameActiveTimer), DispatcherPriority.Input);
+                    break;
+                case ShortcutAction.OpenDashboard:
+                    ShowProjectDashboard();
+                    break;
+                case ShortcutAction.ToggleCombinedOverlay:
+                    ToggleCombinedOverlayMode();
+                    break;
+                case ShortcutAction.ShowActiveOverlay:
+                    ShowActiveOverlay();
+                    break;
+                case ShortcutAction.OpenController:
+                    ShowController();
+                    break;
+            }
         }
 
         private void PopulateScreens()
@@ -3122,6 +3259,40 @@ namespace StopwatchOverlay
             CheckpointState();
         }
 
+        public void ShowActiveOverlay()
+        {
+            var decision = OverlayPresentationPolicy.DetermineShowDecision(
+                _activeTimer,
+                ActiveOverlayIsVisible(),
+                _combinedOverlayMode);
+
+            switch (decision)
+            {
+                case OverlayPresentationPolicy.ShowOverlayDecision.NoTimer:
+                    UpdateStatus("No active timer", Brushes.Gray);
+                    return;
+
+                case OverlayPresentationPolicy.ShowOverlayDecision.AlreadyVisible:
+                    return;
+
+                case OverlayPresentationPolicy.ShowOverlayDecision.ShowCombined:
+                    _combinedOverlayVisible = true;
+                    ShowCombinedOverlay();
+                    UpdateStatus($"Combined overlay visible on {ActiveOverlayWindowCount()} screen(s)", Brushes.DeepSkyBlue);
+                    break;
+
+                case OverlayPresentationPolicy.ShowOverlayDecision.ShowSeparate:
+                    _activeTimer!.OverlayVisible = true;
+                    ShowTimerOverlays(_activeTimer);
+                    RefreshOverlayActiveStates();
+                    UpdateStatus($"Overlay visible on {ActiveOverlayWindowCount()} screen(s)", Brushes.DeepSkyBlue);
+                    break;
+            }
+
+            UpdateShortcutLabels();
+            CheckpointState();
+        }
+
         private void ToggleCombinedOverlayMode()
         {
             if (_combinedOverlayMode)
@@ -3975,40 +4146,40 @@ namespace StopwatchOverlay
         // Rewrites every caption/hint that mentions a hotkey combo.
         private void UpdateShortcutLabels()
         {
-            string startVerb = _isRunning ? "Stop" : "Start";
-            StartStopButton.Content = startVerb + ComboSuffix(ShortcutAction.StartStop);
-            ResetButton.Content = "Reset" + ComboSuffix(ShortcutAction.Reset);
-            ToggleOverlayButton.Content = (ActiveOverlayIsVisible() ? "Hide overlay" : "Show overlay")
-                + ComboSuffix(ShortcutAction.ToggleOverlay);
-            LapButton.Content = "Add lap" + ComboSuffix(ShortcutAction.Lap);
+            string leaderText = _leaderShortcut.Format();
+            string prefix = string.IsNullOrEmpty(leaderText) ? "" : $"{leaderText} → ";
 
-            string s(ShortcutAction a) => (_shortcuts.TryGetValue(a, out var v) ? v : new Shortcut(0, 0)).Format();
-            NewTimerMenuItem.InputGestureText = s(ShortcutAction.NewTimer);
-            NextTimerMenuItem.InputGestureText = s(ShortcutAction.NextTimer);
-            CloseTimerMenuItem.InputGestureText = s(ShortcutAction.CloseTimer);
-            RenameTimerMenuItem.InputGestureText = s(ShortcutAction.RenameTimer);
-            ProjectDashboardMenuItem.InputGestureText = s(ShortcutAction.OpenDashboard);
-            ToggleCombinedOverlayMenuItem.InputGestureText = s(ShortcutAction.ToggleCombinedOverlay);
+            string startVerb = _isRunning ? "Stop" : "Start";
+            StartStopButton.Content = startVerb + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}Space");
+            ResetButton.Content = "Reset" + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}R");
+            ToggleOverlayButton.Content = (ActiveOverlayIsVisible() ? "Hide overlay" : "Show overlay")
+                + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}O");
+            LapButton.Content = "Add lap" + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}L");
+
+            NewTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}N";
+            NextTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}T";
+            CloseTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}X";
+            RenameTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}P";
+            ProjectDashboardMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}D";
+            ToggleCombinedOverlayMenuItem.InputGestureText = "";
             ToggleCombinedOverlayMenuItem.Header = _combinedOverlayMode
                 ? "_Separate overlays"
                 : "_Combine overlays";
-            ShortcutHintText.Text =
-                $"{s(ShortcutAction.NewTimer)} New  {s(ShortcutAction.NextTimer)} Next  " +
-                $"{s(ShortcutAction.CloseTimer)} Close  {s(ShortcutAction.RenameTimer)} Project  " +
-                $"{s(ShortcutAction.OpenDashboard)} Dashboard";
 
-            var lapCombo = (_shortcuts.TryGetValue(ShortcutAction.Lap, out var lv) ? lv : new Shortcut(0, 0)).Format();
-            var newTimerCombo = s(ShortcutAction.NewTimer);
-            NewTimerButton.ToolTip = newTimerCombo.Length > 0
-                ? $"Create a new timer and choose its project ({newTimerCombo})"
-                : "Create a new timer and choose its project";
+            ShortcutHintText.Text = string.IsNullOrEmpty(prefix)
+                ? "Leader shortcut unbound"
+                : $"{prefix}Space Start/Stop  {prefix}R Reset  {prefix}O Overlay  {prefix}N New  {prefix}D Dashboard  {prefix}W Controller";
+
+            NewTimerButton.ToolTip = string.IsNullOrEmpty(prefix)
+                ? "Create a new timer and choose its project"
+                : $"Create a new timer and choose its project ({prefix}N)";
             LapPlaceholder.Text = _activeTimer == null
-                ? (newTimerCombo.Length > 0
-                    ? $"No timers — press {newTimerCombo} to create one"
-                    : "No timers — use Timers > New timer")
-                : lapCombo.Length > 0
-                ? $"Press {lapCombo} or click Lap to record split times"
-                : "Click Lap to record split times";
+                ? (string.IsNullOrEmpty(prefix)
+                    ? "No timers — use Timers > New timer"
+                    : $"No timers — press {prefix}N to create one")
+                : (string.IsNullOrEmpty(prefix)
+                    ? "Click Lap to record split times"
+                    : $"Press {prefix}L or click Lap to record split times");
         }
 
         // Pushes persisted settings into the UI controls. Their change handlers fire as a
@@ -4143,9 +4314,9 @@ namespace StopwatchOverlay
         // Opens the modal shortcut editor; commits the result if the user saves.
         private void OpenShortcuts_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new ShortcutsWindow(_shortcuts) { Owner = this };
+            var dlg = new ShortcutsWindow(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut) { Owner = this };
             if (dlg.ShowDialog() == true)
-                CommitPendingShortcuts(dlg.Result);
+                CommitPendingShortcuts(dlg.ResultLeader, dlg.ResultShowActiveOverlay, dlg.ResultOpenController);
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
@@ -4429,35 +4600,54 @@ namespace StopwatchOverlay
             QueueSettingsCompletion();
         }
 
-        // Validates a candidate set, warns+confirms on conflicts, then registers, saves, and refreshes.
-        private void CommitPendingShortcuts(Dictionary<ShortcutAction, Shortcut> candidate)
+        private void CommitPendingLeaderShortcut(Shortcut candidate)
+            => CommitPendingShortcuts(candidate, _showActiveOverlayShortcut, _openControllerShortcut);
+
+        // Validates candidate shortcuts, warns+confirms on conflict, registers, saves, and refreshes.
+        private void CommitPendingShortcuts(
+            Shortcut leaderCandidate,
+            Shortcut showOverlayCandidate,
+            Shortcut openControllerCandidate)
         {
             var problems = new List<string>();
 
-            // 1. In-app duplicates (ignore unbound).
-            var seen = new Dictionary<(uint, uint), ShortcutAction>();
-            var duplicateCombos = new HashSet<(uint, uint)>();
-            foreach (var (action, s) in candidate)
+            // 1. In-app duplicate checks
+            var candidates = new (string Name, Shortcut S)[]
             {
-                if (s.VirtualKey == 0) continue;
-                var key = (s.Modifiers, s.VirtualKey);
-                if (seen.TryGetValue(key, out var other))
+                ("Command leader", leaderCandidate),
+                ("Show active overlay", showOverlayCandidate),
+                ("Open controller", openControllerCandidate)
+            };
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                for (int j = i + 1; j < candidates.Length; j++)
                 {
-                    problems.Add($"{action} and {other} share {s.Format()}.");
-                    duplicateCombos.Add(key);
+                    var a = candidates[i];
+                    var b = candidates[j];
+                    if (a.S.VirtualKey != 0 && b.S.VirtualKey != 0 &&
+                        a.S.Modifiers == b.S.Modifiers && a.S.VirtualKey == b.S.VirtualKey)
+                    {
+                        problems.Add($"{a.Name} and {b.Name} share {a.S.Format()}.");
+                    }
                 }
-                else
-                    seen[key] = action;
             }
 
-            // 2. OS-level rejection (combo held by another running app).
-            var failures = ApplyShortcuts(candidate);
-            foreach (var action in failures)
+            // 2. OS-level rejection test
+            var (leaderOk, showOverlayOk, openControllerOk) =
+                ApplyGlobalHotkeys(leaderCandidate, showOverlayCandidate, openControllerCandidate);
+
+            if (!leaderOk && leaderCandidate.VirtualKey != 0)
             {
-                var s = candidate[action];
-                if (duplicateCombos.Contains((s.Modifiers, s.VirtualKey)))
-                    continue; // already reported as an in-app duplicate above
-                problems.Add($"{action} ({s.Format()}) is already in use by another app.");
+                problems.Add($"Command leader ({leaderCandidate.Format()}) is already in use by another app.");
+            }
+            if (!showOverlayOk && showOverlayCandidate.VirtualKey != 0)
+            {
+                problems.Add($"Show active overlay ({showOverlayCandidate.Format()}) is already in use by another app.");
+            }
+            if (!openControllerOk && openControllerCandidate.VirtualKey != 0)
+            {
+                problems.Add($"Open controller ({openControllerCandidate.Format()}) is already in use by another app.");
             }
 
             if (problems.Count > 0)
@@ -4473,15 +4663,22 @@ namespace StopwatchOverlay
                 };
                 if (confirmation.ShowDialog() != true)
                 {
-                    // Revert registration to the last committed set; leave pending values in the boxes.
-                    ApplyShortcuts(_shortcuts);
+                    // Revert registration to the last committed set
+                    ApplyGlobalHotkeys(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
                     return;
                 }
             }
 
             // Commit.
-            _shortcuts = new Dictionary<ShortcutAction, Shortcut>(candidate);
-            _settings.Shortcuts = new Dictionary<ShortcutAction, Shortcut>(candidate);
+            _leaderShortcut = leaderCandidate;
+            _showActiveOverlayShortcut = showOverlayCandidate;
+            _openControllerShortcut = openControllerCandidate;
+            _settings.LeaderShortcut = leaderCandidate;
+            _shortcuts[ShortcutAction.CommandLeader] = leaderCandidate;
+            _shortcuts[ShortcutAction.ShowActiveOverlay] = showOverlayCandidate;
+            _shortcuts[ShortcutAction.OpenController] = openControllerCandidate;
+            _settings.Shortcuts = new Dictionary<ShortcutAction, Shortcut>(_shortcuts);
+            _commandMode?.SetLeaderVirtualKey(leaderCandidate.VirtualKey);
             PopulateSettingsFromUi(); // keep appearance/layout current in the same file
             SettingsStore.Save(_settings);
             UpdateShortcutLabels();
@@ -4505,9 +4702,14 @@ namespace StopwatchOverlay
             if (!_isExiting)
             {
                 e.Cancel = true;
+                _commandMode?.Cancel();
+                CloseCommandHintWindow();
                 Hide();
                 return;
             }
+
+            _commandMode?.Dispose();
+            CloseCommandHintWindow();
 
             // Unregister hotkeys
             var helper = new WindowInteropHelper(this);

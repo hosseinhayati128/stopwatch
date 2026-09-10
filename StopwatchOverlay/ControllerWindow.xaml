@@ -257,16 +257,16 @@
 
         <!-- Control Buttons -->
         <WrapPanel Grid.Row="4" Grid.RowSpan="2" HorizontalAlignment="Center" Margin="0,0,0,12">
-            <Button x:Name="StartStopButton" Content="Start  ·  Win+F5" Width="150"
+            <Button x:Name="StartStopButton" Content="Start  ·  Win+F2 → Space" Width="150"
                     Style="{StaticResource AcanthusPrimaryAction}"
                     Click="StartStopButton_Click" Margin="0,0,10,0"/>
-            <Button x:Name="LapButton" Content="Add lap  ·  Win+F8" Width="150"
+            <Button x:Name="LapButton" Content="Add lap  ·  Win+F2 → L" Width="150"
                     Style="{StaticResource AcanthusSecondaryAction}"
                     Click="LapButton_Click" Margin="0,0,10,0"/>
-            <Button x:Name="ResetButton" Content="Reset  ·  Win+F6" Width="150"
+            <Button x:Name="ResetButton" Content="Reset  ·  Win+F2 → R" Width="150"
                     Style="{StaticResource AcanthusResetButton}"
                     Click="ResetButton_Click" Margin="0,0,10,0"/>
-            <Button x:Name="ToggleOverlayButton" Content="Show overlay  ·  Win+F7" Width="150"
+            <Button x:Name="ToggleOverlayButton" Content="Show overlay  ·  Win+F2 → O" Width="150"
                     Style="{StaticResource AcanthusSecondaryAction}"
                     Click="ToggleOverlayButton_Click"/>
         </WrapPanel>
@@ -610,7 +610,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <TextBlock x:Name="LapPlaceholder" Text="Press Win+F8 or click Lap to record split times" 
+                <TextBlock x:Name="LapPlaceholder" Text="Press Win+F2 → L or click Lap to record split times" 
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
@@ -632,7 +632,7 @@
                     <TextBlock x:Name="StatusText" Text="Ready" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
                 </StackPanel>
                 <TextBlock x:Name="ShortcutHintText" Grid.Column="1"
-                           Text="Win+F5 Start/Stop  Win+F6 Reset  Win+F7 Overlay  Win+F8 Lap  Win+F9 Clock"
+                           Text="Win+F2 → Space Start/Stop  Win+F2 → R Reset  Win+F2 → O Overlay  Win+F2 → L Lap  Win+F2 → C Clock"
                            Foreground="{DynamicResource SecondaryTextBrush}" Opacity="0.7" FontSize="10"/>
             </Grid>
         </Border>

@@ -1,0 +1,465 @@
+{
+  "runId": "stopwatch-professional-2026-09-03-01a06678",
+  "fileKey": "q1GhB2cTVZiVWhbajEGT4K",
+  "fileUrl": "https://www.figma.com/design/q1GhB2cTVZiVWhbajEGT4K/Untitled?node-id=0-1&t=K9HM5SQoqV28q8AD-1",
+  "phase": "phase-5-qa-and-handoff",
+  "step": "P5.finalized-with-external-image-upload-blocker",
+  "sourceSpecification": "specs/STOPWATCH_FIGMA_REDESIGN_PROMPT_LOCAL.md",
+  "originalFigmaInventory": {
+    "pages": {
+      "Page 1": "0:1"
+    },
+    "topLevelNodeCount": 0,
+    "variableCollectionCount": 0,
+    "styleCount": 0,
+    "componentCount": 0,
+    "preservationRule": "Keep Page 1 and every pre-existing Figma object unchanged; create only inside the namespaced Professional Redesign v2 area."
+  },
+  "entities": {
+    "collections": {
+      "primitives": {
+        "id": "VariableCollectionId:6:2",
+        "name": "Stopwatch Professional v2 / Primitives",
+        "modes": {
+          "Value": "6:0"
+        }
+      },
+      "semanticColors": {
+        "id": "VariableCollectionId:6:3",
+        "name": "Stopwatch Professional v2 / Semantic Colors",
+        "modes": {
+          "Light": "6:1",
+          "Dark": "6:2"
+        }
+      },
+      "dimensions": {
+        "id": "VariableCollectionId:6:4",
+        "name": "Stopwatch Professional v2 / Dimensions",
+        "modes": {
+          "Value": "6:3"
+        }
+      }
+    },
+    "variables": {
+      "primitives": {
+        "collectionId": "VariableCollectionId:6:2",
+        "count": 59,
+        "ids": [
+          "VariableID:7:2", "VariableID:7:3", "VariableID:7:4", "VariableID:7:5", "VariableID:7:6", "VariableID:7:7", "VariableID:7:8", "VariableID:7:9", "VariableID:7:10", "VariableID:7:11",
+          "VariableID:7:12", "VariableID:7:13", "VariableID:7:14", "VariableID:7:15", "VariableID:7:16", "VariableID:7:17", "VariableID:7:18", "VariableID:7:19", "VariableID:7:20", "VariableID:7:21",
+          "VariableID:7:22", "VariableID:7:23", "VariableID:7:24", "VariableID:7:25", "VariableID:7:26", "VariableID:7:27", "VariableID:7:28", "VariableID:7:29", "VariableID:7:30", "VariableID:7:31",
+          "VariableID:7:32", "VariableID:7:33", "VariableID:7:34", "VariableID:7:35", "VariableID:7:36", "VariableID:7:37", "VariableID:7:38", "VariableID:7:39", "VariableID:7:40", "VariableID:7:41",
+          "VariableID:7:42", "VariableID:7:43", "VariableID:7:44", "VariableID:7:45", "VariableID:7:46", "VariableID:7:47", "VariableID:7:48", "VariableID:7:49", "VariableID:7:50", "VariableID:7:51",
+          "VariableID:7:52", "VariableID:7:53", "VariableID:7:54", "VariableID:7:55", "VariableID:7:56", "VariableID:7:57", "VariableID:7:58", "VariableID:7:59", "VariableID:7:60"
+        ]
+      },
+      "semanticColors": {
+        "collectionId": "VariableCollectionId:6:3",
+        "count": 28,
+        "ids": [
+          "VariableID:8:2", "VariableID:8:3", "VariableID:8:4", "VariableID:8:5", "VariableID:8:6", "VariableID:8:7", "VariableID:8:8", "VariableID:8:9", "VariableID:8:10", "VariableID:8:11",
+          "VariableID:8:12", "VariableID:8:13", "VariableID:8:14", "VariableID:8:15", "VariableID:8:16", "VariableID:8:17", "VariableID:8:18", "VariableID:8:19", "VariableID:8:20", "VariableID:8:21",
+          "VariableID:8:22", "VariableID:8:23", "VariableID:8:24", "VariableID:8:25", "VariableID:8:26", "VariableID:8:27", "VariableID:8:28", "VariableID:8:29"
+        ]
+      },
+      "dimensions": {
+        "collectionId": "VariableCollectionId:6:4",
+        "count": 26,
+        "ids": [
+          "VariableID:9:2", "VariableID:9:3", "VariableID:9:4", "VariableID:9:5", "VariableID:9:6", "VariableID:9:7", "VariableID:9:8", "VariableID:9:9", "VariableID:9:10", "VariableID:9:11",
+          "VariableID:9:12", "VariableID:9:13", "VariableID:9:14", "VariableID:9:15", "VariableID:9:16", "VariableID:9:17", "VariableID:9:18", "VariableID:9:19", "VariableID:9:20", "VariableID:9:21",
+          "VariableID:9:22", "VariableID:9:23", "VariableID:9:24", "VariableID:9:25", "VariableID:9:26", "VariableID:9:27"
+        ]
+      }
+    },
+    "styles": {
+      "text": {
+        "displayTimer": "S:2e5310bd2847dc943862465d7c32291354f1eade,",
+        "pageTitle": "S:f3fc2815586c388bbc7c46753a8c6a70e548a741,",
+        "sectionTitle": "S:2071a0930332a00d37fc15f938969ce7c997b0aa,",
+        "body": "S:a2e9e93e61320a683cef20618d7065817704252c,",
+        "bodyStrong": "S:6c56476d7d3a4bd2768236798964a215218501ee,",
+        "label": "S:af88727052463665f3333849220424370a055634,",
+        "supporting": "S:477921d8b083e644f66780848deca2d184e50dd1,",
+        "kpiValue": "S:672057a88f226ad162f5e3fac519708565a82255,",
+        "monoValue": "S:3403f961434d108ed0d9a5af70812f9e27e986a4,",
+        "keycap": "S:a6cb4e0a52b3c9924c983e726aa760dff434e45c,"
+      },
+      "effect": {
+        "raisedControl": "S:ff59728b0b0b004119cf055dd1fee1acd9521832,",
+        "dialogFloatingPanel": "S:34d97246d84927ebcb50a43c24ee08995aaf14bd,",
+        "overlayChrome": "S:2e3b1677b7f8ceb9ee039812ebdaf969a7be7063,",
+        "focusHalo": "S:a70d4009c7c0574b8919778e8207f25011932c62,"
+      }
+    },
+    "pages": {
+      "Stopwatch Overlay / Professional Redesign v2": "13:2",
+      "00 - Cover and Product Audit": "13:3",
+      "01 - Foundations": "13:4",
+      "02 - Components": "13:5",
+      "03 - Controller and Timer Workspace": "13:6",
+      "04 - Settings and Overlay Inspector": "13:7",
+      "05 - Analytics Dashboard": "13:8",
+      "06 - Project Records": "13:9",
+      "07 - Dialogs and Shortcuts": "13:10",
+      "08 - Floating Overlay States": "13:11",
+      "09 - Prototype Flows and Handoff": "13:12"
+    },
+    "sections": {
+      "professionalRedesignNamespace": "14:2",
+      "coverAndProductAudit": "15:2",
+      "foundations": "17:2"
+      ,"componentLibrary": "18:2",
+      "controllerAndTimerWorkspace": "35:2",
+      "settingsAndOverlayInspector": "35:18",
+      "analyticsDashboard": "35:27",
+      "projectRecords": "35:36",
+      "dialogsAndShortcuts": "35:43",
+      "floatingOverlayStates": "35:54",
+      "prototypeFlowsAndHandoff": "35:67"
+    },
+    "components": {
+      "internalIcons": {
+        "Plus": "18:7",
+        "Play": "18:10",
+        "Pause": "18:13",
+        "Reset": "18:16",
+        "Eye": "18:19",
+        "ChevronDown": "18:23",
+        "Settings": "18:26",
+        "More": "18:30",
+        "Close": "18:35",
+        "Edit": "18:38",
+        "Trash": "18:42",
+        "Check": "18:45",
+        "Chart": "18:48",
+        "Clock": "18:51"
+      },
+      "Tooltip": "21:127"
+    },
+    "componentSets": {
+      "Primary Button": "22:17",
+      "Secondary Button": "22:19",
+      "Ghost Button": "22:21",
+      "Danger Button": "22:23",
+      "Icon Button": "22:25",
+      "Navigation Item": "22:27",
+      "Status Badge": "22:29",
+      "Project Chip": "22:31",
+      "Keycap": "22:33",
+      "Inline Validation": "22:35",
+      "Banner": "22:37",
+      "Text Field": "24:132",
+      "Smart Countdown Field": "24:134",
+      "Select Field": "24:136",
+      "Date Field": "24:138",
+      "Time Field": "24:140",
+      "Checkbox": "26:27",
+      "Switch": "26:29",
+      "Slider": "26:31",
+      "Mode Segmented Control": "26:33",
+      "Position Picker": "26:35",
+      "Theme Thumbnail": "26:37",
+      "Background Thumbnail": "26:39",
+      "New Timer Action": "26:41",
+      "App Header": "29:264",
+      "Timer List Item": "29:266",
+      "KPI Summary": "29:268",
+      "Chart Legend Item": "29:270",
+      "Record Row": "29:272",
+      "Empty State": "29:274",
+      "Pagination": "29:276",
+      "Dialog Shell": "29:278",
+      "Timer Overlay": "32:101",
+      "Overlay Hover Toolbar": "32:103"
+    },
+    "screens": {
+      "professionalRedesignDivider": "14:3",
+      "coverAndProductAuditBoard": "15:3",
+      "foundationsBoard": "17:3",
+      "controller": {
+        "defaultDark": "35:3",
+        "defaultLight": "35:4",
+        "oneRunning": "35:5",
+        "onePaused": "35:6",
+        "severalTimers": "35:7",
+        "emptyState": "35:8",
+        "countdownClassic": "35:9",
+        "countdownSmartValid": "35:10",
+        "countdownSmartInvalid": "35:11",
+        "clockMode": "35:12",
+        "timecodeMode": "35:13",
+        "lapsPopulated": "35:14",
+        "combinedOverlay": "35:15",
+        "inspectorOpen": "35:16",
+        "minimumWidth": "35:17"
+      },
+      "inspector": {
+        "overlayAndPosition": "35:19",
+        "timerAppearance": "35:20",
+        "backgrounds": "35:21",
+        "lightRingOff": "35:22",
+        "lightRingOn": "35:23",
+        "behaviorAndApplication": "35:24",
+        "lightMode": "35:25",
+        "minimumWidth": "35:26"
+      },
+      "analytics": {
+        "darkPopulated": "35:28",
+        "lightPopulated": "35:29",
+        "today": "35:30",
+        "sevenDays": "35:31",
+        "thirtyDays": "35:32",
+        "projectFiltered": "35:33",
+        "noData": "35:34",
+        "narrow": "35:35",
+        "loading": "44:2",
+        "stale": "44:3"
+      },
+      "records": {
+        "populated": "35:37",
+        "projectFiltered": "35:38",
+        "activeLocked": "35:39",
+        "empty": "35:40",
+        "persistenceWarning": "35:41",
+        "narrow": "35:42"
+      },
+      "dialogsAndShortcuts": {
+        "chooseProject": "35:44",
+        "createProjectInline": "35:45",
+        "chooserValidation": "35:46",
+        "addRecord": "35:47",
+        "editRecord": "35:48",
+        "editorValidation": "35:49",
+        "deleteConfirmation": "35:50",
+        "shortcutsDefault": "35:51",
+        "shortcutCapture": "35:52",
+        "shortcutConflict": "35:53"
+      },
+      "overlays": {
+        "defaultNamed": "35:55",
+        "transparent": "35:56",
+        "paused": "35:57",
+        "active": "35:58",
+        "hoverControls": "35:59",
+        "clickThrough": "35:60",
+        "unnamed": "35:61",
+        "rec": "35:62",
+        "countdown": "35:63",
+        "timecode": "35:64",
+        "combined": "35:65",
+        "busyBackground": "35:66"
+      },
+      "handoffGuide": "35:68",
+      "prototypeFlowMap": "35:69",
+      "handoffLiveThumbnails": {
+        "controller": "75:2",
+        "settingsInspector": "75:135",
+        "analytics": "75:236"
+      },
+      "handoffBeforeImageTargets": {
+        "promoPng": "72:202",
+        "controllerWindowPng": "72:212",
+        "projectDashboardPng": "72:222"
+      }
+    },
+    "prototypeHotspots": {
+      "controller": [
+        "63:878", "63:880", "63:882", "63:884", "63:886", "63:888", "63:890", "63:892",
+        "63:894", "63:896", "63:898", "63:900", "63:902", "63:904", "63:906", "63:908"
+      ],
+      "settings": [
+        "64:367", "64:369", "64:371", "64:373", "64:375", "64:377", "64:379", "64:381"
+      ],
+      "analytics": [
+        "65:322", "65:324", "65:326", "65:328", "65:330", "65:332", "65:334", "65:336",
+        "65:338", "65:340", "65:342", "65:344"
+      ],
+      "records": [
+        "66:450", "66:452", "66:454", "66:456", "66:458", "66:460", "66:462", "66:464",
+        "66:466", "66:468", "66:470", "66:472"
+      ],
+      "dialogsAndShortcuts": [
+        "67:155", "67:157", "67:159", "67:161", "67:163", "67:165", "67:167", "67:169",
+        "67:171", "67:173", "67:175", "67:177", "67:179", "67:181", "67:183", "67:185",
+        "67:187", "67:189", "67:191", "67:193", "67:195", "67:197"
+      ],
+      "overlays": [
+        "67:2366", "67:2369", "67:2371", "67:2373", "67:2375", "67:2377", "67:2379", "67:2381", "67:2383"
+      ],
+      "count": 79,
+      "clickThroughScreenHotspotCount": 0
+    }
+  },
+  "scope": {
+    "pageNames": [
+      "Stopwatch Overlay / Professional Redesign v2",
+      "00 - Cover and Product Audit",
+      "01 - Foundations",
+      "02 - Components",
+      "03 - Controller and Timer Workspace",
+      "04 - Settings and Overlay Inspector",
+      "05 - Analytics Dashboard",
+      "06 - Project Records",
+      "07 - Dialogs and Shortcuts",
+      "08 - Floating Overlay States",
+      "09 - Prototype Flows and Handoff"
+    ],
+    "collections": [
+      "Stopwatch Professional v2 / Primitives",
+      "Stopwatch Professional v2 / Semantic Colors",
+      "Stopwatch Professional v2 / Dimensions"
+    ],
+    "textStyles": [
+      "Stopwatch Professional v2/Display Timer",
+      "Stopwatch Professional v2/Page Title",
+      "Stopwatch Professional v2/Section Title",
+      "Stopwatch Professional v2/Body",
+      "Stopwatch Professional v2/Body Strong",
+      "Stopwatch Professional v2/Label",
+      "Stopwatch Professional v2/Supporting",
+      "Stopwatch Professional v2/KPI Value",
+      "Stopwatch Professional v2/Mono Value",
+      "Stopwatch Professional v2/Keycap"
+    ],
+    "effectStyles": [
+      "Stopwatch Professional v2/Raised Control",
+      "Stopwatch Professional v2/Dialog Floating Panel",
+      "Stopwatch Professional v2/Overlay Chrome",
+      "Stopwatch Professional v2/Focus Halo"
+    ],
+    "componentFamilies": [
+      "App Header",
+      "Navigation Item",
+      "Timer List Item",
+      "New Timer Action",
+      "Mode Segmented Control",
+      "Primary Button",
+      "Secondary Button",
+      "Ghost Button",
+      "Danger Button",
+      "Icon Button",
+      "Text Field",
+      "Smart Countdown Field",
+      "Select Field",
+      "Date Field",
+      "Time Field",
+      "Checkbox",
+      "Switch",
+      "Slider",
+      "Position Picker",
+      "Theme Thumbnail",
+      "Background Thumbnail",
+      "Status Badge",
+      "Project Chip",
+      "Keycap",
+      "Tooltip",
+      "Inline Validation",
+      "Banner",
+      "KPI Summary",
+      "Chart Legend Item",
+      "Record Row",
+      "Empty State",
+      "Pagination",
+      "Dialog Shell",
+      "Timer Overlay",
+      "Overlay Hover Toolbar"
+    ]
+  },
+  "completedSteps": [
+    "P0.a-local-product-audit",
+    "P0.b-target-figma-inventory",
+    "P0.c-library-and-code-connect-discovery",
+    "P0.d-v1-scope-lock",
+    "P0.e-code-to-figma-gap-resolution",
+    "P0.f-gap-analysis"
+    ,"P1.a-variable-collections",
+    "P1.b-primitive-colors",
+    "P1.c-semantic-color-aliases",
+    "P1.d-dimension-variables",
+    "P1.e-variable-code-syntax",
+    "P1.f-text-and-effect-styles",
+    "P1.g-foundations-validation-pass",
+    "P1.h-foundations-inventory",
+    "P2.a-page-structure",
+    "P2.b-cover-and-product-audit-board",
+    "P2.c-foundations-board",
+    "P2.d-cover-screenshot-qa",
+    "P2.e-foundations-screenshot-qa"
+    ,"P2.f-component-families-authored"
+    ,"P2.g-component-structural-validation"
+    ,"P2.h-component-screenshot-qa",
+    "P3.a-wrapper-frames",
+    "P3.b-controller-high-fidelity-screens",
+    "P3.c-settings-and-inspector-high-fidelity-screens",
+    "P3.d-analytics-high-fidelity-screens",
+    "P3.e-records-high-fidelity-screens",
+    "P3.f-dialogs-and-shortcuts-high-fidelity-screens",
+    "P3.g-floating-overlay-high-fidelity-screens",
+    "P3.h-major-page-screenshot-qa",
+    "P4.a-native-prototype-reactions",
+    "P4.b-prototype-flow-map",
+    "P4.c-prototype-reaction-audit",
+    "P5.a-handoff-guide",
+    "P5.b-live-after-comparison-thumbnails",
+    "P5.c-final-visual-qa",
+    "P5.d-final-structural-and-preservation-audit",
+    "P5.e-ledger-finalized"
+  ],
+  "pendingValidations": [
+    "P5-before-local-screenshot-image-upload"
+  ],
+  "blockers": [
+    {
+      "id": "figma-asset-upload-regional-compliance",
+      "scope": "Handoff before-and-after comparison image fills only",
+      "status": "blocked",
+      "details": "The Figma upload_assets tool successfully issued target-bound upload URLs, but POST requests to mcp.figma.com returned Figma's regional sanctions/compliance denial. Fresh Figma screenshot downloads also failed from the same network path, and the in-app browser explicitly prohibited the upload-URL fallback. The three local source files remain unchanged and are named in the handoff board; the After side uses live editable clones of the completed Figma screens.",
+      "affectedLocalSources": [
+        "promo.png",
+        "controller-window.png",
+        "project-dashboard.png"
+      ],
+      "unaffectedDeliverables": "Foundations, components, 61 high-fidelity product states, native prototype reactions, flow map, handoff content, live after thumbnails, and all QA audits are complete."
+    }
+  ],
+  "finalQa": {
+    "screenFramesAudited": 63,
+    "emptyScreenFrames": 0,
+    "componentInstancesAcrossRedesign": 559,
+    "localComponentsIncludingVariants": 174,
+    "componentSets": 34,
+    "standaloneComponents": 15,
+    "variables": 113,
+    "variableCollections": 3,
+    "textStyles": 10,
+    "effectStyles": 4,
+    "prototypeHotspots": 79,
+    "prototypeNodeActions": 54,
+    "prototypeUrlActions": 26,
+    "prototypeHoverTriggers": 2,
+    "prototypeTimeoutTriggers": 1,
+    "prototypeReactionErrors": 0,
+    "clickThroughHotspots": 0,
+    "nonThumbnailTextBelow12Px": 0,
+    "temporaryOrPlaceholderNamedLayers": 0,
+    "originalPage1ChildCount": 0,
+    "note": "The 143 text layers below 12 px are contained only inside deliberately scaled live Figma thumbnails on the handoff comparison board; their source product frames all meet the 12 px minimum."
+  },
+  "designDecisions": [
+    "Use the supplied dark/light seed palette, namespaced to avoid collisions with historical Pixel Deck work.",
+    "Use Inter in editable Figma text because Segoe UI and Segoe UI Variable are unavailable to the connected Figma environment; specify Segoe UI Variable with Segoe UI fallback for WPF implementation.",
+    "Use Cascadia Mono for timer and numeric data; it is available in the target Figma environment.",
+    "Build local components instead of importing Material 3 or Simple Design System because their geometry, token model, platform conventions, and remote ownership do not match the Windows/WPF deliverable.",
+    "Treat selected-active state and running state as independent visual attributes.",
+    "Treat combined overlay as presentation only and preserve each timer's run state, visibility, and separate position.",
+    "Model standalone Project Records as an implementation-ready information-architecture change; current production embeds records in the dashboard expander.",
+    "Show shortcut conflicts as both an inline proposed state and a save-time confirmation note because current production validates after Save.",
+    "Keep frequent timer actions above the fold; move global appearance/configuration into a right inspector with progressive disclosure.",
+    "Do not reuse Pixel Deck styling or assets; historical screenshots are before-state evidence only.",
+    "Give Delete confirmation safe initial focus on Cancel even though current production does not explicitly set it.",
+    "Recommend disabling Clock Reset because the current controller leaves it visible but no-ops the command.",
+    "Interpret compact overlay as intrinsic short-format composition rather than a new persisted compact-mode setting.",
+    "Use live editable Figma clones for the After comparisons and explicit local source labels for Before while the external Figma image-upload blocker remains; do not invent substitute screenshots."
+  ]
+}

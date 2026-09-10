@@ -35,7 +35,7 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 🖌️ **Deep overlay customization** — Choose display, position, text and outline colors, font, format, size, thickness, opacity, and optional light ring
 - 🖥️ **Multi-monitor and presentation tools** — Show timers on one or every display, keep them always on top, enable click-through, or hide overlays from screen capture
 - 🖱️ **Direct overlay controls** — Click a timer to activate it; hover for close, pause/resume, and reset controls
-- ⌨️ **Customizable global shortcuts** — Win+F2 through Win+F12 control timers, projects, the dashboard, and combined view from any application
+- ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D) to control timers, projects, and the dashboard from any application
 - 🧠 **Smart countdown input** — Enter natural durations, clock times, dates, weekdays, months, or years with a live interpretation preview
 - 💾 **Crash-safe recovery** — Restore timers, running/paused state, projects, laps, positions, and combined/separate presentation after restart, shutdown, or a crash
 - 🚀 **Desktop integration** — Start with Windows, close the controller to the notification area, and exit explicitly from the tray menu
@@ -142,43 +142,50 @@ self-contained release includes the runtime and does not require a separate inst
 ## How to Use
 
 1. Launch **StopwatchOverlay.exe** — choose a project for the first timer or leave it unnamed
-2. Click **▶ Start** (or press **Win+F5**) to start the timer
-3. The overlay is shown automatically; press **Win+F7** whenever you want to hide or show the active timer
+2. Click **▶ Start** (or press **Win+F2 → Space**) to start the timer
+3. The overlay is shown automatically; press **Win+F2 → O** whenever you want to hide or show the active timer
 4. Choose your target **screen** and **position** from the dropdowns
 5. Open **Settings → Appearance** to choose application and floating-clock themes independently, then customize the background, clock colors, font, size, and opacity
 6. **Drag** the overlay with your mouse for pixel-perfect placement
 
 Close the controller whenever you want it out of the way. The application continues running in the notification area and keeps every timer active; right-click its tray icon and choose **Exit** to close it completely.
 
-Press **Win+F2** or click **+ New timer** in the controller to create another timer. The project chooser opens first: select an existing project, use the small **+** button to add one, or leave **Select a project** unchanged to create an unnamed timer. Cancel leaves your existing timers unchanged. Each timer can run independently. Click an overlay or press **Win+F3** to make that timer active; the regular timer shortcuts then affect only the active timer.
+Press **Win+F2 → N** or click **+ New timer** in the controller to create another timer. The project chooser opens first: select an existing project, use the small **+** button to add one, or leave **Select a project** unchanged to create an unnamed timer. Cancel leaves your existing timers unchanged. Each timer can run independently. Click an overlay or press **Win+F2 → T** to make that timer active; the regular timer shortcuts then affect only the active timer.
 
-Press **Win+F12** to combine all open timers into one shared floating overlay. **Win+F3** keeps its normal job: it selects the next active timer and the shared overlay updates to show it. Press **Win+F12** again to restore the timers to their previous separate overlays and positions.
+In combined mode, all open timers share one floating overlay. Pressing **Win+F2 → T** selects the next active timer and updates the shared overlay.
 
-Press **Win+F10** to assign the active timer to an existing project or add a new project name. Once that named timer is running, the app records its work time automatically.
+Press **Win+F2 → P** to assign the active timer to an existing project or add a new project name. Once that named timer is running, the app records its work time automatically.
 
 ### Keyboard Shortcuts
 
-| Key | Action |
+Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Press **Win+F2**, then within 2 seconds press one of the following command keys:
+
+| Key Sequence | Action |
 |---|---|
-| **Win+F2** | Create a new timer and make it active |
-| **Win+F3** | Select the next active timer |
-| **Win+F4** | Close the active timer |
-| **Win+F5** | Start / stop the active timer |
-| **Win+F6** | Reset the active timer |
-| **Win+F7** | Show / hide the active timer's overlay, or the shared overlay in combined mode |
-| **Win+F8** | Record a lap for the active timer |
-| **Win+F9** | Switch the active timer between its current mode and Clock |
-| **Win+F10** | Choose, create, change, or clear the active timer's project |
-| **Win+F11** | Open the project time dashboard |
-| **Win+F12** | Combine all open timers into one shared overlay / restore separate overlays |
+| **Win+F2 → Space** | Start / stop the active timer |
+| **Win+F2 → R** | Reset the active timer |
+| **Win+F2 → O** | Show / hide the active timer's overlay |
+| **Win+F2 → L** | Record a lap for the active timer |
+| **Win+F2 → C** | Switch the active timer between its current mode and Clock |
+| **Win+F2 → N** | Create a new timer and make it active |
+| **Win+F2 → T** | Select the next active timer |
+| **Win+F2 → X** | Close the active timer |
+| **Win+F2 → P** | Choose, create, change, or clear the active timer's project |
+| **Win+F2 → D** | Open the project time dashboard |
+| **Win+F2 → W** | Open / restore and focus the stopwatch controller |
+| **Escape** | Cancel command mode without action |
+
+Additionally, dedicated direct global shortcuts are available:
+- **Win+Shift+F2** (configurable): **Open controller** — opens or restores and brings the stopwatch controller window to the foreground (including from the system tray).
+- **Win+Shift+F7** (configurable): **Show active overlay** — reveals the active timer's floating overlay if hidden without toggling it off, changing timer running state, or triggering auto-start.
 
 Clicking an overlay selects its timer. Hovering over an interactive overlay reveals close, pause/resume, and reset buttons. When **click-through mode** is enabled, mouse interaction with overlays—including selection, dragging, and hover controls—is disabled; global keyboard shortcuts continue to work.
 
 ### Project time tracking
 
-A timer's name is also its **project name**. New timers may begin unnamed, which keeps their time out of reports. Use **Win+F10** to assign, change, or clear the active timer's project. Starting a named timer begins a work session for that project. Pausing, stopping, closing, or clearing the project ends its current session. Changing a non-zero timer to another project saves the old project segment, resets the timer for the new project, and preserves whether it was running or paused. Changing a reset/zero timer only changes its assignment, so it begins from scratch when started.
+A timer's name is also its **project name**. New timers may begin unnamed, which keeps their time out of reports. Use **Win+F2 → P** to assign, change, or clear the active timer's project. Starting a named timer begins a work session for that project. Pausing, stopping, closing, or clearing the project ends its current session. Changing a non-zero timer to another project saves the old project segment, resets the timer for the new project, and preserves whether it was running or paused. Changing a reset/zero timer only changes its assignment, so it begins from scratch when started.
 
-Open the dashboard with **Win+F11**. Use the day arrows to move through previous dates, select **Day** to return to today, or choose **Last 7 days**, **Last 30 days**, and **All time**. Each view includes:
+Open the dashboard with **Win+F2 → D**. Use the day arrows to move through previous dates, select **Day** to return to today, or choose **Last 7 days**, **Last 30 days**, and **All time**. Each view includes:
 
 - total tracked time, session count, project count, and currently active sessions
 - horizontal time-by-project bars and daily totals

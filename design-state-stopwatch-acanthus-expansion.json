@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "task": "Acanthus remaining app screens",
+  "fileKey": "q1GhB2cTVZiVWhbajEGT4K",
+  "targetUrl": "https://www.figma.com/design/q1GhB2cTVZiVWhbajEGT4K/StopWatch?node-id=35-2&t=3We7qYXfMFmyg18F-1",
+  "status": "complete",
+  "completedOn": "2026-09-04",
+  "approvedController": {
+    "pageId": "13:6",
+    "sectionId": "88:878",
+    "frameId": "88:879",
+    "name": "Controller / Acanthus POC / Running Stopwatch",
+    "width": 1040,
+    "height": 720,
+    "nodeCount": 129,
+    "fontFamilies": [
+      "Cormorant Garamond",
+      "Inter",
+      "Cascadia Mono"
+    ],
+    "background": "#F3EFE5",
+    "border": "#445140",
+    "integrityStatus": "verified_unchanged_after_completion"
+  },
+  "localMoodboard": {
+    "path": "design-references/acanthus-moodboard.webp",
+    "available": false
+  },
+  "constraints": {
+    "expectedFinalFrameCount": 10,
+    "actualFinalFrameCount": 10,
+    "actualFinalSectionCount": 5,
+    "controllerFramesAllowed": 0,
+    "preserveExistingContent": true,
+    "modifySharedMasters": false,
+    "modifyProductionCode": false
+  },
+  "sections": {
+    "settings": {
+      "pageId": "13:7",
+      "nodeId": "105:367",
+      "name": "Theme Study / Acanthus / Settings and Overlay Inspector",
+      "status": "complete"
+    },
+    "records": {
+      "pageId": "13:9",
+      "nodeId": "105:2489",
+      "name": "Theme Study / Acanthus / Project Records",
+      "status": "complete"
+    },
+    "analytics": {
+      "pageId": "13:8",
+      "nodeId": "105:2493",
+      "name": "Theme Study / Acanthus / Analytics Dashboard",
+      "status": "complete"
+    },
+    "dialogs": {
+      "pageId": "13:10",
+      "nodeId": "107:2576",
+      "name": "Theme Study / Acanthus / Dialogs",
+      "status": "complete"
+    },
+    "overlays": {
+      "pageId": "13:11",
+      "nodeId": "107:2544",
+      "name": "Theme Study / Acanthus / Floating Overlay States",
+      "status": "complete"
+    }
+  },
+  "frames": {
+    "settingsOverlayPosition": {
+      "nodeId": "105:368",
+      "name": "Settings / Acanthus / 01 Overlay and Position",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "settingsAppearanceBackground": {
+      "nodeId": "110:830",
+      "name": "Settings / Acanthus / 02 Appearance and Background",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "settingsLightRingBehaviorApplication": {
+      "nodeId": "114:367",
+      "name": "Settings / Acanthus / 03 Light Ring, Behavior and Application",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "projectRecordsPopulated": {
+      "nodeId": "105:2490",
+      "name": "Project Records / Acanthus / Populated",
+      "status": "complete",
+      "screenshotQa": "pass"
+    },
+    "analyticsSevenDays": {
+      "nodeId": "105:2494",
+      "name": "Analytics / Acanthus / 01 Seven Days",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "analyticsThirtyDays": {
+      "nodeId": "110:322",
+      "name": "Analytics / Acanthus / 02 Thirty Days",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "dialogChooseCreateProject": {
+      "nodeId": "107:2577",
+      "name": "Dialog / Acanthus / 01 Choose or Create Project",
+      "status": "complete",
+      "screenshotQa": "pass_after_refinement"
+    },
+    "dialogAddProjectRecord": {
+      "nodeId": "107:2578",
+      "name": "Dialog / Acanthus / 02 Add Project Record",
+      "status": "complete",
+      "screenshotQa": "pass"
+    },
+    "overlayActiveRunning": {
+      "nodeId": "107:2545",
+      "name": "Overlay / Acanthus / 01 Active Running",
+      "status": "complete",
+      "screenshotQa": "pass"
+    },
+    "overlayCombinedHover": {
+      "nodeId": "107:2546",
+      "name": "Overlay / Acanthus / 02 Combined with Hover Controls",
+      "status": "complete",
+      "screenshotQa": "pass_after_accessibility_refinement"
+    }
+  },
+  "screenshots": {
+    "107:2577": "validated",
+    "105:2490": "validated",
+    "105:2494": "validated",
+    "107:2578": "validated",
+    "105:368": "validated",
+    "107:2545": "validated",
+    "107:2546": "validated",
+    "110:322": "validated",
+    "110:830": "validated",
+    "114:367": "validated"
+  },
+  "temporaryNodes": [],
+  "finalAudit": {
+    "status": "pass",
+    "exactFrameCount": true,
+    "exactSectionCount": true,
+    "allNamesDimensionsAndOrderMatch": true,
+    "minimumExistingContentClearancePx": 160,
+    "interFrameGapPx": 80,
+    "minimumInternalPaddingPx": 40,
+    "outOfBoundsNodeCount": 0,
+    "missingFontCount": 0,
+    "unexpectedFontCount": 0,
+    "instanceCount": 0,
+    "componentOrComponentSetCount": 0,
+    "reactionCount": 0,
+    "prototypeHotspotCount": 0,
+    "placeholderOrTemporaryNodeCount": 0,
+    "boundVariableCount": 0,
+    "publishedStyleBindingCount": 0,
+    "controllerFrameCountCreated": 0,
+    "allTenFramesScreenshotValidated": true,
+    "fontSubstitution": null,
+    "unresolvedConcerns": []
+  },
+  "notes": [
+    "No repository Code Connect mappings were found.",
+    "Approved controller 88:879 and all listed source references were inspected before the first write.",
+    "Local moodboard was not available; approved controller is the visual source of truth.",
+    "Final overlay QA added explicit Paused and Running labels to pair status color with text."
+  ]
+}

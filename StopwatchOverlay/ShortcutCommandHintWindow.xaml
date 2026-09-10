@@ -1,0 +1,40 @@
+<Window x:Class="StopwatchOverlay.ShortcutCommandHintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Timer Command Mode"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowActivated="False"
+        Focusable="False"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        Loaded="Window_Loaded">
+    <Border Background="#1E1E24"
+            BorderBrush="#404452"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="14,10"
+            Margin="8">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="3" Opacity="0.6"/>
+        </Border.Effect>
+        <StackPanel HorizontalAlignment="Center">
+            <TextBlock Text="Timer command: Space Start/Stop · R Reset · O Overlay · L Lap"
+                       Foreground="#FFFFFF"
+                       FontSize="12"
+                       FontFamily="Segoe UI, Consolas"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard"
+                       Foreground="#CCCCCC"
+                       FontSize="12"
+                       FontFamily="Segoe UI, Consolas"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+    </Border>
+</Window>

@@ -31,7 +31,7 @@ StopwatchOverlay/
 
 | Component | Responsibility |
 |---|---|
-| **ControllerWindow** | Main control panel — ticks all timer sessions, routes commands to the active timer, manages separate and combined overlay replicas, project-history transitions, global hotkeys, settings, and lap views |
+| **ControllerWindow** | Main control panel — ticks all timer sessions, routes commands to the active timer, manages separate and combined overlay replicas, project-history transitions, global leader hotkey and command mode, settings, and lap views |
 | **TimerSession** | Runtime state for one logical timer, including its stopwatch/countdown state, mode, name, lap times, visibility, and custom position |
 | **TimerSessionManager** | Owns the ordered timer collection and its single logical active timer; creates, activates, cycles, and closes sessions without WPF dependencies |
 | **TimerWorkspaceStore** | Captures and restores the versioned timer workspace and writes crash-safe atomic checkpoints under `%APPDATA%\StopwatchOverlay` |
@@ -40,7 +40,7 @@ StopwatchOverlay/
 | **ProjectDashboardWindow** | Day navigation, all-project/single-project filtering, Day, Last 7 days, Last 30 days, and All time summaries, a 53-week heatmap, charts, daily timelines, and a collapsed inline record editor that delegates mutations back to the controller |
 | **ProjectRecordEditorWindow** | Modal local-time form for creating or correcting closed records; validates project names, positive duration, future endpoints, and invalid daylight-saving wall times before returning UTC values |
 | **ProjectRecordDeleteWindow** | Themed, owner-bound confirmation that identifies a closed record before permanent deletion |
-| **TimerNameWindow** | Compact dialog used before new-timer creation and by Win+F10 to select or add a project; edit mode can also clear the active timer's project |
+| **TimerNameWindow** | Compact dialog used before new-timer creation and by Win+F2 → P to select or add a project; edit mode can also clear the active timer's project |
 | **OverlayWindow** | Transparent, always-on-top display with outlined text rendering, active-state indication, drag selection, and animated hover controls. Supports click-through mode |
 | **App.xaml** | Global WPF styles (ModernButton, StartButton, StopButton) |
 | **AppBackgroundManager** | Stable preset catalog, validated managed custom-image imports, tiled theme composition, and floating-clock surface brushes |
@@ -50,8 +50,8 @@ StopwatchOverlay/
 - **WPF + WinForms hybrid**: WPF for UI rendering, `System.Windows.Forms.Screen` for reliable multi-monitor enumeration.
 - **Logical timers vs. windows**: A `TimerSession` is one independent timer. Separate `OverlayWindow` instances are screen-specific views of a session, while combined mode uses one shared logical view (replicated per selected screen) that dynamically displays the active session.
 - **Chooser-first timer creation**: Every user-created timer opens the project chooser before `TimerSessionManager.Create()`. The neutral placeholder creates an unnamed timer, the adjacent `+` action adds a project, and Cancel consumes no timer number or state. Restored timers are never reprompted.
-- **Project-switch boundary**: Win+F10 uses one UTC transition instant. A non-zero timer closes the old project record, resets elapsed/lap/countdown session state, and starts the new project while preserving running/paused state. A zero timer only changes assignment; same canonical project selections never reset or split history.
-- **Single active command target**: Several sessions may run simultaneously, but `TimerSessionManager.Active` is the only session affected by Win+F5 through Win+F10. Win+F3 cycles sessions in creation order in both separate and combined views. Clicking a separate overlay activates its owning session; the shared overlay already represents the active session.
+- **Project-switch boundary**: Win+F2 → P uses one UTC transition instant. A non-zero timer closes the old project record, resets elapsed/lap/countdown session state, and starts the new project while preserving running/paused state. A zero timer only changes assignment; same canonical project selections never reset or split history.
+- **Single active command target**: Several sessions may run simultaneously, but `TimerSessionManager.Active` is the only session affected by timer action commands (Start/Stop, Reset, Lap, Mode, Project). Win+F2 → T cycles sessions in creation order in both separate and combined views. Clicking a separate overlay activates its owning session; the shared overlay already represents the active session.
 - **Presentation-only combining**: Win+F12 changes only how timers are displayed. It never changes their running state or project intervals. Individual overlay visibility and positions remain intact so separating restores the prior layout; the shared overlay has independent visibility and per-screen coordinates.
 - **Persistent workspace state**: All sessions are checkpointed, including running/paused state, elapsed or remaining time, names, laps, modes, overlay visibility and positions, session order, active selection, and combined-overlay presentation. Global appearance and shortcut preferences continue to use `AppSettings`.
 - **Independent theme and background**: Theme tokens and the optional tiled image are persisted separately. Theme resources are applied first; `AppBackgroundManager` then composites the chosen preset or managed custom image over the clean theme background and applies the same pattern to floating-clock chrome.
@@ -60,7 +60,7 @@ StopwatchOverlay/
 - **Project intervals**: A named running timer owns one open UTC work interval. Pause, stop, close, or clearing its name closes that interval. Renaming a running timer to another project closes the old interval and opens the new interval at the same instant. Each timer is independent, so intervals may overlap.
 - **One records surface**: Exact records are embedded in the dashboard and follow its project/date filters. The list is collapsed by default, while Add record stays visible; active records remain read-only and completed records delegate edit/delete mutations to the controller.
 - **Project-history recovery**: Project history is stored in `%APPDATA%\StopwatchOverlay\project-history.json` with a crash-recovery backup. Workspace and history writes share one timestamp; a partial failure retries the exact same logical snapshot instead of moving a project boundary forward. If an older workspace backup and newer history are recovered together, a persisted guard prevents backward reconciliation until explicit timer actions make their open states agree. Startup reconciliation otherwise preserves valid open intervals for restored named/running timers, closes stale intervals, and creates missing ones. Dashboard calendar grouping is shown in local time.
-- **Win32 interop**: `RegisterHotKey` for system-wide hotkeys (Win+F2 through Win+F12), `SetWindowLong` for click-through, no-activate, and tool-window styles.
+- **Win32 interop**: `RegisterHotKey` for the global leader hotkey (default Win+F2), dedicated open controller hotkey (default Win+Shift+F2), and dedicated show active overlay hotkey (default Win+Shift+F7), low-level keyboard hook (`WH_KEYBOARD_LL`) active during the 2-second command window to intercept and suppress second-stage command keys, `SetWindowLong` for click-through, no-activate, and tool-window styles.
 - **Text outline rendering**: Four offset `TextBlock` layers beneath the main text create a border/outline effect that stays readable on any background.
 - **Non-resizing hover toolbar**: Overlay actions live in a WPF `Popup`, allowing close, pause/resume, and reset controls to animate below the timer without changing its measured size or anchored position. Click-through closes and disables this mouse UI.
 - **Framework-dependent deployment**: The standard published binary relies on an installed .NET 10 Desktop Runtime, keeping the download much smaller than the optional self-contained build.
@@ -101,23 +101,26 @@ The application supports four display modes:
 3. **Countdown** — Countdown timer (continues into negative). A Duration / Until-clock-time toggle (`_useClockTarget`) switches between a fixed duration and counting down to a wall-clock target time (HH:MM:SS); the until-time variant resolves an absolute target on start (rolling to tomorrow if already past) and recomputes the remaining time from `DateTime.Now` each tick
 4. **Timecode** — Frame-accurate timecode display (HH:MM:SS:FF)
 
-## Hotkeys
+## Hotkeys and Command Mode
 
-| Key | Action |
+The application registers a single global leader hotkey (default: **Win+F2**). Pressing the leader enters a 2-second command mode where the next key triggers an action:
+
+| Key Sequence | Action |
 |---|---|
-| Win+F2 | Create a new timer and make it active |
-| Win+F3 | Cycle to the next active timer |
-| Win+F4 | Close the active timer |
-| Win+F5 | Start / stop the active timer |
-| Win+F6 | Reset the active timer |
-| Win+F7 | Show / hide the active timer's overlay, or the shared overlay in combined mode |
-| Win+F8 | Record a lap for the active timer |
-| Win+F9 | Toggle the active timer between its current mode and Clock |
-| Win+F10 | Select, create, change, or clear the active timer's project |
-| Win+F11 | Open the project time dashboard |
-| Win+F12 | Combine all open timers into one shared overlay / restore separate overlays |
+| Win+F2 → Space | Start / stop the active timer |
+| Win+F2 → R | Reset the active timer |
+| Win+F2 → O | Show / hide the active timer's overlay |
+| Win+F2 → L | Record a lap for the active timer |
+| Win+F2 → C | Toggle the active timer between its current mode and Clock |
+| Win+F2 → N | Create a new timer and make it active |
+| Win+F2 → T | Cycle to the next active timer |
+| Win+F2 → X | Close the active timer |
+| Win+F2 → P | Select, create, change, or clear the active timer's project |
+| Win+F2 → D | Open the project time dashboard |
+| Win+F2 → W | Open / restore and focus the stopwatch controller |
+| Escape | Cancel command mode without action |
 
-The F5–F9 commands never broadcast to every running timer. Win+F12 is a presentation toggle, while Win+F3 remains active-timer selection in either view. An overlay click changes the logical active timer in separate view; click-through mode intentionally disables overlay mouse selection, dragging, and hover actions, while registered hotkeys remain available. All shortcut assignments, including dashboard and combine/separate, can be changed or cleared in the shortcut editor.
+Command mode commands affect only the active timer and never broadcast to every running timer. Win+F2 → T selects the active timer in either view. An overlay click changes the logical active timer in separate view; click-through mode intentionally disables overlay mouse selection, dragging, and hover actions, while command mode remains available. In addition to command mode, dedicated direct global hotkeys are registered: **Win+Shift+F2** to open or restore and focus the stopwatch controller, and **Win+Shift+F7** to show the active overlay without toggling it off. The leader shortcut, open controller shortcut, and show overlay shortcut can all be configured or unbound in the shortcut editor.
 
 ## CI/CD
 
