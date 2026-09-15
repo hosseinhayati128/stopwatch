@@ -1783,7 +1783,10 @@ namespace StopwatchOverlay
 
         private void InitializeCommandMode()
         {
-            _commandMode = new ShortcutCommandMode(Dispatcher, _leaderShortcut.VirtualKey);
+            _commandMode = new ShortcutCommandMode(
+                Dispatcher,
+                _leaderShortcut.VirtualKey,
+                TimeSpan.FromSeconds(_settings.CommandChainingTimeoutSeconds));
             _commandMode.ActionTriggered += OnCommandModeActionTriggered;
             _commandMode.Cancelled += OnCommandModeCancelled;
             _commandMode.TimedOut += OnCommandModeTimedOut;
@@ -1807,10 +1810,16 @@ namespace StopwatchOverlay
 
         private void OnCommandModeActionTriggered(ShortcutAction action)
         {
-            CloseCommandHintWindow();
-            if (IsVisible && WindowState != WindowState.Minimized)
+            // For actions that open interactive text-input dialogs or separate dashboard window,
+            // exit command mode immediately so normal typing is not intercepted.
+            if (action is ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.OpenDashboard)
             {
-                UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
+                _commandMode?.Exit();
+                CloseCommandHintWindow();
+                if (IsVisible && WindowState != WindowState.Minimized)
+                {
+                    UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
+                }
             }
             ExecuteShortcutAction(action);
         }
@@ -1820,7 +1829,10 @@ namespace StopwatchOverlay
             CloseCommandHintWindow();
             if (IsVisible && WindowState != WindowState.Minimized)
             {
-                UpdateStatus("Timer command cancelled", Brushes.SlateGray);
+                bool hasExecuted = _commandMode != null && _commandMode.ActionCount > 0;
+                UpdateStatus(
+                    hasExecuted ? "Ready" : "Timer command cancelled",
+                    hasExecuted ? (Brush)FindResource("SecondaryTextBrush") : Brushes.SlateGray);
             }
         }
 
@@ -1829,7 +1841,10 @@ namespace StopwatchOverlay
             CloseCommandHintWindow();
             if (IsVisible && WindowState != WindowState.Minimized)
             {
-                UpdateStatus("Timer command timed out", Brushes.SlateGray);
+                bool hasExecuted = _commandMode != null && _commandMode.ActionCount > 0;
+                UpdateStatus(
+                    hasExecuted ? "Ready" : "Timer command timed out",
+                    hasExecuted ? (Brush)FindResource("SecondaryTextBrush") : Brushes.SlateGray);
             }
         }
 
@@ -1838,7 +1853,10 @@ namespace StopwatchOverlay
             CloseCommandHintWindow();
             if (IsVisible && WindowState != WindowState.Minimized)
             {
-                UpdateStatus("Unknown timer command", Brushes.OrangeRed);
+                bool hasExecuted = _commandMode != null && _commandMode.ActionCount > 0;
+                UpdateStatus(
+                    hasExecuted ? "Ready" : "Unknown timer command",
+                    hasExecuted ? (Brush)FindResource("SecondaryTextBrush") : Brushes.OrangeRed);
             }
         }
 
@@ -4314,9 +4332,13 @@ namespace StopwatchOverlay
         // Opens the modal shortcut editor; commits the result if the user saves.
         private void OpenShortcuts_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new ShortcutsWindow(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut) { Owner = this };
+            var dlg = new ShortcutsWindow(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut, _settings.CommandChainingTimeoutSeconds) { Owner = this };
             if (dlg.ShowDialog() == true)
+            {
+                _settings.CommandChainingTimeoutSeconds = dlg.ResultChainingTimeoutSeconds;
+                _commandMode?.SetContinuationTimeout(TimeSpan.FromSeconds(dlg.ResultChainingTimeoutSeconds));
                 CommitPendingShortcuts(dlg.ResultLeader, dlg.ResultShowActiveOverlay, dlg.ResultOpenController);
+            }
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
@@ -4410,6 +4432,7 @@ namespace StopwatchOverlay
                     AutoStartCheckBox.IsChecked = _settings.AutoStart;
                     ShowRecIndicatorCheckBox.IsChecked = _settings.ShowRecIndicator;
                     BlinkColonCheckBox.IsChecked = _settings.BlinkColon;
+                    _commandMode?.SetContinuationTimeout(TimeSpan.FromSeconds(_settings.CommandChainingTimeoutSeconds));
                 }
 
                 if ((change & SettingsChangeKind.Startup) != 0)

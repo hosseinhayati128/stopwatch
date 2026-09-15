@@ -106,6 +106,7 @@ public partial class SettingsWindow : Window
             RecCheck.IsChecked = _settings.ShowRecIndicator;
             BlinkCheck.IsChecked = _settings.BlinkColon;
             SmartInputCheck.IsChecked = _settings.UseSmartCountdownInput;
+            CommandChainingTimeoutSlider.Value = _settings.CommandChainingTimeoutSeconds;
             StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
@@ -142,6 +143,7 @@ public partial class SettingsWindow : Window
         WireSlider(BackgroundStrengthSlider, SettingsChangeKind.BackgroundStrength);
         WireSlider(LightRingBrightnessSlider, SettingsChangeKind.LightRingAppearance);
         WireSlider(LightRingWidthSlider, SettingsChangeKind.LightRingAppearance);
+        WireSlider(CommandChainingTimeoutSlider, SettingsChangeKind.Behavior);
 
         WireCheckBox(ClickThroughCheck, SettingsChangeKind.OverlayInteraction);
         WireCheckBox(HideOverlayCaptureCheck, SettingsChangeKind.OverlayInteraction);
@@ -266,6 +268,7 @@ public partial class SettingsWindow : Window
                 _settings.ShowRecIndicator = RecCheck.IsChecked == true;
                 _settings.BlinkColon = BlinkCheck.IsChecked == true;
                 _settings.UseSmartCountdownInput = SmartInputCheck.IsChecked == true;
+                _settings.CommandChainingTimeoutSeconds = Math.Round(CommandChainingTimeoutSlider.Value, 1);
             }
 
             if ((change & SettingsChangeKind.Startup) != 0)
@@ -300,6 +303,7 @@ public partial class SettingsWindow : Window
         BackgroundStrengthValueText.Text = $"{Math.Round(BackgroundStrengthSlider.Value):0}%";
         LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
         LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";
+        CommandChainingTimeoutValueText.Text = $"{CommandChainingTimeoutSlider.Value:0.0} s";
     }
 
     private void UpdateDependentControlStates()

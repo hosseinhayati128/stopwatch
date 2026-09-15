@@ -90,6 +90,10 @@ namespace StopwatchOverlay
             [VK_KEY_W] = ShortcutAction.OpenController,
         };
 
+        public static readonly TimeSpan InitialTimeout = TimeSpan.FromSeconds(2);
+        public static readonly TimeSpan DefaultContinuationTimeout = TimeSpan.FromMilliseconds(500);
+        public TimeSpan ContinuationTimeout { get; set; } = DefaultContinuationTimeout;
+
         private readonly Dispatcher _dispatcher;
         private readonly LowLevelKeyboardProc _hookProc; // Strongly referenced delegate
         private IntPtr _hookId = IntPtr.Zero;
@@ -97,7 +101,7 @@ namespace StopwatchOverlay
         private readonly DispatcherTimer _cleanupSafetyTimer;
 
         private bool _isActive;
-        private bool _actionExecuted;
+        private int _actionCount;
         private uint _suppressedKeyUpVk;
         private uint _leaderVk;
         private bool _disposed;
@@ -109,16 +113,22 @@ namespace StopwatchOverlay
         public event Action? ModeStarted;
 
         public bool IsActive => _isActive;
+        public int ActionCount => _actionCount;
+        public TimeSpan CurrentTimeoutInterval => _timeoutTimer.Interval;
 
-        public ShortcutCommandMode(Dispatcher dispatcher, uint leaderVk = 0x71u /* VK_F2 */)
+        public ShortcutCommandMode(Dispatcher dispatcher, uint leaderVk = 0x71u /* VK_F2 */, TimeSpan? continuationTimeout = null)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _leaderVk = leaderVk;
             _hookProc = HookCallback;
+            if (continuationTimeout.HasValue)
+            {
+                ContinuationTimeout = continuationTimeout.Value;
+            }
 
             _timeoutTimer = new DispatcherTimer(DispatcherPriority.Normal, _dispatcher)
             {
-                Interval = TimeSpan.FromSeconds(2)
+                Interval = InitialTimeout
             };
             _timeoutTimer.Tick += OnTimeoutTick;
 
@@ -127,6 +137,15 @@ namespace StopwatchOverlay
                 Interval = TimeSpan.FromMilliseconds(800)
             };
             _cleanupSafetyTimer.Tick += OnCleanupSafetyTick;
+        }
+
+        public void SetContinuationTimeout(TimeSpan timeout)
+        {
+            ContinuationTimeout = timeout;
+            if (_isActive && _actionCount > 0)
+            {
+                _timeoutTimer.Interval = timeout;
+            }
         }
 
         public void SetLeaderVirtualKey(uint leaderVk)
@@ -187,11 +206,12 @@ namespace StopwatchOverlay
             }
 
             _isActive = true;
-            _actionExecuted = false;
+            _actionCount = 0;
             _suppressedKeyUpVk = 0;
 
             InstallHook();
             _timeoutTimer.Stop();
+            _timeoutTimer.Interval = InitialTimeout;
             _timeoutTimer.Start();
 
             ModeStarted?.Invoke();
@@ -205,8 +225,22 @@ namespace StopwatchOverlay
             if (!_isActive || _disposed) return;
 
             _timeoutTimer.Stop();
+            _timeoutTimer.Interval = InitialTimeout;
             _timeoutTimer.Start();
             ModeStarted?.Invoke();
+        }
+
+        /// <summary>
+        /// Exits command mode cleanly without firing Cancelled event (used when an action opens a dialog).
+        /// </summary>
+        public void Exit()
+        {
+            if (!_isActive && _hookId == IntPtr.Zero) return;
+
+            _isActive = false;
+            _timeoutTimer.Stop();
+            _cleanupSafetyTimer.Stop();
+            UninstallHook();
         }
 
         /// <summary>
@@ -238,7 +272,10 @@ namespace StopwatchOverlay
         {
             _cleanupSafetyTimer.Stop();
             _suppressedKeyUpVk = 0;
-            UninstallHook();
+            if (!_isActive)
+            {
+                UninstallHook();
+            }
         }
 
         private void InstallHook()
@@ -294,16 +331,30 @@ namespace StopwatchOverlay
                 return CallNextHookEx(_hookId, nCode, wParam, lParam);
             }
 
-            uint vk = kbd.vkCode;
+            return ProcessKeyEvent(msg, kbd.vkCode, isDirectHook: true, nCode: nCode, wParam: wParam, lParam: lParam);
+        }
 
-            // Check if this is the matching key-up for an already consumed command key
+        internal IntPtr ProcessKeyEvent(int msg, uint vk, bool isDirectHook = false, int nCode = 0, IntPtr wParam = default, IntPtr lParam = default)
+        {
+            bool isKeyDown = msg is WM_KEYDOWN or WM_SYSKEYDOWN;
+            bool isKeyUp = msg is WM_KEYUP or WM_SYSKEYUP;
+
+            if (!isKeyDown && !isKeyUp)
+            {
+                return isDirectHook ? CallNextHookEx(_hookId, nCode, wParam, lParam) : IntPtr.Zero;
+            }
+
+            // Check if this is the matching key-up or repeated key-down for an already consumed command key
             if (_suppressedKeyUpVk != 0 && vk == _suppressedKeyUpVk)
             {
                 if (isKeyUp)
                 {
                     _suppressedKeyUpVk = 0;
                     _cleanupSafetyTimer.Stop();
-                    UninstallHook();
+                    if (!_isActive)
+                    {
+                        UninstallHook();
+                    }
                 }
                 return (IntPtr)1; // Suppress matching key up and repeated key downs
             }
@@ -311,13 +362,13 @@ namespace StopwatchOverlay
             // Outside active command mode, do not process
             if (!_isActive)
             {
-                return CallNextHookEx(_hookId, nCode, wParam, lParam);
+                return isDirectHook ? CallNextHookEx(_hookId, nCode, wParam, lParam) : IntPtr.Zero;
             }
 
             // Modifier-only key presses must not select a command and pass through cleanly
             if (IsModifierKey(vk))
             {
-                return CallNextHookEx(_hookId, nCode, wParam, lParam);
+                return isDirectHook ? CallNextHookEx(_hookId, nCode, wParam, lParam) : IntPtr.Zero;
             }
 
             // If leader key (e.g. F2) is pressed again while in command mode, restart the timeout
@@ -334,23 +385,17 @@ namespace StopwatchOverlay
             // Only process actions on KeyDown
             if (!isKeyDown)
             {
-                return CallNextHookEx(_hookId, nCode, wParam, lParam);
-            }
-
-            // Auto-repeat guard: if an action has already fired during this window, suppress and do not re-execute
-            if (_actionExecuted)
-            {
-                return (IntPtr)1;
+                return isDirectHook ? CallNextHookEx(_hookId, nCode, wParam, lParam) : IntPtr.Zero;
             }
 
             // Escape cancels command mode without action
             if (IsEscape(vk))
             {
                 _isActive = false;
-                _actionExecuted = true;
                 _timeoutTimer.Stop();
                 _suppressedKeyUpVk = vk;
                 _cleanupSafetyTimer.Start();
+                UninstallHook();
 
                 _dispatcher.BeginInvoke(new Action(() => Cancelled?.Invoke()));
                 return (IntPtr)1; // Suppress Escape key down
@@ -359,11 +404,15 @@ namespace StopwatchOverlay
             // Check if key maps to a recognized action
             if (TryGetAction(vk, out ShortcutAction action))
             {
-                _isActive = false;
-                _actionExecuted = true;
-                _timeoutTimer.Stop();
+                _actionCount++;
                 _suppressedKeyUpVk = vk;
+                _cleanupSafetyTimer.Stop();
                 _cleanupSafetyTimer.Start();
+
+                // Reset timeout timer to ContinuationTimeout (0.5s) to allow command chaining
+                _timeoutTimer.Stop();
+                _timeoutTimer.Interval = ContinuationTimeout;
+                _timeoutTimer.Start();
 
                 _dispatcher.BeginInvoke(new Action(() => ActionTriggered?.Invoke(action)));
                 return (IntPtr)1; // Suppress command key down
@@ -375,7 +424,7 @@ namespace StopwatchOverlay
             UninstallHook();
 
             _dispatcher.BeginInvoke(new Action(() => UnknownCommand?.Invoke()));
-            return CallNextHookEx(_hookId, nCode, wParam, lParam);
+            return isDirectHook ? CallNextHookEx(_hookId, nCode, wParam, lParam) : IntPtr.Zero;
         }
 
         public void Dispose()

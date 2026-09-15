@@ -12,10 +12,12 @@ namespace StopwatchOverlay
         private Shortcut _pendingLeader;
         private Shortcut _pendingShowActiveOverlay;
         private Shortcut _pendingOpenController;
+        private double _pendingChainingTimeoutSeconds;
 
         public Shortcut ResultLeader => _pendingLeader;
         public Shortcut ResultShowActiveOverlay => _pendingShowActiveOverlay;
         public Shortcut ResultOpenController => _pendingOpenController;
+        public double ResultChainingTimeoutSeconds => _pendingChainingTimeoutSeconds;
 
         // Retained for backward-compatibility with callers expecting a Dictionary.
         public Dictionary<ShortcutAction, Shortcut> Result => new()
@@ -25,17 +27,27 @@ namespace StopwatchOverlay
             [ShortcutAction.OpenController] = _pendingOpenController
         };
 
-        public ShortcutsWindow(Shortcut currentLeader, Shortcut? currentShowActiveOverlay = null, Shortcut? currentOpenController = null)
+        public ShortcutsWindow(
+            Shortcut currentLeader,
+            Shortcut? currentShowActiveOverlay = null,
+            Shortcut? currentOpenController = null,
+            double currentChainingTimeout = AppSettings.DefaultCommandChainingTimeoutSeconds)
         {
             InitializeComponent();
             _pendingLeader = currentLeader ?? AppSettings.DefaultLeaderShortcut();
             _pendingShowActiveOverlay = currentShowActiveOverlay ?? AppSettings.DefaultShowActiveOverlayShortcut();
             _pendingOpenController = currentOpenController ?? AppSettings.DefaultOpenControllerShortcut();
+            _pendingChainingTimeoutSeconds = Math.Clamp(
+                currentChainingTimeout,
+                AppSettings.MinimumCommandChainingTimeoutSeconds,
+                AppSettings.MaximumCommandChainingTimeoutSeconds);
+            ChainingTimeoutSlider.Value = _pendingChainingTimeoutSeconds;
+            UpdateChainingTimeoutLabel();
             RenderAllBoxes();
         }
 
-        public ShortcutsWindow(Dictionary<ShortcutAction, Shortcut> current)
-            : this(ExtractLeader(current), ExtractShowActiveOverlay(current), ExtractOpenController(current))
+        public ShortcutsWindow(Dictionary<ShortcutAction, Shortcut> current, double currentChainingTimeout = AppSettings.DefaultCommandChainingTimeoutSeconds)
+            : this(ExtractLeader(current), ExtractShowActiveOverlay(current), ExtractOpenController(current), currentChainingTimeout)
         {
         }
 
@@ -179,11 +191,26 @@ namespace StopwatchOverlay
             }
         }
 
+        private void ChainingTimeoutSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _pendingChainingTimeoutSeconds = Math.Round(ChainingTimeoutSlider.Value, 1);
+            UpdateChainingTimeoutLabel();
+        }
+
+        private void UpdateChainingTimeoutLabel()
+        {
+            if (ChainingTimeoutText != null)
+                ChainingTimeoutText.Text = $"{_pendingChainingTimeoutSeconds:0.0} s";
+        }
+
         private void ResetDefaults_Click(object sender, RoutedEventArgs e)
         {
             _pendingLeader = AppSettings.DefaultLeaderShortcut();
             _pendingShowActiveOverlay = AppSettings.DefaultShowActiveOverlayShortcut();
             _pendingOpenController = AppSettings.DefaultOpenControllerShortcut();
+            _pendingChainingTimeoutSeconds = AppSettings.DefaultCommandChainingTimeoutSeconds;
+            ChainingTimeoutSlider.Value = _pendingChainingTimeoutSeconds;
+            UpdateChainingTimeoutLabel();
             RenderAllBoxes();
         }
 

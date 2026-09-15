@@ -176,5 +176,211 @@ namespace StopwatchOverlay.Tests
             commandMode.Dispose();
             Assert.False(commandMode.IsActive);
         }
+
+        private const int WM_KEYDOWN = 0x0100;
+        private const int WM_KEYUP = 0x0101;
+
+        [Fact]
+        public void CommandMode_ContinuesWithHalfSecondTimeout_AfterActionTriggered()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            ShortcutAction? triggeredAction = null;
+            commandMode.ActionTriggered += a => triggeredAction = a;
+
+            commandMode.Enter();
+            Assert.True(commandMode.IsActive);
+            Assert.Equal(0, commandMode.ActionCount);
+            Assert.Equal(TimeSpan.FromSeconds(2), commandMode.CurrentTimeoutInterval);
+
+            // Press 'R'
+            var resultDown = commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            Assert.Equal((IntPtr)1, resultDown); // Suppressed
+            Assert.True(commandMode.IsActive); // Remains active!
+            Assert.Equal(1, commandMode.ActionCount);
+            Assert.Equal(TimeSpan.FromMilliseconds(500), commandMode.CurrentTimeoutInterval);
+
+            // Release 'R'
+            var resultUp = commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+            Assert.Equal((IntPtr)1, resultUp); // Suppressed
+            Assert.True(commandMode.IsActive); // Still active for chaining
+        }
+
+        [Fact]
+        public void CommandMode_ChainsMultipleActions_Sequentially()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            var actions = new System.Collections.Generic.List<ShortcutAction>();
+            commandMode.ActionTriggered += a => actions.Add(a);
+
+            commandMode.Enter();
+
+            // Press 'R' -> 'T' -> Space
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_T);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_T);
+
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_SPACE);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_SPACE);
+
+            Assert.Equal(3, commandMode.ActionCount);
+            Assert.True(commandMode.IsActive);
+            Assert.Equal(TimeSpan.FromMilliseconds(500), commandMode.CurrentTimeoutInterval);
+        }
+
+        [Fact]
+        public void CommandMode_EscapeDuringContinuation_CancelsImmediately()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            bool cancelled = false;
+            commandMode.Cancelled += () => cancelled = true;
+
+            commandMode.Enter();
+
+            // First command: 'R'
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+            Assert.True(commandMode.IsActive);
+
+            // Now press Escape
+            var resultEsc = commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_ESCAPE);
+            Assert.Equal((IntPtr)1, resultEsc); // Suppressed
+            Assert.False(commandMode.IsActive); // Cancelled immediately
+            dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.True(cancelled);
+        }
+
+        [Fact]
+        public void CommandMode_UnsupportedKeyDuringContinuation_ExitsAndPassesThrough()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            bool unknown = false;
+            commandMode.UnknownCommand += () => unknown = true;
+
+            commandMode.Enter();
+
+            // First command: 'R'
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+            Assert.True(commandMode.IsActive);
+
+            // Press unsupported key 'A' (0x41)
+            var resultA = commandMode.ProcessKeyEvent(WM_KEYDOWN, 0x41u);
+            Assert.Equal(IntPtr.Zero, resultA); // Passes through to OS!
+            Assert.False(commandMode.IsActive); // Exited command mode
+            dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.True(unknown);
+        }
+
+        [Fact]
+        public void CommandMode_HoldingKey_SuppressesAutoRepeat()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            commandMode.Enter();
+
+            // Initial key down
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            Assert.Equal(1, commandMode.ActionCount);
+
+            // Repeated key down without key up (auto-repeat)
+            var resultRepeat = commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            Assert.Equal((IntPtr)1, resultRepeat);
+            Assert.Equal(1, commandMode.ActionCount); // Not re-triggered!
+
+            // Key up
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+
+            // Subsequent key down after key up is allowed
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            Assert.Equal(2, commandMode.ActionCount);
+        }
+
+        [Fact]
+        public void CommandMode_ModifierKeys_PassThroughWithoutChangingState()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            commandMode.Enter();
+
+            var resultShift = commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_SHIFT);
+            Assert.Equal(IntPtr.Zero, resultShift); // Passes through
+            Assert.True(commandMode.IsActive);
+            Assert.Equal(0, commandMode.ActionCount);
+            Assert.Equal(TimeSpan.FromSeconds(2), commandMode.CurrentTimeoutInterval);
+        }
+
+        [Fact]
+        public void CommandMode_Exit_ExitsCleanlyWithoutFiringCancelled()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            bool cancelled = false;
+            commandMode.Cancelled += () => cancelled = true;
+
+            commandMode.Enter();
+            Assert.True(commandMode.IsActive);
+
+            commandMode.Exit();
+            Assert.False(commandMode.IsActive);
+            Assert.False(cancelled);
+        }
+
+        [Fact]
+        public void CommandMode_CustomContinuationTimeoutInConstructor_AppliesAfterAction()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            var customTimeout = TimeSpan.FromSeconds(1.2);
+            using var commandMode = new ShortcutCommandMode(dispatcher, continuationTimeout: customTimeout);
+
+            Assert.Equal(customTimeout, commandMode.ContinuationTimeout);
+
+            commandMode.Enter();
+            Assert.Equal(TimeSpan.FromSeconds(2), commandMode.CurrentTimeoutInterval);
+
+            // Trigger action 'R'
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+
+            Assert.True(commandMode.IsActive);
+            Assert.Equal(1, commandMode.ActionCount);
+            Assert.Equal(customTimeout, commandMode.CurrentTimeoutInterval);
+        }
+
+        [Fact]
+        public void CommandMode_SetContinuationTimeout_UpdatesTimeoutIntervalDynamically()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            // Default continuation timeout is 0.5s
+            Assert.Equal(TimeSpan.FromMilliseconds(500), commandMode.ContinuationTimeout);
+
+            // Update to 0.8s
+            commandMode.SetContinuationTimeout(TimeSpan.FromSeconds(0.8));
+            Assert.Equal(TimeSpan.FromSeconds(0.8), commandMode.ContinuationTimeout);
+
+            commandMode.Enter();
+            commandMode.ProcessKeyEvent(WM_KEYDOWN, ShortcutCommandMode.VK_KEY_R);
+            commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
+
+            Assert.Equal(TimeSpan.FromSeconds(0.8), commandMode.CurrentTimeoutInterval);
+
+            // Dynamic change while actively chaining
+            commandMode.SetContinuationTimeout(TimeSpan.FromSeconds(1.5));
+            Assert.Equal(TimeSpan.FromSeconds(1.5), commandMode.CurrentTimeoutInterval);
+        }
     }
 }

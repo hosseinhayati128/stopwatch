@@ -288,7 +288,19 @@
                             <CheckBox x:Name="AutoStartCheck" Content="Auto-start when the overlay is shown" Margin="0,0,0,14" Style="{StaticResource AcanthusSettingsSwitch}"/>
                             <CheckBox x:Name="RecCheck" Content="Show REC indicator" Margin="0,0,0,14" Style="{StaticResource AcanthusSettingsSwitch}"/>
                             <CheckBox x:Name="BlinkCheck" Content="Blink timer colon" Margin="0,0,0,14" Style="{StaticResource AcanthusSettingsSwitch}"/>
-                            <CheckBox x:Name="SmartInputCheck" Content="Use smart countdown input" Style="{StaticResource AcanthusSettingsSwitch}"/>
+                            <CheckBox x:Name="SmartInputCheck" Content="Use smart countdown input" Margin="0,0,0,16" Style="{StaticResource AcanthusSettingsSwitch}"/>
+                            <Grid Margin="0,6,0,0">
+                                <TextBlock Text="Command chaining timeout" Style="{StaticResource SectionHeaderText}"/>
+                                <TextBlock x:Name="CommandChainingTimeoutValueText" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </Grid>
+                            <Slider x:Name="CommandChainingTimeoutSlider" Minimum="0.2" Maximum="2.0"
+                                    ac:AcanthusVisual.OverrideStyle="{StaticResource AcanthusSettingsSlider}"
+                                    SmallChange="0.1" LargeChange="0.5" TickFrequency="0.1"
+                                    IsSnapToTickEnabled="True" Margin="0,6,0,4"
+                                    AutomationProperties.Name="Command chaining timeout"/>
+                            <TextBlock Text="Continuation window (seconds) to press subsequent commands after a command executes."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
                         </StackPanel></Border>
                     </StackPanel>
 

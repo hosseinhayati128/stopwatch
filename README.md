@@ -158,7 +158,7 @@ Press **Win+F2 → P** to assign the active timer to an existing project or add 
 
 ### Keyboard Shortcuts
 
-Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Press **Win+F2**, then within 2 seconds press one of the following command keys:
+Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Press **Win+F2**, then within 2 seconds press one of the following command keys. Executing a command keeps command mode open and gives you a configurable continuation window (default: 0.5 seconds, adjustable from 0.2 to 2.0 seconds in **Settings → Behavior** or in the **Keyboard Shortcuts** dialog) to press another command (e.g. **Win+F2** → **R** → **T** → **Space**). When you stop commanding or press **Escape**, command mode exits and the helper disappears:
 
 | Key Sequence | Action |
 |---|---|

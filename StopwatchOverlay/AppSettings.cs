@@ -62,9 +62,14 @@ namespace StopwatchOverlay
         private const uint VK_F11 = 0x7A;
         private const uint VK_F12 = 0x7B;
 
+        public const double DefaultCommandChainingTimeoutSeconds = 0.5;
+        public const double MinimumCommandChainingTimeoutSeconds = 0.2;
+        public const double MaximumCommandChainingTimeoutSeconds = 2.0;
+
         public int ShortcutSchemaVersion { get; set; } = 2;
         public Shortcut LeaderShortcut { get; set; } = DefaultLeaderShortcut();
         public Dictionary<ShortcutAction, Shortcut> Shortcuts { get; set; } = new();
+        public double CommandChainingTimeoutSeconds { get; set; } = DefaultCommandChainingTimeoutSeconds;
 
         // Application chrome theme. Stable display names are kept in JSON for
         // backwards compatibility with the legacy "Dark" setting.
@@ -235,6 +240,11 @@ namespace StopwatchOverlay
                 CustomTop = 0;
             }
             Mode = Math.Clamp(Mode, 0, 3);
+            CommandChainingTimeoutSeconds = NormalizeRange(
+                CommandChainingTimeoutSeconds,
+                MinimumCommandChainingTimeoutSeconds,
+                MaximumCommandChainingTimeoutSeconds,
+                DefaultCommandChainingTimeoutSeconds);
         }
 
         private static string NormalizeChoice(

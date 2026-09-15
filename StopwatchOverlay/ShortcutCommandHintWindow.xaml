@@ -22,7 +22,7 @@
             <DropShadowEffect BlurRadius="12" Direction="270" ShadowDepth="3" Opacity="0.6"/>
         </Border.Effect>
         <StackPanel HorizontalAlignment="Center">
-            <TextBlock Text="Timer command: Space Start/Stop · R Reset · O Overlay · L Lap"
+            <TextBlock Text="Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller"
                        Foreground="#FFFFFF"
                        FontSize="12"
                        FontFamily="Segoe UI, Consolas"

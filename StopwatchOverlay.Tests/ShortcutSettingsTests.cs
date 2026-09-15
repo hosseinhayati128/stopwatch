@@ -271,5 +271,65 @@ namespace StopwatchOverlay.Tests
             Assert.True(restored.Shortcuts.ContainsKey(ShortcutAction.OpenController));
             Assert.Equal(0u, restored.Shortcuts[ShortcutAction.OpenController].VirtualKey);
         }
+
+        [Fact]
+        public void DefaultCommandChainingTimeoutSeconds_IsHalfSecond()
+        {
+            Assert.Equal(0.5, AppSettings.DefaultCommandChainingTimeoutSeconds);
+            var settings = new AppSettings();
+            Assert.Equal(0.5, settings.CommandChainingTimeoutSeconds);
+        }
+
+        [Theory]
+        [InlineData(0.0, 0.2)]
+        [InlineData(0.1, 0.2)]
+        [InlineData(0.2, 0.2)]
+        [InlineData(0.5, 0.5)]
+        [InlineData(1.5, 1.5)]
+        [InlineData(2.0, 2.0)]
+        [InlineData(5.0, 2.0)]
+        [InlineData(double.NaN, 0.5)]
+        [InlineData(double.PositiveInfinity, 0.5)]
+        public void NormalizeForRuntime_ClampsCommandChainingTimeoutSeconds(double input, double expected)
+        {
+            var settings = new AppSettings
+            {
+                CommandChainingTimeoutSeconds = input
+            };
+            settings.NormalizeForRuntime();
+            Assert.Equal(expected, settings.CommandChainingTimeoutSeconds);
+        }
+
+        [Fact]
+        public void CommandChainingTimeoutSeconds_RoundtripsSerialization()
+        {
+            var settings = new AppSettings
+            {
+                CommandChainingTimeoutSeconds = 1.4
+            };
+
+            string json = JsonSerializer.Serialize(settings);
+            var restored = JsonSerializer.Deserialize<AppSettings>(json);
+            Assert.NotNull(restored);
+            restored.NormalizeForRuntime();
+
+            Assert.Equal(1.4, restored.CommandChainingTimeoutSeconds);
+        }
+
+        [Fact]
+        public void LegacySettingsJson_WithoutCommandChainingTimeout_LoadsDefaultValue()
+        {
+            string json = """
+            {
+              "ThemeMode": "Acanthus",
+              "OverlayTheme": "Acanthus Dark Elegant Olive"
+            }
+            """;
+            var restored = JsonSerializer.Deserialize<AppSettings>(json);
+            Assert.NotNull(restored);
+            restored.NormalizeForRuntime();
+
+            Assert.Equal(0.5, restored.CommandChainingTimeoutSeconds);
+        }
     }
 }
