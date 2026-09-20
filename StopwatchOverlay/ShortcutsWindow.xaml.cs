@@ -10,11 +10,13 @@ namespace StopwatchOverlay
     public partial class ShortcutsWindow : Window
     {
         private Shortcut _pendingLeader;
+        private Shortcut _pendingNoteLeader;
         private Shortcut _pendingShowActiveOverlay;
         private Shortcut _pendingOpenController;
         private double _pendingChainingTimeoutSeconds;
 
         public Shortcut ResultLeader => _pendingLeader;
+        public Shortcut ResultNoteLeader => _pendingNoteLeader;
         public Shortcut ResultShowActiveOverlay => _pendingShowActiveOverlay;
         public Shortcut ResultOpenController => _pendingOpenController;
         public double ResultChainingTimeoutSeconds => _pendingChainingTimeoutSeconds;
@@ -23,18 +25,21 @@ namespace StopwatchOverlay
         public Dictionary<ShortcutAction, Shortcut> Result => new()
         {
             [ShortcutAction.CommandLeader] = _pendingLeader,
+            [ShortcutAction.NoteCommandLeader] = _pendingNoteLeader,
             [ShortcutAction.ShowActiveOverlay] = _pendingShowActiveOverlay,
             [ShortcutAction.OpenController] = _pendingOpenController
         };
 
         public ShortcutsWindow(
             Shortcut currentLeader,
+            Shortcut? currentNoteLeader = null,
             Shortcut? currentShowActiveOverlay = null,
             Shortcut? currentOpenController = null,
             double currentChainingTimeout = AppSettings.DefaultCommandChainingTimeoutSeconds)
         {
             InitializeComponent();
             _pendingLeader = currentLeader ?? AppSettings.DefaultLeaderShortcut();
+            _pendingNoteLeader = currentNoteLeader ?? AppSettings.DefaultNoteLeaderShortcut();
             _pendingShowActiveOverlay = currentShowActiveOverlay ?? AppSettings.DefaultShowActiveOverlayShortcut();
             _pendingOpenController = currentOpenController ?? AppSettings.DefaultOpenControllerShortcut();
             _pendingChainingTimeoutSeconds = Math.Clamp(
@@ -47,7 +52,7 @@ namespace StopwatchOverlay
         }
 
         public ShortcutsWindow(Dictionary<ShortcutAction, Shortcut> current, double currentChainingTimeout = AppSettings.DefaultCommandChainingTimeoutSeconds)
-            : this(ExtractLeader(current), ExtractShowActiveOverlay(current), ExtractOpenController(current), currentChainingTimeout)
+            : this(ExtractLeader(current), ExtractNoteLeader(current), ExtractShowActiveOverlay(current), ExtractOpenController(current), currentChainingTimeout)
         {
         }
 
@@ -58,6 +63,15 @@ namespace StopwatchOverlay
                 return leader;
             }
             return AppSettings.DefaultLeaderShortcut();
+        }
+
+        private static Shortcut ExtractNoteLeader(Dictionary<ShortcutAction, Shortcut> shortcuts)
+        {
+            if (shortcuts != null && shortcuts.TryGetValue(ShortcutAction.NoteCommandLeader, out var leader))
+            {
+                return leader;
+            }
+            return AppSettings.DefaultNoteLeaderShortcut();
         }
 
         private static Shortcut ExtractShowActiveOverlay(Dictionary<ShortcutAction, Shortcut> shortcuts)
@@ -81,6 +95,7 @@ namespace StopwatchOverlay
         private void RenderAllBoxes()
         {
             RenderLeaderBox();
+            RenderNoteLeaderBox();
             RenderShowActiveOverlayBox();
             RenderOpenControllerBox();
         }
@@ -90,6 +105,13 @@ namespace StopwatchOverlay
             if (LeaderShortcutBox == null) return;
             var combo = _pendingLeader != null ? _pendingLeader.Format() : "";
             LeaderShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
+        }
+
+        private void RenderNoteLeaderBox()
+        {
+            if (NoteLeaderShortcutBox == null) return;
+            var combo = _pendingNoteLeader != null ? _pendingNoteLeader.Format() : "";
+            NoteLeaderShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
         }
 
         private void RenderShowActiveOverlayBox()
@@ -120,6 +142,8 @@ namespace StopwatchOverlay
                     RenderShowActiveOverlayBox();
                 else if (box.Tag as string == "OpenController")
                     RenderOpenControllerBox();
+                else if (box.Tag as string == "NoteLeader")
+                    RenderNoteLeaderBox();
                 else
                     RenderLeaderBox();
             }
@@ -160,6 +184,11 @@ namespace StopwatchOverlay
                 _pendingOpenController = shortcut;
                 box.Text = _pendingOpenController.Format();
             }
+            else if (box.Tag as string == "NoteLeader")
+            {
+                _pendingNoteLeader = shortcut;
+                box.Text = _pendingNoteLeader.Format();
+            }
             else
             {
                 _pendingLeader = shortcut;
@@ -182,6 +211,11 @@ namespace StopwatchOverlay
                 {
                     _pendingOpenController = new Shortcut(0, 0); // unbound
                     RenderOpenControllerBox();
+                }
+                else if (fe.Tag as string == "NoteLeader")
+                {
+                    _pendingNoteLeader = new Shortcut(0, 0); // unbound
+                    RenderNoteLeaderBox();
                 }
                 else
                 {
@@ -206,6 +240,7 @@ namespace StopwatchOverlay
         private void ResetDefaults_Click(object sender, RoutedEventArgs e)
         {
             _pendingLeader = AppSettings.DefaultLeaderShortcut();
+            _pendingNoteLeader = AppSettings.DefaultNoteLeaderShortcut();
             _pendingShowActiveOverlay = AppSettings.DefaultShowActiveOverlayShortcut();
             _pendingOpenController = AppSettings.DefaultOpenControllerShortcut();
             _pendingChainingTimeoutSeconds = AppSettings.DefaultCommandChainingTimeoutSeconds;

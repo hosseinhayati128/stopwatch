@@ -1,0 +1,159 @@
+<Window x:Class="StopwatchOverlay.NoteEntryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ac="clr-namespace:StopwatchOverlay.Themes"
+        Title="Note Entry"
+        ac:AcanthusVisual.Scope="{DynamicResource OrnamentVisibility}"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Width="520"
+        Height="250"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Overlay/OverlayStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="NoteTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}"/>
+                <Setter Property="BorderThickness" Value="{DynamicResource ThemeControlBorderThickness}"/>
+                <Setter Property="Padding" Value="10,8"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{DynamicResource ThemeControlCornerRadius}">
+                                <Grid>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                                  HorizontalScrollBarVisibility="Hidden"
+                                                  VerticalScrollBarVisibility="Auto"/>
+                                    <TextBlock x:Name="PlaceholderText"
+                                               Text="Type your text here..."
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Opacity="0.7"
+                                               FontSize="{TemplateBinding FontSize}"
+                                               FontFamily="{TemplateBinding FontFamily}"
+                                               Padding="{TemplateBinding Padding}"
+                                               IsHitTestVisible="False"
+                                               Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                                    <Setter TargetName="PlaceholderText" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource DialogSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Margin="8"
+            MouseLeftButtonDown="Header_MouseLeftButtonDown">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" Direction="270" ShadowDepth="4" Opacity="0.55"/>
+        </Border.Effect>
+
+        <Grid Margin="18,14,18,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                <Path Width="22" Height="22" HorizontalAlignment="Center" Margin="0,0,0,6"
+                      Data="{StaticResource AcanthusCrestGeometry}"
+                      Fill="{DynamicResource OrnamentAccentBrush}"
+                      Stretch="Uniform" Visibility="{DynamicResource OrnamentVisibility}"/>
+
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="BadgeIcon" Text="✦" Foreground="{DynamicResource AccentBrush}" FontSize="15" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="HeadingText" Text="Add Note" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="14" FontWeight="SemiBold"
+                                   FontFamily="{DynamicResource DisplayHeadingFontFamily}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <Button x:Name="CloseButton"
+                            HorizontalAlignment="Right"
+                            Style="{StaticResource OverlayCloseButtonStyle}"
+                            Width="22" Height="22"
+                            ToolTip="Close (Esc)"
+                            Click="CloseButton_Click">
+                        <Path Width="9" Height="9"
+                              Data="M 1,1 L 8,8 M 8,1 L 1,8"
+                              Stretch="Fill"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                              StrokeThickness="1.5"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"/>
+                    </Button>
+                </Grid>
+            </StackPanel>
+
+            <!-- Input Box -->
+            <TextBox x:Name="NoteInputBox"
+                     Grid.Row="1"
+                     Style="{StaticResource NoteTextBoxStyle}"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     PreviewKeyDown="NoteInputBox_PreviewKeyDown"/>
+
+            <!-- Footer -->
+            <Grid Grid.Row="2" Margin="0,12,0,0">
+                <TextBlock Text="Ctrl+Enter to Save  •  Esc to Cancel"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           FontFamily="{DynamicResource AppFontFamily}"
+                           VerticalAlignment="Center"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel"
+                            Click="CloseButton_Click"
+                            Style="{StaticResource ModernButton}"
+                            Height="32"
+                            MinWidth="75"
+                            Padding="12,4"
+                            Margin="0,0,8,0"
+                            FontSize="12"/>
+
+                    <Button x:Name="SaveButton"
+                            Content="Save"
+                            Click="SaveButton_Click"
+                            Style="{StaticResource StartButton}"
+                            Height="32"
+                            MinWidth="80"
+                            Padding="14,4"
+                            FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

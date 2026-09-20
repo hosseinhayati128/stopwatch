@@ -1,0 +1,47 @@
+<Window x:Class="StopwatchOverlay.NoteCommandHintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Note Command Mode"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowActivated="False"
+        Focusable="False"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        Loaded="Window_Loaded">
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="16,10"
+            Margin="8">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" Direction="270" ShadowDepth="3" Opacity="0.55"/>
+        </Border.Effect>
+        <StackPanel HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="Bold"/>
+                <TextBlock Text="Note Options:"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="12"
+                           FontFamily="{DynamicResource AppFontFamily}"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Text="1 Todo · 2 Quick Note · 3 Reminder · 4 View Notes"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontSize="12"
+                       FontFamily="{DynamicResource AppFontFamily}"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Press key to select · Esc to cancel"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       FontSize="11"
+                       FontFamily="{DynamicResource AppFontFamily}"
+                       HorizontalAlignment="Center"
+                       Margin="0,3,0,0"/>
+        </StackPanel>
+    </Border>
+</Window>

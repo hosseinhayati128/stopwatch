@@ -22,7 +22,8 @@ namespace StopwatchOverlay
         ToggleCombinedOverlay = 11,
         CommandLeader = 12,
         ShowActiveOverlay = 13,
-        OpenController = 14
+        OpenController = 14,
+        NoteCommandLeader = 15
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -68,6 +69,7 @@ namespace StopwatchOverlay
 
         public int ShortcutSchemaVersion { get; set; } = 2;
         public Shortcut LeaderShortcut { get; set; } = DefaultLeaderShortcut();
+        public Shortcut NoteLeaderShortcut { get; set; } = DefaultNoteLeaderShortcut();
         public Dictionary<ShortcutAction, Shortcut> Shortcuts { get; set; } = new();
         public double CommandChainingTimeoutSeconds { get; set; } = DefaultCommandChainingTimeoutSeconds;
 
@@ -131,17 +133,20 @@ namespace StopwatchOverlay
         public string ObsidianVaultFolder { get; set; } = "";
         public string ObsidianExportFileName { get; set; } = "Stopwatch Log.md";
         public bool ObsidianLogUnnamedTimers { get; set; } = true;
+        public string NotesSubfolder { get; set; } = "Notes";
 
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
 
         public static Shortcut DefaultLeaderShortcut() => new(Shortcut.MOD_WIN, VK_F2);
+        public static Shortcut DefaultNoteLeaderShortcut() => new(Shortcut.MOD_WIN, VK_F3);
         public static Shortcut DefaultShowActiveOverlayShortcut() => new(Shortcut.MOD_WIN | Shortcut.MOD_SHIFT, VK_F7);
         public static Shortcut DefaultOpenControllerShortcut() => new(Shortcut.MOD_WIN | Shortcut.MOD_SHIFT, VK_F2);
 
         public static Dictionary<ShortcutAction, Shortcut> DefaultShortcuts() => new()
         {
             [ShortcutAction.CommandLeader] = DefaultLeaderShortcut(),
+            [ShortcutAction.NoteCommandLeader] = DefaultNoteLeaderShortcut(),
             [ShortcutAction.ShowActiveOverlay] = DefaultShowActiveOverlayShortcut(),
             [ShortcutAction.OpenController] = DefaultOpenControllerShortcut(),
         };
@@ -155,6 +160,12 @@ namespace StopwatchOverlay
                 Shortcuts[ShortcutAction.CommandLeader] = LeaderShortcut ?? DefaultLeaderShortcut();
             }
             LeaderShortcut ??= Shortcuts[ShortcutAction.CommandLeader];
+
+            if (!Shortcuts.ContainsKey(ShortcutAction.NoteCommandLeader))
+            {
+                Shortcuts[ShortcutAction.NoteCommandLeader] = NoteLeaderShortcut ?? DefaultNoteLeaderShortcut();
+            }
+            NoteLeaderShortcut ??= Shortcuts[ShortcutAction.NoteCommandLeader];
 
             if (!Shortcuts.ContainsKey(ShortcutAction.ShowActiveOverlay))
             {
@@ -200,6 +211,9 @@ namespace StopwatchOverlay
             LeaderShortcut ??= Shortcuts.TryGetValue(ShortcutAction.CommandLeader, out var s) ? s : DefaultLeaderShortcut();
             Shortcuts[ShortcutAction.CommandLeader] = LeaderShortcut;
 
+            NoteLeaderShortcut ??= Shortcuts.TryGetValue(ShortcutAction.NoteCommandLeader, out var ns) ? ns : DefaultNoteLeaderShortcut();
+            Shortcuts[ShortcutAction.NoteCommandLeader] = NoteLeaderShortcut;
+
             if (!Shortcuts.ContainsKey(ShortcutAction.ShowActiveOverlay))
             {
                 var def = DefaultShowActiveOverlayShortcut();
@@ -213,6 +227,8 @@ namespace StopwatchOverlay
                 bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
                 Shortcuts[ShortcutAction.OpenController] = collides ? new Shortcut(0, 0) : def;
             }
+
+            NotesSubfolder = string.IsNullOrWhiteSpace(NotesSubfolder) ? "Notes" : NotesSubfolder.Trim();
 
             ThemeMode = AppThemeCatalog.Normalize(ThemeMode);
             OverlayTheme = OverlayThemeCatalog.Normalize(OverlayTheme);

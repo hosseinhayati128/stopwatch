@@ -146,10 +146,13 @@ namespace StopwatchOverlay
         private AppSettings _settings = new();
         private Dictionary<ShortcutAction, Shortcut> _shortcuts = new();
         private Shortcut _leaderShortcut = AppSettings.DefaultLeaderShortcut();
+        private Shortcut _noteLeaderShortcut = AppSettings.DefaultNoteLeaderShortcut();
         private Shortcut _showActiveOverlayShortcut = AppSettings.DefaultShowActiveOverlayShortcut();
         private Shortcut _openControllerShortcut = AppSettings.DefaultOpenControllerShortcut();
         private ShortcutCommandMode? _commandMode;
         private ShortcutCommandHintWindow? _commandHintWindow;
+        private NoteCommandMode? _noteCommandMode;
+        private NoteCommandHintWindow? _noteCommandHintWindow;
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
         private bool _isExiting;
@@ -196,6 +199,7 @@ namespace StopwatchOverlay
 
             _shortcuts = new Dictionary<ShortcutAction, Shortcut>(_settings.Shortcuts);
             _leaderShortcut = _settings.LeaderShortcut ?? AppSettings.DefaultLeaderShortcut();
+            _noteLeaderShortcut = _settings.NoteLeaderShortcut ?? AppSettings.DefaultNoteLeaderShortcut();
             if (_shortcuts.TryGetValue(ShortcutAction.ShowActiveOverlay, out var showOverlay))
                 _showActiveOverlayShortcut = showOverlay;
             else
@@ -205,6 +209,7 @@ namespace StopwatchOverlay
             else
                 _openControllerShortcut = AppSettings.DefaultOpenControllerShortcut();
             InitializeCommandMode();
+            InitializeNoteCommandMode();
 
             DateTime startupUtc = DateTime.UtcNow;
             _workspaceWasRestored = _workspaceStore.TryLoad(
@@ -1875,6 +1880,115 @@ namespace StopwatchOverlay
             }
         }
 
+        private void InitializeNoteCommandMode()
+        {
+            _noteCommandMode = new NoteCommandMode(Dispatcher, _noteLeaderShortcut.VirtualKey);
+            _noteCommandMode.ActionTriggered += OnNoteCommandModeActionTriggered;
+            _noteCommandMode.Cancelled += OnNoteCommandModeCancelled;
+            _noteCommandMode.TimedOut += OnNoteCommandModeTimedOut;
+            _noteCommandMode.UnknownCommand += OnNoteCommandModeUnknownCommand;
+            _noteCommandMode.ModeStarted += OnNoteCommandModeStarted;
+        }
+
+        private void OnNoteCommandModeStarted()
+        {
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus(NoteCommandMode.GuidanceStatusText, (Brush)FindResource("AccentBrush"));
+            }
+            else
+            {
+                CloseNoteCommandHintWindow();
+                _noteCommandHintWindow = new NoteCommandHintWindow();
+                _noteCommandHintWindow.Show();
+            }
+        }
+
+        private void OnNoteCommandModeActionTriggered(NoteCommandAction action)
+        {
+            _noteCommandMode?.Exit();
+            CloseNoteCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
+            }
+
+            switch (action)
+            {
+                case NoteCommandAction.AddTodo:
+                {
+                    var win = new NoteEntryWindow(NoteType.Todo, _settings);
+                    win.Show();
+                    break;
+                }
+                case NoteCommandAction.AddNote:
+                {
+                    var win = new NoteEntryWindow(NoteType.Note, _settings);
+                    win.Show();
+                    break;
+                }
+                case NoteCommandAction.AddReminder:
+                {
+                    var win = new NoteEntryWindow(NoteType.Reminder, _settings);
+                    win.Show();
+                    break;
+                }
+                case NoteCommandAction.ViewNotes:
+                {
+                    var win = new NotesViewerWindow(_settings);
+                    win.Show();
+                    break;
+                }
+            }
+        }
+
+        private void OnNoteCommandModeCancelled()
+        {
+            CloseNoteCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Note command cancelled", Brushes.SlateGray);
+            }
+        }
+
+        private void OnNoteCommandModeTimedOut()
+        {
+            CloseNoteCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Note command timed out", Brushes.SlateGray);
+            }
+        }
+
+        private void OnNoteCommandModeUnknownCommand()
+        {
+            CloseNoteCommandHintWindow();
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus("Unknown note command", Brushes.OrangeRed);
+            }
+        }
+
+        private void CloseNoteCommandHintWindow()
+        {
+            if (_noteCommandHintWindow != null)
+            {
+                try { _noteCommandHintWindow.Close(); } catch { }
+                _noteCommandHintWindow = null;
+            }
+        }
+
+        private void EnterNoteCommandMode()
+        {
+            if (_noteCommandMode == null) return;
+            if (_noteCommandMode.IsActive)
+            {
+                _noteCommandMode.RestartTimeout();
+                return;
+            }
+            _noteCommandMode.Enter();
+        }
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -1884,12 +1998,14 @@ namespace StopwatchOverlay
             _hwndSource = HwndSource.FromHwnd(helper.Handle);
             _hwndSource?.AddHook(HwndHook);
 
-            var (leaderRegistered, showOverlayRegistered, openControllerRegistered) =
-                ApplyGlobalHotkeys(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
+            var (leaderRegistered, noteLeaderRegistered, showOverlayRegistered, openControllerRegistered) =
+                ApplyGlobalHotkeys(_leaderShortcut, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
             UpdateShortcutLabels();
             var unregistered = new List<string>();
             if (!leaderRegistered && _leaderShortcut.VirtualKey != 0)
                 unregistered.Add(_leaderShortcut.Format());
+            if (!noteLeaderRegistered && _noteLeaderShortcut.VirtualKey != 0)
+                unregistered.Add(_noteLeaderShortcut.Format());
             if (!showOverlayRegistered && _showActiveOverlayShortcut.VirtualKey != 0)
                 unregistered.Add(_showActiveOverlayShortcut.Format());
             if (!openControllerRegistered && _openControllerShortcut.VirtualKey != 0)
@@ -1910,14 +2026,15 @@ namespace StopwatchOverlay
             }
         }
 
-        // Unregisters all hotkey ids, then registers global shortcuts (CommandLeader, ShowActiveOverlay, and OpenController).
-        private (bool leaderOk, bool showOverlayOk, bool openControllerOk) ApplyGlobalHotkeys(
+        // Unregisters all hotkey ids, then registers global shortcuts (CommandLeader, NoteCommandLeader, ShowActiveOverlay, and OpenController).
+        private (bool leaderOk, bool noteLeaderOk, bool showOverlayOk, bool openControllerOk) ApplyGlobalHotkeys(
             Shortcut leader,
+            Shortcut noteLeader,
             Shortcut showOverlay,
             Shortcut openController)
         {
             var helper = new WindowInteropHelper(this);
-            if (helper.Handle == IntPtr.Zero) return (false, false, false);
+            if (helper.Handle == IntPtr.Zero) return (false, false, false, false);
 
             foreach (ShortcutAction action in Enum.GetValues<ShortcutAction>())
                 UnregisterHotKey(helper.Handle, (int)action);
@@ -1927,6 +2044,13 @@ namespace StopwatchOverlay
             {
                 leaderOk = RegisterHotKey(helper.Handle, (int)ShortcutAction.CommandLeader,
                     leader.Modifiers | MOD_NOREPEAT, leader.VirtualKey);
+            }
+
+            bool noteLeaderOk = true;
+            if (noteLeader.VirtualKey != 0)
+            {
+                noteLeaderOk = RegisterHotKey(helper.Handle, (int)ShortcutAction.NoteCommandLeader,
+                    noteLeader.Modifiers | MOD_NOREPEAT, noteLeader.VirtualKey);
             }
 
             bool showOverlayOk = true;
@@ -1943,11 +2067,11 @@ namespace StopwatchOverlay
                     openController.Modifiers | MOD_NOREPEAT, openController.VirtualKey);
             }
 
-            return (leaderOk, showOverlayOk, openControllerOk);
+            return (leaderOk, noteLeaderOk, showOverlayOk, openControllerOk);
         }
 
         private bool ApplyLeaderShortcut(Shortcut leader)
-            => ApplyGlobalHotkeys(leader, _showActiveOverlayShortcut, _openControllerShortcut).leaderOk;
+            => ApplyGlobalHotkeys(leader, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut).leaderOk;
 
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -1957,6 +2081,13 @@ namespace StopwatchOverlay
                 if (action == ShortcutAction.CommandLeader)
                 {
                     EnterShortcutCommandMode();
+                    handled = true;
+                    return IntPtr.Zero;
+                }
+
+                if (action == ShortcutAction.NoteCommandLeader)
+                {
+                    EnterNoteCommandMode();
                     handled = true;
                     return IntPtr.Zero;
                 }
@@ -4342,12 +4473,12 @@ namespace StopwatchOverlay
         // Opens the modal shortcut editor; commits the result if the user saves.
         private void OpenShortcuts_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new ShortcutsWindow(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut, _settings.CommandChainingTimeoutSeconds) { Owner = this };
+            var dlg = new ShortcutsWindow(_leaderShortcut, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut, _settings.CommandChainingTimeoutSeconds) { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 _settings.CommandChainingTimeoutSeconds = dlg.ResultChainingTimeoutSeconds;
                 _commandMode?.SetContinuationTimeout(TimeSpan.FromSeconds(dlg.ResultChainingTimeoutSeconds));
-                CommitPendingShortcuts(dlg.ResultLeader, dlg.ResultShowActiveOverlay, dlg.ResultOpenController);
+                CommitPendingShortcuts(dlg.ResultLeader, dlg.ResultNoteLeader, dlg.ResultShowActiveOverlay, dlg.ResultOpenController);
             }
         }
 
@@ -4634,11 +4765,12 @@ namespace StopwatchOverlay
         }
 
         private void CommitPendingLeaderShortcut(Shortcut candidate)
-            => CommitPendingShortcuts(candidate, _showActiveOverlayShortcut, _openControllerShortcut);
+            => CommitPendingShortcuts(candidate, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
 
         // Validates candidate shortcuts, warns+confirms on conflict, registers, saves, and refreshes.
         private void CommitPendingShortcuts(
             Shortcut leaderCandidate,
+            Shortcut noteLeaderCandidate,
             Shortcut showOverlayCandidate,
             Shortcut openControllerCandidate)
         {
@@ -4648,6 +4780,7 @@ namespace StopwatchOverlay
             var candidates = new (string Name, Shortcut S)[]
             {
                 ("Command leader", leaderCandidate),
+                ("Note menu leader", noteLeaderCandidate),
                 ("Show active overlay", showOverlayCandidate),
                 ("Open controller", openControllerCandidate)
             };
@@ -4667,12 +4800,16 @@ namespace StopwatchOverlay
             }
 
             // 2. OS-level rejection test
-            var (leaderOk, showOverlayOk, openControllerOk) =
-                ApplyGlobalHotkeys(leaderCandidate, showOverlayCandidate, openControllerCandidate);
+            var (leaderOk, noteLeaderOk, showOverlayOk, openControllerOk) =
+                ApplyGlobalHotkeys(leaderCandidate, noteLeaderCandidate, showOverlayCandidate, openControllerCandidate);
 
             if (!leaderOk && leaderCandidate.VirtualKey != 0)
             {
                 problems.Add($"Command leader ({leaderCandidate.Format()}) is already in use by another app.");
+            }
+            if (!noteLeaderOk && noteLeaderCandidate.VirtualKey != 0)
+            {
+                problems.Add($"Note menu leader ({noteLeaderCandidate.Format()}) is already in use by another app.");
             }
             if (!showOverlayOk && showOverlayCandidate.VirtualKey != 0)
             {
@@ -4697,21 +4834,25 @@ namespace StopwatchOverlay
                 if (confirmation.ShowDialog() != true)
                 {
                     // Revert registration to the last committed set
-                    ApplyGlobalHotkeys(_leaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
+                    ApplyGlobalHotkeys(_leaderShortcut, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut);
                     return;
                 }
             }
 
             // Commit.
             _leaderShortcut = leaderCandidate;
+            _noteLeaderShortcut = noteLeaderCandidate;
             _showActiveOverlayShortcut = showOverlayCandidate;
             _openControllerShortcut = openControllerCandidate;
             _settings.LeaderShortcut = leaderCandidate;
+            _settings.NoteLeaderShortcut = noteLeaderCandidate;
             _shortcuts[ShortcutAction.CommandLeader] = leaderCandidate;
+            _shortcuts[ShortcutAction.NoteCommandLeader] = noteLeaderCandidate;
             _shortcuts[ShortcutAction.ShowActiveOverlay] = showOverlayCandidate;
             _shortcuts[ShortcutAction.OpenController] = openControllerCandidate;
             _settings.Shortcuts = new Dictionary<ShortcutAction, Shortcut>(_shortcuts);
             _commandMode?.SetLeaderVirtualKey(leaderCandidate.VirtualKey);
+            _noteCommandMode?.SetLeaderVirtualKey(noteLeaderCandidate.VirtualKey);
             PopulateSettingsFromUi(); // keep appearance/layout current in the same file
             SettingsStore.Save(_settings);
             UpdateShortcutLabels();
@@ -4737,12 +4878,16 @@ namespace StopwatchOverlay
                 e.Cancel = true;
                 _commandMode?.Cancel();
                 CloseCommandHintWindow();
+                _noteCommandMode?.Exit();
+                CloseNoteCommandHintWindow();
                 Hide();
                 return;
             }
 
             _commandMode?.Dispose();
             CloseCommandHintWindow();
+            _noteCommandMode?.Dispose();
+            CloseNoteCommandHintWindow();
 
             // Unregister hotkeys
             var helper = new WindowInteropHelper(this);

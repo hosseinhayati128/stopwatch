@@ -15,6 +15,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -36,14 +37,27 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Leader shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Timer leader shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <TextBox Grid.Column="1" x:Name="LeaderShortcutBox" Tag="CommandLeader" IsReadOnly="True" Margin="0,0,8,0"
                      GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
             <Button Grid.Column="2" Content="Clear" Tag="CommandLeader" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
         </Grid>
 
-        <!-- Show active overlay shortcut row -->
+        <!-- Note menu shortcut row -->
         <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Note menu shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBox Grid.Column="1" x:Name="NoteLeaderShortcutBox" Tag="NoteLeader" IsReadOnly="True" Margin="0,0,8,0"
+                     GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
+            <Button Grid.Column="2" Content="Clear" Tag="NoteLeader" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
+        </Grid>
+
+        <!-- Show active overlay shortcut row -->
+        <Grid Grid.Row="3" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
@@ -56,7 +70,7 @@
         </Grid>
 
         <!-- Open controller shortcut row -->
-        <Grid Grid.Row="3" Margin="0,0,0,10">
+        <Grid Grid.Row="4" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
@@ -69,7 +83,7 @@
         </Grid>
 
         <!-- Chaining timeout row -->
-        <Grid Grid.Row="4" Margin="0,0,0,14">
+        <Grid Grid.Row="5" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
@@ -77,13 +91,13 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Chaining timeout:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <Slider Grid.Column="1" x:Name="ChainingTimeoutSlider" Minimum="0.2" Maximum="2.0" TickFrequency="0.1"
-                    IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
-                    ValueChanged="ChainingTimeoutSlider_ValueChanged"/>
+                     IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                     ValueChanged="ChainingTimeoutSlider_ValueChanged"/>
             <TextBlock Grid.Column="2" x:Name="ChainingTimeoutText" Text="0.5 s" VerticalAlignment="Center" TextAlignment="Right"/>
         </Grid>
 
         <!-- Read-only command mode mapping -->
-        <Border Grid.Row="5" Background="{DynamicResource SurfaceBrush}"
+        <Border Grid.Row="6" Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderSoftBrush}" BorderThickness="1"
                 CornerRadius="{DynamicResource ThemeCardCornerRadius}" Padding="14,10">
             <Grid>
@@ -154,7 +168,7 @@
             </Grid>
         </Border>
 
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Content="Reset to defaults" Click="ResetDefaults_Click" Style="{StaticResource ModernButton}" Margin="0,0,8,0"/>
             <Button Content="Cancel" Click="Cancel_Click" Style="{StaticResource ModernButton}" Margin="0,0,8,0" MinWidth="80"/>
             <Button Content="Save" Click="Save_Click" Style="{StaticResource StartButton}" MinWidth="80"/>
