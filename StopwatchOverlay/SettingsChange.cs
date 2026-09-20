@@ -18,7 +18,8 @@ internal enum SettingsChangeKind
     LightRingAppearance = 1 << 9,
     Behavior = 1 << 10,
     Startup = 1 << 11,
-    OverlayTheme = 1 << 12
+    OverlayTheme = 1 << 12,
+    ObsidianExport = 1 << 13
 }
 
 internal static class SettingsChangePolicy

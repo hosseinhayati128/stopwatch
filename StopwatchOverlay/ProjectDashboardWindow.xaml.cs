@@ -91,6 +91,7 @@ public partial class ProjectDashboardWindow : Window
     private readonly Func<Guid, ProjectRecordMutationResult> _deleteRecord;
     private readonly Func<bool> _canMutateRecords;
     private readonly Func<string?> _recordsPersistenceWarning;
+    private readonly AppSettings? _settings;
     private readonly DispatcherTimer _liveRefreshTimer;
     private readonly Dictionary<DateTime, Button> _heatmapCells = [];
     private readonly Dictionary<RecordActionFocus, Button> _recordActionButtons = [];
@@ -137,7 +138,8 @@ public partial class ProjectDashboardWindow : Window
         Func<Guid, string, DateTime, DateTime, ProjectRecordMutationResult> updateRecord,
         Func<Guid, ProjectRecordMutationResult> deleteRecord,
         Func<bool> canMutateRecords,
-        Func<string?> recordsPersistenceWarning)
+        Func<string?> recordsPersistenceWarning,
+        AppSettings? settings = null)
     {
         ArgumentNullException.ThrowIfNull(historyProvider);
         ArgumentNullException.ThrowIfNull(addRecord);
@@ -152,6 +154,7 @@ public partial class ProjectDashboardWindow : Window
         _deleteRecord = deleteRecord;
         _canMutateRecords = canMutateRecords;
         _recordsPersistenceWarning = recordsPersistenceWarning;
+        _settings = settings;
         InitializeComponent();
 
         _liveRefreshTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -227,6 +230,46 @@ public partial class ProjectDashboardWindow : Window
 
     private void ProjectRecordsExpander_Expanded(object sender, RoutedEventArgs e) =>
         RenderRecords();
+
+    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_settings == null)
+        {
+            MessageBox.Show(
+                this,
+                "Settings are not available.",
+                "Obsidian Export",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder) || !System.IO.Directory.Exists(_settings.ObsidianVaultFolder))
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Select Obsidian Vault or Target Folder",
+                Multiselect = false
+            };
+            if (dialog.ShowDialog(this) == true)
+            {
+                _settings.ObsidianVaultFolder = dialog.FolderName;
+                SettingsStore.Save(_settings);
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        var result = ObsidianLogSync.SyncHistory(_historyProvider(), _settings);
+        MessageBox.Show(
+            this,
+            result.Message,
+            "Obsidian Export",
+            MessageBoxButton.OK,
+            result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
 
     private void RecordsButton_Click(object sender, RoutedEventArgs e)
     {

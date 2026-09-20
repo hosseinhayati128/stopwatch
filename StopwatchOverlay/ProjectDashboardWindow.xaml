@@ -138,6 +138,10 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Export" Style="{StaticResource ModernButton}" Height="34"
+                            Padding="13,5" FontSize="12" Margin="0,0,8,0"
+                            ToolTip="Export records to Obsidian Markdown"
+                            Click="ExportButton_Click"/>
                     <Button Content="Records" Style="{StaticResource ModernButton}" Height="34"
                             Padding="13,5" FontSize="12" Margin="0,0,8,0"
                             Click="RecordsButton_Click"/>

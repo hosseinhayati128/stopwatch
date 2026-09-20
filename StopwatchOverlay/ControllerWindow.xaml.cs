@@ -989,10 +989,16 @@ namespace StopwatchOverlay
             try
             {
                 bool changed;
-                if (timer.IsRunning && !string.IsNullOrWhiteSpace(timer.Name))
+                bool shouldTrack = timer.IsRunning && (!string.IsNullOrWhiteSpace(timer.Name) || _settings.ObsidianLogUnnamedTimers);
+                if (shouldTrack)
                 {
-                    timer.Name = RegisterProjectName(timer.Name);
-                    changed = _projectHistory.StartTracking(timer.Id, timer.Name, utcNow)
+                    string projectName = !string.IsNullOrWhiteSpace(timer.Name)
+                        ? RegisterProjectName(timer.Name)
+                        : RegisterProjectName(timer.DisplayName);
+                    if (!string.IsNullOrWhiteSpace(timer.Name))
+                        timer.Name = projectName;
+
+                    changed = _projectHistory.StartTracking(timer.Id, projectName, utcNow)
                         != ProjectTrackingChange.NoChange;
                 }
                 else
@@ -2224,7 +2230,10 @@ namespace StopwatchOverlay
                 {
                     _projectHistoryDirty = false;
                     if (projectHistoryWasDirty && !_projectHistoryPersistenceDisabled)
+                    {
                         _projectHistoryRequiresCreateOnlySave = false;
+                        ObsidianLogSync.TryAutoSync(_projectHistory.CreateView(checkpointUtc), _settings);
+                    }
                     if (historyNeededRepair && !_projectTimeStore.NeedsPrimaryRepair)
                         _projectHistoryWarning = null;
                 }
@@ -2772,7 +2781,8 @@ namespace StopwatchOverlay
                     UpdateProjectRecord,
                     DeleteProjectRecord,
                     CanMutateProjectRecords,
-                    GetProjectRecordsWarning);
+                    GetProjectRecordsWarning,
+                    _settings);
                 _projectDashboardWindow.Closed += (_, _) => _projectDashboardWindow = null;
             }
 
@@ -4349,7 +4359,7 @@ namespace StopwatchOverlay
                 return;
             }
 
-            _settingsWindow = new SettingsWindow(_settings) { Owner = this };
+            _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow)) { Owner = this };
             _settingsWindow.SettingsChanged += QueueDedicatedSettingsChange;
             _settingsWindow.SettingsInteractionStarted += SettingsInteractionStarted;
             _settingsWindow.SettingsInteractionCompleted += SettingsInteractionCompleted;

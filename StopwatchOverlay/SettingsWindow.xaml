@@ -151,6 +151,7 @@
                     <ListBoxItem Content="Light ring" Tag="LightRing" Padding="10" ac:AcanthusVisual.OverrideStyle="{StaticResource AcanthusNavigationItem}"/>
                     <ListBoxItem Content="Behavior" Tag="Behavior" Padding="10" ac:AcanthusVisual.OverrideStyle="{StaticResource AcanthusNavigationItem}"/>
                     <ListBoxItem Content="Application" Tag="Application" Padding="10" ac:AcanthusVisual.OverrideStyle="{StaticResource AcanthusNavigationItem}"/>
+                    <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian" Padding="10" ac:AcanthusVisual.OverrideStyle="{StaticResource AcanthusNavigationItem}"/>
                 </ListBox>
             </Border>
 
@@ -312,6 +313,42 @@
                             <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows" Style="{StaticResource AcanthusSettingsSwitch}"/>
                             <TextBlock Text="Your theme, backgrounds, timers, project history, positions, and shortcuts remain stored by the existing recovery system."
                                        Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,16,0,0"/>
+                        </StackPanel></Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="ObsidianPanel" Visibility="Collapsed">
+                        <TextBlock Text="Obsidian &amp; Markdown" Style="{StaticResource DisplayHeadingText}"/>
+                        <TextBlock Text="Log completed timer sessions into your Obsidian vault as a structured Markdown table for reporting and AI analysis."
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22" TextWrapping="Wrap"/>
+                        <Border Style="{StaticResource SettingsCard}"><StackPanel>
+                            <CheckBox x:Name="ObsidianAutoSyncCheck" Content="Enable automatic export to Obsidian / Markdown" Margin="0,0,0,14" Style="{StaticResource AcanthusSettingsSwitch}"/>
+                            <CheckBox x:Name="ObsidianLogUnnamedCheck" Content="Include unnamed timers (logged as 'Timer 1', 'Timer 2', etc.)" Margin="0,0,0,16" Style="{StaticResource AcanthusSettingsSwitch}"/>
+
+                            <TextBlock Text="Target folder (Obsidian vault)" Style="{StaticResource SectionHeaderText}"/>
+                            <Grid Margin="0,6,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="ObsidianFolderTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                                         FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                                <Button x:Name="BrowseObsidianFolderButton" Grid.Column="1" Content="Browse..." Height="34" Margin="8,0,0,0"
+                                        Padding="14,0" Style="{StaticResource ModernButton}" Click="BrowseObsidianFolderButton_Click"/>
+                            </Grid>
+
+                            <TextBlock Text="File name" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="ObsidianFileNameTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,14"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+
+                            <TextBlock Text="Full file path" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBlock x:Name="ObsidianPathPreviewText" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                                       TextWrapping="Wrap" Margin="0,4,0,16"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button x:Name="ExportNowButton" Content="Export All History Now" Height="34" Padding="16,0"
+                                        Style="{StaticResource ModernButton}" Click="ExportNowButton_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="ExportStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>
                     </StackPanel>
                 </Grid>

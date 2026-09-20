@@ -126,6 +126,12 @@ namespace StopwatchOverlay
         public bool UseSmartCountdownInput { get; set; } = false;
         public bool StartWithWindows { get; set; } = false;
 
+        // Obsidian / Markdown Export
+        public bool ObsidianAutoSyncEnabled { get; set; } = true;
+        public string ObsidianVaultFolder { get; set; } = "";
+        public string ObsidianExportFileName { get; set; } = "Stopwatch Log.md";
+        public bool ObsidianLogUnnamedTimers { get; set; } = true;
+
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
 
@@ -245,6 +251,10 @@ namespace StopwatchOverlay
                 MinimumCommandChainingTimeoutSeconds,
                 MaximumCommandChainingTimeoutSeconds,
                 DefaultCommandChainingTimeoutSeconds);
+            ObsidianExportFileName = string.IsNullOrWhiteSpace(ObsidianExportFileName)
+                ? "Stopwatch Log.md"
+                : ObsidianExportFileName.Trim();
+            ObsidianVaultFolder = (ObsidianVaultFolder ?? "").Trim();
         }
 
         private static string NormalizeChoice(

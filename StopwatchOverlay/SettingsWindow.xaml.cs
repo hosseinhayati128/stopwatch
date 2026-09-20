@@ -14,6 +14,7 @@ namespace StopwatchOverlay;
 public partial class SettingsWindow : Window
 {
     private readonly AppSettings _settings;
+    private readonly Func<ProjectHistoryView>? _historyProvider;
     private readonly DispatcherTimer _previewTimer;
     private bool _loading;
     private bool _committing;
@@ -28,9 +29,10 @@ public partial class SettingsWindow : Window
 
     internal string CurrentCategory { get; private set; } = "Overlay";
 
-    public SettingsWindow(AppSettings settings)
+    public SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider = null)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _historyProvider = historyProvider;
         InitializeComponent();
 
         _previewTimer = new DispatcherTimer
@@ -108,6 +110,11 @@ public partial class SettingsWindow : Window
             SmartInputCheck.IsChecked = _settings.UseSmartCountdownInput;
             CommandChainingTimeoutSlider.Value = _settings.CommandChainingTimeoutSeconds;
             StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
+            ObsidianAutoSyncCheck.IsChecked = _settings.ObsidianAutoSyncEnabled;
+            ObsidianLogUnnamedCheck.IsChecked = _settings.ObsidianLogUnnamedTimers;
+            ObsidianFolderTextBox.Text = _settings.ObsidianVaultFolder;
+            ObsidianFileNameTextBox.Text = _settings.ObsidianExportFileName;
+            UpdateObsidianPathPreview();
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
             UpdateDependentControlStates();
@@ -154,6 +161,19 @@ public partial class SettingsWindow : Window
         WireCheckBox(BlinkCheck, SettingsChangeKind.Behavior);
         WireCheckBox(SmartInputCheck, SettingsChangeKind.Behavior);
         WireCheckBox(StartWithWindowsCheck, SettingsChangeKind.Startup);
+        WireCheckBox(ObsidianAutoSyncCheck, SettingsChangeKind.ObsidianExport);
+        WireCheckBox(ObsidianLogUnnamedCheck, SettingsChangeKind.ObsidianExport);
+
+        ObsidianFolderTextBox.TextChanged += (_, _) =>
+        {
+            UpdateObsidianPathPreview();
+            CommitControls(SettingsChangeKind.ObsidianExport);
+        };
+        ObsidianFileNameTextBox.TextChanged += (_, _) =>
+        {
+            UpdateObsidianPathPreview();
+            CommitControls(SettingsChangeKind.ObsidianExport);
+        };
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -273,6 +293,14 @@ public partial class SettingsWindow : Window
 
             if ((change & SettingsChangeKind.Startup) != 0)
                 _settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
+
+            if ((change & SettingsChangeKind.ObsidianExport) != 0)
+            {
+                _settings.ObsidianAutoSyncEnabled = ObsidianAutoSyncCheck.IsChecked == true;
+                _settings.ObsidianLogUnnamedTimers = ObsidianLogUnnamedCheck.IsChecked == true;
+                _settings.ObsidianVaultFolder = ObsidianFolderTextBox.Text.Trim();
+                _settings.ObsidianExportFileName = ObsidianFileNameTextBox.Text.Trim();
+            }
 
             UpdateValueLabels();
             UpdateDependentControlStates();
@@ -507,10 +535,77 @@ public partial class SettingsWindow : Window
         LightRingPanel.Visibility = tag == "LightRing" ? Visibility.Visible : Visibility.Collapsed;
         BehaviorPanel.Visibility = tag == "Behavior" ? Visibility.Visible : Visibility.Collapsed;
         ApplicationPanel.Visibility = tag == "Application" ? Visibility.Visible : Visibility.Collapsed;
+        ObsidianPanel.Visibility = tag == "Obsidian" ? Visibility.Visible : Visibility.Collapsed;
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);
         Dispatcher.BeginInvoke(
             new Action(() => SettingsScrollViewer?.ScrollToTop()),
             DispatcherPriority.Loaded);
+    }
+
+    private void BrowseObsidianFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Select Obsidian Vault or Target Folder",
+            Multiselect = false
+        };
+
+        if (!string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder) && System.IO.Directory.Exists(_settings.ObsidianVaultFolder))
+        {
+            dialog.InitialDirectory = _settings.ObsidianVaultFolder;
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            ObsidianFolderTextBox.Text = dialog.FolderName;
+        }
+    }
+
+    private void ExportNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_historyProvider == null)
+        {
+            ExportStatusText.Text = "History records are not available.";
+            ExportStatusText.Foreground = Brushes.OrangeRed;
+            return;
+        }
+
+        var history = _historyProvider();
+        var result = ObsidianLogSync.SyncHistory(
+            history,
+            _settings,
+            ObsidianFolderTextBox.Text,
+            ObsidianFileNameTextBox.Text);
+
+        if (result.Success)
+        {
+            ExportStatusText.Text = $"{result.Message} ({DateTime.Now:HH:mm:ss})";
+            ExportStatusText.Foreground = Brushes.DeepSkyBlue;
+        }
+        else
+        {
+            ExportStatusText.Text = result.Message ?? "Export failed.";
+            ExportStatusText.Foreground = Brushes.OrangeRed;
+        }
+    }
+
+    private void UpdateObsidianPathPreview()
+    {
+        string folder = ObsidianFolderTextBox.Text.Trim();
+        string fileName = ObsidianFileNameTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(fileName))
+            fileName = ObsidianLogSync.DefaultFileName;
+        if (!fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            fileName += ".md";
+
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            ObsidianPathPreviewText.Text = "No folder selected. Click Browse to select your Obsidian vault.";
+        }
+        else
+        {
+            ObsidianPathPreviewText.Text = System.IO.Path.Combine(folder, fileName);
+        }
     }
 
     private void ShowOverlayButton_Click(object sender, RoutedEventArgs e)
