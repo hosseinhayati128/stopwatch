@@ -1,15 +1,24 @@
-<Window x:Class="StopwatchOverlay.TimerNameWindow"
+<Window x:Class="StopwatchOverlay.TimerNameWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Choose project"
-        Width="520" SizeToContent="Height"
-        ResizeMode="NoResize"
+        Width="520" SizeToContent="Height" MaxHeight="780"
+        ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Loaded="Window_Loaded"
         PreviewKeyDown="Window_PreviewKeyDown">
-    <Border Style="{StaticResource DialogSurface}" Margin="18">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/PirateDialogStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <ScrollViewer Style="{StaticResource PirateDialogScroll}">
+    <Border MinWidth="360" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" LayoutTransform="{DynamicResource ApplicationScaleTransform}" Style="{StaticResource PirateDialogSurface}" Margin="18">
     <StackPanel Margin="24">
+        <Rectangle Style="{StaticResource PirateDialogSkull}"/>
         <Image Width="28" Height="28" HorizontalAlignment="Center" Margin="0,0,0,8"
               Source="{StaticResource AcanthusCrestImage}"
               Stretch="Uniform" Visibility="{DynamicResource OrnamentVisibility}"/>
@@ -85,4 +94,5 @@
         </StackPanel>
     </StackPanel>
     </Border>
+    </ScrollViewer>
 </Window>

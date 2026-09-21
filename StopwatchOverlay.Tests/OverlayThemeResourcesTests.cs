@@ -27,11 +27,39 @@ public sealed class OverlayThemeResourcesTests
     ];
 
     [Fact]
+    public void PirateOverlay_UsesLocalPaintedArtAndBundledTypographyWithoutChangingCustomFonts()
+    {
+        RunSta(() =>
+        {
+            var target = new Grid();
+            Assert.Equal(OverlayThemeCatalog.Pirate,
+                OverlayThemeManager.Apply(target, OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Pirate));
+            Assert.Equal(Color.FromRgb(59, 40, 29),
+                Assert.IsType<SolidColorBrush>(target.FindResource("OverlayChromeBrush")).Color);
+            foreach (string key in new[] { "OverlayCornerImage", "OverlayRightCornerImage" })
+            {
+                DrawingImage image = Assert.IsType<DrawingImage>(target.FindResource(key));
+                DrawingGroup group = Assert.IsType<DrawingGroup>(image.Drawing);
+                GeometryDrawing drawing = Assert.IsType<GeometryDrawing>(Assert.Single(group.Children));
+                ImageBrush brush = Assert.IsType<ImageBrush>(drawing.Brush);
+                Assert.NotNull(brush.ImageSource);
+                Assert.True(brush.ImageSource.Width > 0);
+            }
+            FontFamily bundled = Assert.IsType<FontFamily>(target.FindResource("ThemeTimerFontFamily"));
+            Assert.Same(bundled, OverlayThemeManager.ResolveTimerFont(target, OverlayThemeCatalog.Pirate, "Cascadia Mono"));
+            var typeface = new Typeface(bundled, FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+            Assert.True(typeface.TryGetGlyphTypeface(out GlyphTypeface glyph));
+            Assert.Contains("/assets/fonts/pirate/", glyph.FontUri.ToString().ToLowerInvariant());
+            Assert.Equal("Arial", OverlayThemeManager.ResolveTimerFont(target, OverlayThemeCatalog.Pirate, "Arial").Source);
+        });
+    }
+
+    [Fact]
     public void EveryConcretePalette_LoadsTheSameCompleteTypedResourceContract()
     {
         RunSta(() =>
         {
-            Assert.Equal(8, ConcreteThemes.Length);
+            Assert.Equal(9, ConcreteThemes.Length);
             ResourceDictionary baseline = OverlayThemeManager.LoadPalette(OverlayThemeCatalog.Midnight);
             string[] expectedKeys = ResolvedKeys(baseline);
             foreach (string theme in ConcreteThemes)
@@ -213,12 +241,12 @@ public sealed class OverlayThemeResourcesTests
     }
 
     [Fact]
-    public void AllFortyFivePanelOverlayCombinations_KeepPanelResourcesAndVisualsIsolated()
+    public void AllPanelOverlayCombinations_KeepPanelResourcesAndVisualsIsolated()
     {
         RunSta(() =>
         {
             int combinations = 0;
-            foreach ((string panelTheme, string file) in PanelPalettes)
+            foreach ((string panelTheme, string file) in PanelPalettes.Append((AppThemeCatalog.Pirate, "Pirate.xaml")))
             {
                 // This tree models inherited panel resources without starting App,
                 // touching Application.Resources, or loading stored user settings.
@@ -261,7 +289,7 @@ public sealed class OverlayThemeResourcesTests
                     combinations++;
                 }
             }
-            Assert.Equal(45, combinations);
+            Assert.Equal(AppThemeCatalog.All.Count * OverlayThemeCatalog.All.Count, combinations);
         });
     }
 

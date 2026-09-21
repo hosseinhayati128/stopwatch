@@ -19,7 +19,9 @@ internal enum SettingsChangeKind
     Behavior = 1 << 10,
     Startup = 1 << 11,
     OverlayTheme = 1 << 12,
-    ObsidianExport = 1 << 13
+    ObsidianExport = 1 << 13,
+    ApplicationScale = 1 << 14,
+    Typography = 1 << 15
 }
 
 internal static class SettingsChangePolicy
@@ -28,7 +30,9 @@ internal static class SettingsChangePolicy
         SettingsChangeKind.OverlayAppearance
         | SettingsChangeKind.OverlayGeometry
         | SettingsChangeKind.BackgroundStrength
-        | SettingsChangeKind.LightRingAppearance;
+        | SettingsChangeKind.LightRingAppearance
+        | SettingsChangeKind.ApplicationScale
+        | SettingsChangeKind.Typography;
 
     internal static bool IsContinuous(SettingsChangeKind change)
         => (change & ContinuousChanges) != 0;

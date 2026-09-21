@@ -14,14 +14,18 @@ public static class AppThemeCatalog
     public const string PixelDeckNight = "Pixel Deck Night";
     public const string PixelDeckDay = "Pixel Deck Day";
     public const string Acanthus = "Acanthus";
+    public const string Pirate = "one piece";
     public const string PixelDeck = PixelDeckNight;
 
     public static IReadOnlyList<string> All { get; } =
-        [Midnight, Daylight, PixelDeckNight, PixelDeckDay, Acanthus];
+        [Midnight, Daylight, PixelDeckNight, PixelDeckDay, Acanthus, Pirate];
 
     public static string Normalize(string? value)
     {
         string candidate = value?.Trim() ?? string.Empty;
+        if (candidate.Equals(Pirate, StringComparison.OrdinalIgnoreCase)
+            || candidate.Equals("Pirate", StringComparison.OrdinalIgnoreCase))
+            return Pirate;
         if (candidate.Equals(Acanthus, StringComparison.OrdinalIgnoreCase))
         {
             return Acanthus;
@@ -64,6 +68,7 @@ public static class AppThemeManager
     public static bool IsPixelDeckDay => _currentTheme == AppThemeCatalog.PixelDeckDay;
     public static bool IsDaylight => _currentTheme == AppThemeCatalog.Daylight;
     public static bool IsAcanthus => _currentTheme == AppThemeCatalog.Acanthus;
+    public static bool IsPirate => _currentTheme == AppThemeCatalog.Pirate;
     public static bool UsesThemedOverlayChrome => _currentTheme != AppThemeCatalog.Midnight;
 
     public static event EventHandler? ThemeChanged;
@@ -156,6 +161,8 @@ public static class AppThemeManager
 
         _currentTheme = theme;
         _appliedApplication = application;
+        // Shared artwork opt-in for the themed application pages.
+        application.Resources["PirateControllerEnabled"] = theme == AppThemeCatalog.Pirate;
         ThemeChanged?.Invoke(null, EventArgs.Empty);
     }
 
@@ -171,6 +178,7 @@ public static class AppThemeManager
                         "/StopwatchOverlay;component/Themes/PixelDeckDay.xaml",
                     AppThemeCatalog.Daylight =>
                         "/StopwatchOverlay;component/Themes/Daylight.xaml",
+                    AppThemeCatalog.Pirate => "/StopwatchOverlay;component/Themes/Pirate.xaml",
                     AppThemeCatalog.Acanthus =>
                         "/StopwatchOverlay;component/Themes/Acanthus.xaml",
                     _ => "/StopwatchOverlay;component/Themes/Midnight.xaml"

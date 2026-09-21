@@ -45,6 +45,7 @@ public static class OverlayThemeManager
             OverlayThemeCatalog.Daylight => "DaylightOverlay.xaml",
             OverlayThemeCatalog.PixelDeckNight => "PixelDeckNightOverlay.xaml",
             OverlayThemeCatalog.PixelDeckDay => "PixelDeckDayOverlay.xaml",
+            OverlayThemeCatalog.Pirate => "PirateOverlay.xaml",
             OverlayThemeCatalog.AcanthusLight => "AcanthusLightOverlay.xaml",
             OverlayThemeCatalog.AcanthusDarkElegantOlive => "AcanthusDarkElegantOliveOverlay.xaml",
             OverlayThemeCatalog.AcanthusDarkGoldCrest => "AcanthusDarkGoldCrestOverlay.xaml",
@@ -60,8 +61,10 @@ public static class OverlayThemeManager
             Source = new Uri("/StopwatchOverlay;component/Themes/Overlay/OverlayOrnaments.xaml", UriKind.RelativeOrAbsolute)
         };
         bool light = theme == OverlayThemeCatalog.AcanthusLight;
-        palette["OverlayCornerImage"] = ornaments[light ? "AcanthusCornerImage" : "OverlayOliveLeftImage"];
-        palette["OverlayRightCornerImage"] = ornaments[light ? "AcanthusCornerImage" : "OverlayOliveRightImage"];
+        if (!palette.Contains("OverlayCornerImage"))
+            palette["OverlayCornerImage"] = ornaments[light ? "AcanthusCornerImage" : "OverlayOliveLeftImage"];
+        if (!palette.Contains("OverlayRightCornerImage"))
+            palette["OverlayRightCornerImage"] = ornaments[light ? "AcanthusCornerImage" : "OverlayOliveRightImage"];
         palette["OverlayCrestImage"] = ornaments["OverlayGoldCrestImage"];
         palette["OverlayLeafImage"] = ornaments["OverlayBotanicalLeafImage"];
         return palette;
@@ -71,7 +74,8 @@ public static class OverlayThemeManager
         => target.TryFindResource(key) is SolidColorBrush brush ? brush.Color : fallback;
 
     public static FontFamily ResolveTimerFont(FrameworkElement target, string? effectiveTheme, string family)
-        => OverlayThemeCatalog.IsAcanthus(effectiveTheme)
+        => (OverlayThemeCatalog.IsAcanthus(effectiveTheme)
+            || OverlayThemeCatalog.Normalize(effectiveTheme) == OverlayThemeCatalog.Pirate)
            && family.Equals("Cascadia Mono", StringComparison.OrdinalIgnoreCase)
            && target.TryFindResource("ThemeTimerFontFamily") is FontFamily bundled
             ? bundled

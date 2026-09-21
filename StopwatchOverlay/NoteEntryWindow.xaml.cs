@@ -18,7 +18,10 @@ public partial class NoteEntryWindow : Window
         _noteType = noteType;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-        OverlayThemeManager.Apply(this, _settings.OverlayTheme, _settings.ThemeMode);
+        string theme = OverlayThemeManager.Apply(this, _settings.OverlayTheme, _settings.ThemeMode);
+        bool pirate = theme == OverlayThemeCatalog.Pirate;
+        Themes.PirateVisual.SetEnabled(this, pirate);
+        if (pirate) { Width = 620; Height = 620; MinHeight = 360; }
         ConfigureMode(noteType);
     }
 
@@ -55,18 +58,25 @@ public partial class NoteEntryWindow : Window
 
     private void SetPlaceholder(string placeholder)
     {
-        NoteInputBox.Loaded += (_, _) =>
-        {
-            if (NoteInputBox.Template.FindName("PlaceholderText", NoteInputBox) is System.Windows.Controls.TextBlock tb)
-            {
-                tb.Text = placeholder;
-            }
-        };
+        NoteInputBox.Tag = placeholder;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         NoteInputBox.Focus();
+    }
+
+    private void NoteFrame_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (!Themes.PirateVisual.GetEnabled(this)) return;
+        // Keep the editor usable when window dimensions or application scale change.
+        bool compact = NoteFrame.ActualHeight < 450 || NoteFrame.ActualWidth < 460;
+        EntryHeader.Margin = compact ? new Thickness(0, 6, 0, 10) : new Thickness(0, 36, 0, 14);
+        foreach (Button button in new[] { CancelButton, SaveButton })
+        {
+            button.MinHeight = compact ? 48 : 62;
+            button.Padding = compact ? new Thickness(28, 6, 28, 6) : new Thickness(40, 8, 40, 8);
+        }
     }
 
     private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

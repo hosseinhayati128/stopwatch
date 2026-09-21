@@ -7,12 +7,14 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using StopwatchOverlay.Themes;
 
 namespace StopwatchOverlay;
 
 public partial class NotesViewerWindow : Window
 {
     private readonly AppSettings _settings;
+    private readonly bool _pirate;
     private readonly DispatcherTimer _autoCloseTimer;
     private int _countdownSeconds = 30;
     private List<NoteEntry> _allEntries = new();
@@ -24,12 +26,68 @@ public partial class NotesViewerWindow : Window
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
         OverlayThemeManager.Apply(this, _settings.OverlayTheme, _settings.ThemeMode);
+        _pirate = OverlayThemeCatalog.Resolve(_settings.OverlayTheme, _settings.ThemeMode) == OverlayThemeCatalog.Pirate;
+        PirateVisual.SetEnabled(this, _pirate);
+        if (_pirate)
+        {
+            Width = 680;
+            Height = 650;
+        }
 
         _autoCloseTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
         _autoCloseTimer.Tick += AutoCloseTimer_Tick;
+    }
+
+    private void NoteFrame_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // The timer moves below the heading when the frame narrows, while the
+        // close action remains reachable and the list retains its own viewport.
+        if (HeadingGrid is null || CountdownBadge is null) return;
+        bool compact = HeadingGrid.ActualWidth < 560;
+        Grid.SetRow(CountdownBadge, compact ? 1 : 0);
+        Grid.SetColumn(CountdownBadge, compact ? 0 : 1);
+        Grid.SetColumnSpan(ViewerHeading, compact ? 2 : 1);
+        CountdownBadge.HorizontalAlignment = compact ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+        CountdownBadge.Margin = compact ? new Thickness(0, 6, 8, 0) : new Thickness(0, 0, 8, 0);
+        bool shortFrame = _pirate && (NoteFrame.ActualHeight < 400 || NoteFrame.ActualWidth < 400);
+        ViewerSkull.Visibility = _pirate && !shortFrame ? Visibility.Visible : Visibility.Collapsed;
+        ViewerHeading.TextWrapping = shortFrame ? TextWrapping.NoWrap : TextWrapping.Wrap;
+        ViewerHeader.Margin = new Thickness(0, 0, 0, shortFrame ? 6 : 12);
+        FilterStrip.Margin = new Thickness(4, 0, 4, shortFrame ? 8 : 12);
+        ViewerFooter.Margin = new Thickness(0, shortFrame ? 4 : 10, 0, 0);
+        FooterCloseHint.Text = shortFrame ? "Enter / Esc to close" : "Press Enter or Esc to close immediately";
+        if (shortFrame)
+        {
+            NoteFrame.Padding = new Thickness(16);
+            PaperSurface.Padding = new Thickness(12);
+            ViewerHeading.FontSize = 18;
+            FooterCloseHint.FontSize = 11;
+            VaultLocationText.FontSize = 11;
+        }
+        else
+        {
+            NoteFrame.ClearValue(Border.PaddingProperty);
+            PaperSurface.ClearValue(Border.PaddingProperty);
+            ViewerHeading.ClearValue(TextBlock.FontSizeProperty);
+            FooterCloseHint.ClearValue(TextBlock.FontSizeProperty);
+            VaultLocationText.ClearValue(TextBlock.FontSizeProperty);
+        }
+        foreach (RadioButton filter in new[] { FilterAllRadio, FilterTodosRadio, FilterNotesRadio, FilterRemindersRadio })
+        {
+            if (shortFrame)
+            {
+                filter.FontSize = 14;
+                filter.Padding = new Thickness(8, 4, 8, 4);
+            }
+            else
+            {
+                filter.ClearValue(Control.FontSizeProperty);
+                filter.ClearValue(Control.PaddingProperty);
+            }
+        }
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -140,6 +198,17 @@ public partial class NotesViewerWindow : Window
             dateHeaderText.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
             dateHeaderText.SetResourceReference(TextBlock.FontFamilyProperty, "AppFontFamily");
             dateHeaderBorder.Child = dateHeaderText;
+            if (_pirate)
+            {
+                dateHeaderBorder.Background = PaperBrush(0xDB, 0xE5, 0xC5, 0x8C);
+                dateHeaderBorder.BorderBrush = PaperBrush(0xFF, 0xA1, 0x7B, 0x49);
+                dateHeaderBorder.BorderThickness = new Thickness(0, 0, 0, 1);
+                dateHeaderBorder.Padding = new Thickness(10, 7, 10, 7);
+                dateHeaderBorder.Margin = new Thickness(0, 3, 0, 8);
+                dateHeaderText.FontSize = 16;
+                dateHeaderText.FontFamily = (FontFamily)FindResource("NotesBodyFont");
+                dateHeaderText.Foreground = PaperBrush(0xFF, 0x7E, 0x40, 0x27);
+            }
             ItemsContainer.Children.Add(dateHeaderBorder);
 
             // Entries in this date
@@ -231,8 +300,43 @@ public partial class NotesViewerWindow : Window
         Grid.SetColumn(contentText, 2);
         grid.Children.Add(contentText);
 
+        if (_pirate)
+        {
+            border.Background = PaperBrush(0xB5, 0xE6, 0xC5, 0x8F);
+            border.BorderBrush = PaperBrush(0xD9, 0x9B, 0x76, 0x40);
+            border.CornerRadius = new CornerRadius(8);
+            border.Padding = new Thickness(10, 8, 10, 8);
+            border.Margin = new Thickness(0, 0, 0, 7);
+            var ink = PaperBrush(0xFF, 0x4A, 0x2C, 0x18);
+            var muted = PaperBrush(0xFF, 0x83, 0x6C, 0x48);
+            iconText.Text = entry.Type switch
+            {
+                NoteType.Todo => entry.IsCompleted ? "☑" : "☐",
+                NoteType.Reminder => "◷",
+                _ => "✎"
+            };
+            iconText.FontFamily = new FontFamily("Segoe UI Symbol");
+            iconText.FontSize = 20;
+            iconText.Foreground = entry.IsCompleted ? muted : entry.Type == NoteType.Todo
+                ? PaperBrush(0xFF, 0x39, 0x78, 0x69) : PaperBrush(0xFF, 0x8A, 0x4E, 0x2B);
+            timeText.FontSize = 13;
+            timeText.Margin = new Thickness(0, 4, 10, 0);
+            timeText.FontFamily = (FontFamily)FindResource("NotesBodyFont");
+            timeText.Foreground = ink;
+            contentText.FontSize = 20;
+            contentText.FontFamily = (FontFamily)FindResource("NotesBodyFont");
+            contentText.Foreground = entry.IsCompleted ? muted : ink;
+        }
+
         border.Child = grid;
         return border;
+    }
+
+    private static Brush PaperBrush(byte alpha, byte red, byte green, byte blue)
+    {
+        var brush = new SolidColorBrush(Color.FromArgb(alpha, red, green, blue));
+        brush.Freeze();
+        return brush;
     }
 
     private void FilterRadio_Checked(object sender, RoutedEventArgs e)

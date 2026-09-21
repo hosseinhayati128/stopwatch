@@ -138,6 +138,7 @@ namespace StopwatchOverlay
 
         public void SetRunning(bool running)
         {
+            Themes.NavigatorVisual.SetAction(PauseResumeActionButton, running ? "Pause" : "Play");
             PauseIcon.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
             ResumeIcon.Visibility = running ? Visibility.Collapsed : Visibility.Visible;
             PauseResumeActionButton.ToolTip = running ? "Pause timer" : "Resume timer";
@@ -158,7 +159,8 @@ namespace StopwatchOverlay
             int borderWidth,
             string fontFamily,
             double backgroundOpacity,
-            bool useThemeTextColor = false)
+            bool useThemeTextColor = false,
+            NavigatorOpaqueParts opaqueParts = NavigatorOpaqueParts.Default)
         {
             _textColor = textColor;
             _borderColor = borderColor;
@@ -167,6 +169,15 @@ namespace StopwatchOverlay
             _fontFamily = fontFamily;
             _useThemeTextColor = useThemeTextColor;
             _backgroundOpacity = OverlayPresentationPolicy.ClampBackgroundOpacity(backgroundOpacity);
+            Themes.NavigatorVisual.SetSurfaceOpacity(this, _backgroundOpacity);
+            Themes.NavigatorVisual.SetSurfaceOpacity(ActionPopupRoot, _backgroundOpacity);
+            Themes.NavigatorVisual.SetOpaqueParts(this, opaqueParts);
+            Themes.NavigatorVisual.SetOpaqueParts(ActionPopupRoot, opaqueParts);
+            NavigatorClockSurface.SurfaceOpacity = _backgroundOpacity;
+            NavigatorClockSurface.OutlineBrush = new SolidColorBrush(borderColor);
+            NavigatorClockSurface.OutlineWidth = borderWidth;
+            Themes.NavigatorVisual.SetScale(this, fontSize / 48d);
+            Themes.NavigatorVisual.SetScale(ActionPopupRoot, fontSize / 48d);
 
             var font = OverlayThemeManager.ResolveTimerFont(this, _effectiveOverlayTheme, fontFamily);
             TimeText.FontFamily = font;
@@ -230,6 +241,8 @@ namespace StopwatchOverlay
             // Popup content has a separate visual tree. Give it the same local
             // palette explicitly, without touching global application resources.
             OverlayThemeManager.Apply(ActionPopupRoot, overlayTheme, applicationTheme);
+            Themes.NavigatorVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
+            Themes.NavigatorVisual.SetEnabled(ActionPopupRoot, effective == OverlayThemeCatalog.Pirate);
             if (_effectiveOverlayTheme == effective)
                 return;
             _effectiveOverlayTheme = effective;
@@ -241,7 +254,7 @@ namespace StopwatchOverlay
             Themes.AcanthusVisual.SetScope(ActionPopupRoot, lightScope);
             RightCornerTransform.ScaleX = effective == OverlayThemeCatalog.AcanthusLight ? -1 : 1;
             ApplySettings(_textColor, _borderColor, _fontSize, _borderWidth,
-                _fontFamily, _backgroundOpacity, _useThemeTextColor);
+                _fontFamily, _backgroundOpacity, _useThemeTextColor, Themes.NavigatorVisual.GetOpaqueParts(this));
         }
 
         public void SetHideFromCapture(bool hideFromCapture)
@@ -270,6 +283,7 @@ namespace StopwatchOverlay
 
         public void SetRecIndicatorVisible(bool visible)
         {
+            NavigatorClockSurface.RecVisible = visible;
             RecIndicator.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
 

@@ -11,6 +11,7 @@ public static class OverlayThemeCatalog
     public const string Daylight = AppThemeCatalog.Daylight;
     public const string PixelDeckNight = AppThemeCatalog.PixelDeckNight;
     public const string PixelDeckDay = AppThemeCatalog.PixelDeckDay;
+    public const string Pirate = AppThemeCatalog.Pirate;
     public const string AcanthusLight = "Acanthus Light";
     public const string AcanthusDarkElegantOlive = "Acanthus Dark Elegant Olive";
     public const string AcanthusDarkGoldCrest = "Acanthus Dark Gold Crest";
@@ -20,12 +21,15 @@ public static class OverlayThemeCatalog
     {
         FollowApplicationTheme, Midnight, Daylight, PixelDeckNight, PixelDeckDay,
         AcanthusLight, AcanthusDarkElegantOlive, AcanthusDarkGoldCrest,
-        AcanthusDarkMinimalBotanical
+        AcanthusDarkMinimalBotanical, Pirate
     });
 
     public static string Normalize(string? value)
     {
         string candidate = value?.Trim() ?? string.Empty;
+        // Preserve independent floating-clock selections from the original name.
+        if (candidate.Equals("Pirate", StringComparison.OrdinalIgnoreCase))
+            return Pirate;
         foreach (string choice in All)
         {
             if (candidate.Equals(choice, StringComparison.OrdinalIgnoreCase))
@@ -58,7 +62,12 @@ public static class OverlayThemeCatalog
             return requested;
 
         string panel = AppThemeCatalog.Normalize(applicationTheme);
-        return panel == AppThemeCatalog.Acanthus ? AcanthusLight : panel;
+        return panel switch
+        {
+            AppThemeCatalog.Acanthus => AcanthusLight,
+            AppThemeCatalog.Pirate => Pirate,
+            _ => panel
+        };
     }
 
     public static bool IsAcanthus(string? theme)

@@ -76,6 +76,8 @@ namespace StopwatchOverlay
         // Application chrome theme. Stable display names are kept in JSON for
         // backwards compatibility with the legacy "Dark" setting.
         public string ThemeMode { get; set; } = AppThemeCatalog.Midnight;
+        public double UiScalePercent { get; set; } = 90;
+        public TypographySettings Typography { get; set; } = new();
 
         // ThemeMode remains the JSON contract so older releases can still read
         // the panel preference. The independent overlay choice is never folded
@@ -104,6 +106,7 @@ namespace StopwatchOverlay
         public double TextSize { get; set; } = 48;
         public double BorderWidth { get; set; } = 2;
         public double BackgroundOpacity { get; set; } = 50;
+        public NavigatorOpaqueParts OpaqueOverlayParts { get; set; } = NavigatorOpaqueParts.Default;
         public bool HideOverlayFromCapture { get; set; } = false;
 
         // Layout
@@ -231,6 +234,9 @@ namespace StopwatchOverlay
             NotesSubfolder = string.IsNullOrWhiteSpace(NotesSubfolder) ? "Notes" : NotesSubfolder.Trim();
 
             ThemeMode = AppThemeCatalog.Normalize(ThemeMode);
+            UiScalePercent = AppUiScale.Normalize(UiScalePercent);
+            Typography ??= new();
+            Typography.Normalize();
             OverlayTheme = OverlayThemeCatalog.Normalize(OverlayTheme);
             TextColor = NormalizeChoice(
                 TextColor,
@@ -252,6 +258,7 @@ namespace StopwatchOverlay
             TextSize = NormalizeRange(TextSize, 16, 120, 48);
             BorderWidth = NormalizeRange(BorderWidth, 1, 5, 2);
             BackgroundOpacity = NormalizeRange(BackgroundOpacity, 0, 100, 50);
+            OpaqueOverlayParts &= NavigatorOpaqueParts.All;
             LightRingBrightness = NormalizeRange(LightRingBrightness, 10, 100, 100);
             LightRingWidth = NormalizeRange(LightRingWidth, 5, 100, 20);
             ScreenIndex = Math.Clamp(ScreenIndex, -1, 64);

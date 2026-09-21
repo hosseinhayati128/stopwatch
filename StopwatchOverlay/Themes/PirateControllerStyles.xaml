@@ -1,0 +1,296 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:p="clr-namespace:StopwatchOverlay.Themes">
+ <Style x:Key="PirateOnly" TargetType="FrameworkElement">
+  <Setter Property="Visibility" Value="Collapsed"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Visibility" Value="Visible"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerFrame" TargetType="Grid">
+  <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="{StaticResource PirateWood}"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerDock" TargetType="DockPanel">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Margin" Value="26,28,26,24"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerHeader" TargetType="Border">
+  <Setter Property="Height" Value="52"/><Setter Property="Background" Value="{DynamicResource ApplicationHeaderBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource SubtleDividerBrush}"/><Setter Property="BorderThickness" Value="0,0,0,1"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Height" Value="Auto"/><Setter Property="Background" Value="{StaticResource PirateHeader}"/>
+   <Setter Property="BorderBrush" Value="#27170F"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerHeaderTitle" TargetType="TextBlock" BasedOn="{StaticResource AcanthusHeaderTitle}">
+  <Setter Property="Text" Value="Stopwatch Overlay"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Text" Value="Stopwatch Controller"/><Setter Property="Foreground" Value="#F6E6BF"/>
+   <Setter Property="FontFamily" Value="{StaticResource PirateHeadingFont}"/><Setter Property="FontSize" Value="35"/>
+   <Setter Property="FontWeight" Value="Bold"/>
+   <Setter Property="Effect"><Setter.Value><DropShadowEffect Color="#100905" BlurRadius="2" ShadowDepth="2" Opacity=".95"/></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerBrandIcon" TargetType="Image">
+  <Setter Property="Visibility" Value="{DynamicResource BrandIconVisibility}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers>
+ </Style>
+
+ <Style x:Key="PirateActionButton" TargetType="Button">
+  <Setter Property="Height" Value="74"/>
+  <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/>
+  <Setter Property="Foreground" Value="#26140C"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+  <Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+  <Setter Property="Padding" Value="10,4"/><Setter Property="Cursor" Value="Hand"/>
+  <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+ </Style>
+ <Style x:Key="PiratePrimaryAction" TargetType="Button" BasedOn="{StaticResource PirateActionButton}">
+  <Setter Property="p:PirateVisual.Icon" Value="{StaticResource PirateLion}"/>
+ </Style>
+ <Style x:Key="ControllerTopButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+  <Setter Property="Height" Value="34"/><Setter Property="Padding" Value="12,4"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/>
+   <Setter Property="Height" Value="48"/><Setter Property="Foreground" Value="#28170C"/>
+   <Setter Property="FontSize" Value="23"/><Setter Property="FontWeight" Value="Bold"/>
+   <Setter Property="FontFamily" Value="{StaticResource PirateHeadingFont}"/>
+   <Setter Property="Padding" Value="14,3"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerMenu" TargetType="Menu" BasedOn="{StaticResource {x:Type Menu}}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Background" Value="{StaticResource PirateWood}"/><Setter Property="Foreground" Value="#EBD5AC"/>
+   <Setter Property="FontFamily" Value="{StaticResource PirateHeadingFont}"/><Setter Property="FontSize" Value="21"/>
+   <Setter Property="Padding" Value="6,2,6,5"/><Setter Property="BorderBrush" Value="#9A754D"/><Setter Property="BorderThickness" Value="0,0,0,2"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Menu"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ItemsPresenter/></Border></ControlTemplate></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRail" TargetType="Border">
+  <Setter Property="Background" Value="{DynamicResource NavigationRailBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource SubtleDividerBrush}"/>
+  <Setter Property="BorderThickness" Value="0,0,1,0"/><Setter Property="Padding" Value="14,18"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Background" Value="{StaticResource PirateRail}"/><Setter Property="BorderBrush" Value="#644530"/>
+   <Setter Property="BorderThickness" Value="0,0,9,0"/><Setter Property="Padding" Value="14,18,18,10"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailHeading" TargetType="TextBlock" BasedOn="{StaticResource DisplayHeadingText}">
+  <Setter Property="FontSize" Value="22"/><Setter Property="Margin" Value="4,0,0,12"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="FontSize" Value="34"/><Setter Property="Foreground" Value="#F4DCA1"/><Setter Property="FontFamily" Value="{StaticResource PirateHeadingFont}"/>
+   <Setter Property="FontWeight" Value="Bold"/><Setter Property="Margin" Value="0,0,0,13"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailItem" TargetType="ListBoxItem">
+  <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Margin" Value="0,0,0,8"/><Setter Property="Padding" Value="0"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Margin" Value="0,0,0,10"/><Setter Property="Foreground" Value="#F5DCAD"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+    <Grid>
+     <Border x:Name="Card" Background="#38180C06" BorderBrush="#95794C" BorderThickness="1" CornerRadius="3" Padding="2">
+      <Border BorderBrush="#443020" BorderThickness="2" CornerRadius="2"><ContentPresenter/></Border>
+     </Border>
+     <Rectangle Fill="{StaticResource PirateSwords}" Width="35" Height="35" VerticalAlignment="Bottom" Margin="0,0,0,-20" IsHitTestVisible="False"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsSelected" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="#F6DBA8"/><Setter TargetName="Card" Property="Effect"><Setter.Value><DropShadowEffect Color="#E2BA72" BlurRadius="5" ShadowDepth="0" Opacity=".45"/></Setter.Value></Setter></Trigger>
+     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="Background" Value="#555E4126"/></Trigger>
+     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="#44D2C2"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailCard" TargetType="Border">
+  <Setter Property="Padding" Value="12,10"/><Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}"/><Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="{DynamicResource ThemeCardCornerRadius}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="12,7,8,9"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailName" TargetType="TextBlock">
+  <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="25"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="Foreground" Value="#F3D8A4"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailSummary" TargetType="TextBlock">
+  <Setter Property="FontSize" Value="11"/><Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/><Setter Property="Margin" Value="0,4,0,0"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="16"/><Setter Property="Margin" Value="0"/><Setter Property="Foreground" Value="#E9CFA4"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailStatus" TargetType="TextBlock">
+  <Setter Property="FontSize" Value="11"/><Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+  <Setter Property="Margin" Value="4,0,4,8"/><Setter Property="TextWrapping" Value="Wrap"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="17"/><Setter Property="Foreground" Value="#E9CFA4"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerRailNew" TargetType="Button" BasedOn="{StaticResource StartButton}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/><Setter Property="p:PirateVisual.Icon" Value="{StaticResource PirateAnchor}"/>
+   <Setter Property="p:PirateVisual.EndIcon" Value="{StaticResource PirateHammer}"/>
+   <Setter Property="Height" Value="58"/><Setter Property="FontSize" Value="26"/><Setter Property="Foreground" Value="#24140B"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="Padding" Value="8,0"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerMap" TargetType="Border">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="{StaticResource PirateMap}"/><Setter Property="Margin" Value="6,4,0,0"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerWorkspace" TargetType="Grid">
+  <Setter Property="Margin" Value="20,14,20,16"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Margin" Value="36,20,32,24"/><Setter Property="MinHeight" Value="590"/><Setter Property="TextElement.Foreground" Value="#2A180E"/><Setter Property="TextElement.FontFamily" Value="{StaticResource PirateBodyFont}"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerWorkspaceTitle" TargetType="TextBlock" BasedOn="{StaticResource DisplayHeadingText}">
+  <Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="TextAlignment" Value="Center"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="FontFamily" Value="{StaticResource PirateHeadingFont}"/><Setter Property="FontStyle" Value="Italic"/>
+   <Setter Property="FontWeight" Value="Bold"/><Setter Property="FontSize" Value="42"/><Setter Property="Foreground" Value="#28160E"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerMode" TargetType="RadioButton" BasedOn="{StaticResource AcanthusModeRadio}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Foreground" Value="#29160E"/><Setter Property="FontSize" Value="23"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+   <Setter Property="Margin" Value="0,0,18,0"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
+    <StackPanel Orientation="Horizontal" Background="Transparent">
+     <Grid Width="29" Height="29" Margin="0,0,7,0">
+      <Ellipse Fill="{StaticResource PirateBrass}" Stroke="#372317" StrokeThickness="2"/>
+      <Ellipse Fill="#42291A" Stroke="#E7C58B" StrokeThickness="1" Margin="4"/>
+      <Ellipse x:Name="Gem" Fill="#1BD5C8" Stroke="#062924" StrokeThickness="2" Margin="7" Visibility="Collapsed"/>
+      <Ellipse x:Name="Gleam" Fill="#A4FFFF" Width="5" Height="4" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,9,0,0" Visibility="Collapsed"/>
+      <Ellipse x:Name="Focus" Stroke="#169587" StrokeThickness="2" Margin="-3" Visibility="Collapsed"/>
+     </Grid>
+     <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/>
+    </StackPanel>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsChecked" Value="True"><Setter TargetName="Gem" Property="Visibility" Value="Visible"/><Setter TargetName="Gleam" Property="Visibility" Value="Visible"/></Trigger>
+     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Focus" Property="Visibility" Value="Visible"/></Trigger>
+     <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="#825624"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value=".5"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerHero" TargetType="Border" BasedOn="{StaticResource AcanthusTimerHero}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,10,0,24"/><Setter Property="MinHeight" Value="114"/><Setter Property="Effect" Value="{x:Null}"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerTime" TargetType="TextBlock" BasedOn="{StaticResource AcanthusControllerTime}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerActions" TargetType="p:ControllerActionPanel">
+  <Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,0,12"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Margin" Value="0,0,0,8"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLaps" TargetType="Border">
+  <Setter Property="MinHeight" Value="96"/><Setter Property="MaxHeight" Value="146"/><Setter Property="VerticalAlignment" Value="Top"/>
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="BorderThickness" Value="{DynamicResource ThemePanelBorderThickness}"/>
+  <Setter Property="CornerRadius" Value="{DynamicResource ThemeCardCornerRadius}"/><Setter Property="Effect" Value="{DynamicResource ThemePanelShadowEffect}"/><Setter Property="Padding" Value="12"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="MaxHeight" Value="Infinity"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0,2,0,0"/><Setter Property="BorderBrush" Value="#A38454"/><Setter Property="Padding" Value="0,8,0,0"/><Setter Property="Effect" Value="{x:Null}"/><Setter Property="MinHeight" Value="182"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLapTitle" TargetType="TextBlock" BasedOn="{StaticResource AcanthusSectionTitle}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="27"/><Setter Property="Foreground" Value="#2A180E"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLapPlaceholder" TargetType="TextBlock">
+  <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/><Setter Property="TextAlignment" Value="Center"/><Setter Property="TextWrapping" Value="Wrap"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="20"/><Setter Property="Foreground" Value="#392318"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="Margin" Value="84,0,86,0"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerStatus" TargetType="Border">
+  <Setter Property="CornerRadius" Value="{DynamicResource ThemeCardCornerRadius}"/><Setter Property="Padding" Value="10"/><Setter Property="Margin" Value="20,0,20,16"/>
+  <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="BorderThickness" Value="{DynamicResource ThemePanelBorderThickness}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Margin" Value="10,0,0,0"/><Setter Property="Padding" Value="6,7"/><Setter Property="BorderThickness" Value="0"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerStart" TargetType="Button" BasedOn="{StaticResource AcanthusPrimaryAction}">
+ <Setter Property="Width" Value="150"/><Setter Property="Margin" Value="0,0,10,0"/>
+ <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+ <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/><Setter Property="p:PirateVisual.Icon" Value="{StaticResource PirateLion}"/>
+ <Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="74"/><Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="10,4"/>
+ <Setter Property="Foreground" Value="#29170D"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+ <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+ </Trigger></Style.Triggers></Style>
+ <Style x:Key="ControllerLap" TargetType="Button" BasedOn="{StaticResource AcanthusSecondaryAction}">
+ <Setter Property="Width" Value="150"/><Setter Property="Margin" Value="0,0,10,0"/>
+ <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+ <Setter Property="p:PirateVisual.EndIcon" Value="{StaticResource PirateHammer}"/>
+ <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/><Setter Property="p:PirateVisual.Icon" Value="{StaticResource PirateTelescope}"/>
+ <Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="74"/><Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="10,4"/>
+ <Setter Property="Foreground" Value="#29170D"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+ <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+ </Trigger></Style.Triggers></Style>
+ <Style x:Key="ControllerReset" TargetType="Button" BasedOn="{StaticResource AcanthusResetButton}">
+ <Setter Property="Width" Value="150"/><Setter Property="Margin" Value="0,0,10,0"/>
+ <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+ <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/><Setter Property="p:PirateVisual.Icon" Value="{StaticResource PirateRam}"/>
+ <Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="74"/><Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="10,4"/>
+ <Setter Property="Foreground" Value="#29170D"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+ <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+ </Trigger></Style.Triggers></Style>
+ <Style x:Key="ControllerOverlay" TargetType="Button" BasedOn="{StaticResource AcanthusSecondaryAction}">
+ <Setter Property="Width" Value="150"/><Setter Property="Margin" Value="0,0,10,0"/>
+ <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+ <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/><Setter Property="p:PirateVisual.Icon" Value="{StaticResource PiratePaint}"/>
+ <Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="74"/><Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="10,4"/>
+ <Setter Property="Foreground" Value="#29170D"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+ <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+ </Trigger></Style.Triggers></Style>
+ <Style x:Key="ControllerMenuItem" TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Padding" Value="18,10"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuItem">
+    <Grid>
+     <Border x:Name="MenuSurface" Background="Transparent" Padding="{TemplateBinding Padding}" BorderBrush="#9E7852" BorderThickness="0">
+      <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
+     </Border>
+     <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+      <Border Background="#291B14" BorderBrush="#B9925C" BorderThickness="1" Padding="5"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/></Border>
+     </Popup>
+    </Grid>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="MenuSurface" Property="Background" Value="#664F321F"/><Setter TargetName="MenuSurface" Property="BorderThickness" Value="1"/></Trigger>
+     <Trigger Property="IsSubmenuOpen" Value="True"><Setter TargetName="MenuSurface" Property="Background" Value="#80523421"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value=".5"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLapList" TargetType="ListBox">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Foreground" Value="#321D10"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+   <Setter Property="FontSize" Value="19"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLapRow" TargetType="TextBlock">
+  <Setter Property="FontFamily" Value="{DynamicResource ThemeMonoFontFamily}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Foreground" Value="#321D10"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+   <Setter Property="FontSize" Value="21"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerLapItem" TargetType="ListBoxItem">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Padding" Value="10,3"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+    <Border Background="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+   </ControlTemplate></Setter.Value></Setter>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerEditorRadio" TargetType="RadioButton" BasedOn="{StaticResource ControllerMode}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="18"/></Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerTimeInput" TargetType="TextBox" BasedOn="{StaticResource TimeInputBox}">
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Padding" Value="2,5"/><Setter Property="CaretBrush" Value="#301B10"/>
+   <Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="20"/>
+   <Setter Property="Foreground" Value="#301B10"/><Setter Property="Background" Value="#EED7A4"/>
+   <Setter Property="BorderBrush" Value="#89603B"/><Setter Property="BorderThickness" Value="1"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerEditorLabel" TargetType="TextBlock">
+  <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="18"/>
+   <Setter Property="Foreground" Value="#604124"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerStatusLabel" TargetType="TextBlock">
+  <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/><Setter Property="FontSize" Value="12"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True">
+   <Setter Property="Foreground" Value="#EBD4AB"/><Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/><Setter Property="FontSize" Value="16"/>
+  </Trigger></Style.Triggers>
+ </Style>
+ <Style x:Key="ControllerShortcutLabel" TargetType="TextBlock" BasedOn="{StaticResource ControllerStatusLabel}">
+  <Setter Property="FontSize" Value="10"/><Setter Property="Opacity" Value=".7"/>
+  <Style.Triggers><Trigger Property="p:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="14"/><Setter Property="Opacity" Value="1"/></Trigger></Style.Triggers>
+ </Style>
+</ResourceDictionary>

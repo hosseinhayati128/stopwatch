@@ -31,11 +31,13 @@
             <!-- Only this surface receives user opacity; text, border, ornaments
                  and the detached Popup stay outside its alpha/effect scope. -->
             <Border x:Name="OverlayBackgroundSurface"
+                    Style="{StaticResource NavigatorNativeLayer}"
                     Background="{DynamicResource OverlayChromeBrush}"
                     CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
                     Effect="{DynamicResource OverlayShadowEffect}"
                     IsHitTestVisible="False"/>
             <Border x:Name="OverlayBorder"
+                    Style="{StaticResource NavigatorNativeLayer}"
                     Background="Transparent"
                     BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
                     BorderThickness="{DynamicResource ThemeOverlayFrameBorderThickness}"
@@ -170,10 +172,15 @@
             <!-- An overlay, rather than an outer border, prevents activation from
                  changing the measured window size or its anchored position. -->
             <Border x:Name="ActiveIndicatorBorder"
+                    Style="{StaticResource NavigatorNativeLayer}"
                     BorderBrush="Transparent"
                     BorderThickness="1.5"
                     CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
                     IsHitTestVisible="False"/>
+            <ac:NavigatorClock x:Name="NavigatorClockSurface" Style="{StaticResource NavigatorClockLayer}"
+                Text="{Binding Text, ElementName=TimeText}" ProjectName="{Binding Text, ElementName=TimerNameText}"
+                TextSize="{Binding FontSize, ElementName=TimeText}" TimerBrush="{Binding Foreground, ElementName=TimeText}"
+                NameBrush="{Binding Foreground, ElementName=TimerNameText}" TimerFont="{Binding FontFamily, ElementName=TimeText}"/>
         </Grid>
 
         <!-- Popup keeps the toolbar outside this window's measured size. Its child
@@ -191,19 +198,16 @@
                   MouseLeave="ActionPopupRoot_MouseLeave">
                 <!-- Top clearance gives the slide transform room without clipping. -->
                 <Border x:Name="ActionSurface"
+                        Style="{StaticResource NavigatorToolbarSurfaceStyle}"
                         Margin="0,8,0,0"
-                        Padding="{DynamicResource OverlayToolbarPadding}"
-                        Background="{DynamicResource OverlayToolbarSurfaceBrush}"
                         BorderBrush="{DynamicResource OverlayToolbarBorderBrush}"
-                        BorderThickness="{DynamicResource ThemePanelBorderThickness}"
-                        CornerRadius="{DynamicResource OverlayToolbarCornerRadius}"
-                        Effect="{DynamicResource OverlayToolbarShadowEffect}"
                         Opacity="0">
                     <Border.RenderTransform>
                         <TranslateTransform x:Name="ActionTranslate" Y="-8"/>
                     </Border.RenderTransform>
-                    <StackPanel Orientation="Horizontal">
+                    <ac:NavigatorToolbarPanel ReferenceWidth="{Binding ActualWidth, ElementName=TimerSurface}">
                         <Button x:Name="CloseActionButton"
+                                ac:NavigatorVisual.Action="Close"
                                 Style="{StaticResource OverlayCloseButtonStyle}"
                                 ToolTip="Close timer"
                                 Click="CloseActionButton_Click">
@@ -217,6 +221,7 @@
                         </Button>
 
                         <Button x:Name="PauseResumeActionButton"
+                                ac:NavigatorVisual.Action="Play"
                                 Style="{StaticResource OverlayPauseButtonStyle}"
                                 ToolTip="Pause timer"
                                 Click="PauseResumeActionButton_Click">
@@ -243,6 +248,7 @@
                         </Button>
 
                         <Button x:Name="ResetActionButton"
+                                ac:NavigatorVisual.Action="Reset"
                                 Style="{StaticResource OverlayActionButtonStyle}"
                                 ToolTip="Reset timer"
                                 Click="ResetActionButton_Click">
@@ -255,7 +261,7 @@
                                   StrokeEndLineCap="Round"
                                   StrokeLineJoin="Round"/>
                         </Button>
-                    </StackPanel>
+                    </ac:NavigatorToolbarPanel>
                 </Border>
             </Grid>
         </Popup>

@@ -306,6 +306,36 @@ public partial class ProjectDashboardWindow : Window
 
     private void Window_Closed(object? sender, EventArgs e) => _liveRefreshTimer.Stop();
 
+    private bool? _compactHeader;
+
+    private void HeaderLayout_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // ActualWidth here is in logical units, after the page scale transform.
+        // Keep every action accessible when a large scale reduces usable width.
+        bool compact = e.NewSize.Width < 850;
+        if (_compactHeader == compact || SummaryGrid is null)
+            return;
+        _compactHeader = compact;
+
+        Grid.SetColumnSpan(HeaderTitlePanel, compact ? 2 : 1);
+        Grid.SetRow(HeaderActionsPanel, compact ? 1 : 0);
+        Grid.SetColumn(HeaderActionsPanel, compact ? 0 : 1);
+        Grid.SetColumnSpan(HeaderActionsPanel, compact ? 2 : 1);
+        HeaderActionsPanel.Margin = compact ? new Thickness(0, 8, 0, 0) : new Thickness(0);
+        Grid.SetRow(HeaderProjectPanel, compact ? 2 : 1);
+        Grid.SetColumnSpan(HeaderProjectPanel, compact ? 2 : 1);
+        HeaderProjectPanel.Margin = compact ? new Thickness(0, 12, 0, 0) : new Thickness(0, 14, 16, 0);
+        Grid.SetRow(HeaderRangePanel, compact ? 3 : 1);
+        Grid.SetColumn(HeaderRangePanel, compact ? 0 : 1);
+        Grid.SetColumnSpan(HeaderRangePanel, compact ? 2 : 1);
+        HeaderRangePanel.Margin = compact ? new Thickness(0, 8, 0, 0) : new Thickness(0, 14, 0, 0);
+
+        SummaryGrid.Columns = compact ? 2 : 4;
+        SummaryGrid.Rows = compact ? 2 : 1;
+        foreach (Border card in SummaryGrid.Children.OfType<Border>())
+            card.Margin = new Thickness(0, 0, 10, compact ? 10 : 0);
+    }
+
     private void SelectRange(DashboardRange range)
     {
         _selectedRange = range;
@@ -340,6 +370,7 @@ public partial class ProjectDashboardWindow : Window
 
         void SetRangeButtonState(Button button, bool selected)
         {
+            StopwatchOverlay.Themes.PirateVisual.SetSelected(button, selected);
             if (selected)
             {
                 button.Background = selectedBackground;
@@ -434,7 +465,7 @@ public partial class ProjectDashboardWindow : Window
         ActiveStatusDot.Opacity = activeCount > 0 ? 1 : 0.25;
         RangeHeadingText.Text = GetRangeHeading(asOfLocal);
         UpdatedText.Text = $"Updated {asOfLocal:t}";
-        UpdatedText.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+        UpdatedText.ClearValue(TextBlock.ForegroundProperty);
 
         RenderProjectBars(intervals);
         List<DayTotal> dayTotals = BuildDayTotals(intervals);
@@ -669,7 +700,7 @@ public partial class ProjectDashboardWindow : Window
             RecordsPanel.Children.Add(new TextBlock
             {
                 Text = group.Key.ToString("dddd, MMMM d", CultureInfo.CurrentCulture),
-                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 FontWeight = FontWeights.SemiBold,
                 Margin = new Thickness(0, RecordsPanel.Children.Count == 0 ? 0 : 14, 0, 7)
@@ -726,14 +757,14 @@ public partial class ProjectDashboardWindow : Window
         });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(112) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(82) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 82 });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         grid.Children.Add(new Border
         {
             Width = 4,
             Background = (Brush)FindResource("AccentBrush"),
-            CornerRadius = new CornerRadius(2),
+            CornerRadius = new CornerRadius(AppThemeManager.IsPirate ? 6 : 2),
             Margin = new Thickness(0, 1, 0, 1)
         });
 
@@ -865,7 +896,7 @@ public partial class ProjectDashboardWindow : Window
     private TextBlock CreateRecordsSecondaryCell(string text) => new()
     {
         Text = text,
-        Foreground = (Brush)FindResource("SecondaryTextBrush"),
+        Foreground = DashboardTextBrush("SecondaryTextBrush"),
         TextTrimming = TextTrimming.CharacterEllipsis,
         VerticalAlignment = VerticalAlignment.Center,
         Margin = new Thickness(7, 0, 7, 0)
@@ -1016,6 +1047,40 @@ public partial class ProjectDashboardWindow : Window
             value.IsLive);
     }
 
+    private Brush DashboardTextBrush(string resourceKey) => AppThemeManager.IsPirate
+        ? new SolidColorBrush(resourceKey == "PrimaryTextBrush" ? Color.FromRgb(60, 28, 17) : Color.FromRgb(80, 48, 29))
+        : (Brush)FindResource(resourceKey);
+
+    private void DecoratePirateGauge(Border track, Grid proportion)
+    {
+        if (!AppThemeManager.IsPirate)
+            return;
+
+        track.Height = 20;
+        track.Padding = new Thickness(3, 2, 3, 2);
+        track.CornerRadius = new CornerRadius(8);
+        track.BorderThickness = new Thickness(3);
+        track.BorderBrush = (Brush)FindResource("PirateBrass");
+        track.Background = new SolidColorBrush(Color.FromRgb(93, 67, 37));
+        track.Effect = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            Color = Color.FromRgb(43, 25, 13), BlurRadius = 3, ShadowDepth = 1, Opacity = 0.6
+        };
+        if (proportion.Children[0] is Border fill)
+        {
+            fill.CornerRadius = new CornerRadius(4);
+            fill.Background = new LinearGradientBrush(new GradientStopCollection
+            {
+                new(Color.FromRgb(31, 128, 127), 0),
+                new(Color.FromRgb(123, 240, 215), 0.22),
+                new(Color.FromRgb(31, 192, 159), 0.5),
+                new(Color.FromRgb(6, 103, 91), 1)
+            }, new Point(0, 0), new Point(0, 1));
+            fill.BorderBrush = new SolidColorBrush(Color.FromRgb(87, 203, 182));
+            fill.BorderThickness = new Thickness(0.5);
+        }
+    }
+
     private void RenderProjectBars(IReadOnlyList<DisplayInterval> intervals)
     {
         ProjectBarsPanel.Children.Clear();
@@ -1054,7 +1119,7 @@ public partial class ProjectDashboardWindow : Window
             label.Children.Add(new TextBlock
             {
                 Text = project.Name,
-                Foreground = (Brush)FindResource("PrimaryTextBrush"),
+                Foreground = DashboardTextBrush("PrimaryTextBrush"),
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxWidth = 118,
                 VerticalAlignment = VerticalAlignment.Center
@@ -1065,7 +1130,7 @@ public partial class ProjectDashboardWindow : Window
             {
                 Height = 10,
                 CornerRadius = new CornerRadius(5),
-                Background = (Brush)FindResource("SurfaceRaisedBrush"),
+                Background = AppThemeManager.IsPirate ? new SolidColorBrush(Color.FromArgb(45, 145, 103, 57)) : (Brush)FindResource("SurfaceRaisedBrush"),
                 Margin = new Thickness(0, 0, 12, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -1086,12 +1151,13 @@ public partial class ProjectDashboardWindow : Window
                 CornerRadius = new CornerRadius(5)
             });
             track.Child = proportion;
+            DecoratePirateGauge(track, proportion);
             row.Children.Add(track);
 
             var duration = new TextBlock
             {
                 Text = FormatCompactDuration(project.Duration),
-                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 MinWidth = 62,
                 TextAlignment = TextAlignment.Right,
@@ -1141,7 +1207,7 @@ public partial class ProjectDashboardWindow : Window
             row.Children.Add(new TextBlock
             {
                 Text = day.Date.ToString("MMM d", CultureInfo.CurrentCulture),
-                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center
             });
@@ -1149,7 +1215,7 @@ public partial class ProjectDashboardWindow : Window
             var track = new Border
             {
                 Height = 8,
-                Background = (Brush)FindResource("SurfaceRaisedBrush"),
+                Background = AppThemeManager.IsPirate ? new SolidColorBrush(Color.FromArgb(45, 145, 103, 57)) : (Brush)FindResource("SurfaceRaisedBrush"),
                 CornerRadius = (CornerRadius)FindResource("ThemeItemCornerRadius"),
                 Margin = new Thickness(0, 0, 9, 0),
                 VerticalAlignment = VerticalAlignment.Center
@@ -1171,12 +1237,13 @@ public partial class ProjectDashboardWindow : Window
                 CornerRadius = new CornerRadius(4)
             });
             track.Child = proportion;
+            DecoratePirateGauge(track, proportion);
             row.Children.Add(track);
 
             var valueText = new TextBlock
             {
                 Text = FormatCompactDuration(day.Duration),
-                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 MinWidth = 52,
                 TextAlignment = TextAlignment.Right,
@@ -1387,7 +1454,7 @@ public partial class ProjectDashboardWindow : Window
                 FontSize = 10,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            monthLabel.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+            monthLabel.Style = (Style)FindResource("Caption");
             Grid.SetColumn(monthLabel, week + 1);
             Grid.SetColumnSpan(monthLabel, Math.Min(4, HeatmapWeekCount - week));
             HeatmapHost.Children.Add(monthLabel);
@@ -1403,7 +1470,7 @@ public partial class ProjectDashboardWindow : Window
                 FontSize = 10,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            dayLabel.SetResourceReference(TextBlock.ForegroundProperty, "SecondaryTextBrush");
+            dayLabel.Style = (Style)FindResource("Caption");
             Grid.SetRow(dayLabel, dayIndex + 1);
             HeatmapHost.Children.Add(dayLabel);
         }
@@ -1500,6 +1567,11 @@ public partial class ProjectDashboardWindow : Window
         Color accent = GetSolidResourceBrush(
             "AccentBrush",
             Color.FromRgb(66, 185, 232)).Color;
+        if (AppThemeManager.IsPirate)
+        {
+            surface = Color.FromRgb(207, 172, 120);
+            accent = Color.FromRgb(137, 22, 18);
+        }
         double[] strengths = [0, 0.18, 0.38, 0.62, 0.88];
         return strengths
             .Select(strength =>
@@ -1520,7 +1592,7 @@ public partial class ProjectDashboardWindow : Window
         {
             Text = "Less",
             FontSize = 10,
-            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            Foreground = DashboardTextBrush("SecondaryTextBrush"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 5, 0)
         });
@@ -1534,7 +1606,7 @@ public partial class ProjectDashboardWindow : Window
                 Background = brush,
                 BorderBrush = borderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(2),
+                CornerRadius = new CornerRadius(AppThemeManager.IsPirate ? 6 : 2),
                 Margin = new Thickness(2, 0, 0, 0)
             });
         }
@@ -1543,7 +1615,7 @@ public partial class ProjectDashboardWindow : Window
         {
             Text = "More",
             FontSize = 10,
-            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            Foreground = DashboardTextBrush("SecondaryTextBrush"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(6, 0, 0, 0)
         });
@@ -1597,7 +1669,7 @@ public partial class ProjectDashboardWindow : Window
             row.Children.Add(new TextBlock
             {
                 Text = dayGroup.Key.ToString("ddd, MMM d", CultureInfo.CurrentCulture),
-                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 Margin = new Thickness(0, 4, 12, 0)
             });
@@ -1605,7 +1677,7 @@ public partial class ProjectDashboardWindow : Window
             var track = new Grid
             {
                 Height = Math.Max(42, laneCount * 25 + 18),
-                Background = (Brush)FindResource("SurfaceRaisedBrush"),
+                Background = AppThemeManager.IsPirate ? new SolidColorBrush(Color.FromArgb(45, 145, 103, 57)) : (Brush)FindResource("SurfaceRaisedBrush"),
                 ClipToBounds = true
             };
             Grid.SetColumn(track, 1);
@@ -1653,7 +1725,7 @@ public partial class ProjectDashboardWindow : Window
             {
                 Text = hour == 24 ? "24:00" : $"{hour:00}:00",
                 FontSize = 9,
-                Foreground = (Brush)FindResource("SecondaryTextBrush")
+                Foreground = DashboardTextBrush("SecondaryTextBrush")
             };
             Canvas.SetLeft(label, Math.Clamp(x - (hour == 0 ? 0 : hour == 24 ? 30 : 14), 0, Math.Max(0, width - 30)));
             Canvas.SetTop(label, 1);
@@ -1766,7 +1838,7 @@ public partial class ProjectDashboardWindow : Window
     private TextBlock CreateMutedMessage(string text) => new()
     {
         Text = text,
-        Foreground = (Brush)FindResource("SecondaryTextBrush"),
+        Foreground = DashboardTextBrush("SecondaryTextBrush"),
         Margin = new Thickness(0, 5, 0, 5)
     };
 

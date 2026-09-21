@@ -7,9 +7,13 @@
     <Application.Resources>
       <ResourceDictionary>
         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="Themes/PirateAssets.xaml"/>
             <ResourceDictionary Source="Themes/AcanthusStyles.xaml"/>
+
             <ResourceDictionary Source="Themes/AcanthusOrnaments.xaml"/>
         </ResourceDictionary.MergedDictionaries>
+        <ScaleTransform x:Key="ApplicationScaleTransform" ScaleX="0.9" ScaleY="0.9"/>
+        <sys:Boolean x:Key="PirateControllerEnabled">False</sys:Boolean>
         <!-- Restrained neutral palette used throughout the controller. -->
         <DrawingBrush x:Key="AppBackgroundBrush" TileMode="Tile"
                       ViewportUnits="Absolute" Viewport="0,0,1,1"
@@ -102,13 +106,14 @@
         <Geometry x:Key="AcanthusCornerGeometry">M2 14C2 8 5 4 11 2M3 10C6 10 8 9 10 6M6 14C7 11 9 9 13 8</Geometry>
 
         <Style TargetType="Window">
+            <Setter Property="ac:PirateVisual.Enabled" Value="{DynamicResource PirateControllerEnabled}"/>
             <Setter Property="ac:AcanthusVisual.Scope" Value="{DynamicResource OrnamentVisibility}"/>
             <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
             <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Icon" Value="pack://application:,,,/StopwatchOverlay;component/project-logo.ico"/>
-        </Style>
+        <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="18"/></Trigger></Style.Triggers></Style>
 
         <Style TargetType="Menu">
             <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}"/>
@@ -217,7 +222,13 @@
                     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
                     <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/>
                 </Trigger>
-            </Style.Triggers>
+                            <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                    <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/>
+                    <Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+                    <Setter Property="FontSize" Value="18"/>
+                    <Setter Property="Foreground" Value="#2E180D"/>
+                    <Setter Property="Padding" Value="14,4"/>
+                </Trigger></Style.Triggers>
         </Style>
         
         <Style TargetType="Button" x:Key="StartButton" BasedOn="{StaticResource ButtonChrome}">
@@ -225,14 +236,26 @@
             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryActionBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
             <Setter Property="Template" Value="{StaticResource SemanticButtonTemplate}"/>
-        </Style>
+        <Style.Triggers>                <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                    <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/>
+                    <Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+                    <Setter Property="FontSize" Value="18"/>
+                    <Setter Property="Foreground" Value="#2E180D"/>
+                    <Setter Property="Padding" Value="14,4"/>
+                </Trigger></Style.Triggers></Style>
         
         <Style TargetType="Button" x:Key="StopButton" BasedOn="{StaticResource ButtonChrome}">
             <Setter Property="Background" Value="{DynamicResource DangerActionBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource DangerActionBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
             <Setter Property="Template" Value="{StaticResource SemanticButtonTemplate}"/>
-        </Style>
+        <Style.Triggers>                <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                    <Setter Property="Template" Value="{StaticResource PirateBrassButtonTemplate}"/>
+                    <Setter Property="FontFamily" Value="{StaticResource PirateBodyFont}"/>
+                    <Setter Property="FontSize" Value="18"/>
+                    <Setter Property="Foreground" Value="#761F18"/>
+                    <Setter Property="Padding" Value="14,4"/>
+                </Trigger></Style.Triggers></Style>
 
         <!-- These derived styles retain their original bases when Acanthus is off. -->
         <Style x:Key="AcanthusResetButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
@@ -316,7 +339,9 @@
                                     </ControlTemplate>
                                 </ToggleButton.Template>
                             </ToggleButton>
-                            <ContentPresenter Margin="12,0" VerticalAlignment="Center"
+                            <Path x:Name="PiratePickerArrow" Data="M0,0 L12,0 L6,7 Z" Fill="#744829" Stroke="#49301F" StrokeThickness="1"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed" IsHitTestVisible="False"/>
+                            <ContentPresenter x:Name="SelectionLabel" Margin="12,0" VerticalAlignment="Center"
                                               IsHitTestVisible="False"
                                               Content="{TemplateBinding SelectionBoxItem}"
                                               ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
@@ -340,6 +365,11 @@
                             </Popup>
                         </Grid>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                                <Setter TargetName="PiratePickerArrow" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="SelectionLabel" Property="Margin" Value="12,0,34,0"/>
+                                <Setter TargetName="ComboBorder" Property="Background" Value="{StaticResource PiratePaperBrush}"/>
+                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ComboBorder" Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
                             </Trigger>
@@ -539,7 +569,7 @@
                     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
                     <Setter Property="BorderBrush" Value="{DynamicResource SubtleDividerBrush}"/>
                 </Trigger>
-            </Style.Triggers>
+            <Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="{StaticResource PiratePaperBrush}"/><Setter Property="BorderBrush" Value="#987447"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="3"/></Trigger></Style.Triggers>
         </Style>
 
         <Style TargetType="GroupBox">
@@ -555,7 +585,7 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
-        </Style>
+        <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="FontSize" Value="18"/></Trigger></Style.Triggers></Style>
 
         <Style TargetType="TextBlock" x:Key="DisplayHeadingText">
             <Setter Property="FontFamily" Value="{DynamicResource DisplayHeadingFontFamily}"/>
@@ -570,7 +600,7 @@
             <Setter Property="BorderThickness" Value="{DynamicResource ThemePanelBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource ThemePanelCornerRadius}"/>
             <Setter Property="Effect" Value="{DynamicResource ThemePanelShadowEffect}"/>
-        </Style>
+        <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="{StaticResource PiratePaperBrush}"/><Setter Property="BorderBrush" Value="#987447"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="3"/></Trigger></Style.Triggers></Style>
 
         <Style TargetType="TextBox">
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>

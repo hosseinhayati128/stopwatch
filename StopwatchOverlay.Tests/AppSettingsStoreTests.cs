@@ -40,6 +40,8 @@ public sealed class AppSettingsStoreTests
     [InlineData("Pixel Deck Day", AppThemeCatalog.PixelDeckDay)]
     [InlineData("Acanthus", AppThemeCatalog.Acanthus)]
     [InlineData("acanthus", AppThemeCatalog.Acanthus)]
+    [InlineData("  pirate  ", AppThemeCatalog.Pirate)]
+    [InlineData("  One Piece  ", AppThemeCatalog.Pirate)]
     public void NormalizeTheme_MigratesLegacyAndRejectsUnknownValues(
         string? value,
         string expected)
@@ -48,7 +50,7 @@ public sealed class AppSettingsStoreTests
     }
 
     [Fact]
-    public void ThemeCatalog_ExposesAllFiveStableChoicesInDisplayOrder()
+    public void ThemeCatalog_ExposesStableChoicesInDisplayOrder()
     {
         Assert.Equal(
             [
@@ -56,7 +58,8 @@ public sealed class AppSettingsStoreTests
                 AppThemeCatalog.Daylight,
                 AppThemeCatalog.PixelDeckNight,
                 AppThemeCatalog.PixelDeckDay,
-                AppThemeCatalog.Acanthus
+                AppThemeCatalog.Acanthus,
+                AppThemeCatalog.Pirate
             ],
             AppThemeCatalog.All);
     }

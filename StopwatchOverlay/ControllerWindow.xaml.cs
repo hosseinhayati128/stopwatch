@@ -189,6 +189,8 @@ namespace StopwatchOverlay
             // created so startup never flashes the other theme.
             _settings = SettingsStore.Load();
             AppThemeManager.Apply(_settings.ThemeMode);
+            AppUiScale.Apply(_settings.UiScalePercent);
+            TypographyManager.Apply(_settings.Typography);
             _settings.ThemeMode = AppThemeManager.CurrentTheme;
             _appliedStartWithWindows = _settings.StartWithWindows;
             AppBackgroundManager.Apply(_settings, out _backgroundWarning);
@@ -1181,10 +1183,12 @@ namespace StopwatchOverlay
 
         private void ApplyResponsiveLayout(double width)
         {
+            width /= AppUiScale.Normalize(_settings.UiScalePercent) / 100.0;
             if (TimerRailColumn == null || TimerRail == null)
                 return;
             bool compact = ControllerLayoutPolicy.UseCompactLayout(width);
-            TimerRailColumn.Width = compact ? new GridLength(0) : new GridLength(260);
+            TimerRailColumn.Width = compact ? new GridLength(0)
+                : new GridLength(AppThemeManager.IsPirate ? Math.Clamp(width * 0.29, 260, 348) : 260);
             TimerRail.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         }
 
@@ -1484,6 +1488,7 @@ namespace StopwatchOverlay
 
             _backgroundApplyTimer.Stop();
             AppThemeManager.Apply(theme);
+            TypographyManager.Apply(_settings.Typography);
             AppBackgroundManager.Apply(_settings, out string? backgroundWarning);
             _backgroundWarning = backgroundWarning;
             if (backgroundWarning != null)
@@ -4191,7 +4196,8 @@ namespace StopwatchOverlay
 
             overlay.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
             overlay.ApplySettings(textColor, borderColor, fontSize, borderWidth, fontFamily, bgOpacity,
-                useThemeTextColor: _settings.TextColor == "Theme default");
+                useThemeTextColor: _settings.TextColor == "Theme default",
+                opaqueParts: _settings.OpaqueOverlayParts);
             overlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
         }
 
@@ -4238,7 +4244,19 @@ namespace StopwatchOverlay
             ToggleCombinedOverlayMenuItem.IsEnabled = workspaceMutable
                 && (_combinedOverlayMode || hasTimer);
             StartStopButton.Style = (Style)FindResource(
-                Themes.AcanthusVisual.PrimaryActionStyleKey(hasTimer, _isRunning));
+                AppThemeManager.IsPirate ? "PiratePrimaryAction"
+                    : Themes.AcanthusVisual.PrimaryActionStyleKey(hasTimer, _isRunning));
+            if (!AppThemeManager.IsPirate)
+            {
+                StartStopButton.Width = 150;
+                StartStopButton.Margin = new Thickness(0, 0, 10, 0);
+            }
+            else
+            {
+                StartStopButton.ClearValue(WidthProperty);
+                StartStopButton.ClearValue(MarginProperty);
+            }
+            ApplyResponsiveLayout(ActualWidth);
             RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
                 ? Visibility.Visible : Visibility.Collapsed;
             RefreshOverlayActiveStates();
@@ -4593,7 +4611,7 @@ namespace StopwatchOverlay
 
             SettingsChangeKind changes = _pendingDedicatedSettingsChanges;
             if (_settingsInteractionInProgress)
-                changes &= ~SettingsChangeKind.BackgroundStrength;
+                changes &= ~(SettingsChangeKind.BackgroundStrength | SettingsChangeKind.ApplicationScale | SettingsChangeKind.Typography);
 
             if (changes == SettingsChangeKind.None)
                 return;
@@ -4602,6 +4620,11 @@ namespace StopwatchOverlay
             _applyingDedicatedSettings = true;
             try
             {
+                if ((changes & SettingsChangeKind.ApplicationScale) != 0)
+                {
+                    AppUiScale.Apply(_settings.UiScalePercent);
+                    ApplyResponsiveLayout(ActualWidth);
+                }
                 bool themeChanged = SettingsChangePolicy.RequiresThemeApply(changes);
                 bool backgroundChanged = SettingsChangePolicy.RequiresBackgroundApply(changes);
                 bool screenChanged = (changes & SettingsChangeKind.OverlayScreen) != 0;
@@ -4622,6 +4645,12 @@ namespace StopwatchOverlay
                         SyncDedicatedSettingsControls(SettingsChangeKind.Theme);
                         _settingsWindow?.ReloadFromSettings();
                     }
+                }
+
+                if ((changes & (SettingsChangeKind.Typography | SettingsChangeKind.Theme | SettingsChangeKind.OverlayTheme)) != 0)
+                {
+                    TypographyManager.Apply(_settings.Typography);
+                    RepositionAllOverlays();
                 }
 
                 if (backgroundChanged)

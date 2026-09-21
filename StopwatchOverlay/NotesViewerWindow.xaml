@@ -1,174 +1,155 @@
-<Window x:Class="StopwatchOverlay.NotesViewerWindow"
+<Window x:Class="StopwatchOverlay.NotesViewerWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ac="clr-namespace:StopwatchOverlay.Themes"
-        Title="Notes, Todos &amp; Reminders"
-        ac:AcanthusVisual.Scope="{DynamicResource OrnamentVisibility}"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
-        Topmost="True"
-        ShowInTaskbar="False"
-        ResizeMode="NoResize"
-        Width="640"
-        Height="470"
-        WindowStartupLocation="CenterScreen"
-        Loaded="Window_Loaded"
-        PreviewKeyDown="Window_PreviewKeyDown">
-
+        Title="Notes, Todos &amp; Reminders" ac:AcanthusVisual.Scope="{DynamicResource OrnamentVisibility}"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Width="640" Height="470" MinWidth="400" MinHeight="340"
+        WindowStartupLocation="CenterScreen" Loaded="Window_Loaded" PreviewKeyDown="Window_PreviewKeyDown">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/PirateDialogStyles.xaml"/>
                 <ResourceDictionary Source="Themes/Overlay/OverlayStyles.xaml"/>
+                <ResourceDictionary Source="Themes/PirateNotesStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
+            <Style x:Key="ViewerSmallText" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Style.Triggers>
+                    <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                        <Setter Property="Foreground" Value="#55331D"/>
+                        <Setter Property="FontFamily" Value="{StaticResource NotesBodyFont}"/>
+                        <Setter Property="FontSize" Value="13"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
             <Style x:Key="TabFilterButtonStyle" TargetType="RadioButton">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                 <Setter Property="FontSize" Value="12"/>
-                <Setter Property="FontWeight" Value="Medium"/>
                 <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
                 <Setter Property="Padding" Value="12,5"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RadioButton">
-                            <Border x:Name="TabBorder"
-                                    Background="{TemplateBinding Background}"
-                                    CornerRadius="{DynamicResource ThemeItemCornerRadius}"
-                                    Padding="{TemplateBinding Padding}">
+                            <Border x:Name="TabBorder" Background="{TemplateBinding Background}" CornerRadius="4"
+                                    BorderBrush="Transparent" BorderThickness="1" Padding="{TemplateBinding Padding}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource PrimaryActionBrush}"/>
                                     <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
                                 </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="ac:PirateVisual.Enabled" Value="True"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="TabBorder" Property="Background" Value="#D1AD6E"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="ac:PirateVisual.Enabled" Value="True"/>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="TabBorder" Property="Background" Value="#347F70"/>
+                                    <Setter Property="Foreground" Value="#FFF0C5"/>
+                                </MultiTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <Style.Triggers>
+                    <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                        <Setter Property="Foreground" Value="#432515"/>
+                        <Setter Property="FontFamily" Value="{StaticResource NotesBodyFont}"/>
+                        <Setter Property="FontSize" Value="18"/>
+                        <Setter Property="Padding" Value="12,4"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
-
-    <Border Background="{DynamicResource DialogSurfaceBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
-            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
-            Margin="8"
-            MouseLeftButtonDown="Header_MouseLeftButtonDown">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="20" Direction="270" ShadowDepth="4" Opacity="0.55"/>
-        </Border.Effect>
-
-        <Grid Margin="18,14,18,14">
+    <ac:NoteArtworkBorder x:Name="NoteFrame" Artwork="Frame" Style="{StaticResource NotesFrameStyle}"
+                          LayoutTransform="{DynamicResource ApplicationScaleTransform}" Margin="8" SizeChanged="NoteFrame_SizeChanged">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-
-            <!-- Header -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                <Path Width="22" Height="22" HorizontalAlignment="Center" Margin="0,0,0,6"
-                      Data="{StaticResource AcanthusCrestGeometry}"
-                      Fill="{DynamicResource OrnamentAccentBrush}"
-                      Stretch="Uniform" Visibility="{DynamicResource OrnamentVisibility}"/>
-
-                <Grid>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="15" FontWeight="Bold"/>
-                        <TextBlock Text="Notes, Todos &amp; Reminders" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="15" FontWeight="SemiBold"
-                                   FontFamily="{DynamicResource DisplayHeadingFontFamily}" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <!-- Countdown badge -->
-                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderSoftBrush}" BorderThickness="{DynamicResource ThemeControlBorderThickness}"
-                                CornerRadius="{DynamicResource ThemeControlCornerRadius}" Padding="8,3" Margin="0,0,10,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⏱ " Foreground="{DynamicResource AccentBrush}" FontSize="11" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="CountdownText" Text="Auto-closing in 30s"
-                                           Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Medium"
-                                           FontFamily="{DynamicResource AppFontFamily}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Button x:Name="CloseButton"
-                                Style="{StaticResource OverlayCloseButtonStyle}"
-                                Width="22" Height="22"
-                                ToolTip="Close (Enter or Esc)"
-                                Click="CloseButton_Click">
-                            <Path Width="9" Height="9"
-                                  Data="M 1,1 L 8,8 M 8,1 L 1,8"
-                                  Stretch="Fill"
-                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
-                                  StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"/>
-                        </Button>
-                    </StackPanel>
+            <StackPanel x:Name="ViewerHeader" Margin="0,0,0,12" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Rectangle x:Name="ViewerSkull" Style="{StaticResource PirateDialogSkull}"/>
+                <Grid x:Name="HeadingGrid">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock x:Name="ViewerHeading" Text="✦ Notes, Todos &amp; Reminders" Style="{StaticResource NotesHeadingStyle}"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip="Notes, Todos &amp; Reminders" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Border x:Name="CountdownBadge" Grid.Column="1" CornerRadius="6" BorderThickness="1" Padding="7,4" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}"/>
+                                <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                                    <Setter Property="Background" Value="#503420"/><Setter Property="BorderBrush" Value="#AC8853"/>
+                                </Trigger></Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock x:Name="CountdownText" Text="Auto-closing in 30s" FontSize="11" FontFamily="{DynamicResource AppFontFamily}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                    <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="Foreground" Value="#EED19C"/></Trigger></Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <Button x:Name="CloseButton" Grid.Column="2" Style="{StaticResource OverlayCloseButtonStyle}"
+                            Width="28" Height="28" VerticalAlignment="Center" ToolTip="Close (Enter or Esc)" Click="CloseButton_Click">
+                        <Path Width="10" Height="10" Data="M 1,1 L 8,8 M 8,1 L 1,8" Stretch="Fill"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                              StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Button>
                 </Grid>
             </StackPanel>
-
-            <!-- Filter Tabs -->
-            <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource ThemeControlCornerRadius}" Padding="3" Margin="0,0,0,12" HorizontalAlignment="Left">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="FilterAllRadio" Content="All" IsChecked="True"
-                                 Style="{StaticResource TabFilterButtonStyle}"
-                                 Checked="FilterRadio_Checked"/>
-                    <RadioButton x:Name="FilterTodosRadio" Content="Todos"
-                                 Style="{StaticResource TabFilterButtonStyle}"
-                                 Checked="FilterRadio_Checked"/>
-                    <RadioButton x:Name="FilterNotesRadio" Content="Notes"
-                                 Style="{StaticResource TabFilterButtonStyle}"
-                                 Checked="FilterRadio_Checked"/>
-                    <RadioButton x:Name="FilterRemindersRadio" Content="Reminders"
-                                 Style="{StaticResource TabFilterButtonStyle}"
-                                 Checked="FilterRadio_Checked"/>
-                </StackPanel>
+            <Border x:Name="FilterStrip" Grid.Row="1" CornerRadius="6" Padding="3" Margin="4,0,4,12" HorizontalAlignment="Left">
+                <Border.Style><Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+                    <Style.Triggers><Trigger Property="ac:PirateVisual.Enabled" Value="True"><Setter Property="Background" Value="#E4C48B"/></Trigger></Style.Triggers>
+                </Style></Border.Style>
+                <WrapPanel>
+                    <RadioButton x:Name="FilterAllRadio" Content="All" GroupName="NoteType" IsChecked="True" Style="{StaticResource TabFilterButtonStyle}" Checked="FilterRadio_Checked"/>
+                    <RadioButton x:Name="FilterTodosRadio" Content="Todos" GroupName="NoteType" Style="{StaticResource TabFilterButtonStyle}" Checked="FilterRadio_Checked"/>
+                    <RadioButton x:Name="FilterNotesRadio" Content="Notes" GroupName="NoteType" Style="{StaticResource TabFilterButtonStyle}" Checked="FilterRadio_Checked"/>
+                    <RadioButton x:Name="FilterRemindersRadio" Content="Reminders" GroupName="NoteType" Style="{StaticResource TabFilterButtonStyle}" Checked="FilterRadio_Checked"/>
+                </WrapPanel>
             </Border>
-
-            <!-- Content List -->
-            <ScrollViewer Grid.Row="2"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Focusable="False">
-                <StackPanel x:Name="ItemsContainer">
-                    <TextBlock x:Name="EmptyMessageText"
-                               Text="Loading notes..."
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               FontSize="13"
-                               FontFamily="{DynamicResource AppFontFamily}"
-                               HorizontalAlignment="Center"
-                               Margin="0,40,0,0"/>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- Footer -->
-            <Grid Grid.Row="3" Margin="0,10,0,0">
-                <TextBlock Text="Press Enter or Esc to close immediately"
-                           Foreground="{DynamicResource SecondaryTextBrush}"
-                           FontSize="11"
-                           FontFamily="{DynamicResource AppFontFamily}"
-                           VerticalAlignment="Center"/>
-
-                <TextBlock x:Name="VaultLocationText"
-                           Text=""
-                           Foreground="{DynamicResource SecondaryTextBrush}"
-                           FontSize="11"
-                           FontFamily="{DynamicResource AppFontFamily}"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis"
-                           MaxWidth="350"/>
-            </Grid>
+            <ac:NoteArtworkBorder x:Name="PaperSurface" Grid.Row="2" Artwork="Paper" Style="{StaticResource NotesPaperStyle}">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <ScrollViewer x:Name="NotesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <StackPanel x:Name="ItemsContainer">
+                            <TextBlock x:Name="EmptyMessageText" Text="Loading notes..." Style="{StaticResource ViewerSmallText}"
+                                       TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" Margin="8,20,8,8"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <WrapPanel x:Name="ViewerFooter" Grid.Row="1" Margin="0,10,0,0">
+                        <TextBlock x:Name="FooterCloseHint" Text="Press Enter or Esc to close immediately" Style="{StaticResource ViewerSmallText}" TextWrapping="Wrap" Margin="0,0,16,0"/>
+                        <TextBlock x:Name="VaultLocationText" Text="" Style="{StaticResource ViewerSmallText}"
+                                   TextWrapping="Wrap" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    </WrapPanel>
+                </Grid>
+            </ac:NoteArtworkBorder>
         </Grid>
-    </Border>
+    </ac:NoteArtworkBorder>
 </Window>

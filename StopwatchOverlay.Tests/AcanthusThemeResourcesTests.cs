@@ -22,7 +22,7 @@ public sealed class AcanthusVisualResourcesCollection;
 public sealed class AcanthusThemeResourcesTests
 {
     private static readonly string[] ProtectedPalettes =
-        ["Midnight.xaml", "Daylight.xaml", "PixelDeck.xaml", "PixelDeckDay.xaml"];
+        ["Midnight.xaml", "Daylight.xaml", "PixelDeck.xaml", "PixelDeckDay.xaml", "Pirate.xaml"];
 
     [Fact]
     public void AcanthusPalette_KeepsTheExistingSemanticTokenContract()

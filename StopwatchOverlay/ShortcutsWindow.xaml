@@ -1,4 +1,4 @@
-<Window x:Class="StopwatchOverlay.ShortcutsWindow"
+<Window x:Class="StopwatchOverlay.ShortcutsWindow" Style="{StaticResource {x:Type Window}}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Keyboard Shortcuts"
@@ -6,8 +6,17 @@
         ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/PirateDialogStyles.xaml"/>
+                <ResourceDictionary Source="Themes/PirateSettingsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <ScrollViewer Style="{StaticResource PirateDialogScroll}">
 
-    <Border Style="{StaticResource DialogSurface}" Margin="16">
+    <Border MinWidth="420" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" LayoutTransform="{DynamicResource ApplicationScaleTransform}" Style="{StaticResource PirateDialogSurface}" Margin="16">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,7 +30,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <Path Width="24" Height="24" HorizontalAlignment="Center" Margin="0,0,0,6"
+            <Rectangle Style="{StaticResource PirateDialogSkull}"/>
+        <Path Width="24" Height="24" HorizontalAlignment="Center" Margin="0,0,0,6"
                   Data="{StaticResource AcanthusCrestGeometry}" Fill="{DynamicResource OrnamentAccentBrush}"
                   Stretch="Uniform" Visibility="{DynamicResource OrnamentVisibility}"/>
             <TextBlock Text="Keyboard shortcuts" Style="{StaticResource DisplayHeadingText}"
@@ -90,7 +100,7 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Chaining timeout:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-            <Slider Grid.Column="1" x:Name="ChainingTimeoutSlider" Minimum="0.2" Maximum="2.0" TickFrequency="0.1"
+            <Slider Grid.Column="1" x:Name="ChainingTimeoutSlider" Minimum="0.2" Maximum="2.0" TickFrequency="0.1" Style="{StaticResource PirateSettingsSlider}"
                      IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
                      ValueChanged="ChainingTimeoutSlider_ValueChanged"/>
             <TextBlock Grid.Column="2" x:Name="ChainingTimeoutText" Text="0.5 s" VerticalAlignment="Center" TextAlignment="Right"/>
@@ -175,4 +185,5 @@
         </StackPanel>
     </Grid>
     </Border>
+    </ScrollViewer>
 </Window>

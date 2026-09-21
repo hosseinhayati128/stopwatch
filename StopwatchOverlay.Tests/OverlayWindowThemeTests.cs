@@ -4,6 +4,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using StopwatchOverlay.Themes;
 using Xunit;
 
 namespace StopwatchOverlay.Tests;
@@ -12,7 +13,7 @@ namespace StopwatchOverlay.Tests;
 public sealed class OverlayWindowThemeTests
 {
     [Fact]
-    public void ActualClockAndPopup_SwitchAll45CombinationsInPlace_WithoutLosingCustomAppearance()
+    public void ActualClockAndPopup_SwitchAllCombinationsInPlace_WithoutLosingCustomAppearance()
     {
         RunSta(() =>
         {
@@ -85,9 +86,17 @@ public sealed class OverlayWindowThemeTests
                         var time = Node<TextBlock>(overlay, "TimeText");
                         Assert.Equal((byte)Math.Round(opacity * 255), BrushColor(surface.Background).A);
                         Assert.Equal(1d, time.Opacity);
-                        Assert.Equal(1d, chrome.Opacity);
+                        bool navigator = overlay.EffectiveOverlayTheme == OverlayThemeCatalog.Pirate;
+                        Assert.Equal(navigator ? 0d : 1d, chrome.Opacity);
+                        Assert.Equal(navigator ? 0d : 1d, surface.Opacity);
+                        if (navigator)
+                        {
+                            var clock = Node<NavigatorClock>(overlay, "NavigatorClockSurface");
+                            Assert.Equal(1d, clock.Opacity);
+                            Assert.Equal(opacity, clock.SurfaceOpacity);
+                        }
                         Assert.Equal(1d, Node<Grid>(overlay, "ActionPopupRoot").Opacity);
-                        Assert.Equal(255, BrushColor(toolbar.Background).A);
+                        Assert.Equal(navigator ? 0 : 255, BrushColor(toolbar.Background).A);
                         Assert.Equal(1d, Node<Button>(overlay, "ResetActionButton").Opacity);
                         if (opacity == 0)
                         {

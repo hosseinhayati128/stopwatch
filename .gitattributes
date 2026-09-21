@@ -1,0 +1,17 @@
+* text=auto
+
+# Keep artwork, fonts and archives byte-for-byte intact.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+
+# Script line endings for their native interpreters.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf

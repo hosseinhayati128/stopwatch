@@ -1,4 +1,5 @@
 using System;
+using StopwatchOverlay.Themes;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -95,8 +96,12 @@ public partial class SettingsWindow : Window
             FormatCombo.SelectedIndex = Math.Clamp(_settings.TimeFormat, 0, FormatCombo.Items.Count - 1);
 
             TextSizeSlider.Value = _settings.TextSize;
+            UiScaleSlider.Value = AppUiScale.Normalize(_settings.UiScalePercent);
+            LoadTypographyEditors();
             BorderWidthSlider.Value = _settings.BorderWidth;
             BackgroundOpacitySlider.Value = _settings.BackgroundOpacity;
+            foreach (var (control, part) in TransparencyPartControls)
+                control.IsChecked = (_settings.OpaqueOverlayParts & part) != 0;
             BackgroundStrengthSlider.Value = _settings.PanelBackgroundStrength;
             ClickThroughCheck.IsChecked = _settings.ClickThrough;
             HideOverlayCaptureCheck.IsChecked = _settings.HideOverlayFromCapture;
@@ -145,6 +150,7 @@ public partial class SettingsWindow : Window
         BackgroundCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.BackgroundSelection);
 
         WireSlider(TextSizeSlider, SettingsChangeKind.OverlayGeometry);
+        WireSlider(UiScaleSlider, SettingsChangeKind.ApplicationScale);
         WireSlider(BorderWidthSlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundStrengthSlider, SettingsChangeKind.BackgroundStrength);
@@ -154,6 +160,8 @@ public partial class SettingsWindow : Window
 
         WireCheckBox(ClickThroughCheck, SettingsChangeKind.OverlayInteraction);
         WireCheckBox(HideOverlayCaptureCheck, SettingsChangeKind.OverlayInteraction);
+        foreach (var (control, _) in TransparencyPartControls)
+            WireCheckBox(control, SettingsChangeKind.OverlayAppearance);
         WireCheckBox(LightRingEnabledCheck, SettingsChangeKind.LightRingVisibility);
         WireCheckBox(LightRingCaptureCheck, SettingsChangeKind.LightRingAppearance);
         WireCheckBox(AutoStartCheck, SettingsChangeKind.Behavior);
@@ -201,6 +209,38 @@ public partial class SettingsWindow : Window
         checkBox.Unchecked += (_, _) => CommitControls(change);
     }
 
+    private void LoadTypographyEditors()
+    {
+        _settings.Typography.Normalize();
+        GlobalTypographyEditor.Children.Clear();
+        SectionTypographyEditors.Children.Clear();
+        AddTypographyEditor(GlobalTypographyEditor, _settings.Typography.Global, "Global text", false);
+        foreach (var (key, label) in TypographySettings.Scopes)
+            AddTypographyEditor(SectionTypographyEditors, _settings.Typography.Sections[key], label, true);
+    }
+
+    private void AddTypographyEditor(Panel host, TypographyStyle style, string label, bool isOverride)
+    {
+        var editor = new TypographyEditor(style, label, isOverride);
+        editor.Changed += () => CommitControls(SettingsChangeKind.Typography);
+        editor.InteractionStarted += BeginSliderInteraction;
+        editor.InteractionCompleted += EndSliderInteraction;
+        host.Children.Add(editor);
+    }
+
+    private (CheckBox Control, NavigatorOpaqueParts Part)[] TransparencyPartControls =>
+    [
+        (ClockFrameOpaqueCheck, NavigatorOpaqueParts.ClockFrame),
+        (ClockMapOpaqueCheck, NavigatorOpaqueParts.ClockMap),
+        (MetalBorderOpaqueCheck, NavigatorOpaqueParts.MetalBorder),
+        (MetalFillOpaqueCheck, NavigatorOpaqueParts.MetalFill),
+        (TimerTextOpaqueCheck, NavigatorOpaqueParts.TimerText),
+        (ProjectNameOpaqueCheck, NavigatorOpaqueParts.ProjectName),
+        (ControlBoardOpaqueCheck, NavigatorOpaqueParts.ControlBoard),
+        (ControlMapOpaqueCheck, NavigatorOpaqueParts.ControlMap),
+        (ControlDialsOpaqueCheck, NavigatorOpaqueParts.ControlDials)
+    ];
+
     private static bool IsSliderAdjustmentKey(Key key)
         => key is Key.Left or Key.Right or Key.Up or Key.Down
             or Key.PageUp or Key.PageDown or Key.Home or Key.End;
@@ -231,6 +271,8 @@ public partial class SettingsWindow : Window
         _committing = true;
         try
         {
+            if ((change & SettingsChangeKind.ApplicationScale) != 0)
+                _settings.UiScalePercent = AppUiScale.Normalize(UiScaleSlider.Value);
             if ((change & SettingsChangeKind.Theme) != 0)
                 _settings.ThemeMode = AppThemeCatalog.Normalize(ThemeCombo.SelectedItem?.ToString());
 
@@ -252,6 +294,9 @@ public partial class SettingsWindow : Window
                 _settings.TextSize = TextSizeSlider.Value;
                 _settings.BorderWidth = BorderWidthSlider.Value;
                 _settings.BackgroundOpacity = BackgroundOpacitySlider.Value;
+                _settings.OpaqueOverlayParts = TransparencyPartControls
+                    .Where(item => item.Control.IsChecked == true)
+                    .Aggregate((NavigatorOpaqueParts)0, (parts, item) => parts | item.Part);
             }
 
             if ((change & SettingsChangeKind.BackgroundSelection) != 0
@@ -336,6 +381,10 @@ public partial class SettingsWindow : Window
 
     private void UpdateDependentControlStates()
     {
+        TransparencyDetailsExpander.Visibility =
+            OverlayThemeCatalog.Resolve(_settings.OverlayTheme, _settings.ThemeMode) == OverlayThemeCatalog.Pirate
+                ? Visibility.Visible : Visibility.Collapsed;
+
         bool hasPattern = BackgroundCombo.SelectedItem is AppBackgroundChoice
             { IsThemeDefault: false, IsAvailable: true };
         BackgroundStrengthSlider.IsEnabled = hasPattern;
@@ -356,6 +405,18 @@ public partial class SettingsWindow : Window
                 PreviewThemeScope, _settings.OverlayTheme, _settings.ThemeMode);
             OverlayThemeManager.Apply(
                 PreviewToolbarSurface, _settings.OverlayTheme, _settings.ThemeMode);
+            bool navigator = effectiveTheme == OverlayThemeCatalog.Pirate;
+            NavigatorVisual.SetEnabled(PreviewThemeScope, navigator);
+            NavigatorVisual.SetEnabled(PreviewToolbarSurface, navigator);
+            NavigatorVisual.SetScale(PreviewThemeScope, _settings.TextSize / 48d);
+            NavigatorVisual.SetScale(PreviewToolbarSurface, _settings.TextSize / 48d);
+            NavigatorVisual.SetOpaqueParts(PreviewThemeScope, _settings.OpaqueOverlayParts);
+            NavigatorVisual.SetOpaqueParts(PreviewToolbarSurface, _settings.OpaqueOverlayParts);
+            NavigatorVisual.SetSurfaceOpacity(PreviewToolbarSurface,
+                OverlayPresentationPolicy.ClampBackgroundOpacity(_settings.BackgroundOpacity / 100d));
+            PreviewNavigatorClock.SurfaceOpacity = OverlayPresentationPolicy.ClampBackgroundOpacity(_settings.BackgroundOpacity / 100d);
+            PreviewNavigatorClock.OutlineBrush = new SolidColorBrush(SelectedBorderColor(_settings.BorderColor));
+            PreviewNavigatorClock.OutlineWidth = _settings.BorderWidth;
             PreviewRightCornerTransform.ScaleX = effectiveTheme == OverlayThemeCatalog.AcanthusLight ? -1 : 1;
             Color chrome = OverlayThemeManager.ResourceColor(
                 PreviewThemeScope, "OverlayChromeBrush", Colors.Black);
@@ -372,7 +433,7 @@ public partial class SettingsWindow : Window
             var nextTextBrush = new SolidColorBrush(textColor);
             var nextFont = OverlayThemeManager.ResolveTimerFont(
                 PreviewThemeScope, effectiveTheme, _settings.FontFamily);
-            double nextSize = Math.Clamp(_settings.TextSize, 24, 58);
+            double nextSize = Math.Clamp(_settings.TextSize, 16, 120);
             var outline = new DropShadowEffect
             {
                 Color = SelectedBorderColor(_settings.BorderColor),
@@ -532,6 +593,7 @@ public partial class SettingsWindow : Window
         CurrentCategory = tag;
         OverlayPanel.Visibility = tag == "Overlay" ? Visibility.Visible : Visibility.Collapsed;
         AppearancePanel.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
+        TypographyPanel.Visibility = tag == "Typography" ? Visibility.Visible : Visibility.Collapsed;
         LightRingPanel.Visibility = tag == "LightRing" ? Visibility.Visible : Visibility.Collapsed;
         BehaviorPanel.Visibility = tag == "Behavior" ? Visibility.Visible : Visibility.Collapsed;
         ApplicationPanel.Visibility = tag == "Application" ? Visibility.Visible : Visibility.Collapsed;

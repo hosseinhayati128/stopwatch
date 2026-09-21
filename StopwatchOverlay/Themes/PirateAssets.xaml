@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:p="clr-namespace:StopwatchOverlay.Themes">
+ <FontFamily x:Key="PirateHeadingFont">pack://application:,,,/StopwatchOverlay;component/Assets/Fonts/Pirate/#Almendra</FontFamily>
+ <FontFamily x:Key="PirateBodyFont">pack://application:,,,/StopwatchOverlay;component/Assets/Fonts/Pirate/#Barlow Condensed</FontFamily>
+ <BitmapImage x:Key="PirateBackground" UriSource="/StopwatchOverlay;component/Assets/Pirate/controller-background.png"/>
+ <BitmapImage x:Key="PirateIcons" UriSource="/StopwatchOverlay;component/Assets/Pirate/icons.png"/>
+ <ImageBrush x:Key="PirateBrassTexture" ImageSource="/StopwatchOverlay;component/Assets/Pirate/brass-plate.png" Viewbox=".045,.275,.91,.38" Stretch="Fill"/>
+ <ImageBrush x:Key="PirateWood" ImageSource="{StaticResource PirateBackground}" Viewbox=".42,.038,.47,.14" Stretch="Fill" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,680,160"/>
+ <ImageBrush x:Key="PirateHeader" ImageSource="{StaticResource PirateBackground}" Viewbox=".024,.035,.950,.103" Stretch="Fill"/>
+ <ImageBrush x:Key="PirateRail" ImageSource="{StaticResource PirateBackground}" Viewbox=".024,.198,.293,.770" Stretch="Fill"/>
+ <ImageBrush x:Key="PirateMap" ImageSource="{StaticResource PirateBackground}" Viewbox=".322,.200,.651,.725" Stretch="Fill"/>
+ <ImageBrush x:Key="PirateCorner" ImageSource="{StaticResource PirateBackground}" Viewbox="0,0,.090,.118" Stretch="Fill"/>
+ <ImageBrush x:Key="PirateLion" ImageSource="{StaticResource PirateIcons}" Viewbox="0,0,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateRam" ImageSource="{StaticResource PirateIcons}" Viewbox=".25,0,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateTelescope" ImageSource="{StaticResource PirateIcons}" Viewbox=".5,0,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateAnchor" ImageSource="{StaticResource PirateIcons}" Viewbox=".75,0,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateSwords" ImageSource="{StaticResource PirateIcons}" Viewbox="0,.5,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateSkull" ImageSource="{StaticResource PirateIcons}" Viewbox=".25,.5,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PiratePaint" ImageSource="{StaticResource PirateIcons}" Viewbox=".5,.5,.25,.5" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateLogPose" ImageSource="/StopwatchOverlay;component/Assets/Pirate/navigation-tools.png" Viewbox="0,0,.5,1" Stretch="Uniform"/>
+ <ImageBrush x:Key="PirateHammer" ImageSource="/StopwatchOverlay;component/Assets/Pirate/navigation-tools.png" Viewbox=".5,0,.5,1" Stretch="Uniform"/>
+ <LinearGradientBrush x:Key="PirateBrass" StartPoint="0,0" EndPoint="0,1">
+  <GradientStop Color="#F6D797" Offset="0"/><GradientStop Color="#AA793D" Offset=".13"/>
+  <GradientStop Color="#E7C88B" Offset=".38"/><GradientStop Color="#C39B58" Offset=".70"/>
+  <GradientStop Color="#80522A" Offset=".95"/><GradientStop Color="#D2AB67" Offset="1"/>
+ </LinearGradientBrush>
+ <RadialGradientBrush x:Key="PirateRivet" Center=".3,.2" GradientOrigin=".3,.2" RadiusX=".7" RadiusY=".7">
+  <GradientStop Color="#FFF1C1"/><GradientStop Color="#BD9753" Offset=".46"/><GradientStop Color="#49301C" Offset="1"/>
+ </RadialGradientBrush>
+ <ControlTemplate x:Key="PirateBrassButtonTemplate" TargetType="Button">
+  <Grid x:Name="Surface" SnapsToDevicePixels="True" Background="Transparent">
+   <Border Background="#3B2316" CornerRadius="5" Margin="0,4,0,0"/>
+   <Border x:Name="Plate" Margin="0,0,0,4" Background="{StaticResource PirateBrass}" BorderBrush="#382113" BorderThickness="2" CornerRadius="5">
+    <Grid>
+     <Border BorderBrush="#F4DCA3" BorderThickness="1" CornerRadius="3" Margin="2"/>
+     <Border BorderBrush="#75502B" BorderThickness="1" CornerRadius="2" Margin="5"/>
+     <Rectangle x:Name="Patina" Fill="{StaticResource PirateBrassTexture}" Opacity=".78" Margin="7"/>
+     <Ellipse Fill="{StaticResource PirateRivet}" Stroke="#664621" Width="7" Height="7" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7"/>
+     <Ellipse Fill="{StaticResource PirateRivet}" Stroke="#664621" Width="7" Height="7" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="7"/>
+     <Ellipse Fill="{StaticResource PirateRivet}" Stroke="#664621" Width="7" Height="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="7"/>
+     <Ellipse Fill="{StaticResource PirateRivet}" Stroke="#664621" Width="7" Height="7" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="7"/>
+     <Border x:Name="Highlight" Background="#FFF2C3" Opacity="0" Margin="3" CornerRadius="3"/>
+    </Grid>
+   </Border>
+   <Grid Margin="{TemplateBinding Padding}">
+    <Grid.ColumnDefinitions><ColumnDefinition x:Name="IconColumn" Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition x:Name="EndIconColumn" Width="42"/></Grid.ColumnDefinitions>
+    <Canvas x:Name="Icon" Width="70" IsHitTestVisible="False">
+     <Rectangle Fill="{Binding Path=(p:PirateVisual.Icon), RelativeSource={RelativeSource TemplatedParent}}"
+        Width="90" Height="90" Canvas.Left="-12" Canvas.Top="-13"/>
+    </Canvas>
+    <Viewbox Grid.Column="1" Stretch="Uniform" StretchDirection="DownOnly" Margin="4,0,4,4" VerticalAlignment="Center">
+     <ContentPresenter RecognizesAccessKey="True" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentStringFormat="{TemplateBinding ContentStringFormat}"/>
+    </Viewbox>
+    <Rectangle x:Name="EndIcon" Grid.Column="2" Width="42" Height="42" Margin="0,0,0,4" IsHitTestVisible="False"
+               Fill="{Binding Path=(p:PirateVisual.EndIcon), RelativeSource={RelativeSource TemplatedParent}}"/>
+   </Grid>
+   <Border x:Name="KeyboardFocus" Visibility="Collapsed" BorderBrush="#30C9BC" BorderThickness="2" CornerRadius="4" Margin="3,3,3,7"/>
+  </Grid>
+  <ControlTemplate.Triggers>
+   <Trigger Property="p:PirateVisual.Selected" Value="True"><Setter TargetName="Plate" Property="Background" Value="#156D5D"/><Setter TargetName="Patina" Property="Opacity" Value=".12"/></Trigger>
+   <Trigger Property="p:PirateVisual.Icon" Value="{x:Null}"><Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/><Setter TargetName="IconColumn" Property="Width" Value="0"/></Trigger>
+   <Trigger Property="p:PirateVisual.EndIcon" Value="{x:Null}"><Setter TargetName="EndIcon" Property="Visibility" Value="Collapsed"/><Setter TargetName="EndIconColumn" Property="Width" Value="0"/></Trigger>
+   <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Highlight" Property="Opacity" Value=".20"/></Trigger>
+   <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="RenderTransform"><Setter.Value><TranslateTransform Y="2"/></Setter.Value></Setter><Setter TargetName="Highlight" Property="Opacity" Value=".32"/></Trigger>
+   <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="KeyboardFocus" Property="Visibility" Value="Visible"/></Trigger>
+   <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value=".55"/></Trigger>
+  </ControlTemplate.Triggers>
+ </ControlTemplate>
+ <ImageBrush x:Key="PiratePaperBrush" ImageSource="{StaticResource PirateBackground}" Viewbox=".56,.38,.23,.23" Stretch="Fill"/>
+</ResourceDictionary>

@@ -15,15 +15,15 @@ public sealed class OverlayThemeSettingsTests
            select new object[] { panel, overlay };
 
     [Fact]
-    public void Catalog_ContainsExactlyTheNineIndependentChoices()
+    public void Catalog_ContainsExactlyTheTenIndependentChoices()
     {
         Assert.Equal(new[]
         {
             "Follow Application Theme", "Midnight", "Daylight", "Pixel Deck Night",
             "Pixel Deck Day", "Acanthus Light", "Acanthus Dark Elegant Olive",
-            "Acanthus Dark Gold Crest", "Acanthus Dark Minimal Botanical"
+            "Acanthus Dark Gold Crest", "Acanthus Dark Minimal Botanical", "one piece"
         }, OverlayThemeCatalog.All);
-        Assert.Equal(9, OverlayThemeCatalog.All.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(10, OverlayThemeCatalog.All.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.Equal(OverlayThemeCatalog.FollowApplicationTheme, new AppSettings().OverlayTheme);
     }
 
@@ -37,12 +37,14 @@ public sealed class OverlayThemeSettingsTests
     [InlineData("Light Mode", "Daylight")]
     [InlineData("PixelDeck", "Pixel Deck Night")]
     [InlineData("PixelDeckDay", "Pixel Deck Day")]
+    [InlineData("  One Piece  ", "one piece")]
+    [InlineData("  Pirate  ", "one piece")]
     public void Normalize_KeepsStableNamesAndSafelyHandlesMissingValues(string? value, string expected)
         => Assert.Equal(expected, OverlayThemeCatalog.Normalize(value));
 
     [Theory]
     [MemberData(nameof(ThemeCombinations))]
-    public void Settings_AllFortyFiveCombinationsPersistIndependently(string panel, string overlay)
+    public void Settings_AllThemeCombinationsPersistIndependently(string panel, string overlay)
     {
         using var files = new SettingsFiles();
         var settings = CustomizedSettings(panel, overlay);
@@ -54,7 +56,12 @@ public sealed class OverlayThemeSettingsTests
         Assert.Equal(overlay, restarted.OverlayTheme);
         Assert.Equal(JsonSerializer.Serialize(settings), JsonSerializer.Serialize(restarted));
         Assert.Equal(overlay == OverlayThemeCatalog.FollowApplicationTheme
-                ? panel == AppThemeCatalog.Acanthus ? OverlayThemeCatalog.AcanthusLight : panel
+                ? panel switch
+                {
+                    AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
+                    AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
+                    _ => panel
+                }
                 : overlay,
             OverlayThemeCatalog.Resolve(restarted.OverlayTheme, restarted.ApplicationTheme));
     }
@@ -106,7 +113,12 @@ public sealed class OverlayThemeSettingsTests
             Assert.Equal(overlay, settings.OverlayTheme);
             string resolved = OverlayThemeCatalog.Resolve(settings.OverlayTheme, settings.ApplicationTheme);
             Assert.Equal(overlay == OverlayThemeCatalog.FollowApplicationTheme
-                    ? nextPanel == AppThemeCatalog.Acanthus ? OverlayThemeCatalog.AcanthusLight : nextPanel
+                    ? nextPanel switch
+                    {
+                        AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
+                        AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
+                        _ => nextPanel
+                    }
                     : overlay,
                 resolved);
         }
