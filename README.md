@@ -29,16 +29,19 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 🏷️ **Automatic project tracking** — Assign an existing or new project to a timer and record every running work session automatically
 - 📝 **Inline editable project records** — Expand records inside the dashboard, add past work manually, and correct completed records without changing active sessions
 - 📊 **Project time dashboard** — Step through individual days or review 7 days, 30 days, and All time; compare project totals, timelines, and a project-filtered 12-month heatmap
-- 🎨 **Five application themes** — Midnight, Daylight, Pixel Deck Night, Pixel Deck Day, and Acanthus
-- 🕰️ **Independent floating-clock themes** — Follow the application theme or choose one of eight clock styles, including three dark Acanthus variants, without changing your panels
+- 🎨 **Six application themes** — Midnight, Daylight, Pixel Deck Night, Pixel Deck Day, Acanthus, and One Piece
+- 🕰️ **Independent floating-clock themes** — Follow the application theme or choose one of nine clock styles (including the One Piece Navigator clock with custom layer opacities and three dark Acanthus variants), without changing your panels
+- 📝 **Quick capture & notes (Win+F3)** — Quickly capture Todos, Notes, and Reminders from any application; automatically synced to your Obsidian vault grouped by date
+- 📋 **Floating notes viewer** — Floating popup (Win+F3 → 4) with tabs for All, Todos, Notes, and Reminders, auto-close countdown, and keyboard dismissal
+- 🔤 **Custom typography & UI scaling** — Granular text scaling (75%–175%), colors, and panel overrides via Settings → Fonts & colors, plus whole-page UI scaling (70%–125%)
 - 🧵 **Tiled background library** — Choose from nine bundled seamless patterns or import a JPG, PNG, or BMP; the selection, strength, and managed custom copy survive restarts
 - 🖌️ **Deep overlay customization** — Choose display, position, text and outline colors, font, format, size, thickness, opacity, and optional light ring
 - 🖥️ **Multi-monitor and presentation tools** — Show timers on one or every display, keep them always on top, enable click-through, or hide overlays from screen capture
 - 🖱️ **Direct overlay controls** — Click a timer to activate it; hover for close, pause/resume, and reset controls
-- ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D) to control timers, projects, and the dashboard from any application
+- ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D, W) to control timers, projects, and the dashboard from any application
 - 🧠 **Smart countdown input** — Enter natural durations, clock times, dates, weekdays, months, or years with a live interpretation preview
 - 💾 **Crash-safe recovery** — Restore timers, running/paused state, projects, laps, positions, and combined/separate presentation after restart, shutdown, or a crash
-- 🚀 **Desktop integration** — Start with Windows, close the controller to the notification area, and exit explicitly from the tray menu
+- 🚀 **Desktop integration & configurable close** — Start with Windows, choose whether the close button (X) asks, minimizes to tray, or exits completely, and exit anytime from the tray menu
 - 🎬 **Recording helpers** — Lap times, optional REC indicator, blinking colon, auto-show behavior, and capture protection
 
 ## Interface previews
@@ -77,9 +80,28 @@ The examples use a fictional year of varied work sessions. Totals, charts, overl
 
 </details>
 
+### Quick capture and notes: Obsidian-integrated Todos, Notes & Reminders
+
+<p align="center">
+  <img src="docs/screenshots/notes-viewer.png" alt="Floating Notes Viewer overlay with All, Todos, Notes, and Reminders filters" width="680" loading="lazy">
+</p>
+
+<p align="center">
+  <em>The floating Notes Viewer (Win+F3 → 4) displaying saved entries grouped by date, completed checkboxes, and category filter tabs.</em>
+</p>
+
+<details>
+<summary>See the Quick Note entry popup</summary>
+
+<p align="center">
+  <img src="docs/screenshots/notes-entry.png" alt="Quick Note entry popup with parchment surface and walnut frame" width="620" loading="lazy">
+</p>
+
+</details>
+
 ### Same workspace, different themes
 
-Pixel Deck Night is shown at the top of this page. Both Pixel Deck variants use Autumn Patchwork in these examples. Here are the other four panel themes; select an image to view it at full size.
+Pixel Deck Night is shown at the top of this page. Both Pixel Deck variants use Autumn Patchwork in these examples. Here are the other five panel themes; select an image to view it at full size.
 
 <table>
   <tr>
@@ -89,6 +111,9 @@ Pixel Deck Night is shown at the top of this page. Both Pixel Deck variants use 
   <tr>
     <td align="center"><strong>Pixel Deck Day</strong><br><a href="docs/screenshots/controller-pixel-deck-day.jpg"><img src="docs/screenshots/controller-pixel-deck-day.jpg" alt="Pixel Deck Day controller with Autumn Patchwork and sample timers" width="420" loading="lazy"></a></td>
     <td align="center"><strong>Acanthus</strong><br><a href="docs/screenshots/controller-acanthus.png"><img src="docs/screenshots/controller-acanthus.png" alt="Acanthus controller with botanical ornaments and sample timers" width="420" loading="lazy"></a></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><strong>One Piece</strong><br><a href="docs/screenshots/controller-one-piece.png"><img src="docs/screenshots/controller-one-piece.png" alt="One Piece controller with antique walnut frame, brass hardware, and navigation tools" width="420" loading="lazy"></a></td>
   </tr>
 </table>
 
@@ -148,13 +173,28 @@ self-contained release includes the runtime and does not require a separate inst
 5. Open **Settings → Appearance** to choose application and floating-clock themes independently, then customize the background, clock colors, font, size, and opacity
 6. **Drag** the overlay with your mouse for pixel-perfect placement
 
-Close the controller whenever you want it out of the way. The application continues running in the notification area and keeps every timer active; right-click its tray icon and choose **Exit** to close it completely.
+When you click the controller's close button (**X**), Stopwatch Overlay prompts you to choose whether to minimize to the notification area (keeping overlays, timers, and shortcuts active) or close the application completely. You can check "Remember my choice" or adjust this anytime in **Settings → Application**.
 
 Press **Win+F2 → N** or click **+ New timer** in the controller to create another timer. The project chooser opens first: select an existing project, use the small **+** button to add one, or leave **Select a project** unchanged to create an unnamed timer. Cancel leaves your existing timers unchanged. Each timer can run independently. Click an overlay or press **Win+F2 → T** to make that timer active; the regular timer shortcuts then affect only the active timer.
 
 In combined mode, all open timers share one floating overlay. Pressing **Win+F2 → T** selects the next active timer and updates the shared overlay.
 
 Press **Win+F2 → P** to assign the active timer to an existing project or add a new project name. Once that named timer is running, the app records its work time automatically.
+
+### Quick Capture & Note Taking (`Win+F3`)
+
+Stopwatch Overlay includes a global quick-capture system that writes directly to Markdown files inside your **Obsidian** vault:
+
+1. Press **Win+F3** (configurable in **Keyboard Shortcuts**) to open the Note Command Mode hint overlay.
+2. Press one of the shortcut keys to open a dedicated floating capture window or viewer:
+   - **1** (or **T**): **Add Todo** — creates an interactive `- [ ] HH:mm text` item in `Notes/Todos.md`
+   - **2** (or **N**): **Quick Note** — creates a `- **HH:mm** text` entry in `Notes/Notes.md`
+   - **3** (or **R**): **Add Reminder** — creates a `- [ ] HH:mm ⏰ text` reminder in `Notes/Reminders.md`
+   - **4** (or **V** / **O**): **View Notes** — opens the 30-second floating viewer popup
+   - **Escape**: Cancel without action
+3. In the entry popup, write your note and press **Ctrl+Enter** to save directly to Obsidian, or **Escape** to cancel. If no vault folder is configured yet, the app prompts you to pick your Obsidian vault folder.
+4. Notes are automatically grouped and separated under date headers (`## yyyy-MM-dd`) in your vault's `Notes/` folder.
+5. The **Notes Viewer** (`Win+F3 → 4`) displays your captured entries sorted chronologically, lets you switch between **All**, **Todos**, **Notes**, and **Reminders**, automatically counts down to close after 30 seconds, and dismisses immediately with **Enter** or **Escape**.
 
 ### Keyboard Shortcuts
 
@@ -174,6 +214,18 @@ Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Pre
 | **Win+F2 → D** | Open the project time dashboard |
 | **Win+F2 → W** | Open / restore and focus the stopwatch controller |
 | **Escape** | Cancel command mode without action |
+
+
+#### Note & Quick Capture Shortcuts (`Win+F3`)
+
+| Key Sequence | Action |
+|---|---|
+| **Win+F3 → 1** (or **T**) | Open Add Todo popup |
+| **Win+F3 → 2** (or **N**) | Open Quick Note popup |
+| **Win+F3 → 3** (or **R**) | Open Add Reminder popup |
+| **Win+F3 → 4** (or **V** / **O**) | Open floating Notes Viewer overlay |
+| **Escape** | Dismiss note command menu |
+| **Ctrl+Enter** | Save and close in entry popup |
 
 Additionally, dedicated direct global shortcuts are available:
 - **Win+Shift+F2** (configurable): **Open controller** — opens or restores and brings the stopwatch controller window to the foreground (including from the system tray).
