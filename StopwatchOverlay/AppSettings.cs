@@ -49,6 +49,30 @@ namespace StopwatchOverlay
         }
     }
 
+    public static class CloseActionChoice
+    {
+        public const string Ask = "Ask";
+        public const string Minimize = "Minimize";
+        public const string Exit = "Exit";
+
+        public static readonly IReadOnlyList<string> All = [Ask, Minimize, Exit];
+
+        public static string Normalize(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return Ask;
+            string trimmed = value.Trim();
+            if (trimmed.Equals(Minimize, StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Minimize to tray", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Minimize to system tray", StringComparison.OrdinalIgnoreCase))
+                return Minimize;
+            if (trimmed.Equals(Exit, StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Exit application", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Close completely", StringComparison.OrdinalIgnoreCase))
+                return Exit;
+            return Ask;
+        }
+    }
+
     public class AppSettings
     {
         private const uint VK_F2 = 0x71;
@@ -78,6 +102,7 @@ namespace StopwatchOverlay
         public string ThemeMode { get; set; } = AppThemeCatalog.Midnight;
         public double UiScalePercent { get; set; } = 90;
         public TypographySettings Typography { get; set; } = new();
+        public string CloseAction { get; set; } = CloseActionChoice.Ask;
 
         // ThemeMode remains the JSON contract so older releases can still read
         // the panel preference. The independent overlay choice is never folded
@@ -278,6 +303,7 @@ namespace StopwatchOverlay
                 ? "Stopwatch Log.md"
                 : ObsidianExportFileName.Trim();
             ObsidianVaultFolder = (ObsidianVaultFolder ?? "").Trim();
+            CloseAction = CloseActionChoice.Normalize(CloseAction);
         }
 
         private static string NormalizeChoice(

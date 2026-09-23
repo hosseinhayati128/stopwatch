@@ -4900,17 +4900,54 @@ namespace StopwatchOverlay
             // either hiding to the tray or performing a real application exit.
             CheckpointStateNow();
 
-            // The controller's close button hides it to the notification area. The
-            // stopwatch, overlays, light ring, timer, and global shortcuts stay active.
+            // The controller's close button asks, hides to tray, or exits based on settings.
             if (!_isExiting)
             {
-                e.Cancel = true;
-                _commandMode?.Cancel();
-                CloseCommandHintWindow();
-                _noteCommandMode?.Exit();
-                CloseNoteCommandHintWindow();
-                Hide();
-                return;
+                string closeAction = CloseActionChoice.Normalize(_settings.CloseAction);
+                if (closeAction == CloseActionChoice.Ask)
+                {
+                    var dialog = new CloseActionDialogWindow
+                    {
+                        Owner = this
+                    };
+                    dialog.ShowDialog();
+
+                    if (dialog.SelectedAction == CloseDialogResult.Cancel)
+                    {
+                        e.Cancel = true;
+                        return;
+                    }
+
+                    if (dialog.RememberChoice)
+                    {
+                        _settings.CloseAction = dialog.SelectedAction == CloseDialogResult.MinimizeToTray
+                            ? CloseActionChoice.Minimize
+                            : CloseActionChoice.Exit;
+                        SettingsStore.Save(_settings);
+                    }
+
+                    if (dialog.SelectedAction == CloseDialogResult.MinimizeToTray)
+                    {
+                        e.Cancel = true;
+                        MinimizeToTray();
+                        return;
+                    }
+
+                    // User chose CloseCompletely
+                    FlushPendingSettingsBeforeExit(showWarnings: true);
+                    _isExiting = true;
+                }
+                else if (closeAction == CloseActionChoice.Minimize)
+                {
+                    e.Cancel = true;
+                    MinimizeToTray();
+                    return;
+                }
+                else
+                {
+                    FlushPendingSettingsBeforeExit(showWarnings: true);
+                    _isExiting = true;
+                }
             }
 
             _commandMode?.Dispose();
@@ -4949,6 +4986,15 @@ namespace StopwatchOverlay
             }
             _trayMenu?.Dispose();
             _trayMenu = null;
+        }
+
+        private void MinimizeToTray()
+        {
+            _commandMode?.Cancel();
+            CloseCommandHintWindow();
+            _noteCommandMode?.Exit();
+            CloseNoteCommandHintWindow();
+            Hide();
         }
     }
 }

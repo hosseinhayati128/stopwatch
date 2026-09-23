@@ -115,6 +115,12 @@ public partial class SettingsWindow : Window
             SmartInputCheck.IsChecked = _settings.UseSmartCountdownInput;
             CommandChainingTimeoutSlider.Value = _settings.CommandChainingTimeoutSeconds;
             StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
+            CloseActionCombo.SelectedIndex = CloseActionChoice.Normalize(_settings.CloseAction) switch
+            {
+                CloseActionChoice.Minimize => 1,
+                CloseActionChoice.Exit => 2,
+                _ => 0
+            };
             ObsidianAutoSyncCheck.IsChecked = _settings.ObsidianAutoSyncEnabled;
             ObsidianLogUnnamedCheck.IsChecked = _settings.ObsidianLogUnnamedTimers;
             ObsidianFolderTextBox.Text = _settings.ObsidianVaultFolder;
@@ -169,6 +175,7 @@ public partial class SettingsWindow : Window
         WireCheckBox(BlinkCheck, SettingsChangeKind.Behavior);
         WireCheckBox(SmartInputCheck, SettingsChangeKind.Behavior);
         WireCheckBox(StartWithWindowsCheck, SettingsChangeKind.Startup);
+        CloseActionCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Behavior);
         WireCheckBox(ObsidianAutoSyncCheck, SettingsChangeKind.ObsidianExport);
         WireCheckBox(ObsidianLogUnnamedCheck, SettingsChangeKind.ObsidianExport);
 
@@ -334,6 +341,12 @@ public partial class SettingsWindow : Window
                 _settings.BlinkColon = BlinkCheck.IsChecked == true;
                 _settings.UseSmartCountdownInput = SmartInputCheck.IsChecked == true;
                 _settings.CommandChainingTimeoutSeconds = Math.Round(CommandChainingTimeoutSlider.Value, 1);
+                _settings.CloseAction = CloseActionCombo.SelectedIndex switch
+                {
+                    1 => CloseActionChoice.Minimize,
+                    2 => CloseActionChoice.Exit,
+                    _ => CloseActionChoice.Ask
+                };
             }
 
             if ((change & SettingsChangeKind.Startup) != 0)

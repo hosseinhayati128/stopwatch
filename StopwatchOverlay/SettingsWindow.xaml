@@ -365,8 +365,16 @@
                                    Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22"/>
                         <Border Style="{StaticResource SettingsCard}"><StackPanel>
                             <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <TextBlock Text="Close button action" Style="{StaticResource SectionHeaderText}" Margin="0,16,0,6"/>
+                            <ComboBox x:Name="CloseActionCombo" Margin="0,0,0,6">
+                                <ComboBoxItem Content="Ask every time"/>
+                                <ComboBoxItem Content="Minimize to system tray"/>
+                                <ComboBoxItem Content="Exit application completely"/>
+                            </ComboBox>
+                            <TextBlock Text="Choose whether clicking the close button on the main window asks, minimizes to the notification area, or exits completely."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,16"/>
                             <TextBlock Text="Your theme, backgrounds, timers, project history, positions, and shortcuts remain stored by the existing recovery system."
-                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,16,0,0"/>
+                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,0,0,0"/>
                         </StackPanel></Border>
                     </StackPanel>
 
