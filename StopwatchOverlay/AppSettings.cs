@@ -23,7 +23,9 @@ namespace StopwatchOverlay
         CommandLeader = 12,
         ShowActiveOverlay = 13,
         OpenController = 14,
-        NoteCommandLeader = 15
+        NoteCommandLeader = 15,
+        EditTimer = 16,
+        UndoTimerEdit = 17
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -162,6 +164,14 @@ namespace StopwatchOverlay
         public string ObsidianExportFileName { get; set; } = "Stopwatch Log.md";
         public bool ObsidianLogUnnamedTimers { get; set; } = true;
         public string NotesSubfolder { get; set; } = "Notes";
+
+        // Telegram Notes Forwarding
+        public bool TelegramEnabled { get; set; } = false;
+        public string TelegramBotToken { get; set; } = "";
+        public string TelegramChatId { get; set; } = "";
+        public string TelegramNotesTopicId { get; set; } = "";
+        public string TelegramTodosTopicId { get; set; } = "";
+        public string TelegramRemindersTopicId { get; set; } = "";
 
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
@@ -303,6 +313,11 @@ namespace StopwatchOverlay
                 ? "Stopwatch Log.md"
                 : ObsidianExportFileName.Trim();
             ObsidianVaultFolder = (ObsidianVaultFolder ?? "").Trim();
+            TelegramBotToken = (TelegramBotToken ?? "").Trim();
+            TelegramChatId = (TelegramChatId ?? "").Trim();
+            TelegramNotesTopicId = (TelegramNotesTopicId ?? "").Trim();
+            TelegramTodosTopicId = (TelegramTodosTopicId ?? "").Trim();
+            TelegramRemindersTopicId = (TelegramRemindersTopicId ?? "").Trim();
             CloseAction = CloseActionChoice.Normalize(CloseAction);
         }
 

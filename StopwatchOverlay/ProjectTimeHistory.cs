@@ -325,6 +325,93 @@ namespace StopwatchOverlay
         }
 
         /// <summary>
+        /// Discards the active open interval or the most recent closed interval for
+        /// the specified timer session without saving its time to project records.
+        /// </summary>
+        public bool DiscardRecentInterval(Guid timerSessionId)
+        {
+            ValidateTimerId(timerSessionId);
+            lock (_gate)
+            {
+                // First check for an open/active interval
+                int openIndex = _intervals.FindIndex(interval =>
+                    interval.TimerSessionId == timerSessionId && interval.EndUtc == null);
+                if (openIndex >= 0)
+                {
+                    _intervals.RemoveAt(openIndex);
+                    return true;
+                }
+
+                // If no open interval, find the most recent closed interval for this timer
+                int recentIndex = -1;
+                DateTime latestTime = DateTime.MinValue;
+                for (int i = 0; i < _intervals.Count; i++)
+                {
+                    var interval = _intervals[i];
+                    if (interval.TimerSessionId == timerSessionId && interval.EndUtc.HasValue)
+                    {
+                        if (interval.EndUtc.Value > latestTime)
+                        {
+                            latestTime = interval.EndUtc.Value;
+                            recentIndex = i;
+                        }
+                    }
+                }
+
+                if (recentIndex >= 0)
+                {
+                    _intervals.RemoveAt(recentIndex);
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Updates the start timestamp of the active (or most recent) work interval for
+        /// the specified timer session, keeping project records aligned with manual adjustments.
+        /// </summary>
+        public bool UpdateActiveIntervalStartTime(Guid timerSessionId, DateTime newStartUtc)
+        {
+            ValidateTimerId(timerSessionId);
+            newStartUtc = NormalizeUtc(newStartUtc);
+
+            lock (_gate)
+            {
+                WorkIntervalEntry? current = FindOpenIntervalCore(timerSessionId);
+                if (current != null)
+                {
+                    current.StartUtc = newStartUtc;
+                    return true;
+                }
+
+                // If paused, check the most recent closed interval
+                WorkIntervalEntry? mostRecent = null;
+                DateTime latestEnd = DateTime.MinValue;
+                foreach (var interval in _intervals)
+                {
+                    if (interval.TimerSessionId == timerSessionId && interval.EndUtc.HasValue)
+                    {
+                        if (interval.EndUtc.Value > latestEnd)
+                        {
+                            latestEnd = interval.EndUtc.Value;
+                            mostRecent = interval;
+                        }
+                    }
+                }
+
+                if (mostRecent != null && mostRecent.EndUtc.HasValue && newStartUtc < mostRecent.EndUtc.Value)
+                {
+                    mostRecent.StartUtc = newStartUtc;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Makes open history agree with restored timer state. Stale intervals
         /// are closed, missing intervals for named running timers are started,
         /// and a changed timer name is treated as an exact-timestamp switch.
@@ -412,6 +499,326 @@ namespace StopwatchOverlay
                 WorkIntervalEntry? interval = FindOpenIntervalCore(timerSessionId);
                 return interval == null ? null : ToView(interval);
             }
+        }
+
+        public IReadOnlyList<ProjectWorkIntervalView> GetIntervalsForTimer(Guid timerSessionId)
+        {
+            ValidateTimerId(timerSessionId);
+            lock (_gate)
+            {
+                return _intervals
+                    .Where(i => i.TimerSessionId == timerSessionId)
+                    .OrderBy(i => i.StartUtc)
+                    .ThenBy(i => i.Id)
+                    .Select(ToView)
+                    .ToList();
+            }
+        }
+
+        /// <summary>
+        /// Adjusts the recorded time intervals for a timer session by a given delta.
+        /// If delta > 0, adds time to the most recent interval (or creates one if none exists).
+        /// If delta < 0, reduces intervals starting from the most recent backwards, deleting
+        /// intervals that are completely eliminated and trimming the last partially reduced interval.
+        /// </summary>
+        public void AdjustIntervalsForTimer(
+            Guid timerSessionId,
+            TimeSpan delta,
+            string projectName,
+            DateTime utcNow,
+            bool isRunning)
+        {
+            ValidateTimerId(timerSessionId);
+            utcNow = NormalizeUtc(utcNow);
+            if (delta == TimeSpan.Zero) return;
+
+            lock (_gate)
+            {
+                var timerIntervals = _intervals
+                    .Where(i => i.TimerSessionId == timerSessionId)
+                    .OrderBy(i => i.StartUtc)
+                    .ToList();
+
+                if (delta > TimeSpan.Zero)
+                {
+                    // Adding time
+                    if (timerIntervals.Count > 0)
+                    {
+                        var latest = timerIntervals.Last();
+                        TimeSpan remaining = delta;
+
+                        // Step 1: Forward addition on latest interval up to utcNow (if closed)
+                        if (latest.EndUtc.HasValue)
+                        {
+                            if (latest.EndUtc.Value < utcNow)
+                            {
+                                TimeSpan forwardAvailable = utcNow - latest.EndUtc.Value;
+                                TimeSpan forwardAdd = remaining < forwardAvailable ? remaining : forwardAvailable;
+                                latest.EndUtc = latest.EndUtc.Value + forwardAdd;
+                                remaining -= forwardAdd;
+                            }
+                        }
+
+                        // Step 2: If added time exceeds current time, add remaining backward into previous gaps and start
+                        if (remaining > TimeSpan.Zero)
+                        {
+                            for (int i = timerIntervals.Count - 1; i >= 0 && remaining > TimeSpan.Zero; i--)
+                            {
+                                var current = timerIntervals[i];
+                                if (i > 0)
+                                {
+                                    var prev = timerIntervals[i - 1];
+                                    DateTime prevEnd = prev.EndUtc ?? utcNow;
+                                    if (current.StartUtc > prevEnd)
+                                    {
+                                        TimeSpan gap = current.StartUtc - prevEnd;
+                                        TimeSpan backwardAdd = remaining < gap ? remaining : gap;
+                                        current.StartUtc -= backwardAdd;
+                                        remaining -= backwardAdd;
+                                    }
+                                }
+                                else
+                                {
+                                    // Earliest interval: no previous interval blocking, add all remaining time before start
+                                    current.StartUtc -= remaining;
+                                    remaining = TimeSpan.Zero;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Step 3: Merge contiguous (connected) or overlapping intervals for this timer session
+                        MergeConnectedIntervalsCore(timerSessionId);
+                    }
+                    else
+                    {
+                        // No intervals exist for this timer yet: create one
+                        if (TryNormalizeProjectName(projectName, out string? displayName))
+                        {
+                            string key = CreateProjectKey(displayName!);
+                            ProjectEntry project = RegisterProjectCore(key, displayName!);
+                            DateTime start = utcNow - delta;
+                            if (isRunning)
+                            {
+                                _intervals.Add(new WorkIntervalEntry(
+                                    Guid.NewGuid(),
+                                    timerSessionId,
+                                    project.Key,
+                                    project.Name,
+                                    start,
+                                    endUtc: null));
+                            }
+                            else
+                            {
+                                _intervals.Add(new WorkIntervalEntry(
+                                    Guid.NewGuid(),
+                                    timerSessionId,
+                                    project.Key,
+                                    project.Name,
+                                    start,
+                                    endUtc: utcNow));
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Reducing time: eliminate from the end
+                    TimeSpan toReduce = -delta;
+                    bool hadOpenInterval = false;
+
+                    for (int i = timerIntervals.Count - 1; i >= 0 && toReduce > TimeSpan.Zero; i--)
+                    {
+                        var interval = timerIntervals[i];
+                        bool isOpen = interval.EndUtc == null;
+                        if (isOpen) hadOpenInterval = true;
+
+                        DateTime effectiveEnd = interval.EndUtc ?? utcNow;
+                        TimeSpan duration = effectiveEnd - interval.StartUtc;
+                        if (duration < TimeSpan.Zero) duration = TimeSpan.Zero;
+
+                        if (duration <= toReduce)
+                        {
+                            _intervals.Remove(interval);
+                            toReduce -= duration;
+                        }
+                        else
+                        {
+                            // Partially reduce interval from end
+                            if (interval.EndUtc.HasValue)
+                            {
+                                interval.EndUtc = interval.EndUtc.Value - toReduce;
+                            }
+                            else
+                            {
+                                // Shorten open interval by pushing StartUtc forward
+                                interval.StartUtc = interval.StartUtc + toReduce;
+                            }
+                            toReduce = TimeSpan.Zero;
+                            break;
+                        }
+                    }
+
+                    // If an open interval was eliminated but the timer is still running,
+                    // start a new open interval at utcNow so future tracking continues.
+                    if (isRunning && hadOpenInterval && !_intervals.Any(i => i.TimerSessionId == timerSessionId && i.EndUtc == null))
+                    {
+                        if (TryNormalizeProjectName(projectName, out string? displayName))
+                        {
+                            string key = CreateProjectKey(displayName!);
+                            ProjectEntry project = RegisterProjectCore(key, displayName!);
+                            _intervals.Add(new WorkIntervalEntry(
+                                Guid.NewGuid(),
+                                timerSessionId,
+                                project.Key,
+                                project.Name,
+                                utcNow,
+                                endUtc: null));
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the start timestamp of the most recent interval for this timer session.
+        /// </summary>
+        public bool UpdateLatestIntervalStartTime(Guid timerSessionId, DateTime newStartUtc)
+        {
+            ValidateTimerId(timerSessionId);
+            newStartUtc = NormalizeUtc(newStartUtc);
+
+            lock (_gate)
+            {
+                var timerIntervals = _intervals
+                    .Where(i => i.TimerSessionId == timerSessionId)
+                    .OrderBy(i => i.StartUtc)
+                    .ToList();
+
+                if (timerIntervals.Count == 0) return false;
+                var latest = timerIntervals.Last();
+
+                if (latest.EndUtc.HasValue && newStartUtc >= latest.EndUtc.Value)
+                {
+                    return false;
+                }
+
+                latest.StartUtc = newStartUtc;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Discards all intervals associated with the specified timer session.
+        /// </summary>
+        public int DiscardAllIntervalsForTimer(Guid timerSessionId)
+        {
+            ValidateTimerId(timerSessionId);
+            lock (_gate)
+            {
+                return _intervals.RemoveAll(i => i.TimerSessionId == timerSessionId);
+            }
+        }
+
+        /// <summary>
+        /// Captures a point-in-time snapshot of all intervals belonging to a specific timer session.
+        /// </summary>
+        public List<WorkIntervalDocumentEntry> CaptureTimerIntervalsSnapshot(Guid timerSessionId)
+        {
+            ValidateTimerId(timerSessionId);
+            lock (_gate)
+            {
+                return _intervals
+                    .Where(i => i.TimerSessionId == timerSessionId)
+                    .OrderBy(i => i.StartUtc)
+                    .Select(i => new WorkIntervalDocumentEntry
+                    {
+                        Id = i.Id,
+                        TimerSessionId = i.TimerSessionId,
+                        ProjectKey = i.ProjectKey,
+                        ProjectName = i.ProjectName,
+                        StartUtc = i.StartUtc,
+                        EndUtc = i.EndUtc
+                    })
+                    .ToList();
+            }
+        }
+
+        /// <summary>
+        /// Restores a previously captured snapshot of intervals for a specific timer session,
+        /// replacing all existing intervals for that session.
+        /// </summary>
+        public void RestoreTimerIntervalsSnapshot(Guid timerSessionId, IEnumerable<WorkIntervalDocumentEntry> snapshot)
+        {
+            ValidateTimerId(timerSessionId);
+            ArgumentNullException.ThrowIfNull(snapshot);
+
+            lock (_gate)
+            {
+                _intervals.RemoveAll(i => i.TimerSessionId == timerSessionId);
+
+                foreach (var entry in snapshot)
+                {
+                    RegisterProjectCore(entry.ProjectKey, entry.ProjectName);
+                    _intervals.Add(new WorkIntervalEntry(
+                        entry.Id,
+                        entry.TimerSessionId,
+                        entry.ProjectKey,
+                        entry.ProjectName,
+                        NormalizeUtc(entry.StartUtc),
+                        entry.EndUtc.HasValue ? NormalizeUtc(entry.EndUtc.Value) : null));
+                }
+            }
+        }
+
+        private void MergeConnectedIntervalsCore(Guid timerSessionId)
+        {
+            bool mergedAny;
+            do
+            {
+                mergedAny = false;
+                var timerIntervals = _intervals
+                    .Where(i => i.TimerSessionId == timerSessionId)
+                    .OrderBy(i => i.StartUtc)
+                    .ToList();
+
+                for (int i = 0; i < timerIntervals.Count - 1; i++)
+                {
+                    var first = timerIntervals[i];
+                    var second = timerIntervals[i + 1];
+
+                    if (!first.EndUtc.HasValue)
+                    {
+                        _intervals.Remove(second);
+                        mergedAny = true;
+                        break;
+                    }
+
+                    if (second.StartUtc <= first.EndUtc.Value)
+                    {
+                        if (second.EndUtc.HasValue)
+                        {
+                            first.EndUtc = second.EndUtc.Value > first.EndUtc.Value
+                                ? second.EndUtc.Value
+                                : first.EndUtc.Value;
+                        }
+                        else
+                        {
+                            first.EndUtc = null;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(second.ProjectName))
+                        {
+                            first.ProjectKey = second.ProjectKey;
+                            first.ProjectName = second.ProjectName;
+                        }
+
+                        _intervals.Remove(second);
+                        mergedAny = true;
+                        break;
+                    }
+                }
+            } while (mergedAny);
         }
 
         public ProjectHistoryView CreateView(DateTime asOfUtc)
@@ -627,9 +1034,9 @@ namespace StopwatchOverlay
 
             public Guid Id { get; }
             public Guid TimerSessionId { get; }
-            public string ProjectKey { get; }
-            public string ProjectName { get; }
-            public DateTime StartUtc { get; }
+            public string ProjectKey { get; set; }
+            public string ProjectName { get; set; }
+            public DateTime StartUtc { get; set; }
             public DateTime? EndUtc { get; set; }
         }
     }

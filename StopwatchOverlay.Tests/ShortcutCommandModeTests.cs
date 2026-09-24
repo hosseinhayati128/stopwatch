@@ -30,6 +30,10 @@ namespace StopwatchOverlay.Tests
         [InlineData('d', ShortcutAction.OpenDashboard)]
         [InlineData('W', ShortcutAction.OpenController)]
         [InlineData('w', ShortcutAction.OpenController)]
+        [InlineData('E', ShortcutAction.EditTimer)]
+        [InlineData('e', ShortcutAction.EditTimer)]
+        [InlineData('U', ShortcutAction.UndoTimerEdit)]
+        [InlineData('u', ShortcutAction.UndoTimerEdit)]
         public void TryGetAction_FromChar_MapsToExpectedAction(char keyChar, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(keyChar, out ShortcutAction action);
@@ -49,6 +53,8 @@ namespace StopwatchOverlay.Tests
         [InlineData(ShortcutCommandMode.VK_KEY_P, ShortcutAction.RenameTimer)]
         [InlineData(ShortcutCommandMode.VK_KEY_D, ShortcutAction.OpenDashboard)]
         [InlineData(ShortcutCommandMode.VK_KEY_W, ShortcutAction.OpenController)]
+        [InlineData(ShortcutCommandMode.VK_KEY_E, ShortcutAction.EditTimer)]
+        [InlineData(ShortcutCommandMode.VK_KEY_U, ShortcutAction.UndoTimerEdit)]
         public void TryGetAction_FromVirtualKey_MapsToExpectedAction(uint vk, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(vk, out ShortcutAction action);
@@ -68,6 +74,8 @@ namespace StopwatchOverlay.Tests
         [InlineData(Key.P, ShortcutAction.RenameTimer)]
         [InlineData(Key.D, ShortcutAction.OpenDashboard)]
         [InlineData(Key.W, ShortcutAction.OpenController)]
+        [InlineData(Key.E, ShortcutAction.EditTimer)]
+        [InlineData(Key.U, ShortcutAction.UndoTimerEdit)]
         public void TryGetAction_FromWpfKey_MapsToExpectedAction(Key key, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(key, out ShortcutAction action);
@@ -78,7 +86,7 @@ namespace StopwatchOverlay.Tests
         [Theory]
         [InlineData('a')]
         [InlineData('b')]
-        [InlineData('e')]
+        [InlineData('f')]
         [InlineData('z')]
         [InlineData('1')]
         [InlineData('9')]

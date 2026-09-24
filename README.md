@@ -32,13 +32,14 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 🎨 **Six application themes** — Midnight, Daylight, Pixel Deck Night, Pixel Deck Day, Acanthus, and One Piece
 - 🕰️ **Independent floating-clock themes** — Follow the application theme or choose one of nine clock styles (including the One Piece Navigator clock with custom layer opacities and three dark Acanthus variants), without changing your panels
 - 📝 **Quick capture & notes (Win+F3)** — Quickly capture Todos, Notes, and Reminders from any application; automatically synced to your Obsidian vault grouped by date
+- ✈️ **Telegram note integration** — Forward quick notes, todos, and reminders directly to distinct forum topics in your Telegram supergroup via Telegram Bot API
 - 📋 **Floating notes viewer** — Floating popup (Win+F3 → 4) with tabs for All, Todos, Notes, and Reminders, auto-close countdown, and keyboard dismissal
 - 🔤 **Custom typography & UI scaling** — Granular text scaling (75%–175%), colors, and panel overrides via Settings → Fonts & colors, plus whole-page UI scaling (70%–125%)
 - 🧵 **Tiled background library** — Choose from nine bundled seamless patterns or import a JPG, PNG, or BMP; the selection, strength, and managed custom copy survive restarts
 - 🖌️ **Deep overlay customization** — Choose display, position, text and outline colors, font, format, size, thickness, opacity, and optional light ring
 - 🖥️ **Multi-monitor and presentation tools** — Show timers on one or every display, keep them always on top, enable click-through, or hide overlays from screen capture
 - 🖱️ **Direct overlay controls** — Click a timer to activate it; hover for close, pause/resume, and reset controls
-- ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D, W) to control timers, projects, and the dashboard from any application
+- ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D, W, E) to control timers, projects, and the dashboard from any application
 - 🧠 **Smart countdown input** — Enter natural durations, clock times, dates, weekdays, months, or years with a live interpretation preview
 - 💾 **Crash-safe recovery** — Restore timers, running/paused state, projects, laps, positions, and combined/separate presentation after restart, shutdown, or a crash
 - 🚀 **Desktop integration & configurable close** — Start with Windows, choose whether the close button (X) asks, minimizes to tray, or exits completely, and exit anytime from the tray menu
@@ -183,7 +184,7 @@ Press **Win+F2 → P** to assign the active timer to an existing project or add 
 
 ### Quick Capture & Note Taking (`Win+F3`)
 
-Stopwatch Overlay includes a global quick-capture system that writes directly to Markdown files inside your **Obsidian** vault:
+Stopwatch Overlay includes a global quick-capture system that writes directly to Markdown files inside your **Obsidian** vault, with optional automatic forwarding to **Telegram**:
 
 1. Press **Win+F3** (configurable in **Keyboard Shortcuts**) to open the Note Command Mode hint overlay.
 2. Press one of the shortcut keys to open a dedicated floating capture window or viewer:
@@ -195,6 +196,22 @@ Stopwatch Overlay includes a global quick-capture system that writes directly to
 3. In the entry popup, write your note and press **Ctrl+Enter** to save directly to Obsidian, or **Escape** to cancel. If no vault folder is configured yet, the app prompts you to pick your Obsidian vault folder.
 4. Notes are automatically grouped and separated under date headers (`## yyyy-MM-dd`) in your vault's `Notes/` folder.
 5. The **Notes Viewer** (`Win+F3 → 4`) displays your captured entries sorted chronologically, lets you switch between **All**, **Todos**, **Notes**, and **Reminders**, automatically counts down to close after 30 seconds, and dismisses immediately with **Enter** or **Escape**.
+
+### Telegram Forwarding for Notes, Todos & Reminders
+
+Stopwatch Overlay can automatically forward captured notes, todos, and reminders to your Telegram supergroup:
+
+1. Open **Settings → Telegram** and check **Enable Telegram sync for notes, todos, and reminders**.
+2. Enter your **Bot Token** (obtained from [@BotFather](https://t.me/BotFather)).
+3. Enter your **Group / Supergroup Chat ID** (e.g. `-1001234567890`).
+4. Optionally enter the **Topic ID** for each category (Quick Notes, Todos, Reminders) to route messages into separate forum topics.
+5. Click **Test Connection** to verify your bot token with Telegram (`getMe`) and send a test message to ensure the bot has permission to post in your group.
+
+> **Tip: Finding your Supergroup Chat ID and Topic ID in Telegram**
+> 1. In Telegram Desktop or Mobile, right-click (or tap and hold) any message inside the target forum topic and select **Copy Message Link**.
+> 2. The link format is `https://t.me/c/<GROUP_ID>/<TOPIC_ID>/<MESSAGE_ID>` (for example: `https://t.me/c/1987654321/42/105`).
+> 3. **Chat ID:** Add `-100` in front of the `<GROUP_ID>` (e.g. `-1001987654321`).
+> 4. **Topic ID:** The middle number (e.g. `42`). Leave blank to send to the General / main chat.
 
 ### Keyboard Shortcuts
 
@@ -213,6 +230,7 @@ Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Pre
 | **Win+F2 → P** | Choose, create, change, or clear the active timer's project |
 | **Win+F2 → D** | Open the project time dashboard |
 | **Win+F2 → W** | Open / restore and focus the stopwatch controller |
+| **Win+F2 → E** | Edit active timer (adjust time value, start time, pause state, or discard from records) |
 | **Escape** | Cancel command mode without action |
 
 

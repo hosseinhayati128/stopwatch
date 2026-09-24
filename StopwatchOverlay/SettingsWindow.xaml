@@ -160,6 +160,7 @@
                     <ListBoxItem Content="Behavior" Tag="Behavior" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Application" Tag="Application" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
+                    <ListBoxItem Content="Telegram" Tag="Telegram" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                 </ListBox>
             </Border>
 
@@ -411,6 +412,70 @@
                                         Style="{StaticResource ModernButton}" Click="ExportNowButton_Click"/>
                             </StackPanel>
                             <TextBlock x:Name="ExportStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel></Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="TelegramPanel" Visibility="Collapsed">
+                        <TextBlock Text="Telegram Integration" Style="{StaticResource DisplayHeadingText}"/>
+                        <TextBlock Text="Automatically forward Quick Notes, Todos, and Reminders to your Telegram supergroup or topics."
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22" TextWrapping="Wrap"/>
+                        <Border Style="{StaticResource SettingsCard}"><StackPanel>
+                            <CheckBox x:Name="TelegramEnabledCheck" Content="Enable Telegram sync for notes, todos, and reminders" Margin="0,0,0,16" Style="{StaticResource PirateSettingsSwitch}"/>
+
+                            <TextBlock Text="Bot Token" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="TelegramBotTokenTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="The HTTP API token provided by @BotFather (e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Group / Supergroup Chat ID" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="TelegramChatIdTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="Target supergroup ID (usually starts with -100, e.g. -1001234567890). Make sure your bot is added to the group."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Topic IDs (message_thread_id for Supergroup Topics)" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBlock Text="In a forum supergroup, each topic has a unique Topic ID. Leave blank to send to General / main chat."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Quick Notes Topic:" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBox x:Name="TelegramNotesTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                                         FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Todos Topic:" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBox x:Name="TelegramTodosTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                                         FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Reminders Topic:" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBox x:Name="TelegramRemindersTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center" Padding="8,0"
+                                         FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <TextBlock Text="Tip: In Telegram, right-click any message in a topic, choose 'Copy Message Link', and copy the middle number (e.g. t.me/c/GROUP_ID/TOPIC_ID/MSG_ID)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button x:Name="TestTelegramButton" Content="Test Connection" Height="34" Padding="16,0"
+                                        Style="{StaticResource ModernButton}" Click="TestTelegramButton_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="TelegramStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>
                     </StackPanel>
                 </Grid>

@@ -125,6 +125,12 @@ public partial class SettingsWindow : Window
             ObsidianLogUnnamedCheck.IsChecked = _settings.ObsidianLogUnnamedTimers;
             ObsidianFolderTextBox.Text = _settings.ObsidianVaultFolder;
             ObsidianFileNameTextBox.Text = _settings.ObsidianExportFileName;
+            TelegramEnabledCheck.IsChecked = _settings.TelegramEnabled;
+            TelegramBotTokenTextBox.Text = _settings.TelegramBotToken;
+            TelegramChatIdTextBox.Text = _settings.TelegramChatId;
+            TelegramNotesTopicTextBox.Text = _settings.TelegramNotesTopicId;
+            TelegramTodosTopicTextBox.Text = _settings.TelegramTodosTopicId;
+            TelegramRemindersTopicTextBox.Text = _settings.TelegramRemindersTopicId;
             UpdateObsidianPathPreview();
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
@@ -189,6 +195,13 @@ public partial class SettingsWindow : Window
             UpdateObsidianPathPreview();
             CommitControls(SettingsChangeKind.ObsidianExport);
         };
+
+        WireCheckBox(TelegramEnabledCheck, SettingsChangeKind.Telegram);
+        TelegramBotTokenTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
+        TelegramChatIdTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
+        TelegramNotesTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
+        TelegramTodosTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
+        TelegramRemindersTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -358,6 +371,16 @@ public partial class SettingsWindow : Window
                 _settings.ObsidianLogUnnamedTimers = ObsidianLogUnnamedCheck.IsChecked == true;
                 _settings.ObsidianVaultFolder = ObsidianFolderTextBox.Text.Trim();
                 _settings.ObsidianExportFileName = ObsidianFileNameTextBox.Text.Trim();
+            }
+
+            if ((change & SettingsChangeKind.Telegram) != 0)
+            {
+                _settings.TelegramEnabled = TelegramEnabledCheck.IsChecked == true;
+                _settings.TelegramBotToken = TelegramBotTokenTextBox.Text.Trim();
+                _settings.TelegramChatId = TelegramChatIdTextBox.Text.Trim();
+                _settings.TelegramNotesTopicId = TelegramNotesTopicTextBox.Text.Trim();
+                _settings.TelegramTodosTopicId = TelegramTodosTopicTextBox.Text.Trim();
+                _settings.TelegramRemindersTopicId = TelegramRemindersTopicTextBox.Text.Trim();
             }
 
             UpdateValueLabels();
@@ -611,6 +634,7 @@ public partial class SettingsWindow : Window
         BehaviorPanel.Visibility = tag == "Behavior" ? Visibility.Visible : Visibility.Collapsed;
         ApplicationPanel.Visibility = tag == "Application" ? Visibility.Visible : Visibility.Collapsed;
         ObsidianPanel.Visibility = tag == "Obsidian" ? Visibility.Visible : Visibility.Collapsed;
+        TelegramPanel.Visibility = tag == "Telegram" ? Visibility.Visible : Visibility.Collapsed;
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);
         Dispatcher.BeginInvoke(
             new Action(() => SettingsScrollViewer?.ScrollToTop()),
@@ -661,6 +685,47 @@ public partial class SettingsWindow : Window
         {
             ExportStatusText.Text = result.Message ?? "Export failed.";
             ExportStatusText.Foreground = Brushes.OrangeRed;
+        }
+    }
+
+    public async void TestTelegramButton_Click(object sender, RoutedEventArgs e)
+    {
+        TestTelegramButton.IsEnabled = false;
+        TelegramStatusText.Text = "Testing Telegram connection...";
+        TelegramStatusText.Foreground = Brushes.DeepSkyBlue;
+
+        try
+        {
+            var testSettings = new AppSettings
+            {
+                TelegramEnabled = TelegramEnabledCheck.IsChecked == true,
+                TelegramBotToken = TelegramBotTokenTextBox.Text.Trim(),
+                TelegramChatId = TelegramChatIdTextBox.Text.Trim(),
+                TelegramNotesTopicId = TelegramNotesTopicTextBox.Text.Trim(),
+                TelegramTodosTopicId = TelegramTodosTopicTextBox.Text.Trim(),
+                TelegramRemindersTopicId = TelegramRemindersTopicTextBox.Text.Trim()
+            };
+
+            var result = await TelegramNotesSync.TestConnectionAsync(testSettings);
+            if (result.Success)
+            {
+                TelegramStatusText.Text = "✓ " + result.Message;
+                TelegramStatusText.Foreground = Brushes.DeepSkyBlue;
+            }
+            else
+            {
+                TelegramStatusText.Text = "✗ " + result.Message;
+                TelegramStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            TelegramStatusText.Text = "✗ Connection error: " + ex.Message;
+            TelegramStatusText.Foreground = Brushes.OrangeRed;
+        }
+        finally
+        {
+            TestTelegramButton.IsEnabled = true;
         }
     }
 

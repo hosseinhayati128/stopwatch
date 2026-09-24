@@ -156,6 +156,7 @@ namespace StopwatchOverlay
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
         private bool _isExiting;
+        private TimerEditUndoState? _lastTimerEditUndo;
         private bool _changingStartWithWindows;
         private bool _appliedStartWithWindows;
         private bool _isNamingTimer;
@@ -1461,6 +1462,234 @@ namespace StopwatchOverlay
         private void NewTimerMenuItem_Click(object sender, RoutedEventArgs e) => CreateNewTimer();
         private void NextTimerMenuItem_Click(object sender, RoutedEventArgs e) => CycleActiveTimer();
         private void CloseTimerMenuItem_Click(object sender, RoutedEventArgs e) => CloseActiveTimer();
+        private void EditTimerMenuItem_Click(object sender, RoutedEventArgs e) => EditActiveTimer();
+
+        private void EditActiveTimer()
+        {
+            if (_activeTimer == null) return;
+            EditTimer(_activeTimer);
+        }
+
+        private void EditTimer(TimerSession? timer)
+        {
+            if (timer == null || _isExiting) return;
+
+            ActivateTimer(timer);
+
+            var intervals = _projectHistory.GetIntervalsForTimer(timer.Id);
+            var projectNames = _projectHistory.ProjectNames;
+            bool canUndo = _lastTimerEditUndo != null && _lastTimerEditUndo.TimerSessionId == timer.Id;
+
+            var dialog = new TimerEditorWindow(
+                timer,
+                projectNames,
+                intervals,
+                canUndo)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true && dialog.WasSaved)
+            {
+                if (dialog.UndoRequested)
+                {
+                    UndoLastTimerEdit();
+                    return;
+                }
+
+                DateTime utcNow = DateTime.UtcNow;
+
+                if (dialog.DeleteTimerRequested)
+                {
+                    if (dialog.DiscardRecordsRequested)
+                    {
+                        _projectHistory.DiscardAllIntervalsForTimer(timer.Id);
+                        MarkProjectHistoryDirty();
+                    }
+                    _lastTimerEditUndo = null;
+                    UpdateUndoMenuItemState();
+                    CloseActiveTimer();
+                    return;
+                }
+
+                // Capture snapshot for undo before applying modifications
+                _lastTimerEditUndo = CaptureTimerUndoState(timer);
+                UpdateUndoMenuItemState();
+
+                if (dialog.DiscardRecordsRequested)
+                {
+                    _projectHistory.DiscardAllIntervalsForTimer(timer.Id);
+                    MarkProjectHistoryDirty();
+                    UpdateStatus("Session discarded from project records", Brushes.OrangeRed);
+                }
+                else if (dialog.Delta != TimeSpan.Zero)
+                {
+                    _projectHistory.AdjustIntervalsForTimer(
+                        timer.Id,
+                        dialog.Delta,
+                        timer.Name,
+                        utcNow,
+                        dialog.NewIsRunning);
+                    MarkProjectHistoryDirty();
+                }
+
+                string requestedProj = (dialog.NewProjectName ?? "").Trim();
+                if (!ProjectAssignmentsEqual(timer.Name, requestedProj))
+                {
+                    string registered = RegisterProjectName(requestedProj);
+                    timer.Name = registered;
+                    foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+                    {
+                        instance.Window.SetTimerName(timer.Name);
+                    }
+                }
+
+                TimeSpan newTime = dialog.NewTimeValue;
+                if (timer.Mode == 2)
+                {
+                    timer.CountdownRemaining = newTime;
+                }
+                else
+                {
+                    bool isRunning = dialog.NewIsRunning;
+                    timer.Stopwatch.Restore(newTime, isRunning);
+                    timer.IsRunning = isRunning;
+                }
+
+                if (timer.IsRunning != dialog.NewIsRunning)
+                {
+                    timer.IsRunning = dialog.NewIsRunning;
+                    if (timer.IsRunning)
+                    {
+                        timer.Stopwatch.Start();
+                        SynchronizeProjectTracking(timer, utcNow);
+                    }
+                    else
+                    {
+                        timer.Stopwatch.Stop();
+                        SynchronizeProjectTracking(timer, utcNow);
+                    }
+                }
+
+                foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+                {
+                    instance.Window.SetRunning(timer.IsRunning);
+                    instance.Window.SetTimerName(timer.Name);
+                }
+
+                RefreshCombinedOverlayState();
+                UpdateTimeDisplay();
+                UpdateButtonStates();
+                UpdateShortcutLabels();
+                CheckpointState();
+
+                string label = string.IsNullOrWhiteSpace(timer.Name) ? $"Timer {timer.Number}" : timer.Name;
+                UpdateStatus($"{label} updated", (Brush)FindResource("AccentBrush"));
+            }
+        }
+
+        private TimerEditUndoState CaptureTimerUndoState(TimerSession timer)
+        {
+            var intervals = _projectHistory.CaptureTimerIntervalsSnapshot(timer.Id);
+            return new TimerEditUndoState(
+                timer.Id,
+                timer.DisplayName,
+                timer.Name,
+                timer.Mode == 2 ? timer.CountdownRemaining : timer.Elapsed,
+                timer.CountdownRemaining,
+                timer.Mode,
+                timer.IsRunning,
+                intervals);
+        }
+
+        private void UndoLastTimerEdit()
+        {
+            if (_lastTimerEditUndo == null)
+            {
+                UpdateStatus("Nothing to undo", Brushes.OrangeRed);
+                return;
+            }
+
+            var undo = _lastTimerEditUndo;
+            _lastTimerEditUndo = null;
+
+            var timer = _timers.FirstOrDefault(t => t.Id == undo.TimerSessionId);
+            if (timer == null)
+            {
+                UpdateStatus("Cannot undo: timer is no longer available", Brushes.OrangeRed);
+                UpdateUndoMenuItemState();
+                return;
+            }
+
+            ActivateTimer(timer);
+
+            // 1. Restore intervals in project history
+            _projectHistory.RestoreTimerIntervalsSnapshot(undo.TimerSessionId, undo.Intervals);
+            MarkProjectHistoryDirty();
+
+            // 2. Restore project name
+            timer.Name = undo.TimerProjectName;
+            foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+            {
+                instance.Window.SetTimerName(timer.Name);
+            }
+
+            // 3. Restore elapsed / countdown / running
+            if (timer.Mode == 2)
+            {
+                timer.CountdownRemaining = undo.CountdownRemaining;
+            }
+            else
+            {
+                timer.Stopwatch.Restore(undo.Elapsed, undo.IsRunning);
+                timer.IsRunning = undo.IsRunning;
+            }
+
+            DateTime utcNow = DateTime.UtcNow;
+            SynchronizeProjectTracking(timer, utcNow);
+
+            foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+            {
+                instance.Window.SetRunning(timer.IsRunning);
+                instance.Window.SetTimerName(timer.Name);
+            }
+
+            RefreshCombinedOverlayState();
+            UpdateTimeDisplay();
+            UpdateButtonStates();
+            UpdateShortcutLabels();
+            UpdateUndoMenuItemState();
+            CheckpointState();
+
+            UpdateStatus($"Undid last edit for {undo.TimerDisplayName}: restored {undo.Intervals.Count} segment(s)", (Brush)FindResource("AccentBrush"));
+        }
+
+        private void UndoTimerEditMenuItem_Click(object sender, RoutedEventArgs e) => UndoLastTimerEdit();
+
+        private void UpdateUndoMenuItemState()
+        {
+            if (UndoTimerEditMenuItem != null)
+            {
+                bool workspaceMutable = !_workspaceRecoveryEvidenceObserved;
+                UndoTimerEditMenuItem.IsEnabled = workspaceMutable && _lastTimerEditUndo != null;
+                UndoTimerEditMenuItem.Header = _lastTimerEditUndo != null
+                    ? $"_Undo edit for {_lastTimerEditUndo.TimerDisplayName}"
+                    : "_Undo last timer edit";
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Z && (Keyboard.Modifiers & ModifierKeys.Control) != 0 && (Keyboard.Modifiers & ~ModifierKeys.Control) == 0)
+            {
+                if (_lastTimerEditUndo != null)
+                {
+                    UndoLastTimerEdit();
+                    e.Handled = true;
+                }
+            }
+        }
+
         private void RenameTimerMenuItem_Click(object sender, RoutedEventArgs e) => RenameActiveTimer();
         private void ToggleCombinedOverlayMenuItem_Click(object sender, RoutedEventArgs e) => ToggleCombinedOverlayMode();
         private void ProjectDashboardMenuItem_Click(object sender, RoutedEventArgs e) => ShowProjectDashboard();
@@ -1828,7 +2057,7 @@ namespace StopwatchOverlay
         {
             // For actions that open interactive text-input dialogs or separate dashboard window,
             // exit command mode immediately so normal typing is not intercepted.
-            if (action is ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.OpenDashboard)
+            if (action is ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.OpenDashboard or ShortcutAction.EditTimer or ShortcutAction.UndoTimerEdit)
             {
                 _commandMode?.Exit();
                 CloseCommandHintWindow();
@@ -2160,6 +2389,12 @@ namespace StopwatchOverlay
                     break;
                 case ShortcutAction.RenameTimer:
                     Dispatcher.BeginInvoke(new Action(RenameActiveTimer), DispatcherPriority.Input);
+                    break;
+                case ShortcutAction.EditTimer:
+                    Dispatcher.BeginInvoke(new Action(EditActiveTimer), DispatcherPriority.Input);
+                    break;
+                case ShortcutAction.UndoTimerEdit:
+                    UndoLastTimerEdit();
                     break;
                 case ShortcutAction.OpenDashboard:
                     ShowProjectDashboard();
@@ -3575,6 +3810,11 @@ namespace StopwatchOverlay
                 if (_activeTimer != null)
                     ResetButton_Click(overlay, new RoutedEventArgs());
             };
+            overlay.EditRequested += () =>
+            {
+                if (_activeTimer != null)
+                    EditActiveTimer();
+            };
 
             ApplyOverlaySettings(overlay);
             overlay.Show();
@@ -3695,6 +3935,11 @@ namespace StopwatchOverlay
             {
                 ActivateTimer(timer, announce: false, checkpoint: false);
                 ResetButton_Click(overlay, new RoutedEventArgs());
+            };
+            overlay.EditRequested += () =>
+            {
+                ActivateTimer(timer, announce: false, checkpoint: false);
+                EditTimer(timer);
             };
 
             ApplyOverlaySettings(overlay);
@@ -4241,6 +4486,8 @@ namespace StopwatchOverlay
             NextTimerMenuItem.IsEnabled = workspaceMutable && _timers.Count > 1;
             CloseTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
             RenameTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
+            EditTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
+            UpdateUndoMenuItemState();
             ToggleCombinedOverlayMenuItem.IsEnabled = workspaceMutable
                 && (_combinedOverlayMode || hasTimer);
             StartStopButton.Style = (Style)FindResource(
@@ -4337,6 +4584,8 @@ namespace StopwatchOverlay
             NextTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}T";
             CloseTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}X";
             RenameTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}P";
+            EditTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}E";
+            UndoTimerEditMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "Ctrl+Z" : $"Ctrl+Z, {prefix}U";
             ProjectDashboardMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}D";
             ToggleCombinedOverlayMenuItem.InputGestureText = "";
             ToggleCombinedOverlayMenuItem.Header = _combinedOverlayMode

@@ -50,6 +50,7 @@ namespace StopwatchOverlay
         public event Action? CloseRequested;
         public event Action? PauseResumeRequested;
         public event Action? ResetRequested;
+        public event Action? EditRequested;
 
         public OverlayWindow()
         {
@@ -404,6 +405,13 @@ namespace StopwatchOverlay
         {
             ActivationRequested?.Invoke();
             ResetRequested?.Invoke();
+        }
+
+        private void EditActionButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideActionPopup(true);
+            ActivationRequested?.Invoke();
+            EditRequested?.Invoke();
         }
 
         public void SetClickThrough(bool clickThrough)

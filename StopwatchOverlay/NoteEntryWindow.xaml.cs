@@ -132,7 +132,9 @@ public partial class NoteEntryWindow : Window
         }
 
         string vaultFolder = _settings.ObsidianVaultFolder;
-        if (string.IsNullOrWhiteSpace(vaultFolder) || !Directory.Exists(vaultFolder))
+        bool hasVault = !string.IsNullOrWhiteSpace(vaultFolder) && Directory.Exists(vaultFolder);
+
+        if (!hasVault && !_settings.TelegramEnabled)
         {
             var dialog = new Microsoft.Win32.OpenFolderDialog
             {
@@ -145,6 +147,7 @@ public partial class NoteEntryWindow : Window
                 vaultFolder = dialog.FolderName;
                 _settings.ObsidianVaultFolder = vaultFolder;
                 SettingsStore.Save(_settings);
+                hasVault = true;
             }
             else
             {
@@ -158,24 +161,31 @@ public partial class NoteEntryWindow : Window
             }
         }
 
-        var result = ObsidianNotesSync.AppendEntry(
-            vaultFolder,
-            _noteType,
-            text,
-            _settings.NotesSubfolder);
+        if (hasVault)
+        {
+            var result = ObsidianNotesSync.AppendEntry(
+                vaultFolder,
+                _noteType,
+                text,
+                _settings.NotesSubfolder);
 
-        if (result.Success)
-        {
-            Close();
+            if (!result.Success && !_settings.TelegramEnabled)
+            {
+                MessageBox.Show(
+                    this,
+                    result.Message ?? "Failed to save note.",
+                    "Error Saving Note",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
         }
-        else
+
+        if (_settings.TelegramEnabled)
         {
-            MessageBox.Show(
-                this,
-                result.Message ?? "Failed to save note.",
-                "Error Saving Note",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            TelegramNotesSync.DispatchNoteInBackground(_settings, _noteType, text, DateTime.Now);
         }
+
+        Close();
     }
 }

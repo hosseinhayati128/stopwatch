@@ -10,7 +10,8 @@
         MinWidth="560" MinHeight="520"
         Loaded="Window_Loaded"
         SizeChanged="Window_SizeChanged"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown">
     
     <Window.Resources>
         <ResourceDictionary>
@@ -66,6 +67,8 @@
             <MenuItem x:Name="NextTimerMenuItem" Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
             <MenuItem x:Name="ToggleCombinedOverlayMenuItem" Header="_Combine overlays" Click="ToggleCombinedOverlayMenuItem_Click"/>
             <Separator/>
+            <MenuItem x:Name="EditTimerMenuItem" Header="_Edit active timer..." Click="EditTimerMenuItem_Click"/>
+            <MenuItem x:Name="UndoTimerEditMenuItem" Header="_Undo last timer edit" InputGestureText="Ctrl+Z" Click="UndoTimerEditMenuItem_Click" IsEnabled="False"/>
             <MenuItem x:Name="RenameTimerMenuItem" Header="Set _project" Click="RenameTimerMenuItem_Click"/>
             <MenuItem x:Name="CloseTimerMenuItem" Header="_Close active timer" Click="CloseTimerMenuItem_Click"/>
         </MenuItem>

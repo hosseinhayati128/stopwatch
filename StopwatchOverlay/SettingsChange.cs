@@ -21,7 +21,8 @@ internal enum SettingsChangeKind
     OverlayTheme = 1 << 12,
     ObsidianExport = 1 << 13,
     ApplicationScale = 1 << 14,
-    Typography = 1 << 15
+    Typography = 1 << 15,
+    Telegram = 1 << 16
 }
 
 internal static class SettingsChangePolicy
