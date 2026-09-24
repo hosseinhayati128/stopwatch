@@ -98,6 +98,21 @@ namespace StopwatchOverlay.Tests
             Assert.False(mapped);
         }
 
+        [Theory]
+        [InlineData(0x70u /* VK_F1 */)]
+        [InlineData(0x71u /* VK_F2 */)]
+        [InlineData(0x72u /* VK_F3 */)]
+        [InlineData(0x73u /* VK_F4 */)]
+        [InlineData(0x74u /* VK_F5 */)]
+        [InlineData(0x61u /* VK_NUMPAD1 */)]
+        [InlineData(0x62u /* VK_NUMPAD2 */)]
+        public void TryGetAction_FunctionAndNumpadKeys_DoNotMapToAction(uint vk)
+        {
+            bool mapped = ShortcutCommandMode.TryGetAction(vk, out var action);
+            Assert.False(mapped);
+            Assert.Equal((ShortcutAction)0, action);
+        }
+
         [Fact]
         public void IsEscape_CorrectlyIdentifiesEscapeKey()
         {
@@ -287,6 +302,42 @@ namespace StopwatchOverlay.Tests
             Assert.False(commandMode.IsActive); // Exited command mode
             dispatcher.Invoke(() => { }, DispatcherPriority.Background);
             Assert.True(unknown);
+        }
+
+        [Fact]
+        public void CommandMode_PressingF3_DoesNotTriggerResetAndPassesThrough()
+        {
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            using var commandMode = new ShortcutCommandMode(dispatcher);
+
+            bool actionFired = false;
+            ShortcutAction triggeredAction = 0;
+            commandMode.ActionTriggered += action =>
+            {
+                actionFired = true;
+                triggeredAction = action;
+            };
+
+            bool unknownFired = false;
+            commandMode.UnknownCommand += () => unknownFired = true;
+
+            commandMode.Enter();
+            Assert.True(commandMode.IsActive);
+
+            // User presses F3 (0x72) while in command mode
+            const uint VK_F3 = 0x72u;
+            var result = commandMode.ProcessKeyEvent(WM_KEYDOWN, VK_F3);
+
+            // Must NOT trigger Reset or any action!
+            Assert.False(actionFired);
+            Assert.Equal((ShortcutAction)0, triggeredAction);
+
+            // Must exit command mode and let the key pass through to the OS
+            Assert.False(commandMode.IsActive);
+            Assert.Equal(IntPtr.Zero, result);
+
+            dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+            Assert.True(unknownFired);
         }
 
         [Fact]

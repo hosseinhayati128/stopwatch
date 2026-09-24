@@ -159,11 +159,6 @@ namespace StopwatchOverlay
 
         public static bool TryGetAction(uint virtualKey, out ShortcutAction action)
         {
-            // Normalize lowercase ASCII to uppercase virtual keys if passed
-            if (virtualKey is >= 0x61 and <= 0x7A)
-            {
-                virtualKey -= 0x20;
-            }
             return ActionMap.TryGetValue(virtualKey, out action);
         }
 
@@ -175,7 +170,7 @@ namespace StopwatchOverlay
                 action = ShortcutAction.StartStop;
                 return true;
             }
-            return TryGetAction((uint)upper, out action);
+            return ActionMap.TryGetValue((uint)upper, out action);
         }
 
         public static bool TryGetAction(Key key, out ShortcutAction action)

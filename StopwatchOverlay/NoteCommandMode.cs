@@ -143,11 +143,19 @@ public sealed class NoteCommandMode : IDisposable
 
     public static bool TryGetAction(uint virtualKey, out NoteCommandAction action)
     {
-        if (virtualKey is >= 0x61 and <= 0x7A)
-        {
-            virtualKey -= 0x20;
-        }
         return ActionMap.TryGetValue(virtualKey, out action);
+    }
+
+    public static bool TryGetAction(char keyChar, out NoteCommandAction action)
+    {
+        char upper = char.ToUpperInvariant(keyChar);
+        return ActionMap.TryGetValue((uint)upper, out action);
+    }
+
+    public static bool TryGetAction(Key key, out NoteCommandAction action)
+    {
+        uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+        return TryGetAction(vk, out action);
     }
 
     public static bool IsEscape(uint virtualKey) => virtualKey == VK_ESCAPE;
@@ -285,14 +293,13 @@ public sealed class NoteCommandMode : IDisposable
                 return (IntPtr)1;
             }
 
-            // Unknown key - cancel command mode and consume key
-            _suppressedKeyUpVk = vk;
+            // Unknown key - cancel command mode and pass through
+            Exit();
             _dispatcher.BeginInvoke(new Action(() =>
             {
-                Exit();
                 UnknownCommand?.Invoke();
             }));
-            return (IntPtr)1;
+            return CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         return CallNextHookEx(_hookId, nCode, wParam, lParam);
