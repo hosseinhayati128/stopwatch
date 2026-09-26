@@ -83,7 +83,7 @@ public static class TypographyManager
         }
         return window?.GetType().Name switch
         {
-            "ControllerWindow" => "Controller",
+            "ControllerWindow" or "ShortcutCommandHintWindow" => "Controller",
             "ProjectDashboardWindow" or "ProjectRecordEditorWindow" or "ProjectRecordDeleteWindow" => "Dashboard",
             "SettingsWindow" => "Settings",
             "NoteEntryWindow" or "NotesViewerWindow" or "NoteCommandHintWindow" => "Notes",
