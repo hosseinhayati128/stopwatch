@@ -36,7 +36,14 @@ public sealed record InternetCheckResult(
 
 public static class InternetSpeedProbe
 {
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient HttpClient = new(new SocketsHttpHandler
+    {
+        SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+        {
+            CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
+        },
+        ConnectTimeout = TimeSpan.FromSeconds(5)
+    })
     {
         Timeout = TimeSpan.FromSeconds(10)
     };
@@ -126,19 +133,56 @@ public static class InternetSpeedProbe
 
     private static async Task<long?> MeasurePingAsync(string host, int timeoutMs, CancellationToken cancellationToken)
     {
+        // 1. Try ICMP Ping
         try
         {
             using var ping = new Ping();
-            var reply = await ping.SendPingAsync(host, timeoutMs);
-            if (reply.Status == IPStatus.Success)
+            var reply = await ping.SendPingAsync(host, Math.Min(timeoutMs, 1500));
+            // Real internet ICMP pings across public networks take at least 4ms.
+            // When TUN adapters (v2rayN, Clash, TAP, etc.) or local loopbacks intercept ICMP,
+            // they reply locally with 0ms or <2ms. In that case, ignore the fake ICMP response and measure HTTP latency.
+            if (reply.Status == IPStatus.Success && reply.RoundtripTime >= 4)
             {
                 return reply.RoundtripTime;
             }
-            return null;
         }
         catch
         {
-            return null;
+            // ICMP failed or blocked, proceed to HTTP probe
         }
+
+        // 2. Measure real HTTP roundtrip latency (works reliably with VPNs, proxies, and TUN adapters)
+        string[] latencyEndpoints = [
+            "http://cp.cloudflare.com/generate_204",
+            "http://www.google.com/generate_204",
+            "http://connectivitycheck.gstatic.com/generate_204"
+        ];
+
+        foreach (var endpoint in latencyEndpoints)
+        {
+            try
+            {
+                var sw = Stopwatch.StartNew();
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(timeoutMs);
+
+                using var response = await HttpClient.GetAsync(
+                    endpoint,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cts.Token).ConfigureAwait(false);
+
+                sw.Stop();
+                if (response.IsSuccessStatusCode)
+                {
+                    return Math.Max(1, sw.ElapsedMilliseconds);
+                }
+            }
+            catch
+            {
+                // Try next endpoint
+            }
+        }
+
+        return null;
     }
 }

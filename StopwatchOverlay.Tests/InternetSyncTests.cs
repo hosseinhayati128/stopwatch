@@ -172,6 +172,43 @@ There is 1 interface on the system:
         }
     }
 
+    [Fact]
+    public async System.Threading.Tasks.Task CheckConnectionAsync_MeasuresValidLatencyWhenOnline()
+    {
+        var result = await InternetSpeedProbe.CheckConnectionAsync(sampleBytes: 0);
+        if (result.NetworkInfo.IsConnected && result.Status != InternetStatus.Offline)
+        {
+            Assert.NotNull(result.PingMs);
+            Assert.InRange(result.PingMs.Value, 5, 5000);
+        }
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task AppendLiveCheckToTempDir()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), "StopwatchInternetLiveTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var settings = new AppSettings
+            {
+                ObsidianVaultFolder = tempDir,
+                InternetLogFileName = "Internet Log.md"
+            };
+            var check = await InternetSpeedProbe.CheckConnectionAsync(sampleBytes: 0);
+            var res = InternetLogSync.AppendCheck(check, settings);
+            Assert.True(res.Success);
+            Assert.True(File.Exists(res.TargetFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                try { Directory.Delete(tempDir, true); } catch { }
+            }
+        }
+    }
+
     private static int RegexCount(string input, string pattern)
     {
         return System.Text.RegularExpressions.Regex.Matches(input, System.Text.RegularExpressions.Regex.Escape(pattern)).Count;

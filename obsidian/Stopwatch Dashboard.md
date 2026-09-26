@@ -130,8 +130,10 @@ if (internetFile) {
             const speedStr = rawParts[4];
             const notes = rawParts[5];
 
-            const pingMs = parseFloat(pingStr) || null;
-            const speedMbps = parseFloat(speedStr) || null;
+            const parsedPing = parseFloat(pingStr);
+            const pingMs = (!isNaN(parsedPing) && parsedPing > 0) ? parsedPing : null;
+            const parsedSpeed = parseFloat(speedStr);
+            const speedMbps = !isNaN(parsedSpeed) ? parsedSpeed : null;
             const [y, m, d] = currentDateStr.split("-").map(Number);
 
             allInternetRecords.push({
@@ -1882,8 +1884,8 @@ function renderInternetSection() {
         chartDiv.createEl("h4", { text: "Connection Speed (Mbps) & Latency (ms) Timeline" }).style.margin = "0 0 8px 0";
 
         const labels = netRecords.map(r => `${r.dateStr !== netRecords[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
-        const speedData = netRecords.map(r => r.speedMbps ?? 0);
-        const pingData = netRecords.map(r => r.pingMs ?? 0);
+        const speedData = netRecords.map(r => r.speedMbps != null ? r.speedMbps : null);
+        const pingData = netRecords.map(r => r.pingMs != null ? r.pingMs : null);
 
         window.renderChart({
             type: 'line',
@@ -1897,6 +1899,7 @@ function renderInternetSection() {
                         backgroundColor: 'rgba(56, 189, 248, 0.1)',
                         fill: true,
                         tension: 0.3,
+                        spanGaps: true,
                         yAxisID: 'y'
                     },
                     {
@@ -1906,6 +1909,7 @@ function renderInternetSection() {
                         backgroundColor: 'transparent',
                         borderDash: [4, 4],
                         tension: 0.2,
+                        spanGaps: true,
                         yAxisID: 'y1'
                     }
                 ]
