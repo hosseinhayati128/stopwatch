@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using StopwatchOverlay.Themes;
 using System.Linq;
@@ -151,6 +152,7 @@ public partial class SettingsWindow : Window
             UpdateValueLabels();
             UpdateDependentControlStates();
             UpdateTelegramOutboxUi();
+            LoadIdleStopControls();
         }
         finally
         {
@@ -233,6 +235,10 @@ public partial class SettingsWindow : Window
         WireCheckBox(InternetMonitorOnlyDuringTimersCheck, SettingsChangeKind.InternetMonitor);
         InternetCheckIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
         InternetFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
+
+        WireCheckBox(IdleStopUnnamedCheck, SettingsChangeKind.IdleStop);
+        WireCheckBox(IdleStopSubtractCheck, SettingsChangeKind.IdleStop);
+        IdleStopDefaultTimeoutTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.IdleStop);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -378,7 +384,7 @@ public partial class SettingsWindow : Window
                 _settings.LightRingHideFromCapture = LightRingCaptureCheck.IsChecked == true;
             }
 
-            if ((change & SettingsChangeKind.Behavior) != 0)
+            if ((change & (SettingsChangeKind.Behavior | SettingsChangeKind.IdleStop)) != 0)
             {
                 _settings.AutoStart = AutoStartCheck.IsChecked == true;
                 _settings.ShowRecIndicator = RecCheck.IsChecked == true;
@@ -391,6 +397,12 @@ public partial class SettingsWindow : Window
                     2 => CloseActionChoice.Exit,
                     _ => CloseActionChoice.Ask
                 };
+                _settings.IdleStopUnnamedTimers = IdleStopUnnamedCheck.IsChecked == true;
+                _settings.IdleStopSubtractDuration = IdleStopSubtractCheck.IsChecked == true;
+                if (int.TryParse(IdleStopDefaultTimeoutTextBox.Text.Trim(), out int defaultIdleMin) && defaultIdleMin > 0)
+                {
+                    _settings.DefaultIdleStopTimeoutMinutes = defaultIdleMin;
+                }
             }
 
             if ((change & SettingsChangeKind.Startup) != 0)
@@ -900,6 +912,199 @@ public partial class SettingsWindow : Window
             ScanVaultNotesButton.IsEnabled = true;
             UpdateTelegramOutboxUi();
         }
+    }
+
+    public sealed class ProjectIdleRuleViewModel
+    {
+        public string ProjectName { get; init; } = "";
+        public string StatusText { get; init; } = "";
+        public Brush StatusBrush { get; init; } = Brushes.Gray;
+        public string ActionButtonText { get; init; } = "";
+    }
+
+    private void LoadIdleStopControls()
+    {
+        IdleStopUnnamedCheck.IsChecked = _settings.IdleStopUnnamedTimers;
+        IdleStopDefaultTimeoutTextBox.Text = _settings.DefaultIdleStopTimeoutMinutes.ToString();
+        IdleStopSubtractCheck.IsChecked = _settings.IdleStopSubtractDuration;
+
+        PopulateIdleProjects();
+    }
+
+    private void PopulateIdleProjects()
+    {
+        var projectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (_historyProvider != null)
+        {
+            var history = _historyProvider();
+            foreach (var p in history.Projects)
+            {
+                if (!string.IsNullOrWhiteSpace(p.Name))
+                    projectNames.Add(p.Name.Trim());
+            }
+        }
+
+        if (_settings.ProjectIdleRules != null)
+        {
+            foreach (var key in _settings.ProjectIdleRules.Keys)
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                    projectNames.Add(key.Trim());
+            }
+        }
+
+        var sorted = projectNames.OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+        string? prevSelected = IdleProjectComboBox.SelectedItem as string;
+        IdleProjectComboBox.Items.Clear();
+        foreach (var name in sorted)
+        {
+            IdleProjectComboBox.Items.Add(name);
+        }
+
+        if (sorted.Count > 0)
+        {
+            if (prevSelected != null && sorted.Contains(prevSelected, StringComparer.OrdinalIgnoreCase))
+            {
+                IdleProjectComboBox.SelectedItem = prevSelected;
+            }
+            else
+            {
+                IdleProjectComboBox.SelectedIndex = 0;
+            }
+        }
+        else
+        {
+            UpdateSelectedProjectIdleUi(null);
+        }
+
+        RefreshIdleProjectsOverview();
+    }
+
+    private void IdleProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IdleProjectComboBox.SelectedItem is string selectedProject && !string.IsNullOrWhiteSpace(selectedProject))
+        {
+            UpdateSelectedProjectIdleUi(selectedProject);
+        }
+        else
+        {
+            UpdateSelectedProjectIdleUi(null);
+        }
+    }
+
+    private void UpdateSelectedProjectIdleUi(string? projectName)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            IdleProjectActiveCheck.IsEnabled = false;
+            IdleProjectActiveCheck.IsChecked = false;
+            IdleProjectTimeoutTextBox.IsEnabled = false;
+            IdleProjectTimeoutTextBox.Text = _settings.DefaultIdleStopTimeoutMinutes.ToString();
+            IdleProjectStatusSummaryText.Text = "No projects found. Create or name a timer to add projects.";
+            IdleProjectStatusSummaryText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+            return;
+        }
+
+        IdleProjectActiveCheck.IsEnabled = true;
+        IdleProjectTimeoutTextBox.IsEnabled = true;
+
+        bool isActive = _settings.IsIdleStopActiveForProject(projectName, out int timeoutMinutes, out _);
+        IdleProjectActiveCheck.IsChecked = isActive;
+        IdleProjectTimeoutTextBox.Text = timeoutMinutes.ToString();
+
+        if (isActive)
+        {
+            IdleProjectStatusSummaryText.Text = $"Status: Active (stops timer when idle for {timeoutMinutes}m)";
+            IdleProjectStatusSummaryText.Foreground = Brushes.LimeGreen;
+        }
+        else
+        {
+            IdleProjectStatusSummaryText.Text = "Status: Deactive (timer will not stop on idle)";
+            IdleProjectStatusSummaryText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+        }
+    }
+
+    private void IdleProjectActiveCheck_Click(object sender, RoutedEventArgs e)
+    {
+        if (IdleProjectComboBox.SelectedItem is string selectedProject && !string.IsNullOrWhiteSpace(selectedProject))
+        {
+            bool enabled = IdleProjectActiveCheck.IsChecked == true;
+            int timeout = int.TryParse(IdleProjectTimeoutTextBox.Text.Trim(), out int parsed) && parsed > 0
+                ? parsed
+                : _settings.DefaultIdleStopTimeoutMinutes;
+
+            _settings.SetProjectIdleRule(selectedProject, enabled, timeout);
+            UpdateSelectedProjectIdleUi(selectedProject);
+            RefreshIdleProjectsOverview();
+            CommitControls(SettingsChangeKind.IdleStop);
+        }
+    }
+
+    private void IdleProjectTimeoutTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loading) return;
+        if (IdleProjectComboBox.SelectedItem is string selectedProject && !string.IsNullOrWhiteSpace(selectedProject))
+        {
+            if (int.TryParse(IdleProjectTimeoutTextBox.Text.Trim(), out int timeout) && timeout > 0)
+            {
+                bool enabled = IdleProjectActiveCheck.IsChecked == true;
+                _settings.SetProjectIdleRule(selectedProject, enabled, timeout);
+                UpdateSelectedProjectIdleUi(selectedProject);
+                RefreshIdleProjectsOverview();
+                CommitControls(SettingsChangeKind.IdleStop);
+            }
+        }
+    }
+
+    private void IdleProjectQuickToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string projectName && !string.IsNullOrWhiteSpace(projectName))
+        {
+            bool isCurrentlyActive = _settings.IsIdleStopActiveForProject(projectName, out int timeoutMinutes, out _);
+            _settings.SetProjectIdleRule(projectName, !isCurrentlyActive, timeoutMinutes);
+
+            if (string.Equals(IdleProjectComboBox.SelectedItem as string, projectName, StringComparison.OrdinalIgnoreCase))
+            {
+                UpdateSelectedProjectIdleUi(projectName);
+            }
+
+            RefreshIdleProjectsOverview();
+            CommitControls(SettingsChangeKind.IdleStop);
+        }
+    }
+
+    private void RefreshIdleProjectsOverview()
+    {
+        var items = new List<ProjectIdleRuleViewModel>();
+        var projectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (_historyProvider != null)
+        {
+            foreach (var p in _historyProvider().Projects)
+                if (!string.IsNullOrWhiteSpace(p.Name)) projectNames.Add(p.Name.Trim());
+        }
+
+        if (_settings.ProjectIdleRules != null)
+        {
+            foreach (var k in _settings.ProjectIdleRules.Keys)
+                if (!string.IsNullOrWhiteSpace(k)) projectNames.Add(k.Trim());
+        }
+
+        foreach (var name in projectNames.OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase))
+        {
+            bool isActive = _settings.IsIdleStopActiveForProject(name, out int timeout, out _);
+            items.Add(new ProjectIdleRuleViewModel
+            {
+                ProjectName = name,
+                StatusText = isActive ? $"Active ({timeout}m)" : "Deactive",
+                StatusBrush = isActive ? Brushes.LimeGreen : (Brush)FindResource("SecondaryTextBrush"),
+                ActionButtonText = isActive ? "Deactivate" : "Activate"
+            });
+        }
+
+        IdleProjectsItemsControl.ItemsSource = items;
     }
 
     private async void TestActivityWatchButton_Click(object sender, RoutedEventArgs e)

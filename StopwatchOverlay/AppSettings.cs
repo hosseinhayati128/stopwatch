@@ -77,6 +77,12 @@ namespace StopwatchOverlay
         }
     }
 
+    public sealed class ProjectIdleRule
+    {
+        public bool Enabled { get; set; } = false;
+        public int IdleMinutes { get; set; } = 5;
+    }
+
     public class AppSettings
     {
         private const uint VK_F2 = 0x71;
@@ -192,6 +198,58 @@ namespace StopwatchOverlay
         public bool InternetMonitorOnlyDuringTimers { get; set; } = true;
         public string InternetLogFileName { get; set; } = "Internet Log.md";
         public int InternetSampleSizeBytes { get; set; } = 1_000_000;
+
+        // Idle Stopwatch Inactivity Stopping
+        public bool IdleStopUnnamedTimers { get; set; } = false;
+        public int DefaultIdleStopTimeoutMinutes { get; set; } = 5;
+        public bool IdleStopSubtractDuration { get; set; } = true;
+        public Dictionary<string, ProjectIdleRule> ProjectIdleRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool IsIdleStopActiveForProject(string? projectName, out int timeoutMinutes, out bool subtractDuration)
+        {
+            subtractDuration = IdleStopSubtractDuration;
+            timeoutMinutes = DefaultIdleStopTimeoutMinutes > 0 ? DefaultIdleStopTimeoutMinutes : 5;
+
+            if (string.IsNullOrWhiteSpace(projectName))
+            {
+                return IdleStopUnnamedTimers;
+            }
+
+            string name = projectName.Trim();
+            if (ProjectIdleRules != null && ProjectIdleRules.TryGetValue(name, out var rule))
+            {
+                if (rule.IdleMinutes > 0)
+                {
+                    timeoutMinutes = rule.IdleMinutes;
+                }
+                return rule.Enabled;
+            }
+
+            // Default for any project without an explicit rule is deactive (false)
+            return false;
+        }
+
+        public void SetProjectIdleRule(string projectName, bool enabled, int idleMinutes)
+        {
+            int clamped = Math.Clamp(idleMinutes, 1, 1440);
+            if (string.IsNullOrWhiteSpace(projectName))
+            {
+                IdleStopUnnamedTimers = enabled;
+                DefaultIdleStopTimeoutMinutes = clamped;
+                return;
+            }
+
+            ProjectIdleRules ??= new Dictionary<string, ProjectIdleRule>(StringComparer.OrdinalIgnoreCase);
+            string key = projectName.Trim();
+            if (!ProjectIdleRules.TryGetValue(key, out var existing))
+            {
+                existing = new ProjectIdleRule();
+                ProjectIdleRules[key] = existing;
+            }
+
+            existing.Enabled = enabled;
+            existing.IdleMinutes = clamped;
+        }
 
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
@@ -344,6 +402,22 @@ namespace StopwatchOverlay
                 : ActivityWatchExportFileName.Trim();
             ActivityWatchMinDurationSeconds = (int)NormalizeRange(ActivityWatchMinDurationSeconds, 1, 3600, 15);
             CloseAction = CloseActionChoice.Normalize(CloseAction);
+
+            if (DefaultIdleStopTimeoutMinutes < 1)
+                DefaultIdleStopTimeoutMinutes = 5;
+            else if (DefaultIdleStopTimeoutMinutes > 1440)
+                DefaultIdleStopTimeoutMinutes = 1440;
+
+            ProjectIdleRules ??= new Dictionary<string, ProjectIdleRule>(StringComparer.OrdinalIgnoreCase);
+            if (ProjectIdleRules.Comparer != StringComparer.OrdinalIgnoreCase)
+            {
+                ProjectIdleRules = new Dictionary<string, ProjectIdleRule>(ProjectIdleRules, StringComparer.OrdinalIgnoreCase);
+            }
+            foreach (var rule in ProjectIdleRules.Values)
+            {
+                if (rule.IdleMinutes < 1) rule.IdleMinutes = 5;
+                else if (rule.IdleMinutes > 1440) rule.IdleMinutes = 1440;
+            }
         }
 
         private static string NormalizeChoice(

@@ -24,7 +24,8 @@ internal enum SettingsChangeKind
     Typography = 1 << 15,
     Telegram = 1 << 16,
     ActivityWatch = 1 << 17,
-    InternetMonitor = 1 << 18
+    InternetMonitor = 1 << 18,
+    IdleStop = 1 << 19
 }
 
 internal static class SettingsChangePolicy

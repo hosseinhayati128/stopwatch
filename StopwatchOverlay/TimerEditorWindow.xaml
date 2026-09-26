@@ -49,17 +49,21 @@
 
                 <!-- Project Assignment -->
                 <TextBlock Text="PROJECT" Style="{StaticResource EditorLabel}"/>
-                <Grid Margin="0,0,0,14">
+                <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <ComboBox x:Name="ProjectSelector" MinHeight="38" SelectionChanged="ProjectSelector_SelectionChanged"/>
                     <TextBox x:Name="CustomProjectBox" Grid.Column="0" MinHeight="38" Visibility="Collapsed"
-                             VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"/>
+                             VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"
+                             TextChanged="CustomProjectBox_TextChanged"/>
                     <Button x:Name="ToggleProjectInputButton" Grid.Column="1" Content="New..." MinWidth="60" Margin="8,0,0,0"
                             Style="{StaticResource ModernButton}" Click="ToggleProjectInputButton_Click"/>
                 </Grid>
+                <CheckBox x:Name="IdleStopForProjectCheck" Content="Idle stop active for this project (stops timer if idle)"
+                          Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"
+                          Click="IdleStopForProjectCheck_Click"/>
 
                 <!-- Total Time Value Section -->
                 <Border Style="{StaticResource SettingsCard}" Margin="0,0,0,14" Padding="14">

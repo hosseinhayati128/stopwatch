@@ -1585,7 +1585,8 @@ namespace StopwatchOverlay
                 timer,
                 projectNames,
                 intervals,
-                canUndo)
+                canUndo,
+                _settings)
             {
                 Owner = this
             };
@@ -2559,12 +2560,88 @@ namespace StopwatchOverlay
             DateTime localNow = DateTime.Now;
 
             AdvanceRunningCountdowns(utcNow, localNow, announceExpiry: true);
+            CheckIdleTimers();
             UpdateTimeDisplay();
             if (++_timerRailRefreshTick >= 10)
             {
                 _timerRailRefreshTick = 0;
                 TimerRailList?.Items.Refresh();
             }
+        }
+
+        private int _idleCheckTick;
+
+        private void CheckIdleTimers()
+        {
+            if (++_idleCheckTick < 20) return;
+            _idleCheckTick = 0;
+
+            var runningTimers = _timers.Where(t => t.IsRunning).ToList();
+            if (runningTimers.Count == 0) return;
+
+            TimeSpan idleDuration = UserIdleDetector.GetIdleTime();
+
+            foreach (var timer in runningTimers)
+            {
+                int mode = timer.Mode == 1 ? timer.LastNonClockMode : timer.Mode;
+                if (mode != 0) continue; // Only apply to Stopwatch mode
+
+                bool isActive = _settings.IsIdleStopActiveForProject(timer.Name, out int timeoutMinutes, out bool subtractDuration);
+                if (!isActive || timeoutMinutes <= 0) continue;
+
+                TimeSpan threshold = TimeSpan.FromMinutes(timeoutMinutes);
+                if (idleDuration >= threshold)
+                {
+                    StopTimerDueToIdle(timer, idleDuration, timeoutMinutes, subtractDuration);
+                }
+            }
+        }
+
+        private void StopTimerDueToIdle(
+            TimerSession timer,
+            TimeSpan idleDuration,
+            int timeoutMinutes,
+            bool subtractDuration)
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime transitionUtc = subtractDuration ? utcNow - idleDuration : utcNow;
+
+            timer.Stopwatch.Stop();
+            timer.IsRunning = false;
+            timer.LastCountdownUpdateUtc = default;
+
+            if (subtractDuration)
+            {
+                TimeSpan currentElapsed = timer.Stopwatch.Elapsed;
+                TimeSpan adjusted = currentElapsed > idleDuration ? currentElapsed - idleDuration : TimeSpan.Zero;
+                timer.Stopwatch.Restore(adjusted, start: false);
+            }
+
+            SynchronizeProjectTracking(timer, transitionUtc);
+
+            timer.RecBlinkVisible = false;
+            if (ReferenceEquals(timer, _activeTimer))
+            {
+                RecIndicator.Visibility = Visibility.Collapsed;
+                UpdateButtonStates();
+                UpdateShortcutLabels();
+            }
+
+            foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+            {
+                instance.Window.SetRecIndicatorVisible(false);
+                instance.Window.SetRunning(false);
+            }
+            RefreshCombinedOverlayState();
+
+            UpdateTimeDisplay();
+            TimerRailList?.Items.Refresh();
+            CheckpointState();
+
+            string projLabel = string.IsNullOrWhiteSpace(timer.Name) ? timer.DisplayName : $"Project '{timer.Name}'";
+            string subMsg = subtractDuration ? $" (reverted {timeoutMinutes}m idle)" : "";
+            UpdateStatus($"Paused: {projLabel} idle for {timeoutMinutes}m{subMsg}", Brushes.Orange);
+            CrashLogger.RecordUiAction($"Idle timeout reached ({timeoutMinutes}m). Stopped {projLabel}.", "IdleDetector");
         }
 
         private void AdvanceRunningCountdowns(

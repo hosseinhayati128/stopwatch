@@ -17,6 +17,7 @@ namespace StopwatchOverlay
         private readonly IReadOnlyList<ProjectWorkIntervalView> _intervals;
         private readonly ProjectWorkIntervalView? _latestInterval;
         private readonly DispatcherTimer _liveRefreshTimer;
+        private readonly AppSettings? _settings;
 
         private readonly TimeSpan _originalTotalElapsed;
         private readonly DateTime? _latestStartLocal;
@@ -41,12 +42,14 @@ namespace StopwatchOverlay
             TimerSession timer,
             IReadOnlyList<string> projectNames,
             IReadOnlyList<ProjectWorkIntervalView> intervals,
-            bool canUndo = false)
+            bool canUndo = false,
+            AppSettings? settings = null)
         {
             _timer = timer ?? throw new ArgumentNullException(nameof(timer));
             _intervals = intervals ?? Array.Empty<ProjectWorkIntervalView>();
             _latestInterval = _intervals.LastOrDefault();
             _isRunning = timer.IsRunning;
+            _settings = settings;
 
             _originalTotalElapsed = timer.Mode == 2 ? timer.CountdownRemaining : timer.Elapsed;
             if (_originalTotalElapsed < TimeSpan.Zero) _originalTotalElapsed = TimeSpan.Zero;
@@ -89,6 +92,7 @@ namespace StopwatchOverlay
                 }
             }
             ProjectSelector.SelectedIndex = selectedIndex;
+            UpdateIdleStopCheck();
 
             // Populate Segments List
             var segmentItems = new List<SegmentItem>();
@@ -416,6 +420,7 @@ namespace StopwatchOverlay
                 ProjectSelector.Visibility = Visibility.Collapsed;
                 CustomProjectBox.Visibility = Visibility.Visible;
                 ToggleProjectInputButton.Content = "List...";
+                UpdateIdleStopCheck();
                 CustomProjectBox.Focus();
             }
             else
@@ -423,13 +428,84 @@ namespace StopwatchOverlay
                 CustomProjectBox.Visibility = Visibility.Collapsed;
                 ProjectSelector.Visibility = Visibility.Visible;
                 ToggleProjectInputButton.Content = "New...";
+                UpdateIdleStopCheck();
                 ProjectSelector.Focus();
             }
         }
 
         private void ProjectSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Normal selection
+            UpdateIdleStopCheck();
+        }
+
+        private void CustomProjectBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isCustomProjectMode)
+            {
+                UpdateIdleStopCheck();
+            }
+        }
+
+        private string? GetCurrentSelectedProject()
+        {
+            if (_isCustomProjectMode)
+            {
+                string text = CustomProjectBox.Text.Trim();
+                return string.IsNullOrWhiteSpace(text) ? null : text;
+            }
+            if (ProjectSelector.SelectedIndex > 0 && ProjectSelector.SelectedItem is string proj)
+            {
+                return proj;
+            }
+            return null;
+        }
+
+        private void UpdateIdleStopCheck()
+        {
+            if (IdleStopForProjectCheck == null) return;
+            if (_settings == null)
+            {
+                IdleStopForProjectCheck.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            IdleStopForProjectCheck.Visibility = Visibility.Visible;
+            string? project = GetCurrentSelectedProject();
+            bool hasProject = !string.IsNullOrWhiteSpace(project);
+
+            bool isActive = _settings.IsIdleStopActiveForProject(project, out int timeoutMinutes, out _);
+            IdleStopForProjectCheck.IsChecked = isActive;
+
+            if (hasProject)
+            {
+                IdleStopForProjectCheck.Content = $"Idle stop for \"{project}\" ({timeoutMinutes}m timeout)";
+            }
+            else
+            {
+                IdleStopForProjectCheck.Content = $"Idle stop for unassigned timers ({timeoutMinutes}m timeout)";
+            }
+        }
+
+        private void IdleStopForProjectCheck_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null) return;
+            bool isChecked = IdleStopForProjectCheck.IsChecked == true;
+            string? project = GetCurrentSelectedProject();
+            if (string.IsNullOrWhiteSpace(project))
+            {
+                _settings.IdleStopUnnamedTimers = isChecked;
+            }
+            else
+            {
+                int timeout = _settings.DefaultIdleStopTimeoutMinutes;
+                if (_settings.ProjectIdleRules.TryGetValue(project, out var rule) && rule.IdleMinutes > 0)
+                {
+                    timeout = rule.IdleMinutes;
+                }
+                _settings.SetProjectIdleRule(project, isChecked, timeout);
+            }
+            SettingsStore.Save(_settings);
+            UpdateIdleStopCheck();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
