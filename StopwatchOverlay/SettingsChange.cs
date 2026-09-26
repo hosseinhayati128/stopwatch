@@ -22,7 +22,8 @@ internal enum SettingsChangeKind
     ObsidianExport = 1 << 13,
     ApplicationScale = 1 << 14,
     Typography = 1 << 15,
-    Telegram = 1 << 16
+    Telegram = 1 << 16,
+    ActivityWatch = 1 << 17
 }
 
 internal static class SettingsChangePolicy

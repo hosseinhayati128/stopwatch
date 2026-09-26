@@ -131,6 +131,13 @@ public partial class SettingsWindow : Window
             TelegramNotesTopicTextBox.Text = _settings.TelegramNotesTopicId;
             TelegramTodosTopicTextBox.Text = _settings.TelegramTodosTopicId;
             TelegramRemindersTopicTextBox.Text = _settings.TelegramRemindersTopicId;
+            ActivityWatchEnabledCheck.IsChecked = _settings.ActivityWatchEnabled;
+            ActivityWatchSyncOnStopwatchCheck.IsChecked = _settings.ActivityWatchSyncOnStopwatchSync;
+            ActivityWatchIncludeTitlesCheck.IsChecked = _settings.ActivityWatchIncludeTitles;
+            ActivityWatchIncludeWebCheck.IsChecked = _settings.ActivityWatchIncludeWeb;
+            ActivityWatchServerUrlTextBox.Text = _settings.ActivityWatchServerUrl;
+            ActivityWatchFileNameTextBox.Text = _settings.ActivityWatchExportFileName;
+            ActivityWatchMinDurationTextBox.Text = _settings.ActivityWatchMinDurationSeconds.ToString();
             UpdateObsidianPathPreview();
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
@@ -202,6 +209,14 @@ public partial class SettingsWindow : Window
         TelegramNotesTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
         TelegramTodosTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
         TelegramRemindersTopicTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.Telegram);
+
+        WireCheckBox(ActivityWatchEnabledCheck, SettingsChangeKind.ActivityWatch);
+        WireCheckBox(ActivityWatchSyncOnStopwatchCheck, SettingsChangeKind.ActivityWatch);
+        WireCheckBox(ActivityWatchIncludeTitlesCheck, SettingsChangeKind.ActivityWatch);
+        WireCheckBox(ActivityWatchIncludeWebCheck, SettingsChangeKind.ActivityWatch);
+        ActivityWatchServerUrlTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
+        ActivityWatchFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
+        ActivityWatchMinDurationTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -381,6 +396,18 @@ public partial class SettingsWindow : Window
                 _settings.TelegramNotesTopicId = TelegramNotesTopicTextBox.Text.Trim();
                 _settings.TelegramTodosTopicId = TelegramTodosTopicTextBox.Text.Trim();
                 _settings.TelegramRemindersTopicId = TelegramRemindersTopicTextBox.Text.Trim();
+            }
+
+            if ((change & SettingsChangeKind.ActivityWatch) != 0)
+            {
+                _settings.ActivityWatchEnabled = ActivityWatchEnabledCheck.IsChecked == true;
+                _settings.ActivityWatchSyncOnStopwatchSync = ActivityWatchSyncOnStopwatchCheck.IsChecked == true;
+                _settings.ActivityWatchIncludeTitles = ActivityWatchIncludeTitlesCheck.IsChecked == true;
+                _settings.ActivityWatchIncludeWeb = ActivityWatchIncludeWebCheck.IsChecked == true;
+                _settings.ActivityWatchServerUrl = ActivityWatchServerUrlTextBox.Text.Trim();
+                _settings.ActivityWatchExportFileName = ActivityWatchFileNameTextBox.Text.Trim();
+                if (int.TryParse(ActivityWatchMinDurationTextBox.Text.Trim(), out int minSec) && minSec > 0)
+                    _settings.ActivityWatchMinDurationSeconds = minSec;
             }
 
             UpdateValueLabels();
@@ -635,6 +662,7 @@ public partial class SettingsWindow : Window
         ApplicationPanel.Visibility = tag == "Application" ? Visibility.Visible : Visibility.Collapsed;
         ObsidianPanel.Visibility = tag == "Obsidian" ? Visibility.Visible : Visibility.Collapsed;
         TelegramPanel.Visibility = tag == "Telegram" ? Visibility.Visible : Visibility.Collapsed;
+        ActivityWatchPanel.Visibility = tag == "ActivityWatch" ? Visibility.Visible : Visibility.Collapsed;
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);
         Dispatcher.BeginInvoke(
             new Action(() => SettingsScrollViewer?.ScrollToTop()),
@@ -726,6 +754,70 @@ public partial class SettingsWindow : Window
         finally
         {
             TestTelegramButton.IsEnabled = true;
+        }
+    }
+
+    private async void TestActivityWatchButton_Click(object sender, RoutedEventArgs e)
+    {
+        TestActivityWatchButton.IsEnabled = false;
+        ActivityWatchStatusText.Text = "Testing connection to ActivityWatch...";
+        ActivityWatchStatusText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+
+        try
+        {
+            var client = new ActivityWatch.ActivityWatchClient(ActivityWatchServerUrlTextBox.Text.Trim());
+            var (success, version, error) = await client.TestConnectionAsync();
+            if (success)
+            {
+                ActivityWatchStatusText.Text = $"✓ Connected to ActivityWatch (Version: {version})";
+                ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
+            }
+            else
+            {
+                ActivityWatchStatusText.Text = "✗ " + (error ?? "Could not connect to ActivityWatch.");
+                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            ActivityWatchStatusText.Text = "✗ Error: " + ex.Message;
+            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+        }
+        finally
+        {
+            TestActivityWatchButton.IsEnabled = true;
+        }
+    }
+
+    private async void SyncActivityWatchNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        SyncActivityWatchNowButton.IsEnabled = false;
+        ActivityWatchStatusText.Text = "Syncing today's activity into Obsidian vault...";
+        ActivityWatchStatusText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+
+        try
+        {
+            CommitControls(SettingsChangeKind.ActivityWatch);
+            var result = await ActivityWatch.ActivityWatchSync.SyncAsync(_settings);
+            if (result.Success)
+            {
+                ActivityWatchStatusText.Text = $"✓ Synced {result.AppCount} applications and {result.WebCount} web domains into '{System.IO.Path.GetFileName(result.TargetFilePath)}'.";
+                ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
+            }
+            else
+            {
+                ActivityWatchStatusText.Text = "✗ " + (result.Message ?? "Failed to sync ActivityWatch log.");
+                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            ActivityWatchStatusText.Text = "✗ Sync error: " + ex.Message;
+            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+        }
+        finally
+        {
+            SyncActivityWatchNowButton.IsEnabled = true;
         }
     }
 

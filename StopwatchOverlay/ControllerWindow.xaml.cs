@@ -2604,6 +2604,7 @@ namespace StopwatchOverlay
                     {
                         _projectHistoryRequiresCreateOnlySave = false;
                         ObsidianLogSync.TryAutoSync(_projectHistory.CreateView(checkpointUtc), _settings);
+                        ActivityWatch.ActivityWatchSync.TryAutoSync(_settings);
                     }
                     if (historyNeededRepair && !_projectTimeStore.NeedsPrimaryRepair)
                         _projectHistoryWarning = null;

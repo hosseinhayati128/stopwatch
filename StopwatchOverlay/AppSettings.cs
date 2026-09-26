@@ -173,6 +173,15 @@ namespace StopwatchOverlay
         public string TelegramTodosTopicId { get; set; } = "";
         public string TelegramRemindersTopicId { get; set; } = "";
 
+        // ActivityWatch Integration
+        public bool ActivityWatchEnabled { get; set; } = false;
+        public string ActivityWatchServerUrl { get; set; } = "http://localhost:5600";
+        public string ActivityWatchExportFileName { get; set; } = "ActivityWatch Log.md";
+        public int ActivityWatchMinDurationSeconds { get; set; } = 15;
+        public bool ActivityWatchIncludeWeb { get; set; } = true;
+        public bool ActivityWatchIncludeTitles { get; set; } = true;
+        public bool ActivityWatchSyncOnStopwatchSync { get; set; } = true;
+
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
 
@@ -318,6 +327,11 @@ namespace StopwatchOverlay
             TelegramNotesTopicId = (TelegramNotesTopicId ?? "").Trim();
             TelegramTodosTopicId = (TelegramTodosTopicId ?? "").Trim();
             TelegramRemindersTopicId = (TelegramRemindersTopicId ?? "").Trim();
+            ActivityWatchServerUrl = ActivityWatch.ActivityWatchClient.NormalizeBaseUrl(ActivityWatchServerUrl);
+            ActivityWatchExportFileName = string.IsNullOrWhiteSpace(ActivityWatchExportFileName)
+                ? "ActivityWatch Log.md"
+                : ActivityWatchExportFileName.Trim();
+            ActivityWatchMinDurationSeconds = (int)NormalizeRange(ActivityWatchMinDurationSeconds, 1, 3600, 15);
             CloseAction = CloseActionChoice.Normalize(CloseAction);
         }
 

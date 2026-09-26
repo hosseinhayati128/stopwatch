@@ -32,6 +32,7 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 🎨 **Six application themes** — Midnight, Daylight, Pixel Deck Night, Pixel Deck Day, Acanthus, and One Piece
 - 🕰️ **Independent floating-clock themes** — Follow the application theme or choose one of nine clock styles (including the One Piece Navigator clock with custom layer opacities and three dark Acanthus variants), without changing your panels
 - 📝 **Quick capture & notes (Win+F3)** — Quickly capture Todos, Notes, and Reminders from any application; automatically synced to your Obsidian vault grouped by date
+- 📊 **Obsidian Analytics Dashboard & ActivityWatch Sync** — Automated activity logging with ActivityWatch and an interactive DataviewJS dashboard for Obsidian featuring dual synchronized timelines, project drill-downs, and per-project distraction rules (see [obsidian/](obsidian/))
 - ✈️ **Telegram note integration** — Forward quick notes, todos, and reminders directly to distinct forum topics in your Telegram supergroup via Telegram Bot API
 - 📋 **Floating notes viewer** — Floating popup (Win+F3 → 4) with tabs for All, Todos, Notes, and Reminders, auto-close countdown, and keyboard dismissal
 - 🔤 **Custom typography & UI scaling** — Granular text scaling (75%–175%), colors, and panel overrides via Settings → Fonts & colors, plus whole-page UI scaling (70%–125%)

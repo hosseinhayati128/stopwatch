@@ -161,6 +161,7 @@
                     <ListBoxItem Content="Application" Tag="Application" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Telegram" Tag="Telegram" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
+                    <ListBoxItem Content="ActivityWatch" Tag="ActivityWatch" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                 </ListBox>
             </Border>
 
@@ -476,6 +477,44 @@
                                         Style="{StaticResource ModernButton}" Click="TestTelegramButton_Click"/>
                             </StackPanel>
                             <TextBlock x:Name="TelegramStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel></Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="ActivityWatchPanel" Visibility="Collapsed">
+                        <TextBlock Text="ActivityWatch Integration" Style="{StaticResource DisplayHeadingText}"/>
+                        <TextBlock Text="Sync background activity (active applications, Obsidian notes, VLC media, and Chrome tabs) into your Obsidian vault with idle/AFK filtering."
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22" TextWrapping="Wrap"/>
+                        <Border Style="{StaticResource SettingsCard}"><StackPanel>
+                            <CheckBox x:Name="ActivityWatchEnabledCheck" Content="Enable ActivityWatch integration" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="ActivityWatchSyncOnStopwatchCheck" Content="Auto-sync activity when stopwatch sessions are saved to Obsidian" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="ActivityWatchIncludeTitlesCheck" Content="Include window &amp; document titles (Obsidian note names, VLC video titles, etc.)" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="ActivityWatchIncludeWebCheck" Content="Include browser web activity (Chrome tab titles &amp; web domains)" Margin="0,0,0,16" Style="{StaticResource PirateSettingsSwitch}"/>
+
+                            <TextBlock Text="ActivityWatch Server URL" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="ActivityWatchServerUrlTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="Local REST API address for ActivityWatch (default: http://localhost:5600)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Export file name (in Obsidian Vault)" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="ActivityWatchFileNameTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="Saved as a separate Markdown file in your configured Obsidian vault folder."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Minimum active duration (seconds)" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="ActivityWatchMinDurationTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="Ignore quick window switches or alt-tabs shorter than this duration (default: 15 seconds)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button x:Name="TestActivityWatchButton" Content="Test Connection" Height="34" Padding="16,0"
+                                        Style="{StaticResource ModernButton}" Click="TestActivityWatchButton_Click"/>
+                                <Button x:Name="SyncActivityWatchNowButton" Content="Sync Today's Activity Now" Height="34" Padding="16,0" Margin="10,0,0,0"
+                                        Style="{StaticResource ModernButton}" Click="SyncActivityWatchNowButton_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="ActivityWatchStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>
                     </StackPanel>
                 </Grid>
