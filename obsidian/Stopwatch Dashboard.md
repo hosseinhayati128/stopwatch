@@ -600,35 +600,69 @@ function renderDashboard() {
     }
 
     // ========================================================
-    // --- Chart 3: Daily Trend (Bar) [ORIGINAL] -------------
+    // --- Chart 3: Daily Trend by Project (Stacked Bar) ------
     // ========================================================
     if (records.length > 0) {
-        const barHeading = chartSection.createEl("h3", { text: "📈 Daily Trend (Hours)" });
+        const barHeading = chartSection.createEl("h3", { text: "📈 Daily Trend (Hours by Project)" });
         barHeading.style.marginTop = "32px";
 
+        const barSubtitle = chartSection.createEl("p", { 
+            text: "Total hours worked per day, broken down and color-coded by project." 
+        });
+        barSubtitle.style.opacity = "0.7";
+        barSubtitle.style.fontSize = "12px";
+        barSubtitle.style.marginTop = "-6px";
+
         const barContainer = chartSection.createDiv();
-        const dailyMinutes = {};
-        for (const r of records) {
-            dailyMinutes[r.dateStr] = (dailyMinutes[r.dateStr] || 0) + r.minutes;
+
+        // Collect and sort unique dates
+        const dates = Array.from(new Set(records.map(r => r.dateStr))).sort();
+
+        // Project daily minutes aggregation
+        const projectDailyMinutes = {};
+        for (const proj of projectLabels) {
+            projectDailyMinutes[proj] = {};
+            for (const d of dates) {
+                projectDailyMinutes[proj][d] = 0;
+            }
         }
 
-        const dates = Object.keys(dailyMinutes).sort();
-        const dailyHours = dates.map(d => +(dailyMinutes[d] / 60).toFixed(1));
+        for (const r of records) {
+            if (projectDailyMinutes[r.project] && r.dateStr) {
+                projectDailyMinutes[r.project][r.dateStr] = (projectDailyMinutes[r.project][r.dateStr] || 0) + r.minutes;
+            }
+        }
+
+        const dailyDatasets = projectLabels.map(proj => {
+            const dataValues = dates.map(d => +((projectDailyMinutes[proj][d] || 0) / 60).toFixed(1));
+            return {
+                label: proj,
+                data: dataValues,
+                backgroundColor: projectColorMap[proj] || '#6366f1',
+                stack: 'dailyTrend',
+                borderRadius: 2
+            };
+        });
 
         window.renderChart({
             type: 'bar',
             data: {
                 labels: dates,
-                datasets: [{
-                    label: 'Hours Worked',
-                    data: dailyHours,
-                    backgroundColor: '#6366f1',
-                    borderRadius: 4
-                }]
+                datasets: dailyDatasets
             },
             options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
                 scales: {
+                    x: {
+                        stacked: true,
+                        title: { display: true, text: 'Date' }
+                    },
                     y: {
+                        stacked: true,
                         beginAtZero: true,
                         title: { display: true, text: 'Hours' }
                     }
