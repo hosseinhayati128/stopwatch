@@ -133,6 +133,129 @@ public sealed class ActivityWatchSyncTests : IDisposable
     }
 
     [Fact]
+    public void IsBrowserApp_IdentifiesBrowsers()
+    {
+        Assert.True(ActivityWatchSync.IsBrowserApp("chrome"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("chrome.exe"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("Google Chrome"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("msedge"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("firefox"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("brave"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("opera"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("vivaldi"));
+        Assert.True(ActivityWatchSync.IsBrowserApp("arc"));
+
+        Assert.False(ActivityWatchSync.IsBrowserApp("Telegram"));
+        Assert.False(ActivityWatchSync.IsBrowserApp("Obsidian"));
+        Assert.False(ActivityWatchSync.IsBrowserApp("Code"));
+        Assert.False(ActivityWatchSync.IsBrowserApp("vlc"));
+        Assert.False(ActivityWatchSync.IsBrowserApp(""));
+        Assert.False(ActivityWatchSync.IsBrowserApp(null));
+    }
+
+    [Fact]
+    public void MergeIntervals_MergesOverlappingAndAdjacentIntervals()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 26, 10, 0, 0, TimeSpan.Zero);
+        var intervals = new List<(DateTimeOffset Start, DateTimeOffset End)>
+        {
+            (baseTime, baseTime.AddMinutes(30)),
+            (baseTime.AddMinutes(20), baseTime.AddMinutes(50)), // overlaps
+            (baseTime.AddMinutes(50), baseTime.AddMinutes(60)), // adjacent
+            (baseTime.AddHours(2), baseTime.AddHours(3))        // separate
+        };
+
+        var merged = ActivityWatchSync.MergeIntervals(intervals);
+
+        Assert.Equal(2, merged.Count);
+        Assert.Equal(baseTime, merged[0].Start);
+        Assert.Equal(baseTime.AddMinutes(60), merged[0].End);
+        Assert.Equal(baseTime.AddHours(2), merged[1].Start);
+        Assert.Equal(baseTime.AddHours(3), merged[1].End);
+    }
+
+    [Fact]
+    public void SubtractIntervals_RemovesExclusionsAndSplitsSegments()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 26, 1, 0, 0, TimeSpan.Zero);
+        var start = baseTime;
+        var end = baseTime.AddHours(4); // 01:00 - 05:00
+
+        var exclusions = new List<(DateTimeOffset Start, DateTimeOffset End)>
+        {
+            (baseTime.AddHours(1), baseTime.AddHours(2)), // 02:00 - 03:00 (middle)
+            (baseTime.AddHours(3).AddMinutes(30), baseTime.AddHours(5)) // 04:30 - 06:00 (overlaps end)
+        };
+
+        var result = ActivityWatchSync.SubtractIntervals(start, end, exclusions);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(baseTime, result[0].Start);
+        Assert.Equal(baseTime.AddHours(1), result[0].End); // 01:00 - 02:00
+
+        Assert.Equal(baseTime.AddHours(2), result[1].Start);
+        Assert.Equal(baseTime.AddHours(3).AddMinutes(30), result[1].End); // 03:00 - 04:30
+    }
+
+    [Fact]
+    public void SubtractIntervals_WhenEventCompletelyInsideExclusion_ReturnsEmpty()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 26, 2, 0, 0, TimeSpan.Zero);
+        var start = baseTime.AddMinutes(15);
+        var end = baseTime.AddMinutes(45);
+
+        var exclusions = new List<(DateTimeOffset Start, DateTimeOffset End)>
+        {
+            (baseTime, baseTime.AddHours(1))
+        };
+
+        var result = ActivityWatchSync.SubtractIntervals(start, end, exclusions);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void IntersectIntervals_OnlyReturnsOverlappingRanges()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 26, 14, 0, 0, TimeSpan.Zero);
+        var webStart = baseTime;
+        var webEnd = baseTime.AddHours(2); // 14:00 - 16:00 (e.g. background tab open for 2 hours)
+
+        // Active browser window time was only 14:05-14:20 and 15:10-15:30 (user was in Telegram/IDE the rest)
+        var browserActive = new List<(DateTimeOffset Start, DateTimeOffset End)>
+        {
+            (baseTime.AddMinutes(5), baseTime.AddMinutes(20)),
+            (baseTime.AddMinutes(70), baseTime.AddMinutes(90))
+        };
+
+        var result = ActivityWatchSync.IntersectIntervals(webStart, webEnd, browserActive);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal(baseTime.AddMinutes(5), result[0].Start);
+        Assert.Equal(baseTime.AddMinutes(20), result[0].End);
+
+        Assert.Equal(baseTime.AddMinutes(70), result[1].Start);
+        Assert.Equal(baseTime.AddMinutes(90), result[1].End);
+    }
+
+    [Fact]
+    public void IntersectIntervals_WhenNoOverlap_ReturnsEmpty()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 26, 0, 0, 0, TimeSpan.Zero);
+        // Website event (e.g. localhost overnight: 00:00 - 10:13)
+        var webStart = baseTime;
+        var webEnd = baseTime.AddHours(10).AddMinutes(13);
+
+        // Browser was only in foreground from 10:13 - 10:20
+        var browserActive = new List<(DateTimeOffset Start, DateTimeOffset End)>
+        {
+            (baseTime.AddHours(10).AddMinutes(13), baseTime.AddHours(10).AddMinutes(20))
+        };
+
+        var result = ActivityWatchSync.IntersectIntervals(webStart, webEnd, browserActive);
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async System.Threading.Tasks.Task SyncAsync_WithLiveServer_ProducesExpectedMarkdown()
     {
         var settings = new AppSettings
@@ -151,5 +274,7 @@ public sealed class ActivityWatchSyncTests : IDisposable
         string content = await System.IO.File.ReadAllTextAsync(res2.TargetFilePath);
         Assert.Contains("### ⏱️ Activity Timeline Intervals", content);
         Assert.Contains("| Date | Activity | Details | Start | End | Duration (min) | Duration | Type |", content);
+        // Ensure the bug where localhost was 10h 14m across the whole day is resolved
+        Assert.DoesNotContain("| 2026-09-26 | **localhost** | ActivityWatch | 00:00 | 10:13 | 614 | 10h 14m | Web |", content);
     }
 }

@@ -61,8 +61,7 @@ public static class ActivityWatchSync
             b.Type == "web.tab.current" || b.Id.StartsWith("aw-watcher-web", StringComparison.OrdinalIgnoreCase)).ToList();
 
         // 1. Fetch AFK events to build idle intervals
-        var afkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
-        double totalAfkSeconds = 0;
+        var rawAfkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
         if (afkBucket != null)
         {
             var afkEvents = await client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
@@ -70,101 +69,150 @@ public static class ActivityWatchSync
             {
                 if (string.Equals(evt.Status, "afk", StringComparison.OrdinalIgnoreCase))
                 {
-                    var start = evt.Timestamp;
-                    var end = start.AddSeconds(Math.Max(0, evt.DurationSeconds));
-                    afkIntervals.Add((start, end));
-                    totalAfkSeconds += evt.DurationSeconds;
+                    var rawStart = evt.Timestamp;
+                    var rawEnd = rawStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                    var start = rawStart < startUtc ? startUtc : rawStart;
+                    var end = rawEnd > endUtc ? endUtc : rawEnd;
+                    if (end > start)
+                    {
+                        rawAfkIntervals.Add((start, end));
+                    }
                 }
             }
         }
+        var mergedAfk = MergeIntervals(rawAfkIntervals);
+        double totalAfkSeconds = mergedAfk.Sum(i => (i.End - i.Start).TotalSeconds);
 
-        // Helper to subtract AFK periods from an active event
-        double ComputeActiveSeconds(DateTimeOffset eventStart, double durationSec)
-        {
-            if (durationSec <= 0) return 0;
-            var eventEnd = eventStart.AddSeconds(durationSec);
-            double activeSec = durationSec;
-
-            foreach (var (afkStart, afkEnd) in afkIntervals)
-            {
-                if (eventStart >= afkEnd || eventEnd <= afkStart)
-                    continue; // No overlap
-
-                var overlapStart = eventStart > afkStart ? eventStart : afkStart;
-                var overlapEnd = eventEnd < afkEnd ? eventEnd : afkEnd;
-                double overlap = (overlapEnd - overlapStart).TotalSeconds;
-                if (overlap > 0)
-                {
-                    activeSec -= overlap;
-                }
-            }
-
-            return Math.Max(0, activeSec);
-        }
-
-        // 2. Fetch and aggregate window events
+        // 2. Fetch and aggregate window events (excluding AFK periods)
         var appMap = new Dictionary<string, AwAppSummary>(StringComparer.OrdinalIgnoreCase);
-        double totalActiveSeconds = 0;
-        var allRawWindowEvents = new List<AwEvent>();
+        var activeWindowIntervals = new List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)>();
+        var allBrowserActiveIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+        var browserSpecificIntervals = new Dictionary<string, List<(DateTimeOffset Start, DateTimeOffset End)>>(StringComparer.OrdinalIgnoreCase);
 
         if (windowBucket != null)
         {
             var windowEvents = await client.GetEventsAsync(windowBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
-            allRawWindowEvents.AddRange(windowEvents);
             foreach (var evt in windowEvents)
             {
-                double effectiveSeconds = ComputeActiveSeconds(evt.Timestamp, evt.DurationSeconds);
-                if (effectiveSeconds <= 0) continue;
+                var rawStart = evt.Timestamp;
+                var rawEnd = rawStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                var start = rawStart < startUtc ? startUtc : rawStart;
+                var end = rawEnd > endUtc ? endUtc : rawEnd;
+                if (end <= start) continue;
 
-                totalActiveSeconds += effectiveSeconds;
                 string app = string.IsNullOrWhiteSpace(evt.App) ? "Unknown" : CleanAppName(evt.App);
                 string title = string.IsNullOrWhiteSpace(evt.Title) ? "Untitled" : evt.Title.Trim();
 
-                if (!appMap.TryGetValue(app, out var appSummary))
+                var activeSegments = SubtractIntervals(start, end, mergedAfk);
+                foreach (var (segStart, segEnd) in activeSegments)
                 {
-                    appSummary = new AwAppSummary { AppName = app };
-                    appMap[app] = appSummary;
-                }
+                    var segDuration = segEnd - segStart;
+                    if (segDuration.TotalSeconds <= 0) continue;
 
-                appSummary.TotalDuration += TimeSpan.FromSeconds(effectiveSeconds);
-                if (settings.ActivityWatchIncludeTitles)
-                {
-                    if (appSummary.Titles.TryGetValue(title, out var currentTitleDur))
-                        appSummary.Titles[title] = currentTitleDur + TimeSpan.FromSeconds(effectiveSeconds);
-                    else
-                        appSummary.Titles[title] = TimeSpan.FromSeconds(effectiveSeconds);
+                    if (!appMap.TryGetValue(app, out var appSummary))
+                    {
+                        appSummary = new AwAppSummary { AppName = app };
+                        appMap[app] = appSummary;
+                    }
+
+                    appSummary.TotalDuration += segDuration;
+                    if (settings.ActivityWatchIncludeTitles)
+                    {
+                        if (appSummary.Titles.TryGetValue(title, out var currentTitleDur))
+                            appSummary.Titles[title] = currentTitleDur + segDuration;
+                        else
+                            appSummary.Titles[title] = segDuration;
+                    }
+
+                    activeWindowIntervals.Add((segStart, segEnd, app, title, "App"));
+
+                    string? bKey = GetBrowserKey(app);
+                    if (bKey != null)
+                    {
+                        allBrowserActiveIntervals.Add((segStart, segEnd));
+                        if (!browserSpecificIntervals.TryGetValue(bKey, out var bList))
+                        {
+                            bList = [];
+                            browserSpecificIntervals[bKey] = bList;
+                        }
+                        bList.Add((segStart, segEnd));
+                    }
                 }
             }
         }
 
-        // 3. Fetch and aggregate web events
+        var mergedBrowserActive = MergeIntervals(allBrowserActiveIntervals);
+        var mergedBrowserSpecific = new Dictionary<string, List<(DateTimeOffset Start, DateTimeOffset End)>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in browserSpecificIntervals)
+        {
+            mergedBrowserSpecific[kvp.Key] = MergeIntervals(kvp.Value);
+        }
+
+        double totalActiveSeconds = activeWindowIntervals.Count > 0
+            ? MergeIntervals(activeWindowIntervals.Select(w => (w.Start, w.End))).Sum(i => (i.End - i.Start).TotalSeconds)
+            : 0;
+
+        // 3. Fetch and aggregate web events (intersected with active foreground browser window time)
         var webMap = new Dictionary<string, AwWebSummary>(StringComparer.OrdinalIgnoreCase);
-        var allRawWebEvents = new List<AwEvent>();
+        var activeWebIntervals = new List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)>();
+
         if (settings.ActivityWatchIncludeWeb)
         {
             foreach (var webBucket in webBuckets)
             {
+                string? bucketBrowser = GetBrowserNameFromBucketId(webBucket.Id);
+                List<(DateTimeOffset Start, DateTimeOffset End)> activeBrowserRanges;
+
+                if (bucketBrowser != null && mergedBrowserSpecific.TryGetValue(bucketBrowser, out var specificList) && specificList.Count > 0)
+                {
+                    activeBrowserRanges = specificList;
+                }
+                else if (mergedBrowserActive.Count > 0)
+                {
+                    activeBrowserRanges = mergedBrowserActive;
+                }
+                else
+                {
+                    activeBrowserRanges = [];
+                }
+
                 var webEvents = await client.GetEventsAsync(webBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
-                allRawWebEvents.AddRange(webEvents);
                 foreach (var evt in webEvents)
                 {
-                    double effectiveSeconds = ComputeActiveSeconds(evt.Timestamp, evt.DurationSeconds);
-                    if (effectiveSeconds <= 0) continue;
+                    var rawStart = evt.Timestamp;
+                    var rawEnd = rawStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                    var start = rawStart < startUtc ? startUtc : rawStart;
+                    var end = rawEnd > endUtc ? endUtc : rawEnd;
+                    if (end <= start) continue;
 
                     string domain = ExtractDomain(evt.Url);
                     string pageTitle = string.IsNullOrWhiteSpace(evt.Title) ? domain : evt.Title.Trim();
 
-                    if (!webMap.TryGetValue(domain, out var webSummary))
-                    {
-                        webSummary = new AwWebSummary { Domain = domain };
-                        webMap[domain] = webSummary;
-                    }
+                    // Web activity is only active when the browser was actually active in the foreground!
+                    // Fall back to subtracting AFK only if no browser window events exist in the window bucket.
+                    var activeWebSegments = activeBrowserRanges.Count > 0
+                        ? IntersectIntervals(start, end, activeBrowserRanges)
+                        : SubtractIntervals(start, end, mergedAfk);
 
-                    webSummary.TotalDuration += TimeSpan.FromSeconds(effectiveSeconds);
-                    if (webSummary.Pages.TryGetValue(pageTitle, out var currPageDur))
-                        webSummary.Pages[pageTitle] = currPageDur + TimeSpan.FromSeconds(effectiveSeconds);
-                    else
-                        webSummary.Pages[pageTitle] = TimeSpan.FromSeconds(effectiveSeconds);
+                    foreach (var (segStart, segEnd) in activeWebSegments)
+                    {
+                        var segDuration = segEnd - segStart;
+                        if (segDuration.TotalSeconds <= 0) continue;
+
+                        if (!webMap.TryGetValue(domain, out var webSummary))
+                        {
+                            webSummary = new AwWebSummary { Domain = domain };
+                            webMap[domain] = webSummary;
+                        }
+
+                        webSummary.TotalDuration += segDuration;
+                        if (webSummary.Pages.TryGetValue(pageTitle, out var currPageDur))
+                            webSummary.Pages[pageTitle] = currPageDur + segDuration;
+                        else
+                            webSummary.Pages[pageTitle] = segDuration;
+
+                        activeWebIntervals.Add((segStart, segEnd, domain, pageTitle, "Web"));
+                    }
                 }
             }
         }
@@ -181,7 +229,7 @@ public static class ActivityWatchSync
             .OrderByDescending(w => w.TotalDuration)
             .ToList();
 
-        var intervals = BuildTimelineIntervals(date, allRawWindowEvents, allRawWebEvents, afkIntervals, settings);
+        var intervals = BuildTimelineIntervals(date, activeWindowIntervals, activeWebIntervals, mergedAfk, settings);
 
         return new AwDailyReport
         {
@@ -357,67 +405,167 @@ public static class ActivityWatchSync
         return sb.ToString();
     }
 
+    public static bool IsBrowserApp(string? appName)
+    {
+        return GetBrowserKey(appName) != null;
+    }
+
+    public static string? GetBrowserKey(string? appName)
+    {
+        if (string.IsNullOrWhiteSpace(appName)) return null;
+        string clean = CleanAppName(appName).ToLowerInvariant();
+        if (clean.Contains("chrome")) return "chrome";
+        if (clean.Contains("msedge") || clean.Contains("edge")) return "msedge";
+        if (clean.Contains("firefox")) return "firefox";
+        if (clean.Contains("brave")) return "brave";
+        if (clean.Contains("opera")) return "opera";
+        if (clean.Contains("vivaldi")) return "vivaldi";
+        if (clean.Contains("arc")) return "arc";
+        if (clean.Contains("zen")) return "zen";
+        if (clean.Contains("chromium")) return "chromium";
+        if (clean.Contains("safari")) return "safari";
+        return null;
+    }
+
+    public static string? GetBrowserNameFromBucketId(string? bucketId)
+    {
+        if (string.IsNullOrWhiteSpace(bucketId)) return null;
+        string lower = bucketId.ToLowerInvariant();
+        if (lower.Contains("chrome")) return "chrome";
+        if (lower.Contains("msedge") || lower.Contains("edge")) return "msedge";
+        if (lower.Contains("firefox")) return "firefox";
+        if (lower.Contains("brave")) return "brave";
+        if (lower.Contains("opera")) return "opera";
+        if (lower.Contains("vivaldi")) return "vivaldi";
+        if (lower.Contains("arc")) return "arc";
+        if (lower.Contains("zen")) return "zen";
+        if (lower.Contains("chromium")) return "chromium";
+        if (lower.Contains("safari")) return "safari";
+        return null;
+    }
+
+    public static List<(DateTimeOffset Start, DateTimeOffset End)> MergeIntervals(
+        IEnumerable<(DateTimeOffset Start, DateTimeOffset End)> intervals)
+    {
+        var sorted = intervals
+            .Where(i => i.End > i.Start)
+            .OrderBy(i => i.Start)
+            .ThenBy(i => i.End)
+            .ToList();
+
+        if (sorted.Count <= 1)
+            return sorted;
+
+        var merged = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+        var current = sorted[0];
+
+        for (int i = 1; i < sorted.Count; i++)
+        {
+            var next = sorted[i];
+            if (next.Start <= current.End)
+            {
+                if (next.End > current.End)
+                {
+                    current = (current.Start, next.End);
+                }
+            }
+            else
+            {
+                merged.Add(current);
+                current = next;
+            }
+        }
+        merged.Add(current);
+        return merged;
+    }
+
+    public static List<(DateTimeOffset Start, DateTimeOffset End)> SubtractIntervals(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        List<(DateTimeOffset Start, DateTimeOffset End)> exclusions)
+    {
+        if (end <= start)
+            return [];
+
+        var result = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+        var currentStart = start;
+
+        foreach (var (exStart, exEnd) in exclusions)
+        {
+            if (exEnd <= currentStart)
+                continue;
+
+            if (exStart >= end)
+                break;
+
+            if (exStart > currentStart)
+            {
+                var segEnd = exStart < end ? exStart : end;
+                if (segEnd > currentStart)
+                {
+                    result.Add((currentStart, segEnd));
+                }
+            }
+
+            if (exEnd > currentStart)
+            {
+                currentStart = exEnd;
+            }
+
+            if (currentStart >= end)
+                break;
+        }
+
+        if (currentStart < end)
+        {
+            result.Add((currentStart, end));
+        }
+
+        return result;
+    }
+
+    public static List<(DateTimeOffset Start, DateTimeOffset End)> IntersectIntervals(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        List<(DateTimeOffset Start, DateTimeOffset End)> inclusions)
+    {
+        if (end <= start || inclusions.Count == 0)
+            return [];
+
+        var result = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+
+        foreach (var (incStart, incEnd) in inclusions)
+        {
+            if (incEnd <= start)
+                continue;
+            if (incStart >= end)
+                break;
+
+            var overlapStart = incStart > start ? incStart : start;
+            var overlapEnd = incEnd < end ? incEnd : end;
+
+            if (overlapEnd > overlapStart)
+            {
+                result.Add((overlapStart, overlapEnd));
+            }
+        }
+
+        return result;
+    }
+
     private static List<AwTimelineInterval> BuildTimelineIntervals(
         DateOnly date,
-        List<AwEvent> rawWindowEvents,
-        List<AwEvent> rawWebEvents,
-        List<(DateTimeOffset Start, DateTimeOffset End)> afkIntervals,
+        List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)> activeWindowIntervals,
+        List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)> activeWebIntervals,
+        List<(DateTimeOffset Start, DateTimeOffset End)> mergedAfk,
         AppSettings settings)
     {
         var rawIntervals = new List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)>();
+        rawIntervals.AddRange(activeWindowIntervals);
+        rawIntervals.AddRange(activeWebIntervals);
 
-        // 1. Window events
-        foreach (var evt in rawWindowEvents)
-        {
-            if (evt.DurationSeconds <= 0) continue;
-            var start = evt.Timestamp;
-            var end = start.AddSeconds(evt.DurationSeconds);
-
-            // Skip if fully during AFK
-            bool isAfk = false;
-            foreach (var (afkStart, afkEnd) in afkIntervals)
-            {
-                if (start >= afkStart && end <= afkEnd)
-                {
-                    isAfk = true;
-                    break;
-                }
-            }
-            if (isAfk) continue;
-
-            string app = string.IsNullOrWhiteSpace(evt.App) ? "Unknown" : CleanAppName(evt.App);
-            string title = string.IsNullOrWhiteSpace(evt.Title) ? "Untitled" : evt.Title.Trim();
-            rawIntervals.Add((start, end, app, title, "App"));
-        }
-
-        // 2. Web events
-        if (settings.ActivityWatchIncludeWeb)
-        {
-            foreach (var evt in rawWebEvents)
-            {
-                if (evt.DurationSeconds <= 0) continue;
-                var start = evt.Timestamp;
-                var end = start.AddSeconds(evt.DurationSeconds);
-
-                bool isAfk = false;
-                foreach (var (afkStart, afkEnd) in afkIntervals)
-                {
-                    if (start >= afkStart && end <= afkEnd)
-                    {
-                        isAfk = true;
-                        break;
-                    }
-                }
-                if (isAfk) continue;
-
-                string domain = ExtractDomain(evt.Url);
-                string pageTitle = string.IsNullOrWhiteSpace(evt.Title) ? domain : evt.Title.Trim();
-                rawIntervals.Add((start, end, domain, pageTitle, "Web"));
-            }
-        }
-
-        // 3. AFK intervals (significant ones >= 2 minutes)
-        foreach (var (afkStart, afkEnd) in afkIntervals)
+        // Significant AFK intervals (>= 2 minutes)
+        foreach (var (afkStart, afkEnd) in mergedAfk)
         {
             if ((afkEnd - afkStart).TotalMinutes >= 2)
             {
@@ -429,7 +577,7 @@ public static class ActivityWatchSync
             return [];
 
         // Sort chronologically
-        var sorted = rawIntervals.OrderBy(i => i.Start).ToList();
+        var sorted = rawIntervals.OrderBy(i => i.Start).ThenBy(i => i.End).ToList();
         var merged = new List<(DateTimeOffset Start, DateTimeOffset End, string Activity, string Details, string Type)>();
 
         foreach (var item in sorted)
