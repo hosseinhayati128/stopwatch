@@ -25,7 +25,9 @@ namespace StopwatchOverlay
         OpenController = 14,
         NoteCommandLeader = 15,
         EditTimer = 16,
-        UndoTimerEdit = 17
+        UndoTimerEdit = 17,
+        AddRecord = 18,
+        SyncActivityWatch = 19
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -181,6 +183,8 @@ namespace StopwatchOverlay
         public bool ActivityWatchIncludeWeb { get; set; } = true;
         public bool ActivityWatchIncludeTitles { get; set; } = true;
         public bool ActivityWatchSyncOnStopwatchSync { get; set; } = true;
+        public bool ActivityWatchPeriodicSyncEnabled { get; set; } = true;
+        public int ActivityWatchPeriodicSyncIntervalMinutes { get; set; } = 60;
 
         // Internet & Network Monitoring
         public bool InternetMonitorEnabled { get; set; } = true;

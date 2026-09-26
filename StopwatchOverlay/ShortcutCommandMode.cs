@@ -13,8 +13,8 @@ namespace StopwatchOverlay
     public sealed class ShortcutCommandMode : IDisposable
     {
         public const string GuidanceLine1 = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller";
-        public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · U Undo";
-        public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · U Undo";
+        public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · A Record · S Sync";
+        public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · U Undo · A Record · S Sync";
 
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
@@ -37,6 +37,8 @@ namespace StopwatchOverlay
         public const uint VK_KEY_W = 0x57;
         public const uint VK_KEY_E = 0x45;
         public const uint VK_KEY_U = 0x55;
+        public const uint VK_KEY_A = 0x41;
+        public const uint VK_KEY_S = 0x53;
 
         // Modifier virtual keys
         public const uint VK_SHIFT = 0x10;
@@ -92,6 +94,8 @@ namespace StopwatchOverlay
             [VK_KEY_W] = ShortcutAction.OpenController,
             [VK_KEY_E] = ShortcutAction.EditTimer,
             [VK_KEY_U] = ShortcutAction.UndoTimerEdit,
+            [VK_KEY_A] = ShortcutAction.AddRecord,
+            [VK_KEY_S] = ShortcutAction.SyncActivityWatch,
         };
 
         public static readonly TimeSpan InitialTimeout = TimeSpan.FromSeconds(2);

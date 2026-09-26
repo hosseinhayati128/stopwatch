@@ -34,6 +34,10 @@ namespace StopwatchOverlay.Tests
         [InlineData('e', ShortcutAction.EditTimer)]
         [InlineData('U', ShortcutAction.UndoTimerEdit)]
         [InlineData('u', ShortcutAction.UndoTimerEdit)]
+        [InlineData('A', ShortcutAction.AddRecord)]
+        [InlineData('a', ShortcutAction.AddRecord)]
+        [InlineData('S', ShortcutAction.SyncActivityWatch)]
+        [InlineData('s', ShortcutAction.SyncActivityWatch)]
         public void TryGetAction_FromChar_MapsToExpectedAction(char keyChar, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(keyChar, out ShortcutAction action);
@@ -55,6 +59,8 @@ namespace StopwatchOverlay.Tests
         [InlineData(ShortcutCommandMode.VK_KEY_W, ShortcutAction.OpenController)]
         [InlineData(ShortcutCommandMode.VK_KEY_E, ShortcutAction.EditTimer)]
         [InlineData(ShortcutCommandMode.VK_KEY_U, ShortcutAction.UndoTimerEdit)]
+        [InlineData(ShortcutCommandMode.VK_KEY_A, ShortcutAction.AddRecord)]
+        [InlineData(ShortcutCommandMode.VK_KEY_S, ShortcutAction.SyncActivityWatch)]
         public void TryGetAction_FromVirtualKey_MapsToExpectedAction(uint vk, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(vk, out ShortcutAction action);
@@ -76,6 +82,8 @@ namespace StopwatchOverlay.Tests
         [InlineData(Key.W, ShortcutAction.OpenController)]
         [InlineData(Key.E, ShortcutAction.EditTimer)]
         [InlineData(Key.U, ShortcutAction.UndoTimerEdit)]
+        [InlineData(Key.A, ShortcutAction.AddRecord)]
+        [InlineData(Key.S, ShortcutAction.SyncActivityWatch)]
         public void TryGetAction_FromWpfKey_MapsToExpectedAction(Key key, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(key, out ShortcutAction action);
@@ -84,7 +92,7 @@ namespace StopwatchOverlay.Tests
         }
 
         [Theory]
-        [InlineData('a')]
+        [InlineData('q')]
         [InlineData('b')]
         [InlineData('f')]
         [InlineData('z')]
@@ -296,9 +304,9 @@ namespace StopwatchOverlay.Tests
             commandMode.ProcessKeyEvent(WM_KEYUP, ShortcutCommandMode.VK_KEY_R);
             Assert.True(commandMode.IsActive);
 
-            // Press unsupported key 'A' (0x41)
-            var resultA = commandMode.ProcessKeyEvent(WM_KEYDOWN, 0x41u);
-            Assert.Equal(IntPtr.Zero, resultA); // Passes through to OS!
+            // Press unsupported key 'Q' (0x51)
+            var resultQ = commandMode.ProcessKeyEvent(WM_KEYDOWN, 0x51u);
+            Assert.Equal(IntPtr.Zero, resultQ); // Passes through to OS!
             Assert.False(commandMode.IsActive); // Exited command mode
             dispatcher.Invoke(() => { }, DispatcherPriority.Background);
             Assert.True(unknown);

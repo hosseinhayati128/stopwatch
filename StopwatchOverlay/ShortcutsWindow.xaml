@@ -137,6 +137,8 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Space" FontWeight="Bold" Margin="0,3,8,3"/>
@@ -175,8 +177,14 @@
                         <TextBlock Grid.Row="11" Grid.Column="0" Text="E" FontWeight="Bold" Margin="0,3,8,3"/>
                         <TextBlock Grid.Row="11" Grid.Column="1" Text="Edit active timer (adjust value, start time, discard records)" Margin="0,3,0,3"/>
 
-                        <TextBlock Grid.Row="12" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="12" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
+                        <TextBlock Grid.Row="12" Grid.Column="0" Text="A" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="12" Grid.Column="1" Text="Add a new completed project record" Margin="0,3,0,3"/>
+
+                        <TextBlock Grid.Row="13" Grid.Column="0" Text="S" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="13" Grid.Column="1" Text="Sync ActivityWatch log to Obsidian now" Margin="0,3,0,3"/>
+
+                        <TextBlock Grid.Row="14" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="14" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
                     </Grid>
                 </ScrollViewer>
             </Grid>

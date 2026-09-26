@@ -160,6 +160,7 @@ namespace StopwatchOverlay
         private bool _changingStartWithWindows;
         private bool _appliedStartWithWindows;
         private Internet.InternetMonitorService? _internetMonitorService;
+        private ActivityWatch.ActivityWatchSyncService? _activityWatchSyncService;
         private bool _isNamingTimer;
         private TimerNameWindow? _projectChooserWindow;
         private bool _persistenceFailureNotified;
@@ -307,6 +308,7 @@ namespace StopwatchOverlay
             _blinkTimer.Start();
             _stateSaveTimer.Start();
             InitializeInternetMonitor();
+            InitializeActivityWatchSync();
         }
 
         private void InitializeInternetMonitor()
@@ -315,6 +317,27 @@ namespace StopwatchOverlay
             _internetMonitorService = new Internet.InternetMonitorService(
                 () => _settings,
                 () => _timers.Any(t => t.IsRunning));
+        }
+
+        private void InitializeActivityWatchSync()
+        {
+            _activityWatchSyncService?.Dispose();
+            _activityWatchSyncService = new ActivityWatch.ActivityWatchSyncService(() => _settings);
+            _activityWatchSyncService.SyncCompleted += OnActivityWatchPeriodicSyncCompleted;
+        }
+
+        private void OnActivityWatchPeriodicSyncCompleted(ActivityWatch.ActivityWatchSyncResult result)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => OnActivityWatchPeriodicSyncCompleted(result));
+                return;
+            }
+
+            if (result.Success && IsVisible && WindowState != WindowState.Minimized)
+            {
+                UpdateStatus($"ActivityWatch log synced ({result.AppCount} apps, {result.WebCount} web sites)", (Brush)FindResource("AccentBrush"));
+            }
         }
 
         private void InitializeProjectHistory(DateTime startupUtc)
@@ -2067,7 +2090,7 @@ namespace StopwatchOverlay
         {
             // For actions that open interactive text-input dialogs or separate dashboard window,
             // exit command mode immediately so normal typing is not intercepted.
-            if (action is ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.OpenDashboard or ShortcutAction.EditTimer or ShortcutAction.UndoTimerEdit)
+            if (action is ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.OpenDashboard or ShortcutAction.EditTimer or ShortcutAction.UndoTimerEdit or ShortcutAction.AddRecord)
             {
                 _commandMode?.Exit();
                 CloseCommandHintWindow();
@@ -2075,6 +2098,11 @@ namespace StopwatchOverlay
                 {
                     UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
                 }
+            }
+            else if (action is ShortcutAction.SyncActivityWatch)
+            {
+                _commandMode?.Exit();
+                CloseCommandHintWindow();
             }
             ExecuteShortcutAction(action);
         }
@@ -2311,6 +2339,18 @@ namespace StopwatchOverlay
                     openController.Modifiers | MOD_NOREPEAT, openController.VirtualKey);
             }
 
+            if (_shortcuts.TryGetValue(ShortcutAction.AddRecord, out var addRecord) && addRecord.VirtualKey != 0)
+            {
+                RegisterHotKey(helper.Handle, (int)ShortcutAction.AddRecord,
+                    addRecord.Modifiers | MOD_NOREPEAT, addRecord.VirtualKey);
+            }
+
+            if (_shortcuts.TryGetValue(ShortcutAction.SyncActivityWatch, out var syncAw) && syncAw.VirtualKey != 0)
+            {
+                RegisterHotKey(helper.Handle, (int)ShortcutAction.SyncActivityWatch,
+                    syncAw.Modifiers | MOD_NOREPEAT, syncAw.VirtualKey);
+            }
+
             return (leaderOk, noteLeaderOk, showOverlayOk, openControllerOk);
         }
 
@@ -2417,6 +2457,12 @@ namespace StopwatchOverlay
                     break;
                 case ShortcutAction.OpenController:
                     ShowController();
+                    break;
+                case ShortcutAction.AddRecord:
+                    Dispatcher.BeginInvoke(new Action(ShowAddProjectRecordDialog), DispatcherPriority.Input);
+                    break;
+                case ShortcutAction.SyncActivityWatch:
+                    TriggerActivityWatchSyncManual();
                     break;
             }
         }
@@ -3177,6 +3223,90 @@ namespace StopwatchOverlay
 
             _projectDashboardWindow.Activate();
             _projectDashboardWindow.Focus();
+        }
+
+        private void ShowAddProjectRecordDialog()
+        {
+            if (_workspaceLoadRetryPending || _workspacePersistenceDisabled)
+            {
+                ProjectTransitionIsTemporarilyBlocked(null, alwaysBlock: true);
+                return;
+            }
+
+            if (!CanMutateProjectRecords())
+            {
+                UpdateStatus(
+                    GetProjectRecordsWarning() ?? "Project records cannot be changed right now.",
+                    Brushes.OrangeRed);
+                return;
+            }
+
+            var view = _projectHistory.CreateView(DateTime.UtcNow);
+            string? activeProjectKey = _activeTimer != null && !string.IsNullOrWhiteSpace(_activeTimer.Name)
+                ? view.Projects.FirstOrDefault(p => string.Equals(p.Name, _activeTimer.Name, StringComparison.OrdinalIgnoreCase))?.Key
+                : null;
+
+            var editor = new ProjectRecordEditorWindow(
+                view.Projects,
+                activeProjectKey,
+                commit: AddManualProjectRecord,
+                initialLocalDate: DateTime.Now)
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                editor.Owner = this;
+            }
+            else
+            {
+                editor.Topmost = true;
+            }
+
+            bool? result = editor.ShowDialog();
+            if (result == true)
+            {
+                _projectDashboardWindow?.RefreshFromHistory();
+                UpdateStatus("Project record added", (Brush)FindResource("AccentBrush"));
+            }
+        }
+
+        private async void TriggerActivityWatchSyncManual()
+        {
+            if (!_settings.ActivityWatchEnabled)
+            {
+                UpdateStatus("ActivityWatch integration is disabled in Settings", Brushes.OrangeRed);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder))
+            {
+                UpdateStatus("Obsidian vault folder is not configured", Brushes.OrangeRed);
+                return;
+            }
+
+            UpdateStatus("Syncing ActivityWatch log...", (Brush)FindResource("AccentBrush"));
+            try
+            {
+                var result = _activityWatchSyncService != null
+                    ? await _activityWatchSyncService.TriggerSyncOnceAsync()
+                    : await ActivityWatch.ActivityWatchSync.SyncAsync(_settings);
+
+                if (result.Success)
+                {
+                    UpdateStatus($"✓ ActivityWatch log synced ({result.AppCount} apps, {result.WebCount} web sites)", Brushes.ForestGreen);
+                }
+                else
+                {
+                    UpdateStatus(result.Message ?? "ActivityWatch sync failed", Brushes.OrangeRed);
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogRecoverable(ex, "TriggerActivityWatchSyncManual");
+                UpdateStatus($"ActivityWatch sync error: {ex.Message}", Brushes.OrangeRed);
+            }
         }
 
         private bool CanMutateProjectRecords()
@@ -4993,6 +5123,11 @@ namespace StopwatchOverlay
                     _internetMonitorService?.RestartTimer();
                 }
 
+                if ((changes & SettingsChangeKind.ActivityWatch) != 0)
+                {
+                    _activityWatchSyncService?.RestartTimer();
+                }
+
                 _settingsWindow?.SchedulePreviewFromAppliedSettings();
             }
             finally
@@ -5237,6 +5372,8 @@ namespace StopwatchOverlay
             _dedicatedSettingsApplyTimer.Stop();
             _internetMonitorService?.Dispose();
             _internetMonitorService = null;
+            _activityWatchSyncService?.Dispose();
+            _activityWatchSyncService = null;
 
             if (_hwndSource != null)
             {

@@ -133,6 +133,8 @@ public partial class SettingsWindow : Window
             TelegramRemindersTopicTextBox.Text = _settings.TelegramRemindersTopicId;
             ActivityWatchEnabledCheck.IsChecked = _settings.ActivityWatchEnabled;
             ActivityWatchSyncOnStopwatchCheck.IsChecked = _settings.ActivityWatchSyncOnStopwatchSync;
+            ActivityWatchPeriodicSyncCheck.IsChecked = _settings.ActivityWatchPeriodicSyncEnabled;
+            ActivityWatchPeriodicSyncIntervalTextBox.Text = _settings.ActivityWatchPeriodicSyncIntervalMinutes.ToString();
             ActivityWatchIncludeTitlesCheck.IsChecked = _settings.ActivityWatchIncludeTitles;
             ActivityWatchIncludeWebCheck.IsChecked = _settings.ActivityWatchIncludeWeb;
             ActivityWatchServerUrlTextBox.Text = _settings.ActivityWatchServerUrl;
@@ -216,6 +218,8 @@ public partial class SettingsWindow : Window
 
         WireCheckBox(ActivityWatchEnabledCheck, SettingsChangeKind.ActivityWatch);
         WireCheckBox(ActivityWatchSyncOnStopwatchCheck, SettingsChangeKind.ActivityWatch);
+        WireCheckBox(ActivityWatchPeriodicSyncCheck, SettingsChangeKind.ActivityWatch);
+        ActivityWatchPeriodicSyncIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
         WireCheckBox(ActivityWatchIncludeTitlesCheck, SettingsChangeKind.ActivityWatch);
         WireCheckBox(ActivityWatchIncludeWebCheck, SettingsChangeKind.ActivityWatch);
         ActivityWatchServerUrlTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
@@ -411,6 +415,9 @@ public partial class SettingsWindow : Window
             {
                 _settings.ActivityWatchEnabled = ActivityWatchEnabledCheck.IsChecked == true;
                 _settings.ActivityWatchSyncOnStopwatchSync = ActivityWatchSyncOnStopwatchCheck.IsChecked == true;
+                _settings.ActivityWatchPeriodicSyncEnabled = ActivityWatchPeriodicSyncCheck.IsChecked == true;
+                if (int.TryParse(ActivityWatchPeriodicSyncIntervalTextBox.Text.Trim(), out int syncInterval) && syncInterval > 0)
+                    _settings.ActivityWatchPeriodicSyncIntervalMinutes = syncInterval;
                 _settings.ActivityWatchIncludeTitles = ActivityWatchIncludeTitlesCheck.IsChecked == true;
                 _settings.ActivityWatchIncludeWeb = ActivityWatchIncludeWebCheck.IsChecked == true;
                 _settings.ActivityWatchServerUrl = ActivityWatchServerUrlTextBox.Text.Trim();

@@ -28,7 +28,7 @@
                        FontFamily="Segoe UI, Consolas"
                        FontWeight="Medium"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit"
+            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · A Record · S Sync"
                        Foreground="#CCCCCC"
                        FontSize="12"
                        FontFamily="Segoe UI, Consolas"
