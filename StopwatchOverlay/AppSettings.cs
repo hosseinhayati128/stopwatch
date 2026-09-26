@@ -182,6 +182,13 @@ namespace StopwatchOverlay
         public bool ActivityWatchIncludeTitles { get; set; } = true;
         public bool ActivityWatchSyncOnStopwatchSync { get; set; } = true;
 
+        // Internet & Network Monitoring
+        public bool InternetMonitorEnabled { get; set; } = true;
+        public int InternetMonitorIntervalMinutes { get; set; } = 10;
+        public bool InternetMonitorOnlyDuringTimers { get; set; } = true;
+        public string InternetLogFileName { get; set; } = "Internet Log.md";
+        public int InternetSampleSizeBytes { get; set; } = 1_000_000;
+
         // Last-used mode (0=Stopwatch, 1=Clock, 2=Countdown, 3=Timecode)
         public int Mode { get; set; } = 0;
 

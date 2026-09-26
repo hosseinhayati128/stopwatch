@@ -159,6 +159,7 @@ namespace StopwatchOverlay
         private TimerEditUndoState? _lastTimerEditUndo;
         private bool _changingStartWithWindows;
         private bool _appliedStartWithWindows;
+        private Internet.InternetMonitorService? _internetMonitorService;
         private bool _isNamingTimer;
         private TimerNameWindow? _projectChooserWindow;
         private bool _persistenceFailureNotified;
@@ -305,6 +306,15 @@ namespace StopwatchOverlay
             _timer.Start();
             _blinkTimer.Start();
             _stateSaveTimer.Start();
+            InitializeInternetMonitor();
+        }
+
+        private void InitializeInternetMonitor()
+        {
+            _internetMonitorService?.Dispose();
+            _internetMonitorService = new Internet.InternetMonitorService(
+                () => _settings,
+                () => _timers.Any(t => t.IsRunning));
         }
 
         private void InitializeProjectHistory(DateTime startupUtc)
@@ -4978,6 +4988,11 @@ namespace StopwatchOverlay
                     UpdateButtonStates();
                 }
 
+                if ((changes & SettingsChangeKind.InternetMonitor) != 0)
+                {
+                    _internetMonitorService?.RestartTimer();
+                }
+
                 _settingsWindow?.SchedulePreviewFromAppliedSettings();
             }
             finally
@@ -5220,6 +5235,8 @@ namespace StopwatchOverlay
             _stateSaveTimer.Stop();
             _backgroundApplyTimer.Stop();
             _dedicatedSettingsApplyTimer.Stop();
+            _internetMonitorService?.Dispose();
+            _internetMonitorService = null;
 
             if (_hwndSource != null)
             {

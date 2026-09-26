@@ -138,6 +138,10 @@ public partial class SettingsWindow : Window
             ActivityWatchServerUrlTextBox.Text = _settings.ActivityWatchServerUrl;
             ActivityWatchFileNameTextBox.Text = _settings.ActivityWatchExportFileName;
             ActivityWatchMinDurationTextBox.Text = _settings.ActivityWatchMinDurationSeconds.ToString();
+            InternetMonitorEnabledCheck.IsChecked = _settings.InternetMonitorEnabled;
+            InternetMonitorOnlyDuringTimersCheck.IsChecked = _settings.InternetMonitorOnlyDuringTimers;
+            InternetCheckIntervalTextBox.Text = _settings.InternetMonitorIntervalMinutes.ToString();
+            InternetFileNameTextBox.Text = _settings.InternetLogFileName;
             UpdateObsidianPathPreview();
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
@@ -217,6 +221,11 @@ public partial class SettingsWindow : Window
         ActivityWatchServerUrlTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
         ActivityWatchFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
         ActivityWatchMinDurationTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
+
+        WireCheckBox(InternetMonitorEnabledCheck, SettingsChangeKind.InternetMonitor);
+        WireCheckBox(InternetMonitorOnlyDuringTimersCheck, SettingsChangeKind.InternetMonitor);
+        InternetCheckIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
+        InternetFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -408,6 +417,15 @@ public partial class SettingsWindow : Window
                 _settings.ActivityWatchExportFileName = ActivityWatchFileNameTextBox.Text.Trim();
                 if (int.TryParse(ActivityWatchMinDurationTextBox.Text.Trim(), out int minSec) && minSec > 0)
                     _settings.ActivityWatchMinDurationSeconds = minSec;
+            }
+
+            if ((change & SettingsChangeKind.InternetMonitor) != 0)
+            {
+                _settings.InternetMonitorEnabled = InternetMonitorEnabledCheck.IsChecked == true;
+                _settings.InternetMonitorOnlyDuringTimers = InternetMonitorOnlyDuringTimersCheck.IsChecked == true;
+                if (int.TryParse(InternetCheckIntervalTextBox.Text.Trim(), out int interval) && interval > 0)
+                    _settings.InternetMonitorIntervalMinutes = interval;
+                _settings.InternetLogFileName = InternetFileNameTextBox.Text.Trim();
             }
 
             UpdateValueLabels();
@@ -663,6 +681,7 @@ public partial class SettingsWindow : Window
         ObsidianPanel.Visibility = tag == "Obsidian" ? Visibility.Visible : Visibility.Collapsed;
         TelegramPanel.Visibility = tag == "Telegram" ? Visibility.Visible : Visibility.Collapsed;
         ActivityWatchPanel.Visibility = tag == "ActivityWatch" ? Visibility.Visible : Visibility.Collapsed;
+        InternetPanel.Visibility = tag == "Internet" ? Visibility.Visible : Visibility.Collapsed;
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);
         Dispatcher.BeginInvoke(
             new Action(() => SettingsScrollViewer?.ScrollToTop()),
@@ -818,6 +837,50 @@ public partial class SettingsWindow : Window
         finally
         {
             SyncActivityWatchNowButton.IsEnabled = true;
+        }
+    }
+
+    private async void TestInternetButton_Click(object sender, RoutedEventArgs e)
+    {
+        TestInternetButton.IsEnabled = false;
+        InternetStatusText.Text = "Testing network latency, download speed, and Wi-Fi...";
+        InternetStatusText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+
+        try
+        {
+            CommitControls(SettingsChangeKind.InternetMonitor);
+            var result = await Internet.InternetSpeedProbe.CheckConnectionAsync(
+                sampleBytes: _settings.InternetSampleSizeBytes,
+                pingHost: "1.1.1.1");
+
+            string speedStr = result.DownloadMbps.HasValue ? $"{result.DownloadMbps.Value:F1} Mbps" : "N/A";
+            string pingStr = result.PingMs.HasValue ? $"{result.PingMs.Value} ms" : "N/A";
+            string netStr = !string.IsNullOrWhiteSpace(result.NetworkInfo.DisplayText) ? result.NetworkInfo.DisplayText : "Unknown";
+
+            if (result.Status == Internet.InternetStatus.Online)
+            {
+                InternetStatusText.Text = $"✓ {result.StatusBadge} | {netStr} | Ping: {pingStr} | Download: {speedStr} ({result.Notes})";
+                InternetStatusText.Foreground = Brushes.ForestGreen;
+            }
+            else if (result.Status == Internet.InternetStatus.Slow)
+            {
+                InternetStatusText.Text = $"⚠ {result.StatusBadge} | {netStr} | Ping: {pingStr} | Download: {speedStr} ({result.Notes})";
+                InternetStatusText.Foreground = Brushes.Goldenrod;
+            }
+            else
+            {
+                InternetStatusText.Text = $"✗ {result.StatusBadge} | {netStr} | {result.Notes}";
+                InternetStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            InternetStatusText.Text = "✗ Test error: " + ex.Message;
+            InternetStatusText.Foreground = Brushes.OrangeRed;
+        }
+        finally
+        {
+            TestInternetButton.IsEnabled = true;
         }
     }
 

@@ -23,7 +23,8 @@ internal enum SettingsChangeKind
     ApplicationScale = 1 << 14,
     Typography = 1 << 15,
     Telegram = 1 << 16,
-    ActivityWatch = 1 << 17
+    ActivityWatch = 1 << 17,
+    InternetMonitor = 1 << 18
 }
 
 internal static class SettingsChangePolicy

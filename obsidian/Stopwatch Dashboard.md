@@ -6,6 +6,7 @@
 // ==========================================
 const stopwatchFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "stopwatch log.md");
 const activityFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "activitywatch log.md");
+const internetFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "internet log.md");
 const rulesFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "project rules.json");
 
 if (!stopwatchFile) {
@@ -100,6 +101,52 @@ if (activityFile) {
                     type
                 });
             }
+        }
+    }
+}
+
+// 3b. Read and parse Internet Log (if present)
+const allInternetRecords = [];
+if (internetFile) {
+    const netContent = await app.vault.read(internetFile);
+    const netLines = netContent.split(/\r?\n/);
+    let currentDateStr = null;
+
+    for (const line of netLines) {
+        const dateMatch = line.match(/^##\s*📅\s*(\d{4}-\d{2}-\d{2})/);
+        if (dateMatch) {
+            currentDateStr = dateMatch[1];
+            continue;
+        }
+
+        if (!line.startsWith("|") || line.includes("---") || line.includes("Network / Wi-Fi") || !currentDateStr) continue;
+        const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+        const rawParts = trimmed.split("|").map(p => p.trim());
+        if (rawParts.length >= 6) {
+            const time = rawParts[0];
+            const status = rawParts[1];
+            const network = rawParts[2];
+            const pingStr = rawParts[3];
+            const speedStr = rawParts[4];
+            const notes = rawParts[5];
+
+            const pingMs = parseFloat(pingStr) || null;
+            const speedMbps = parseFloat(speedStr) || null;
+            const [y, m, d] = currentDateStr.split("-").map(Number);
+
+            allInternetRecords.push({
+                dateStr: currentDateStr,
+                dateObj: new Date(y, m - 1, d),
+                time,
+                status,
+                network,
+                pingMs,
+                speedMbps,
+                notes,
+                isOnline: status.includes("Online"),
+                isSlow: status.includes("Slow"),
+                isOffline: status.includes("Offline")
+            });
         }
     }
 }
@@ -231,7 +278,8 @@ let zoomEndHour = 24;
 // Selected date for daily timelines (defaults to most recent date available)
 const availableDates = Array.from(new Set([
     ...allRecords.map(r => r.dateStr),
-    ...allActivityRecords.map(r => r.dateStr)
+    ...allActivityRecords.map(r => r.dateStr),
+    ...allInternetRecords.map(r => r.dateStr)
 ])).sort().reverse();
 
 let selectedDailyDate = availableDates[0] || new Date().toISOString().split("T")[0];
@@ -257,7 +305,8 @@ function getFilteredRecords(filterId) {
 
     return {
         stopwatch: allRecords.filter(matchFn),
-        activity: allActivityRecords.filter(matchFn)
+        activity: allActivityRecords.filter(matchFn),
+        internet: allInternetRecords.filter(matchFn)
     };
 }
 
@@ -325,7 +374,7 @@ function renderDashboard() {
         }
     });
 
-    const { stopwatch: records, activity: awRecords } = getFilteredRecords(activeFilter);
+    const { stopwatch: records, activity: awRecords, internet: netRecords } = getFilteredRecords(activeFilter);
     chartSection.innerHTML = "";
 
     // Calculate Summary Stats
@@ -384,6 +433,11 @@ function renderDashboard() {
         ? Math.round((focusedMinDuringTimers / trackedWorkMinutes) * 100)
         : (records.length > 0 ? 100 : 0);
 
+    const validNetSpeeds = netRecords.filter(r => r.speedMbps != null && r.speedMbps > 0);
+    const avgNetSpeed = validNetSpeeds.length > 0
+        ? (validNetSpeeds.reduce((s, r) => s + r.speedMbps, 0) / validNetSpeeds.length).toFixed(1)
+        : null;
+
     // Render Stats Card
     statsCard.innerHTML = `
         <div style="display: flex; justify-content: space-around; text-align: center; flex-wrap: wrap; gap: 8px;">
@@ -405,6 +459,12 @@ function renderDashboard() {
                 <div style="font-size: 20px; font-weight: bold; color: ${focusRate >= 80 ? '#34d399' : (focusRate >= 60 ? '#fbbf24' : '#f87171')};">${focusRate}%</div>
             </div>
             ` : ''}
+            ${avgNetSpeed ? `
+            <div>
+                <div style="font-size: 11px; opacity: 0.7; text-transform: uppercase;">Internet</div>
+                <div style="font-size: 20px; font-weight: bold; color: #38bdf8;">${avgNetSpeed} <span style="font-size: 12px;">Mbps</span></div>
+            </div>
+            ` : ''}
         </div>
     `;
 
@@ -417,6 +477,11 @@ function renderDashboard() {
     // --- FEATURE 2: PROJECT-BY-PROJECT DEEP-DIVE (PROJECT DRILL-DOWN) -------------
     // ==============================================================================
     renderProjectDeepDiveSection();
+
+    // ==============================================================================
+    // --- FEATURE 3: INTERNET CONNECTION & WI-FI PERFORMANCE -----------------------
+    // ==============================================================================
+    renderInternetSection();
 
     // ========================================================
     // --- Chart 1: Project Breakdown (Doughnut) [ORIGINAL] ---
@@ -621,8 +686,29 @@ function renderDualTimelineSection() {
         if (d === selectedDailyDate) opt.selected = true;
     });
 
+    const netBadgeContainer = dateSelectContainer.createDiv();
+    function updateNetBadge() {
+        netBadgeContainer.innerHTML = "";
+        const dayNet = allInternetRecords.filter(r => r.dateStr === selectedDailyDate);
+        if (dayNet.length > 0) {
+            const last = dayNet[dayNet.length - 1];
+            const badge = netBadgeContainer.createEl("span", {
+                text: `${last.network}${last.speedMbps != null ? ' (' + last.speedMbps.toFixed(1) + ' Mbps)' : ''}`
+            });
+            badge.style.fontSize = "11px";
+            badge.style.padding = "2px 7px";
+            badge.style.borderRadius = "4px";
+            badge.style.backgroundColor = "rgba(56, 189, 248, 0.15)";
+            badge.style.color = "#38bdf8";
+            badge.style.fontWeight = "bold";
+            badge.title = `Active network connection on ${selectedDailyDate}`;
+        }
+    }
+    updateNetBadge();
+
     dateSelect.addEventListener("change", (e) => {
         selectedDailyDate = e.target.value;
+        updateNetBadge();
         drawTimelineView();
     });
 
@@ -1673,6 +1759,180 @@ function renderProjectDeepDiveSection() {
     }
 
     updateDeepDive();
+}
+
+// ==============================================================================
+// RENDER HELPER 3: INTERNET & NETWORK CONNECTION REPORT
+// ==============================================================================
+function renderInternetSection() {
+    if (allInternetRecords.length === 0) return;
+
+    const { internet: netRecords } = getFilteredRecords(activeFilter);
+    if (netRecords.length === 0) return;
+
+    const card = chartSection.createDiv();
+    card.style.padding = "18px";
+    card.style.borderRadius = "8px";
+    card.style.backgroundColor = "var(--background-secondary)";
+    card.style.border = "1px solid var(--background-modifier-border)";
+    card.style.marginBottom = "30px";
+
+    const header = card.createEl("h3", { text: "🌐 Internet Connection & Network Performance" });
+    header.style.margin = "0 0 4px 0";
+
+    const sub = card.createEl("p", { 
+        text: "Background latency (ping), download speed tests, and connected Wi-Fi / network adapters recorded during this period." 
+    });
+    sub.style.fontSize = "11px";
+    sub.style.opacity = "0.7";
+    sub.style.margin = "0 0 16px 0";
+
+    // Compute Metrics
+    const validSpeeds = netRecords.filter(r => r.speedMbps != null && r.speedMbps > 0).map(r => r.speedMbps);
+    const validPings = netRecords.filter(r => r.pingMs != null && r.pingMs > 0).map(r => r.pingMs);
+
+    const avgSpeed = validSpeeds.length > 0
+        ? (validSpeeds.reduce((a, b) => a + b, 0) / validSpeeds.length).toFixed(1)
+        : "-";
+    const maxSpeed = validSpeeds.length > 0 ? Math.max(...validSpeeds).toFixed(1) : "-";
+
+    const avgPing = validPings.length > 0
+        ? Math.round(validPings.reduce((a, b) => a + b, 0) / validPings.length)
+        : "-";
+
+    const onlineCount = netRecords.filter(r => r.isOnline).length;
+    const uptimePercent = Math.round((onlineCount / netRecords.length) * 100);
+
+    // Find most recent network name or unique networks
+    const networks = Array.from(new Set(netRecords.map(r => r.network))).filter(Boolean);
+    const activeNetwork = netRecords[netRecords.length - 1]?.network || networks[0] || "Unknown";
+
+    // KPI Cards
+    const kpi = card.createDiv();
+    kpi.style.display = "grid";
+    kpi.style.gridTemplateColumns = "repeat(auto-fit, minmax(130px, 1fr))";
+    kpi.style.gap = "10px";
+    kpi.style.padding = "12px";
+    kpi.style.borderRadius = "6px";
+    kpi.style.backgroundColor = "var(--background-modifier-form-field)";
+    kpi.style.marginBottom = "18px";
+    kpi.style.textAlign = "center";
+
+    kpi.innerHTML = `
+        <div>
+            <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Active Network</div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${activeNetwork}">${activeNetwork}</div>
+            <div style="font-size: 11px; opacity: 0.7;">${networks.length > 1 ? networks.length + ' networks used' : 'Connected'}</div>
+        </div>
+        <div>
+            <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Avg Download Speed</div>
+            <div style="font-size: 16px; font-weight: bold; color: #38bdf8;">${avgSpeed} ${avgSpeed !== '-' ? 'Mbps' : ''}</div>
+            <div style="font-size: 11px; opacity: 0.7;">Peak: ${maxSpeed} Mbps</div>
+        </div>
+        <div>
+            <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Avg Latency (Ping)</div>
+            <div style="font-size: 16px; font-weight: bold; color: ${avgPing !== '-' && avgPing < 80 ? '#10b981' : (avgPing < 200 ? '#fbbf24' : '#ef4444')};">${avgPing} ${avgPing !== '-' ? 'ms' : ''}</div>
+            <div style="font-size: 11px; opacity: 0.7;">${avgPing !== '-' && avgPing < 50 ? 'Low latency' : 'Cloudflare 1.1.1.1'}</div>
+        </div>
+        <div>
+            <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Connection Uptime</div>
+            <div style="font-size: 16px; font-weight: bold; color: ${uptimePercent >= 95 ? '#10b981' : (uptimePercent >= 80 ? '#fbbf24' : '#ef4444')};">${uptimePercent}%</div>
+            <div style="font-size: 11px; opacity: 0.7;">${onlineCount}/${netRecords.length} checks online</div>
+        </div>
+    `;
+
+    // Speed & Ping Line Chart
+    if (netRecords.length >= 2) {
+        const chartDiv = card.createDiv();
+        chartDiv.style.marginBottom = "18px";
+        chartDiv.createEl("h4", { text: "Connection Speed (Mbps) & Latency (ms) Timeline" }).style.margin = "0 0 8px 0";
+
+        const labels = netRecords.map(r => `${r.dateStr !== netRecords[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
+        const speedData = netRecords.map(r => r.speedMbps ?? 0);
+        const pingData = netRecords.map(r => r.pingMs ?? 0);
+
+        window.renderChart({
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Speed (Mbps)',
+                        data: speedData,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Ping (ms)',
+                        data: pingData,
+                        borderColor: '#fb923c',
+                        backgroundColor: 'transparent',
+                        borderDash: [4, 4],
+                        tension: 0.2,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 12 } },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Mbps' },
+                        position: 'left'
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Ping (ms)' },
+                        position: 'right',
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        }, chartDiv);
+    }
+
+    // Detailed Network Checks Table
+    const tableDiv = card.createDiv();
+    tableDiv.createEl("h4", { text: "Network & Speed Check History" }).style.margin = "0 0 8px 0";
+
+    const netTable = tableDiv.createEl("table");
+    netTable.style.width = "100%";
+    netTable.style.fontSize = "11px";
+    netTable.style.borderCollapse = "collapse";
+
+    const showDateCol = activeFilter !== "today";
+
+    netTable.innerHTML = `
+        <thead>
+            <tr style="border-bottom: 1px solid var(--background-modifier-border); text-align: left; opacity: 0.7;">
+                ${showDateCol ? '<th style="padding: 4px 6px;">Date</th>' : ''}
+                <th style="padding: 4px 6px;">Time</th>
+                <th style="padding: 4px 6px;">Status</th>
+                <th style="padding: 4px 6px;">Network / Wi-Fi</th>
+                <th style="padding: 4px 6px;">Ping</th>
+                <th style="padding: 4px 6px;">Download Speed</th>
+                <th style="padding: 4px 6px;">Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${netRecords.slice(-15).reverse().map(r => `
+                <tr style="border-bottom: 1px solid var(--background-modifier-border);">
+                    ${showDateCol ? `<td style="padding: 4px 6px;">${r.dateStr}</td>` : ''}
+                    <td style="padding: 4px 6px; font-weight: bold;">${r.time}</td>
+                    <td style="padding: 4px 6px;">${r.status}</td>
+                    <td style="padding: 4px 6px; font-weight: bold; color: var(--text-accent);">${r.network}</td>
+                    <td style="padding: 4px 6px;">${r.pingMs != null ? r.pingMs + ' ms' : '-'}</td>
+                    <td style="padding: 4px 6px; font-weight: bold; color: #38bdf8;">${r.speedMbps != null ? r.speedMbps.toFixed(1) + ' Mbps' : '-'}</td>
+                    <td style="padding: 4px 6px; opacity: 0.8;">${r.notes || '-'}</td>
+                </tr>
+            `).join("")}
+        </tbody>
+    `;
 }
 
 // 6. Create Top Filter Buttons

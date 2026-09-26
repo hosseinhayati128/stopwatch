@@ -162,6 +162,7 @@
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Telegram" Tag="Telegram" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="ActivityWatch" Tag="ActivityWatch" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
+                    <ListBoxItem Content="Internet &amp; Network" Tag="Internet" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                 </ListBox>
             </Border>
 
@@ -515,6 +516,34 @@
                                         Style="{StaticResource ModernButton}" Click="SyncActivityWatchNowButton_Click"/>
                             </StackPanel>
                             <TextBlock x:Name="ActivityWatchStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel></Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="InternetPanel" Visibility="Collapsed">
+                        <TextBlock Text="Internet &amp; Network Monitoring" Style="{StaticResource DisplayHeadingText}"/>
+                        <TextBlock Text="Monitor internet connection status, latency (ping), download speed, and connected Wi-Fi / network adapter in the background and log to Obsidian."
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22" TextWrapping="Wrap"/>
+                        <Border Style="{StaticResource SettingsCard}"><StackPanel>
+                            <CheckBox x:Name="InternetMonitorEnabledCheck" Content="Enable background internet &amp; network monitoring" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="InternetMonitorOnlyDuringTimersCheck" Content="Only check while a stopwatch timer is running (saves bandwidth)" Margin="0,0,0,16" Style="{StaticResource PirateSettingsSwitch}"/>
+
+                            <TextBlock Text="Check interval (minutes)" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="InternetCheckIntervalTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="How often to test connection speed and latency (default: 10 minutes)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Export file name (in Obsidian Vault)" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBox x:Name="InternetFileNameTextBox" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,6,0,6"
+                                     FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            <TextBlock Text="Logged as a separate Markdown file in your Obsidian vault folder (default: Internet Log.md)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button x:Name="TestInternetButton" Content="Test Connection Now" Height="34" Padding="16,0"
+                                        Style="{StaticResource ModernButton}" Click="TestInternetButton_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="InternetStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>
                     </StackPanel>
                 </Grid>
