@@ -1896,9 +1896,53 @@ function renderInternetSection() {
         }, chartDiv);
     }
 
-    // Detailed Network Checks Table
-    const tableDiv = card.createDiv();
-    tableDiv.createEl("h4", { text: "Network & Speed Check History" }).style.margin = "0 0 8px 0";
+    // Detailed Network Checks Table (Collapsible)
+    const details = card.createEl("details");
+    details.style.marginTop = "14px";
+    details.style.paddingTop = "10px";
+    details.style.borderTop = "1px solid var(--background-modifier-border)";
+
+    const summary = details.createEl("summary");
+    summary.style.fontWeight = "bold";
+    summary.style.fontSize = "13px";
+    summary.style.cursor = "pointer";
+    summary.style.userSelect = "none";
+    summary.style.display = "flex";
+    summary.style.alignItems = "center";
+    summary.style.justifyContent = "space-between";
+    summary.style.padding = "4px 2px";
+    summary.title = "Click to expand/collapse network check history";
+
+    const summaryTitle = summary.createDiv();
+    summaryTitle.style.display = "flex";
+    summaryTitle.style.alignItems = "center";
+    summaryTitle.style.gap = "8px";
+    summaryTitle.innerHTML = `
+        <span>📶 Network & Speed Check History</span>
+        <span class="toggle-hint" style="font-size: 11px; opacity: 0.6; font-weight: normal;">(click to expand)</span>
+    `;
+
+    const summaryBadge = summary.createEl("span", {
+        text: `${netRecords.length} checks recorded`
+    });
+    summaryBadge.style.fontSize = "11px";
+    summaryBadge.style.padding = "2px 8px";
+    summaryBadge.style.borderRadius = "10px";
+    summaryBadge.style.backgroundColor = "var(--background-modifier-form-field)";
+    summaryBadge.style.border = "1px solid var(--background-modifier-border)";
+    summaryBadge.style.opacity = "0.75";
+    summaryBadge.style.fontWeight = "normal";
+
+    details.addEventListener("toggle", () => {
+        const hint = summaryTitle.querySelector(".toggle-hint");
+        if (hint) {
+            hint.textContent = details.open ? "(click to collapse)" : "(click to expand)";
+        }
+    });
+
+    const tableDiv = details.createDiv();
+    tableDiv.style.marginTop = "10px";
+    tableDiv.style.overflowX = "auto";
 
     const netTable = tableDiv.createEl("table");
     netTable.style.width = "100%";
@@ -1920,7 +1964,7 @@ function renderInternetSection() {
             </tr>
         </thead>
         <tbody>
-            ${netRecords.slice(-15).reverse().map(r => `
+            ${netRecords.slice(-20).reverse().map(r => `
                 <tr style="border-bottom: 1px solid var(--background-modifier-border);">
                     ${showDateCol ? `<td style="padding: 4px 6px;">${r.dateStr}</td>` : ''}
                     <td style="padding: 4px 6px; font-weight: bold;">${r.time}</td>
