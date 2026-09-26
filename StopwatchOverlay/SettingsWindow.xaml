@@ -479,6 +479,31 @@
                             </StackPanel>
                             <TextBlock x:Name="TelegramStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>
+
+                        <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0"><StackPanel>
+                            <TextBlock Text="Offline Queue &amp; Delivery" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBlock Text="Notes, todos, and reminders created while offline are queued locally and automatically sent to Telegram when your connection is restored."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,14"/>
+
+                            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock x:Name="TelegramOutboxStatusText" Text="Outbox: 0 notes pending" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock x:Name="TelegramOutboxDetailText" Text="All notes are up to date." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="SendPendingNotesButton" Content="Send Pending Notes Now" Height="32" Padding="14,0" Margin="0,0,8,0"
+                                                Style="{StaticResource ModernButton}" Click="SendPendingNotesButton_Click"/>
+                                        <Button x:Name="ScanVaultNotesButton" Content="Scan Vault for Unsent Notes" Height="32" Padding="14,0"
+                                                Style="{StaticResource ModernButton}" Click="ScanVaultNotesButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel></Border>
                     </StackPanel>
 
                     <StackPanel x:Name="ActivityWatchPanel" Visibility="Collapsed">

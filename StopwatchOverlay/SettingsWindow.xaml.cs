@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using StopwatchOverlay.Themes;
 using System.Linq;
 using System.Windows;
@@ -50,6 +51,7 @@ public partial class SettingsWindow : Window
         LoadControls();
         WireChanges();
         UpdatePreviewSafely();
+        TelegramOutboxStore.OutboxChanged += OnOutboxChanged;
     }
 
     internal void ReloadFromSettings()
@@ -148,6 +150,7 @@ public partial class SettingsWindow : Window
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
             UpdateDependentControlStates();
+            UpdateTelegramOutboxUi();
         }
         finally
         {
@@ -783,6 +786,122 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void UpdateTelegramOutboxUi()
+    {
+        if (_closed) return;
+        int count = TelegramOutboxStore.PendingCount;
+        if (count == 0)
+        {
+            TelegramOutboxStatusText.Text = "Outbox: 0 notes pending";
+            TelegramOutboxDetailText.Text = "All notes are up to date.";
+            SendPendingNotesButton.IsEnabled = false;
+        }
+        else
+        {
+            TelegramOutboxStatusText.Text = $"Outbox: {count} note(s) pending delivery";
+            TelegramOutboxDetailText.Text = "Notes queued while offline. Will send automatically when online.";
+            SendPendingNotesButton.IsEnabled = true;
+        }
+    }
+
+    private void OnOutboxChanged()
+    {
+        if (_closed) return;
+        Dispatcher.BeginInvoke(UpdateTelegramOutboxUi);
+    }
+
+    private async void SendPendingNotesButton_Click(object sender, RoutedEventArgs e)
+    {
+        SendPendingNotesButton.IsEnabled = false;
+        TelegramOutboxDetailText.Text = "Sending pending notes to Telegram...";
+        try
+        {
+            var (sent, remaining, lastError) = await TelegramNotesSync.FlushOutboxAsync(_settings);
+            if (remaining == 0)
+            {
+                TelegramOutboxDetailText.Text = $"Successfully sent {sent} note(s)!";
+                TelegramStatusText.Text = $"✓ Flushed outbox: {sent} note(s) sent.";
+                TelegramStatusText.Foreground = Brushes.ForestGreen;
+            }
+            else
+            {
+                TelegramOutboxDetailText.Text = $"Sent {sent} note(s). {remaining} remaining. (Error: {lastError})";
+                TelegramStatusText.Text = $"✗ Outbox flush paused: {lastError}";
+                TelegramStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            TelegramOutboxDetailText.Text = "Error flushing outbox: " + ex.Message;
+        }
+        finally
+        {
+            UpdateTelegramOutboxUi();
+        }
+    }
+
+    private async void ScanVaultNotesButton_Click(object sender, RoutedEventArgs e)
+    {
+        ScanVaultNotesButton.IsEnabled = false;
+        try
+        {
+            var unsentNotes = TelegramNotesSync.GetUnsentVaultNotes(_settings, lookbackDays: 3);
+            if (unsentNotes.Count == 0)
+            {
+                MessageBox.Show(
+                    this,
+                    "No unsent notes found in your Obsidian vault from the last 3 days.",
+                    "Vault Scan Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Found {unsentNotes.Count} note(s) from the last 3 days that are not in your Telegram sent history:\n");
+            foreach (var note in unsentNotes.Take(5))
+            {
+                string preview = note.Text.Length > 60 ? note.Text.Substring(0, 57) + "..." : note.Text;
+                sb.AppendLine($"• [{note.Type}] {note.Timestamp:yyyy-MM-dd HH:mm} - {preview}");
+            }
+            if (unsentNotes.Count > 5)
+            {
+                sb.AppendLine($"... and {unsentNotes.Count - 5} more.");
+            }
+            sb.AppendLine("\nWould you like to add these notes to the Telegram outbox and send them now?");
+
+            var result = MessageBox.Show(
+                this,
+                sb.ToString(),
+                "Unsent Notes Found",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                int queued = TelegramNotesSync.QueueVaultNotes(unsentNotes);
+                UpdateTelegramOutboxUi();
+                var (sent, remaining, lastError) = await TelegramNotesSync.FlushOutboxAsync(_settings);
+                MessageBox.Show(
+                    this,
+                    $"Queued {queued} note(s).\nSuccessfully sent: {sent}\nRemaining in outbox: {remaining}" +
+                    (lastError != null ? $"\n(Last note status: {lastError})" : ""),
+                    "Notes Queued & Sent",
+                    MessageBoxButton.OK,
+                    remaining == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Failed to scan vault: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            ScanVaultNotesButton.IsEnabled = true;
+            UpdateTelegramOutboxUi();
+        }
+    }
+
     private async void TestActivityWatchButton_Click(object sender, RoutedEventArgs e)
     {
         TestActivityWatchButton.IsEnabled = false;
@@ -922,6 +1041,7 @@ public partial class SettingsWindow : Window
     {
         _closed = true;
         _previewTimer.Stop();
+        TelegramOutboxStore.OutboxChanged -= OnOutboxChanged;
         EndSliderInteraction();
         base.OnClosed(e);
     }

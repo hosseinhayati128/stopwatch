@@ -161,6 +161,7 @@ namespace StopwatchOverlay
         private bool _appliedStartWithWindows;
         private Internet.InternetMonitorService? _internetMonitorService;
         private ActivityWatch.ActivityWatchSyncService? _activityWatchSyncService;
+        private DispatcherTimer? _telegramOutboxFlushTimer;
         private bool _isNamingTimer;
         private TimerNameWindow? _projectChooserWindow;
         private bool _persistenceFailureNotified;
@@ -309,14 +310,81 @@ namespace StopwatchOverlay
             _stateSaveTimer.Start();
             InitializeInternetMonitor();
             InitializeActivityWatchSync();
+            InitializeTelegramOutboxSync();
         }
 
         private void InitializeInternetMonitor()
         {
-            _internetMonitorService?.Dispose();
+            if (_internetMonitorService != null)
+            {
+                _internetMonitorService.CheckCompleted -= OnInternetCheckCompleted;
+                _internetMonitorService.Dispose();
+            }
             _internetMonitorService = new Internet.InternetMonitorService(
                 () => _settings,
                 () => _timers.Any(t => t.IsRunning));
+            _internetMonitorService.CheckCompleted += OnInternetCheckCompleted;
+        }
+
+        private void OnInternetCheckCompleted(Internet.InternetCheckResult result)
+        {
+            if (result.Status != Internet.InternetStatus.Offline && _settings.TelegramEnabled && TelegramOutboxStore.PendingCount > 0)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var (sent, remaining, _) = await TelegramNotesSync.FlushOutboxAsync(_settings);
+                        if (sent > 0)
+                        {
+                            _ = Dispatcher.BeginInvoke(() =>
+                            {
+                                if (IsVisible && WindowState != WindowState.Minimized)
+                                {
+                                    UpdateStatus($"Telegram: {sent} offline note(s) sent", (Brush)FindResource("AccentBrush"));
+                                }
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLogger.LogRecoverable(ex, "ControllerWindow.OnInternetCheckCompleted.Flush");
+                    }
+                });
+            }
+        }
+
+        private void InitializeTelegramOutboxSync()
+        {
+            _telegramOutboxFlushTimer?.Stop();
+            _telegramOutboxFlushTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(45)
+            };
+            _telegramOutboxFlushTimer.Tick += async (s, e) =>
+            {
+                if (_settings.TelegramEnabled && TelegramOutboxStore.PendingCount > 0)
+                {
+                    await TelegramNotesSync.FlushOutboxAsync(_settings);
+                }
+            };
+            _telegramOutboxFlushTimer.Start();
+
+            // Trigger startup flush if any pending notes exist
+            if (_settings.TelegramEnabled && TelegramOutboxStore.PendingCount > 0)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await TelegramNotesSync.FlushOutboxAsync(_settings);
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLogger.LogRecoverable(ex, "ControllerWindow.StartupTelegramFlush");
+                    }
+                });
+            }
         }
 
         private void InitializeActivityWatchSync()
@@ -5128,6 +5196,24 @@ namespace StopwatchOverlay
                     _activityWatchSyncService?.RestartTimer();
                 }
 
+                if ((changes & SettingsChangeKind.Telegram) != 0)
+                {
+                    if (_settings.TelegramEnabled && TelegramOutboxStore.PendingCount > 0)
+                    {
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await TelegramNotesSync.FlushOutboxAsync(_settings);
+                            }
+                            catch (Exception ex)
+                            {
+                                CrashLogger.LogRecoverable(ex, "ControllerWindow.ApplyDedicatedSettings.TelegramFlush");
+                            }
+                        });
+                    }
+                }
+
                 _settingsWindow?.SchedulePreviewFromAppliedSettings();
             }
             finally
@@ -5370,8 +5456,14 @@ namespace StopwatchOverlay
             _stateSaveTimer.Stop();
             _backgroundApplyTimer.Stop();
             _dedicatedSettingsApplyTimer.Stop();
-            _internetMonitorService?.Dispose();
-            _internetMonitorService = null;
+            _telegramOutboxFlushTimer?.Stop();
+            _telegramOutboxFlushTimer = null;
+            if (_internetMonitorService != null)
+            {
+                _internetMonitorService.CheckCompleted -= OnInternetCheckCompleted;
+                _internetMonitorService.Dispose();
+                _internetMonitorService = null;
+            }
             _activityWatchSyncService?.Dispose();
             _activityWatchSyncService = null;
 

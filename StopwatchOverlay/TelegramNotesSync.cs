@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -20,9 +21,16 @@ public sealed record TelegramTestResult(
 
 public static class TelegramNotesSync
 {
-    private static readonly HttpClient SharedClient = new()
+    private static readonly HttpClient SharedClient = new(new SocketsHttpHandler
     {
-        Timeout = TimeSpan.FromSeconds(15)
+        SslOptions = new System.Net.Security.SslClientAuthenticationOptions
+        {
+            CertificateRevocationCheckMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
+        },
+        ConnectTimeout = TimeSpan.FromSeconds(8)
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(20)
     };
 
     public static (string targetChatId, long? messageThreadId) ResolveDestination(
@@ -284,20 +292,142 @@ public static class TelegramNotesSync
             return;
         }
 
+        DateTime time = timestamp ?? DateTime.Now;
+        // 1. Enqueue to persistent disk outbox FIRST so offline notes are never lost
+        TelegramOutboxStore.Enqueue(type, text, time);
+
+        // 2. Trigger asynchronous outbox flush
         Task.Run(async () =>
         {
             try
             {
-                var result = await SendNoteAsync(settings, type, text, timestamp);
-                if (!result.Success)
-                {
-                    CrashLogger.RecordUiAction($"Telegram dispatch failed: {result.ErrorMessage}", "Telegram");
-                }
+                await FlushOutboxAsync(settings);
             }
             catch (Exception ex)
             {
                 CrashLogger.LogRecoverable(ex, "TelegramNotesSync.DispatchNoteInBackground");
             }
         });
+    }
+
+    private static readonly System.Threading.SemaphoreSlim FlushGate = new(1, 1);
+
+    public static async Task<(int SentCount, int RemainingCount, string? LastError)> FlushOutboxAsync(
+        AppSettings settings,
+        HttpClient? httpClient = null)
+    {
+        if (settings == null) throw new ArgumentNullException(nameof(settings));
+        if (!settings.TelegramEnabled ||
+            string.IsNullOrWhiteSpace(settings.TelegramBotToken) ||
+            string.IsNullOrWhiteSpace(settings.TelegramChatId))
+        {
+            return (0, TelegramOutboxStore.PendingCount, "Telegram is disabled or not configured.");
+        }
+
+        if (!await FlushGate.WaitAsync(0).ConfigureAwait(false))
+        {
+            return (0, TelegramOutboxStore.PendingCount, "A flush is already in progress.");
+        }
+
+        try
+        {
+            var entries = TelegramOutboxStore.GetAll().OrderBy(e => e.Timestamp).ToList();
+            if (entries.Count == 0)
+            {
+                return (0, 0, null);
+            }
+
+            int sentCount = 0;
+            string? lastError = null;
+
+            foreach (var entry in entries)
+            {
+                // Verify entry is still in outbox in case it was modified or removed
+                if (!TelegramOutboxStore.GetAll().Any(e => e.Id == entry.Id))
+                    continue;
+
+                var result = await SendNoteAsync(
+                    settings,
+                    entry.NoteType,
+                    entry.Text,
+                    entry.Timestamp,
+                    httpClient).ConfigureAwait(false);
+
+                if (result.Success)
+                {
+                    TelegramOutboxStore.Remove(entry.Id);
+                    TelegramOutboxStore.MarkSent(entry.NoteType, entry.Text, entry.Timestamp);
+                    sentCount++;
+                }
+                else
+                {
+                    lastError = result.ErrorMessage;
+                    TelegramOutboxStore.Update(entry with
+                    {
+                        RetryCount = entry.RetryCount + 1,
+                        LastAttemptUtc = DateTime.UtcNow,
+                        LastError = result.ErrorMessage
+                    });
+
+                    // If error is network or timeout related, stop the batch to prevent churn while offline
+                    break;
+                }
+            }
+
+            return (sentCount, TelegramOutboxStore.PendingCount, lastError);
+        }
+        finally
+        {
+            FlushGate.Release();
+        }
+    }
+
+    public static List<NoteEntry> GetUnsentVaultNotes(AppSettings settings, int lookbackDays = 3)
+    {
+        if (settings == null || string.IsNullOrWhiteSpace(settings.ObsidianVaultFolder))
+            return [];
+
+        var allNotes = ObsidianNotesSync.LoadAllNotes(settings.ObsidianVaultFolder, settings.NotesSubfolder);
+        DateTime cutoff = DateTime.Now.Date.AddDays(-Math.Abs(lookbackDays));
+        var outboxEntries = TelegramOutboxStore.GetAll();
+
+        var unsent = new List<NoteEntry>();
+        foreach (var note in allNotes.Where(n => n.Timestamp >= cutoff).OrderBy(n => n.Timestamp))
+        {
+            string minute = note.Timestamp.ToString("yyyy-MM-dd HH:mm");
+            bool inOutbox = outboxEntries.Any(e =>
+                e.NoteType == note.Type &&
+                string.Equals(e.Text.Trim(), note.Text.Trim(), StringComparison.Ordinal) &&
+                (e.Timestamp.ToString("yyyy-MM-dd HH:mm") == minute ||
+                 Math.Abs((e.Timestamp - note.Timestamp).TotalSeconds) < 90));
+
+            if (inOutbox) continue;
+
+            if (TelegramOutboxStore.IsSent(note.Type, note.Text, note.Timestamp)) continue;
+
+            unsent.Add(note);
+        }
+
+        return unsent;
+    }
+
+    public static int QueueVaultNotes(IEnumerable<NoteEntry> notes)
+    {
+        int queuedCount = 0;
+        foreach (var note in notes)
+        {
+            var entry = TelegramOutboxStore.Enqueue(note.Type, note.Text, note.Timestamp);
+            if (entry.RetryCount == 0)
+            {
+                queuedCount++;
+            }
+        }
+        return queuedCount;
+    }
+
+    public static int ScanAndQueueRecentVaultNotes(AppSettings settings, int lookbackDays = 3)
+    {
+        var unsent = GetUnsentVaultNotes(settings, lookbackDays);
+        return QueueVaultNotes(unsent);
     }
 }
