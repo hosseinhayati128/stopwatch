@@ -201,10 +201,10 @@ if (focusFile) {
                     durationText,
                     category,
                     reason,
-                    note,
                     isDistraction: reason === "Distraction",
-                    isBreak: reason === "Break",
-                    isIdea: reason === "Idea"
+                    isBreak: reason === "Break" || reason === "ValidBreak",
+                    isIdea: reason === "Idea" || reason === "IdeaBrainstorming",
+                    isTaskSwitch: reason === "TaskSwitch" || reason.toLowerCase().includes("switch")
                 });
             }
         }
@@ -402,7 +402,7 @@ let netShowFluctuations = true;
 let netShowLatency = true;
 let netGranularity = 15; // 5, 15, 30, 60
 let netTimelineAggregation = "15"; // "15", "30", "60", "raw"
-let netProfileResolution = 15; // 15 (15m), 30 (30m), 60 (1h)
+let netProfileResolution = 60; // 15 (15m), 30 (30m), 60 (1h)
 
 // Trend (Hours by Project) State
 let trendGranularity = "day"; // "day", "week", "month"
@@ -2620,12 +2620,19 @@ function renderInternetSection() {
     }
     updateElementBtns();
 
+    // Right-aligned container for Format and Resolution/Granularity
+    const rightControls = controlsRow2.createDiv();
+    rightControls.style.display = "flex";
+    rightControls.style.alignItems = "center";
+    rightControls.style.gap = "10px";
+    rightControls.style.marginLeft = "auto";
+    rightControls.style.flexWrap = "wrap";
+
     // 4. View Format (Hourly Profile vs Candles)
-    const viewContainer = controlsRow2.createDiv();
+    const viewContainer = rightControls.createDiv();
     viewContainer.style.display = "flex";
     viewContainer.style.alignItems = "center";
     viewContainer.style.gap = "4px";
-    viewContainer.style.marginLeft = "auto";
 
     const viewLabel = viewContainer.createEl("span", { text: "Format:" });
     viewLabel.style.fontSize = "12px";
@@ -2653,8 +2660,46 @@ function renderInternetSection() {
         });
     });
 
+    // Resolution buttons for 24h Profile
+    const profResContainer = rightControls.createDiv();
+    profResContainer.style.display = netViewMode === "hourly_profile" ? "flex" : "none";
+    profResContainer.style.alignItems = "center";
+    profResContainer.style.gap = "4px";
+
+    const profResOptions = [
+        { val: 60, label: "1h" },
+        { val: 30, label: "30m" },
+        { val: 15, label: "15m" }
+    ];
+
+    const profResBtns = [];
+    profResOptions.forEach(opt => {
+        const btn = profResContainer.createEl("button", { text: opt.label });
+        btn.style.padding = "4px 6px";
+        btn.style.fontSize = "11px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.cursor = "pointer";
+        profResBtns.push({ val: opt.val, btn });
+
+        btn.addEventListener("click", () => {
+            netProfileResolution = opt.val;
+            updateProfResBtns();
+            updateHourlyProfileView();
+        });
+    });
+
+    function updateProfResBtns() {
+        profResBtns.forEach(({ val, btn }) => {
+            const active = (val === netProfileResolution);
+            btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+            btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
+            btn.style.fontWeight = active ? "bold" : "normal";
+        });
+    }
+
     // Granularity buttons for candles
-    const granContainer = controlsRow2.createDiv();
+    const granContainer = rightControls.createDiv();
     granContainer.style.display = netViewMode === "timeline" ? "flex" : "none";
     granContainer.style.alignItems = "center";
     granContainer.style.gap = "4px";
@@ -2686,44 +2731,6 @@ function renderInternetSection() {
     function updateGranBtns() {
         granBtns.forEach(({ val, btn }) => {
             const active = (val === netGranularity);
-            btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
-            btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
-            btn.style.fontWeight = active ? "bold" : "normal";
-        });
-    }
-
-    // Resolution buttons for 24h Profile
-    const profResContainer = controlsRow2.createDiv();
-    profResContainer.style.display = netViewMode === "hourly_profile" ? "flex" : "none";
-    profResContainer.style.alignItems = "center";
-    profResContainer.style.gap = "4px";
-
-    const profResOptions = [
-        { val: 15, label: "15m" },
-        { val: 30, label: "30m" },
-        { val: 60, label: "1h" }
-    ];
-
-    const profResBtns = [];
-    profResOptions.forEach(opt => {
-        const btn = profResContainer.createEl("button", { text: opt.label });
-        btn.style.padding = "4px 6px";
-        btn.style.fontSize = "11px";
-        btn.style.borderRadius = "4px";
-        btn.style.border = "1px solid var(--background-modifier-border)";
-        btn.style.cursor = "pointer";
-        profResBtns.push({ val: opt.val, btn });
-
-        btn.addEventListener("click", () => {
-            netProfileResolution = opt.val;
-            updateProfResBtns();
-            updateHourlyProfileView();
-        });
-    });
-
-    function updateProfResBtns() {
-        profResBtns.forEach(({ val, btn }) => {
-            const active = (val === netProfileResolution);
             btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
             btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
             btn.style.fontWeight = active ? "bold" : "normal";
@@ -2842,7 +2849,7 @@ function renderInternetSection() {
         chartDiv.style.marginBottom = "14px";
 
         if (netViewMode === "hourly_profile") {
-            const bucketSize = [15, 30, 60].includes(netProfileResolution) ? netProfileResolution : 15;
+            const bucketSize = [15, 30, 60].includes(netProfileResolution) ? netProfileResolution : 60;
             const numBuckets = Math.floor(1440 / bucketSize);
             const bucketLabel = bucketSize === 60 ? '1h' : `${bucketSize}m`;
             const bucketName = bucketSize === 60 ? '1-hour' : `${bucketSize}-minute`;
@@ -2872,13 +2879,16 @@ function renderInternetSection() {
                     const m = r.hour * 60 + r.minute;
                     return m >= bStart && m < bEnd;
                 });
-                const s = inBucket.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
+                const onlineSpeeds = inBucket.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                const allSpeeds = inBucket.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
                 const p = inBucket.map(r => r.pingMs).filter(v => v != null && v > 0);
+                const offlineCount = inBucket.filter(r => r.isOffline).length;
                 return {
                     count: inBucket.length,
-                    avgSpeed: s.length ? +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(1) : null,
-                    minSpeed: s.length ? Math.min(...s) : null,
-                    maxSpeed: s.length ? Math.max(...s) : null,
+                    offlineCount: offlineCount,
+                    avgSpeed: allSpeeds.length ? +(allSpeeds.reduce((a, b) => a + b, 0) / allSpeeds.length).toFixed(1) : null,
+                    minSpeed: onlineSpeeds.length ? Math.min(...onlineSpeeds) : (allSpeeds.length ? 0 : null),
+                    maxSpeed: onlineSpeeds.length ? Math.max(...onlineSpeeds) : (allSpeeds.length ? 0 : null),
                     avgPing: p.length ? Math.round(p.reduce((a, b) => a + b, 0) / p.length) : null
                 };
             });
@@ -2936,7 +2946,7 @@ function renderInternetSection() {
                     pointRadius: 3,
                     pointHoverRadius: 5,
                     tension: 0.2,
-                    spanGaps: false,
+                    spanGaps: true,
                     yAxisID: pingAxis
                 });
             }
@@ -2945,7 +2955,7 @@ function renderInternetSection() {
             const scales = {
                 x: {
                     title: { display: true, text: 'Time of Day (Local Time)' },
-                    ticks: { maxTicksLimit: bucketSize === 30 ? 24 : 12 }
+                    ticks: { maxTicksLimit: bucketSize === 60 ? 24 : (bucketSize === 30 ? 24 : 16) }
                 },
                 y: {
                     beginAtZero: true,
@@ -2975,6 +2985,10 @@ function renderInternetSection() {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
+                                    const stat = hourlyStats[context.dataIndex];
+                                    if (!stat || stat.count === 0) {
+                                        return ` ${context.dataset.label}: - (No checks recorded)`;
+                                    }
                                     const isPing = context.dataset.yAxisID === 'y1' || context.dataset.label.includes('Ping');
                                     const val = context.raw;
                                     if (isPing) {
@@ -2990,7 +3004,8 @@ function renderInternetSection() {
                                             return ` ${context.dataset.label}: - (No Data)`;
                                         }
                                         if (Array.isArray(val)) {
-                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps`;
+                                            const offStr = stat.offlineCount > 0 ? ` (${stat.offlineCount} offline)` : '';
+                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps${offStr}`;
                                         }
                                         return ` ${context.dataset.label}: ${val} Mbps`;
                                     }
@@ -3003,7 +3018,7 @@ function renderInternetSection() {
             }, chartDiv);
 
         } else {
-            // Mode 2: Timeline Candles (5m, 30m, 1h)
+            // Mode 2: Timeline Candles (5m, 15m, 30m, 1h)
             const chartHeader = chartDiv.createEl("h4");
             chartHeader.style.margin = "0 0 4px 0";
             chartHeader.textContent = `📈 Connection Timeline (${netGranularity}m Candles) · ${displayNetName} · ${scopeLabelStr}`;
@@ -3030,16 +3045,19 @@ function renderInternetSection() {
 
             const candles = [];
             for (const [key, val] of candleMap.entries()) {
-                const s = val.records.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
+                const onlineSpeeds = val.records.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                const allSpeeds = val.records.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
                 const p = val.records.map(r => r.pingMs).filter(v => v != null && v > 0);
+                const offlineCount = val.records.filter(r => r.isOffline).length;
                 candles.push({
                     key,
                     dateStr: val.dateStr,
                     time: val.time,
                     count: val.records.length,
-                    avgSpeed: s.length ? +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(1) : null,
-                    minSpeed: s.length ? Math.min(...s) : null,
-                    maxSpeed: s.length ? Math.max(...s) : null,
+                    offlineCount: offlineCount,
+                    avgSpeed: allSpeeds.length ? +(allSpeeds.reduce((a, b) => a + b, 0) / allSpeeds.length).toFixed(1) : null,
+                    minSpeed: onlineSpeeds.length ? Math.min(...onlineSpeeds) : (allSpeeds.length ? 0 : null),
+                    maxSpeed: onlineSpeeds.length ? Math.max(...onlineSpeeds) : (allSpeeds.length ? 0 : null),
                     avgPing: p.length ? Math.round(p.reduce((a, b) => a + b, 0) / p.length) : null
                 });
             }
@@ -3104,7 +3122,7 @@ function renderInternetSection() {
                     pointRadius: candles.length > 50 ? 1 : 2,
                     pointHoverRadius: 5,
                     tension: 0.2,
-                    spanGaps: false,
+                    spanGaps: true,
                     yAxisID: pingAxis
                 });
             }
@@ -3142,6 +3160,10 @@ function renderInternetSection() {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
+                                    const c = candles[context.dataIndex];
+                                    if (!c || c.count === 0) {
+                                        return ` ${context.dataset.label}: - (No checks recorded)`;
+                                    }
                                     const isPing = context.dataset.yAxisID === 'y1' || context.dataset.label.includes('Ping');
                                     const val = context.raw;
                                     if (isPing) {
@@ -3157,7 +3179,8 @@ function renderInternetSection() {
                                             return ` ${context.dataset.label}: - (No Data)`;
                                         }
                                         if (Array.isArray(val)) {
-                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps`;
+                                            const offStr = c.offlineCount > 0 ? ` (${c.offlineCount} offline)` : '';
+                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps${offStr}`;
                                         }
                                         return ` ${context.dataset.label}: ${val} Mbps`;
                                     }
@@ -3284,7 +3307,10 @@ function renderFocusContinuitySection() {
                 const nextStartMin = toTotalMinutes(next.start);
                 const gap = nextStartMin - curEndMin;
                 if (gap >= 0.2 && gap <= 180) { // between 12s and 3h
-                    const isDist = gap < 5.0;
+                    // If next project is different and lasted > 30s (0.5m), it's a switch between tasks!
+                    const isSwitch = cur.project !== next.project && next.minutes >= 0.5;
+                    const isDist = !isSwitch && gap < 5.0;
+                    const isBrk = !isSwitch && !isDist;
                     pauses.push({
                         dateStr: cur.dateStr,
                         project: cur.project,
@@ -3292,12 +3318,13 @@ function renderFocusContinuitySection() {
                         resume: next.start,
                         minutes: gap,
                         durationText: formatMinutes(gap),
-                        category: isDist ? "⚡ Distraction (<5m)" : "☕ Break (≥5m)",
-                        reason: isDist ? "Distraction" : "Break",
-                        note: "Inter-session interval gap",
+                        category: isSwitch ? "🔀 Switch Between Tasks" : (isDist ? "⚡ Distraction (<5m)" : "☕ Break (≥5m)"),
+                        reason: isSwitch ? "TaskSwitch" : (isDist ? "Distraction" : "Break"),
+                        note: isSwitch ? `Switched to ${next.project}` : "Inter-session interval gap",
                         isDistraction: isDist,
-                        isBreak: !isDist,
+                        isBreak: isBrk,
                         isIdea: false,
+                        isTaskSwitch: isSwitch,
                         isSynthetic: true
                     });
                 }
@@ -3346,10 +3373,12 @@ function renderFocusContinuitySection() {
     const distractions = pauses.filter(p => p.isDistraction);
     const breaks = pauses.filter(p => p.isBreak);
     const ideas = pauses.filter(p => p.isIdea);
+    const taskSwitches = pauses.filter(p => p.isTaskSwitch);
 
     const distractionMin = Math.round(distractions.reduce((s, p) => s + p.minutes, 0));
     const breakMin = Math.round(breaks.reduce((s, p) => s + p.minutes, 0));
     const ideaMin = Math.round(ideas.reduce((s, p) => s + p.minutes, 0));
+    const taskSwitchMin = Math.round(taskSwitches.reduce((s, p) => s + p.minutes, 0));
     const totalWorkMin = records.reduce((s, r) => s + r.minutes, 0);
 
     const continuityScore = (totalWorkMin + distractionMin > 0)
@@ -3404,6 +3433,7 @@ function renderFocusContinuitySection() {
     createKpiCard("⚡ Distractions (<5m)", `${distractions.length}`, `${distractionMin} min total`, distractions.length > 0 ? "#f87171" : "var(--text-normal)");
     createKpiCard("☕ Valid Breaks", `${breaks.length}`, `${breakMin} min total`, "#34d399");
     createKpiCard("💡 Ideas Captured", `${ideas.length}`, `${ideaMin} min total`, "#fbbf24");
+    createKpiCard("🔀 Task Switches", `${taskSwitches.length}`, `${taskSwitchMin} min total`, "#38bdf8");
     createKpiCard("Avg Focus Block", `${avgStreakMin}m`, "Uninterrupted streak", "var(--text-accent)");
 
     // Onboarding Banner if using synthetic or empty
@@ -3418,7 +3448,7 @@ function renderFocusContinuitySection() {
         hintBanner.style.color = "var(--text-normal)";
         hintBanner.innerHTML = `
             💡 <b>Track Distraction Reasons Automatically:</b> Enable <i>"Focus Continuity & Distraction Tracking"</i> in Stopwatch Overlay Settings → Behavior. 
-            When resuming from a pause, a 1-click dialog (shortcuts <code>1</code>, <code>2</code>, <code>3</code>) will let you categorize pauses into Valid Breaks, Distractions, or Quick Ideas.
+            When resuming from a pause, a 1-click dialog (shortcuts <code>1</code>, <code>2</code>, <code>3</code>, <code>4</code>) will let you categorize pauses into Valid Breaks, Distractions, Quick Ideas, or Task Switches.
             ${isSynthetic ? '<br><span style="opacity: 0.8; font-size: 11px;">* Metrics below are currently estimated from interval gaps between your logged stopwatch sessions.</span>' : ''}
         `;
     }
@@ -3445,17 +3475,17 @@ function renderFocusContinuitySection() {
         chart1Title.style.opacity = "0.8";
 
         const doughnutCanvasContainer = doughnutBox.createDiv();
-        doughnutCanvasContainer.style.maxWidth = "220px";
+        doughnutCanvasContainer.style.maxWidth = "240px";
         doughnutCanvasContainer.style.margin = "0 auto";
 
         window.renderChart({
             type: 'doughnut',
             data: {
-                labels: ['Distractions (<5m)', 'Valid Breaks', 'Quick Ideas'],
+                labels: ['Distractions (<5m)', 'Valid Breaks', 'Quick Ideas', 'Task Switches'],
                 datasets: [{
                     label: 'Count',
-                    data: [distractions.length, breaks.length, ideas.length],
-                    backgroundColor: ['#f87171', '#34d399', '#fbbf24']
+                    data: [distractions.length, breaks.length, ideas.length, taskSwitches.length],
+                    backgroundColor: ['#f87171', '#34d399', '#fbbf24', '#38bdf8']
                 }]
             },
             options: {
@@ -3484,6 +3514,7 @@ function renderFocusContinuitySection() {
         const distData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isDistraction).length);
         const breakData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isBreak).length);
         const ideaData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isIdea).length);
+        const switchData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isTaskSwitch).length);
 
         window.renderChart({
             type: 'bar',
@@ -3492,7 +3523,8 @@ function renderFocusContinuitySection() {
                 datasets: [
                     { label: 'Distractions', data: distData, backgroundColor: '#f87171', stack: 'stack0' },
                     { label: 'Breaks', data: breakData, backgroundColor: '#34d399', stack: 'stack0' },
-                    { label: 'Ideas', data: ideaData, backgroundColor: '#fbbf24', stack: 'stack0' }
+                    { label: 'Ideas', data: ideaData, backgroundColor: '#fbbf24', stack: 'stack0' },
+                    { label: 'Task Switches', data: switchData, backgroundColor: '#38bdf8', stack: 'stack0' }
                 ]
             },
             options: {
@@ -3578,6 +3610,9 @@ function renderFocusContinuitySection() {
                         } else if (p.isIdea) {
                             badgeBg = "rgba(251, 191, 36, 0.15)";
                             badgeColor = "#fbbf24";
+                        } else if (p.isTaskSwitch) {
+                            badgeBg = "rgba(56, 189, 248, 0.15)";
+                            badgeColor = "#38bdf8";
                         }
 
                         return `
@@ -3588,7 +3623,7 @@ function renderFocusContinuitySection() {
                             <td style="padding: 6px 8px; font-weight: 500;">${p.durationText || (Math.round(p.minutes) + 'm')}</td>
                             <td style="padding: 6px 8px;">
                                 <span style="display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: bold; background-color: ${badgeBg}; color: ${badgeColor};">
-                                    ${p.category || (p.isDistraction ? '⚡ Distraction' : (p.isIdea ? '💡 Quick Idea' : '☕ Break'))}
+                                    ${p.category || (p.isDistraction ? '⚡ Distraction' : (p.isIdea ? '💡 Quick Idea' : (p.isTaskSwitch ? '🔀 Switch Between Tasks' : '☕ Break')))}
                                 </span>
                             </td>
                             <td style="padding: 6px 8px; opacity: 0.85;">${p.note || '-'}</td>
@@ -3598,6 +3633,8 @@ function renderFocusContinuitySection() {
                 </tbody>
             </table>
         `;
+    }
+}
     }
 }
 
