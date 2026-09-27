@@ -7,6 +7,7 @@
 const stopwatchFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "stopwatch log.md");
 const activityFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "activitywatch log.md");
 const internetFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "internet log.md");
+const focusFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "focus log.md");
 const rulesFile = app.vault.getFiles().find(f => f.name.toLowerCase() === "project rules.json");
 
 if (!stopwatchFile) {
@@ -167,6 +168,48 @@ if (internetFile) {
     }
 }
 
+// 3c. Read and parse Focus & Interruption Log (if present)
+const allFocusRecords = [];
+if (focusFile) {
+    const focusContent = await app.vault.read(focusFile);
+    const fLines = focusContent.split(/\r?\n/);
+    for (const line of fLines) {
+        if (!line.startsWith("|") || line.includes("---") || line.includes("Duration (min)")) continue;
+        const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+        const rawParts = trimmed.split("|").map(p => p.trim());
+        if (rawParts.length >= 8) {
+            const dateStr = rawParts[0];
+            const project = rawParts[1];
+            const start = rawParts[2];
+            const resume = rawParts[3];
+            const minutes = parseFloat(rawParts[4]) || 0;
+            const durationText = rawParts[5];
+            const category = rawParts[6];
+            const reason = rawParts[7];
+            const note = rawParts.length > 8 ? rawParts[8] : "";
+
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) && minutes >= 0) {
+                const [y, m, d] = dateStr.split("-").map(Number);
+                allFocusRecords.push({
+                    dateStr,
+                    dateObj: new Date(y, m - 1, d),
+                    project,
+                    start,
+                    resume,
+                    minutes,
+                    durationText,
+                    category,
+                    reason,
+                    note,
+                    isDistraction: reason === "Distraction",
+                    isBreak: reason === "Break",
+                    isIdea: reason === "Idea"
+                });
+            }
+        }
+    }
+}
+
 // Distraction detection helper with project-specific rules
 const defaultDistractions = [
     'telegram', 'youtube', 'netflix', 'instagram', 'twitter', 'x.com',
@@ -295,7 +338,8 @@ let zoomEndHour = 24;
 const availableDates = Array.from(new Set([
     ...allRecords.map(r => r.dateStr),
     ...allActivityRecords.map(r => r.dateStr),
-    ...allInternetRecords.map(r => r.dateStr)
+    ...allInternetRecords.map(r => r.dateStr),
+    ...allFocusRecords.map(r => r.dateStr)
 ])).sort().reverse();
 
 let selectedDailyDate = availableDates[0] || new Date().toISOString().split("T")[0];
@@ -322,7 +366,8 @@ function getFilteredRecords(filterId) {
     return {
         stopwatch: allRecords.filter(matchFn),
         activity: allActivityRecords.filter(matchFn),
-        internet: allInternetRecords.filter(matchFn)
+        internet: allInternetRecords.filter(matchFn),
+        focus: allFocusRecords.filter(matchFn)
     };
 }
 
@@ -363,6 +408,10 @@ let trendWindowSize = 14;     // default 14 for day, 8 for week, 6 for month, or
 let trendOffset = 0;          // 0 = latest period, > 0 = shifted back into history
 let trendWheelMode = "pan";   // "pan" (scroll navigates periods) or "zoom" (scroll changes window size)
 
+// Time by Project State
+let timeByProjectScope = "week"; // "day", "week", "month", "year", "all"
+let timeByProjectDate = availableDates[0] || new Date().toISOString().split("T")[0];
+
 function getScopeRange(scope, dateStr) {
     if (!dateStr) dateStr = new Date().toISOString().split("T")[0];
     const [y, m, d] = dateStr.split("-").map(Number);
@@ -388,9 +437,32 @@ function getScopeRange(scope, dateStr) {
         const end = new Date(y, m, 0, 23, 59, 59, 999);
         const mNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         return { start, end, label: `${mNames[m - 1]} ${y}` };
+    } else if (scope === "year") {
+        const start = new Date(y, 0, 1, 0, 0, 0, 0);
+        const end = new Date(y, 11, 31, 23, 59, 59, 999);
+        return { start, end, label: `Year ${y}` };
     } else {
         return { start: new Date(2000, 0, 1), end: new Date(2100, 0, 1), label: "All Time" };
     }
+}
+
+function shiftDate(dateStr, scope, delta) {
+    if (!dateStr) dateStr = new Date().toISOString().split("T")[0];
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (scope === "day") {
+        dt.setDate(dt.getDate() + delta);
+    } else if (scope === "week") {
+        dt.setDate(dt.getDate() + delta * 7);
+    } else if (scope === "month") {
+        dt.setMonth(dt.getMonth() + delta);
+    } else if (scope === "year") {
+        dt.setFullYear(dt.getFullYear() + delta);
+    }
+    const sy = dt.getFullYear();
+    const sm = String(dt.getMonth() + 1).padStart(2, '0');
+    const sd = String(dt.getDate()).padStart(2, '0');
+    return `${sy}-${sm}-${sd}`;
 }
 
 // 5. Main Render Function
@@ -407,7 +479,7 @@ function renderDashboard() {
         }
     });
 
-    const { stopwatch: records, activity: awRecords, internet: netRecords } = getFilteredRecords(activeFilter);
+    const { stopwatch: records, activity: awRecords, internet: netRecords, focus: focusRecords } = getFilteredRecords(activeFilter);
     chartSection.innerHTML = "";
 
     // Calculate Summary Stats
@@ -498,6 +570,14 @@ function renderDashboard() {
                 <div style="font-size: 20px; font-weight: bold; color: #38bdf8;">${avgNetSpeed} <span style="font-size: 12px;">Mbps</span></div>
             </div>
             ` : ''}
+            ${focusRecords.length > 0 ? `
+            <div>
+                <div style="font-size: 11px; opacity: 0.7; text-transform: uppercase;">Pauses</div>
+                <div style="font-size: 20px; font-weight: bold; color: ${focusRecords.filter(f => f.isDistraction).length > 0 ? '#f87171' : '#34d399'};">
+                    ${focusRecords.length} <span style="font-size: 12px; opacity: 0.7;">(${focusRecords.filter(f => f.isDistraction).length} dist)</span>
+                </div>
+            </div>
+            ` : ''}
         </div>
     `;
 
@@ -516,38 +596,15 @@ function renderDashboard() {
     // ==============================================================================
     renderInternetSection();
 
-    // ========================================================
-    // --- Chart 1: Project Breakdown (Doughnut) [ORIGINAL] ---
-    // ========================================================
-    const projectLabels = Object.keys(projectTotals);
-    if (projectLabels.length > 0) {
-        const doughnutHeading = chartSection.createEl("h3", { text: "📊 Time by Project" });
-        doughnutHeading.style.marginTop = "32px";
+    // ==============================================================================
+    // --- FEATURE 4: FOCUS CONTINUITY & DISTRACTION ANALYSIS -----------------------
+    // ==============================================================================
+    renderFocusContinuitySection();
 
-        const doughnutContainer = chartSection.createDiv();
-        doughnutContainer.style.maxWidth = "280px";
-        doughnutContainer.style.margin = "0 auto";
-
-        const projectHours = projectLabels.map(p => +(projectTotals[p] / 60).toFixed(1));
-        const doughnutColors = projectLabels.map(p => projectColorMap[p]);
-
-        window.renderChart({
-            type: 'doughnut',
-            data: {
-                labels: projectLabels,
-                datasets: [{
-                    label: 'Hours',
-                    data: projectHours,
-                    backgroundColor: doughnutColors
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
-            }
-        }, doughnutContainer);
-    }
+    // ==============================================================================
+    // --- Chart 1: Time by Project (Doughnut + Right-Hand Word Map) ----------------
+    // ==============================================================================
+    renderTimeByProjectSection();
 
     // ==============================================================================
     // --- Chart 2: Time of Day Breakdown (Hourly Stacked Bar by Project) [ORIGINAL] -
@@ -636,6 +693,301 @@ function renderDashboard() {
     // --- Chart 3: Trend by Project (Stacked Bar) ------------
     // ========================================================
     renderTrendSection();
+}
+
+// ==============================================================================
+// RENDER HELPER: TIME BY PROJECT (DOUGHNUT + RIGHT-HAND WORD MAP)
+// ==============================================================================
+function renderTimeByProjectSection() {
+    if (allRecords.length === 0) return;
+
+    const card = chartSection.createDiv();
+    card.style.padding = "18px";
+    card.style.borderRadius = "8px";
+    card.style.backgroundColor = "var(--background-secondary)";
+    card.style.border = "1px solid var(--background-modifier-border)";
+    card.style.marginBottom = "30px";
+
+    // Header Row: Title on Left, Controls on Right
+    const headerRow = card.createDiv();
+    headerRow.style.display = "flex";
+    headerRow.style.justifyContent = "space-between";
+    headerRow.style.alignItems = "center";
+    headerRow.style.flexWrap = "wrap";
+    headerRow.style.gap = "10px";
+    headerRow.style.marginBottom = "14px";
+
+    const titleContainer = headerRow.createDiv();
+    const heading = titleContainer.createEl("h3", { text: "📊 Time by Project" });
+    heading.style.margin = "0 0 2px 0";
+
+    const subTitle = titleContainer.createEl("p");
+    subTitle.style.fontSize = "11px";
+    subTitle.style.opacity = "0.7";
+    subTitle.style.margin = "0";
+
+    // Controls: Scope Buttons (Day / Week / Month / Year / All Time) + Date Navigation
+    const controlsContainer = headerRow.createDiv();
+    controlsContainer.style.display = "flex";
+    controlsContainer.style.alignItems = "center";
+    controlsContainer.style.flexWrap = "wrap";
+    controlsContainer.style.gap = "8px";
+
+    // Scope Buttons
+    const scopeButtonGroup = controlsContainer.createDiv();
+    scopeButtonGroup.style.display = "flex";
+    scopeButtonGroup.style.alignItems = "center";
+    scopeButtonGroup.style.gap = "4px";
+
+    const scopeOptions = [
+        { id: "day", label: "Day" },
+        { id: "week", label: "Week" },
+        { id: "month", label: "Month" },
+        { id: "year", label: "Year" },
+        { id: "all", label: "All Time" }
+    ];
+
+    const scopeBtns = [];
+    scopeOptions.forEach(opt => {
+        const btn = scopeButtonGroup.createEl("button", { text: opt.label });
+        btn.style.padding = "4px 8px";
+        btn.style.fontSize = "11px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.cursor = "pointer";
+        scopeBtns.push({ id: opt.id, btn });
+
+        btn.addEventListener("click", () => {
+            timeByProjectScope = opt.id;
+            updateScopeBtns();
+            updateDateNavVisibility();
+            updateTimeByProject();
+        });
+    });
+
+    function updateScopeBtns() {
+        scopeBtns.forEach(({ id, btn }) => {
+            const active = (id === timeByProjectScope);
+            btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+            btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
+            btn.style.fontWeight = active ? "bold" : "normal";
+        });
+    }
+
+    // Date Navigation: [<] [Date Dropdown] [>]
+    const dateNavContainer = controlsContainer.createDiv();
+    dateNavContainer.style.display = "flex";
+    dateNavContainer.style.alignItems = "center";
+    dateNavContainer.style.gap = "4px";
+
+    const prevBtn = dateNavContainer.createEl("button", { text: "◀" });
+    prevBtn.style.padding = "4px 8px";
+    prevBtn.style.fontSize = "11px";
+    prevBtn.style.borderRadius = "4px";
+    prevBtn.style.border = "1px solid var(--background-modifier-border)";
+    prevBtn.style.backgroundColor = "var(--background-modifier-form-field)";
+    prevBtn.style.color = "var(--text-normal)";
+    prevBtn.style.cursor = "pointer";
+    prevBtn.title = "Previous period";
+
+    const dateSelect = dateNavContainer.createEl("select");
+    dateSelect.style.padding = "4px 8px";
+    dateSelect.style.borderRadius = "4px";
+    dateSelect.style.fontSize = "11px";
+    dateSelect.style.backgroundColor = "var(--background-modifier-form-field)";
+    dateSelect.style.color = "var(--text-normal)";
+    dateSelect.style.border = "1px solid var(--background-modifier-border)";
+
+    availableDates.forEach(d => {
+        const opt = dateSelect.createEl("option", { text: d, value: d });
+        if (d === timeByProjectDate) opt.selected = true;
+    });
+
+    const nextBtn = dateNavContainer.createEl("button", { text: "▶" });
+    nextBtn.style.padding = "4px 8px";
+    nextBtn.style.fontSize = "11px";
+    nextBtn.style.borderRadius = "4px";
+    nextBtn.style.border = "1px solid var(--background-modifier-border)";
+    nextBtn.style.backgroundColor = "var(--background-modifier-form-field)";
+    nextBtn.style.color = "var(--text-normal)";
+    nextBtn.style.cursor = "pointer";
+    nextBtn.title = "Next period";
+
+    function updateDateNavVisibility() {
+        dateNavContainer.style.display = timeByProjectScope === "all" ? "none" : "flex";
+    }
+
+    prevBtn.addEventListener("click", () => {
+        timeByProjectDate = shiftDate(timeByProjectDate, timeByProjectScope, -1);
+        syncDateSelect();
+        updateTimeByProject();
+    });
+
+    nextBtn.addEventListener("click", () => {
+        timeByProjectDate = shiftDate(timeByProjectDate, timeByProjectScope, 1);
+        syncDateSelect();
+        updateTimeByProject();
+    });
+
+    dateSelect.addEventListener("change", () => {
+        timeByProjectDate = dateSelect.value;
+        updateTimeByProject();
+    });
+
+    function syncDateSelect() {
+        if (!availableDates.includes(timeByProjectDate)) {
+            const opt = dateSelect.createEl("option", { text: timeByProjectDate, value: timeByProjectDate });
+            opt.selected = true;
+        } else {
+            dateSelect.value = timeByProjectDate;
+        }
+    }
+
+    // Dynamic Content Container
+    const contentContainer = card.createDiv();
+
+    function updateTimeByProject() {
+        contentContainer.innerHTML = "";
+
+        const { start: scopeStart, end: scopeEnd, label: scopeLabel } = getScopeRange(timeByProjectScope, timeByProjectDate);
+
+        // Filter stopwatch records
+        const pRecords = allRecords.filter(r => r.dateObj >= scopeStart && r.dateObj <= scopeEnd);
+
+        const projTotals = {};
+        for (const r of pRecords) {
+            projTotals[r.project] = (projTotals[r.project] || 0) + r.minutes;
+        }
+
+        const sortedProjects = Object.entries(projTotals).sort((a, b) => b[1] - a[1]);
+        const totalMinutes = sortedProjects.reduce((sum, p) => sum + p[1], 0);
+        const totalHours = (totalMinutes / 60).toFixed(1);
+
+        subTitle.textContent = `${totalHours}h tracked across ${sortedProjects.length} project${sortedProjects.length === 1 ? '' : 's'} · ${scopeLabel}`;
+
+        if (sortedProjects.length === 0) {
+            const emptyMsg = contentContainer.createDiv();
+            emptyMsg.style.padding = "24px 16px";
+            emptyMsg.style.textAlign = "center";
+            emptyMsg.style.opacity = "0.7";
+            emptyMsg.style.backgroundColor = "var(--background-modifier-form-field)";
+            emptyMsg.style.borderRadius = "6px";
+            emptyMsg.innerHTML = `No project time recorded for <strong>${scopeLabel}</strong>.`;
+            return;
+        }
+
+        // Layout: Side-by-side flex row (Doughnut on Left, Word Map on Right)
+        const row = contentContainer.createDiv();
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.justifyContent = "space-around";
+        row.style.flexWrap = "wrap";
+        row.style.gap = "24px";
+        row.style.padding = "8px 0";
+
+        // LEFT: Doughnut Chart
+        const chartWrapper = row.createDiv();
+        chartWrapper.style.position = "relative";
+        chartWrapper.style.width = "220px";
+        chartWrapper.style.height = "220px";
+        chartWrapper.style.flexShrink = "0";
+
+        const pLabels = sortedProjects.map(p => p[0]);
+        const pHours = sortedProjects.map(p => +(p[1] / 60).toFixed(1));
+        const pColors = pLabels.map(p => projectColorMap[p] || '#38bdf8');
+
+        // Doughnut center total text
+        const centerDiv = chartWrapper.createDiv();
+        centerDiv.style.position = "absolute";
+        centerDiv.style.top = "50%";
+        centerDiv.style.left = "50%";
+        centerDiv.style.transform = "translate(-50%, -50%)";
+        centerDiv.style.textAlign = "center";
+        centerDiv.style.pointerEvents = "none";
+        centerDiv.innerHTML = `
+            <div style="font-size: 20px; font-weight: bold; color: var(--text-normal);">${totalMinutes < 60 ? totalMinutes + 'm' : totalHours + 'h'}</div>
+            <div style="font-size: 10px; opacity: 0.6; text-transform: uppercase;">Total</div>
+        `;
+
+        window.renderChart({
+            type: 'doughnut',
+            data: {
+                labels: pLabels,
+                datasets: [{
+                    label: 'Hours',
+                    data: pHours,
+                    backgroundColor: pColors,
+                    borderWidth: 2,
+                    borderColor: 'var(--background-secondary)'
+                }]
+            },
+            options: {
+                cutout: '68%',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        }, chartWrapper);
+
+        // RIGHT: Word Map (Project Breakdown with names, hours, percentages, and mini bars)
+        const wordMap = row.createDiv();
+        wordMap.style.flex = "1";
+        wordMap.style.minWidth = "260px";
+        wordMap.style.maxWidth = "480px";
+        wordMap.style.display = "flex";
+        wordMap.style.flexDirection = "column";
+        wordMap.style.gap = "7px";
+
+        sortedProjects.forEach(([proj, mins]) => {
+            const pct = totalMinutes > 0 ? Math.round((mins / totalMinutes) * 100) : 0;
+            const color = projectColorMap[proj] || '#38bdf8';
+            const hoursDisplay = formatMinutes(mins);
+
+            const item = wordMap.createDiv();
+            item.style.padding = "7px 10px";
+            item.style.borderRadius = "6px";
+            item.style.backgroundColor = "var(--background-modifier-form-field)";
+            item.style.border = "1px solid var(--background-modifier-border)";
+            item.style.transition = "background-color 0.15s ease";
+            item.style.cursor = "pointer";
+            item.title = `Click to inspect ${proj} in Deep Dive`;
+
+            item.addEventListener("mouseenter", () => {
+                item.style.backgroundColor = "var(--background-modifier-hover)";
+            });
+            item.addEventListener("mouseleave", () => {
+                item.style.backgroundColor = "var(--background-modifier-form-field)";
+            });
+            item.addEventListener("click", () => {
+                deepDiveProject = proj;
+                deepDiveScope = timeByProjectScope === "all" ? "all" : (timeByProjectScope === "year" ? "month" : timeByProjectScope);
+                deepDiveDate = timeByProjectDate;
+                renderDashboard();
+            });
+
+            item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; background-color: ${color}; flex-shrink: 0;"></span>
+                        <span style="font-weight: bold; font-size: 13px; color: var(--text-normal); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${proj}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12px;">
+                        <span style="font-weight: 600; opacity: 0.9;">${hoursDisplay}</span>
+                        <span style="font-size: 11px; font-weight: bold; color: ${color}; min-width: 32px; text-align: right;">${pct}%</span>
+                    </div>
+                </div>
+                <div style="width: 100%; height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.08); overflow: hidden;">
+                    <div style="width: ${pct}%; height: 100%; border-radius: 2px; background-color: ${color};"></div>
+                </div>
+            `;
+        });
+    }
+
+    updateScopeBtns();
+    updateDateNavVisibility();
+    updateTimeByProject();
 }
 
 // ==============================================================================
@@ -2762,7 +3114,349 @@ function renderInternetSection() {
 }
 
 // ==============================================================================
-// RENDER HELPER 4: DYNAMIC TREND BY PROJECT (DAILY / WEEKLY / MONTHLY)
+// RENDER HELPER 4: FOCUS CONTINUITY & DISTRACTION ANALYSIS
+// ==============================================================================
+function renderFocusContinuitySection() {
+    const { stopwatch: records, focus: focusRecords } = getFilteredRecords(activeFilter);
+
+    // Prepare interruption dataset
+    let pauses = [...focusRecords];
+    let isSynthetic = false;
+
+    // If no explicit focus log records yet, derive inter-session pauses from consecutive stopwatch intervals on the same day
+    if (pauses.length === 0 && records.length > 1) {
+        const sorted = [...records].sort((a, b) => {
+            if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
+            return toTotalMinutes(a.start) - toTotalMinutes(b.start);
+        });
+
+        for (let i = 0; i < sorted.length - 1; i++) {
+            const cur = sorted[i];
+            const next = sorted[i + 1];
+            if (cur.dateStr === next.dateStr) {
+                const curEndMin = toTotalMinutes(cur.end);
+                const nextStartMin = toTotalMinutes(next.start);
+                const gap = nextStartMin - curEndMin;
+                if (gap >= 0.2 && gap <= 180) { // between 12s and 3h
+                    const isDist = gap < 5.0;
+                    pauses.push({
+                        dateStr: cur.dateStr,
+                        project: cur.project,
+                        start: cur.end,
+                        resume: next.start,
+                        minutes: gap,
+                        durationText: formatMinutes(gap),
+                        category: isDist ? "⚡ Distraction (<5m)" : "☕ Break (≥5m)",
+                        reason: isDist ? "Distraction" : "Break",
+                        note: "Inter-session interval gap",
+                        isDistraction: isDist,
+                        isBreak: !isDist,
+                        isIdea: false,
+                        isSynthetic: true
+                    });
+                }
+            }
+        }
+        if (pauses.length > 0) isSynthetic = true;
+    }
+
+    const card = chartSection.createDiv();
+    card.style.padding = "18px";
+    card.style.borderRadius = "8px";
+    card.style.backgroundColor = "var(--background-secondary)";
+    card.style.border = "1px solid var(--background-modifier-border)";
+    card.style.marginBottom = "30px";
+
+    // Header Row
+    const headerRow = card.createDiv();
+    headerRow.style.display = "flex";
+    headerRow.style.justifyContent = "space-between";
+    headerRow.style.alignItems = "center";
+    headerRow.style.flexWrap = "wrap";
+    headerRow.style.gap = "10px";
+    headerRow.style.marginBottom = "14px";
+
+    const titleDiv = headerRow.createDiv();
+    titleDiv.createEl("h3", { text: "🎯 Focus Continuity & Distraction Analysis" }).style.margin = "0";
+    const subText = titleDiv.createEl("p", { 
+        text: "Track focus fragmentation, distinguish planned breaks from short interruptions (< 5m), and monitor refocusing habits." 
+    });
+    subText.style.fontSize = "11px";
+    subText.style.opacity = "0.7";
+    subText.style.margin = "2px 0 0 0";
+
+    const filterBadge = headerRow.createEl("span", {
+        text: `Filter: ${filters.find(f => f.id === activeFilter)?.label || "Active"}`
+    });
+    filterBadge.style.fontSize = "11px";
+    filterBadge.style.padding = "3px 8px";
+    filterBadge.style.borderRadius = "4px";
+    filterBadge.style.backgroundColor = "var(--background-modifier-form-field)";
+    filterBadge.style.border = "1px solid var(--background-modifier-border)";
+    filterBadge.style.opacity = "0.8";
+
+    // Metrics Computation
+    const totalPauses = pauses.length;
+    const distractions = pauses.filter(p => p.isDistraction);
+    const breaks = pauses.filter(p => p.isBreak);
+    const ideas = pauses.filter(p => p.isIdea);
+
+    const distractionMin = Math.round(distractions.reduce((s, p) => s + p.minutes, 0));
+    const breakMin = Math.round(breaks.reduce((s, p) => s + p.minutes, 0));
+    const ideaMin = Math.round(ideas.reduce((s, p) => s + p.minutes, 0));
+    const totalWorkMin = records.reduce((s, r) => s + r.minutes, 0);
+
+    const continuityScore = (totalWorkMin + distractionMin > 0)
+        ? Math.round((totalWorkMin / (totalWorkMin + distractionMin)) * 100)
+        : 100;
+
+    const avgStreakMin = totalPauses > 0
+        ? Math.round(totalWorkMin / (totalPauses + 1))
+        : Math.round(totalWorkMin / Math.max(1, records.length));
+
+    // KPI Summary Grid
+    const kpiRow = card.createDiv();
+    kpiRow.style.display = "grid";
+    kpiRow.style.gridTemplateColumns = "repeat(auto-fit, minmax(130px, 1fr))";
+    kpiRow.style.gap = "10px";
+    kpiRow.style.marginBottom = "18px";
+
+    function createKpiCard(label, mainVal, subVal, color) {
+        const c = kpiRow.createDiv();
+        c.style.padding = "10px 12px";
+        c.style.borderRadius = "6px";
+        c.style.backgroundColor = "var(--background-primary)";
+        c.style.border = "1px solid var(--background-modifier-border)";
+        c.style.display = "flex";
+        c.style.flexDirection = "column";
+        c.style.justifyContent = "center";
+
+        const l = c.createDiv();
+        l.style.fontSize = "10px";
+        l.style.textTransform = "uppercase";
+        l.style.opacity = "0.7";
+        l.style.marginBottom = "2px";
+        l.textContent = label;
+
+        const v = c.createDiv();
+        v.style.fontSize = "18px";
+        v.style.fontWeight = "bold";
+        v.style.color = color || "var(--text-normal)";
+        v.textContent = mainVal;
+
+        if (subVal) {
+            const s = c.createDiv();
+            s.style.fontSize = "11px";
+            s.style.opacity = "0.6";
+            s.style.marginTop = "2px";
+            s.textContent = subVal;
+        }
+    }
+
+    const scoreColor = continuityScore >= 85 ? "#34d399" : (continuityScore >= 70 ? "#fbbf24" : "#f87171");
+    createKpiCard("Continuity Score", `${continuityScore}%`, "Focus index", scoreColor);
+    createKpiCard("⚡ Distractions (<5m)", `${distractions.length}`, `${distractionMin} min total`, distractions.length > 0 ? "#f87171" : "var(--text-normal)");
+    createKpiCard("☕ Valid Breaks", `${breaks.length}`, `${breakMin} min total`, "#34d399");
+    createKpiCard("💡 Ideas Captured", `${ideas.length}`, `${ideaMin} min total`, "#fbbf24");
+    createKpiCard("Avg Focus Block", `${avgStreakMin}m`, "Uninterrupted streak", "var(--text-accent)");
+
+    // Onboarding Banner if using synthetic or empty
+    if (!focusFile || allFocusRecords.length === 0) {
+        const hintBanner = card.createDiv();
+        hintBanner.style.padding = "8px 12px";
+        hintBanner.style.marginBottom = "16px";
+        hintBanner.style.borderRadius = "6px";
+        hintBanner.style.fontSize = "12px";
+        hintBanner.style.backgroundColor = "rgba(56, 189, 248, 0.1)";
+        hintBanner.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+        hintBanner.style.color = "var(--text-normal)";
+        hintBanner.innerHTML = `
+            💡 <b>Track Distraction Reasons Automatically:</b> Enable <i>"Focus Continuity & Distraction Tracking"</i> in Stopwatch Overlay Settings → Behavior. 
+            When resuming from a pause, a 1-click dialog (shortcuts <code>1</code>, <code>2</code>, <code>3</code>) will let you categorize pauses into Valid Breaks, Distractions, or Quick Ideas.
+            ${isSynthetic ? '<br><span style="opacity: 0.8; font-size: 11px;">* Metrics below are currently estimated from interval gaps between your logged stopwatch sessions.</span>' : ''}
+        `;
+    }
+
+    // Visual Charts if there are pauses
+    if (totalPauses > 0) {
+        const chartsGrid = card.createDiv();
+        chartsGrid.style.display = "grid";
+        chartsGrid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+        chartsGrid.style.gap = "16px";
+        chartsGrid.style.marginBottom = "20px";
+
+        // Chart 1: Pause Reason Breakdown Doughnut
+        const doughnutBox = chartsGrid.createDiv();
+        doughnutBox.style.padding = "12px";
+        doughnutBox.style.borderRadius = "6px";
+        doughnutBox.style.backgroundColor = "var(--background-primary)";
+        doughnutBox.style.border = "1px solid var(--background-modifier-border)";
+
+        const chart1Title = doughnutBox.createEl("div", { text: "Pause Reason Distribution" });
+        chart1Title.style.fontSize = "12px";
+        chart1Title.style.fontWeight = "bold";
+        chart1Title.style.marginBottom = "8px";
+        chart1Title.style.opacity = "0.8";
+
+        const doughnutCanvasContainer = doughnutBox.createDiv();
+        doughnutCanvasContainer.style.maxWidth = "220px";
+        doughnutCanvasContainer.style.margin = "0 auto";
+
+        window.renderChart({
+            type: 'doughnut',
+            data: {
+                labels: ['Distractions (<5m)', 'Valid Breaks', 'Quick Ideas'],
+                datasets: [{
+                    label: 'Count',
+                    data: [distractions.length, breaks.length, ideas.length],
+                    backgroundColor: ['#f87171', '#34d399', '#fbbf24']
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                }
+            }
+        }, doughnutCanvasContainer);
+
+        // Chart 2: Distractions & Breaks by Project
+        const barBox = chartsGrid.createDiv();
+        barBox.style.padding = "12px";
+        barBox.style.borderRadius = "6px";
+        barBox.style.backgroundColor = "var(--background-primary)";
+        barBox.style.border = "1px solid var(--background-modifier-border)";
+
+        const chart2Title = barBox.createEl("div", { text: "Interruptions by Project" });
+        chart2Title.style.fontSize = "12px";
+        chart2Title.style.fontWeight = "bold";
+        chart2Title.style.marginBottom = "8px";
+        chart2Title.style.opacity = "0.8";
+
+        const barCanvasContainer = barBox.createDiv();
+
+        const projectList = Array.from(new Set(pauses.map(p => p.project))).sort();
+        const distData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isDistraction).length);
+        const breakData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isBreak).length);
+        const ideaData = projectList.map(proj => pauses.filter(p => p.project === proj && p.isIdea).length);
+
+        window.renderChart({
+            type: 'bar',
+            data: {
+                labels: projectList,
+                datasets: [
+                    { label: 'Distractions', data: distData, backgroundColor: '#f87171', stack: 'stack0' },
+                    { label: 'Breaks', data: breakData, backgroundColor: '#34d399', stack: 'stack0' },
+                    { label: 'Ideas', data: ideaData, backgroundColor: '#fbbf24', stack: 'stack0' }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                }
+            }
+        }, barCanvasContainer);
+    }
+
+    // Detailed Interruption History Table (Collapsible)
+    if (totalPauses > 0) {
+        const details = card.createEl("details");
+        details.style.marginTop = "12px";
+        details.style.borderRadius = "6px";
+        details.style.backgroundColor = "var(--background-primary)";
+        details.style.border = "1px solid var(--background-modifier-border)";
+        details.style.padding = "10px 14px";
+
+        const summary = details.createEl("summary");
+        summary.style.cursor = "pointer";
+        summary.style.fontWeight = "bold";
+        summary.style.fontSize = "13px";
+        summary.style.display = "flex";
+        summary.style.justifyContent = "space-between";
+        summary.style.alignItems = "center";
+
+        const summaryTitle = summary.createDiv();
+        summaryTitle.style.display = "flex";
+        summaryTitle.style.alignItems = "center";
+        summaryTitle.style.gap = "8px";
+        summaryTitle.innerHTML = `
+            <span>📋 Interruption & Pause History</span>
+            <span class="toggle-hint" style="font-size: 11px; opacity: 0.6; font-weight: normal;">(click to expand)</span>
+        `;
+
+        const summaryBadge = summary.createEl("span", {
+            text: `${totalPauses} interruptions logged`
+        });
+        summaryBadge.style.fontSize = "11px";
+        summaryBadge.style.padding = "2px 8px";
+        summaryBadge.style.borderRadius = "10px";
+        summaryBadge.style.backgroundColor = "var(--background-modifier-form-field)";
+        summaryBadge.style.border = "1px solid var(--background-modifier-border)";
+        summaryBadge.style.opacity = "0.75";
+        summaryBadge.style.fontWeight = "normal";
+
+        details.addEventListener("toggle", () => {
+            const hint = summaryTitle.querySelector(".toggle-hint");
+            if (hint) {
+                hint.textContent = details.open ? "(click to collapse)" : "(click to expand)";
+            }
+        });
+
+        const tableContainer = details.createDiv();
+        tableContainer.style.overflowX = "auto";
+        tableContainer.style.marginTop = "10px";
+
+        const recentPauses = [...pauses].reverse().slice(0, 30);
+        tableContainer.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid var(--background-modifier-border); opacity: 0.75;">
+                        <th style="padding: 6px 8px;">Date</th>
+                        <th style="padding: 6px 8px;">Time (Pause → Resume)</th>
+                        <th style="padding: 6px 8px;">Project</th>
+                        <th style="padding: 6px 8px;">Duration</th>
+                        <th style="padding: 6px 8px;">Category</th>
+                        <th style="padding: 6px 8px;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${recentPauses.map(p => {
+                        let badgeBg = "rgba(52, 211, 153, 0.15)";
+                        let badgeColor = "#34d399";
+                        if (p.isDistraction) {
+                            badgeBg = "rgba(248, 113, 113, 0.15)";
+                            badgeColor = "#f87171";
+                        } else if (p.isIdea) {
+                            badgeBg = "rgba(251, 191, 36, 0.15)";
+                            badgeColor = "#fbbf24";
+                        }
+
+                        return `
+                        <tr style="border-bottom: 1px solid var(--background-modifier-border);">
+                            <td style="padding: 6px 8px;">${p.dateStr}</td>
+                            <td style="padding: 6px 8px; font-family: monospace;">${p.start} → ${p.resume}</td>
+                            <td style="padding: 6px 8px; font-weight: bold; color: var(--text-accent);">${p.project}</td>
+                            <td style="padding: 6px 8px; font-weight: 500;">${p.durationText || (Math.round(p.minutes) + 'm')}</td>
+                            <td style="padding: 6px 8px;">
+                                <span style="display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: bold; background-color: ${badgeBg}; color: ${badgeColor};">
+                                    ${p.category || (p.isDistraction ? '⚡ Distraction' : (p.isIdea ? '💡 Quick Idea' : '☕ Break'))}
+                                </span>
+                            </td>
+                            <td style="padding: 6px 8px; opacity: 0.85;">${p.note || '-'}</td>
+                        </tr>
+                        `;
+                    }).join("")}
+                </tbody>
+            </table>
+        `;
+    }
+}
+
+// ==============================================================================
+// RENDER HELPER 5: DYNAMIC TREND BY PROJECT (DAILY / WEEKLY / MONTHLY)
 // WITH INTERACTIVE HOVERABLE SLIDING WINDOWS & ZOOM/PAN CONTROLS
 // ==============================================================================
 function renderTrendSection() {
