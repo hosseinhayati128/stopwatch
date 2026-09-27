@@ -354,6 +354,8 @@ let netShowAvgSpeed = true;
 let netShowFluctuations = true;
 let netShowLatency = true;
 let netGranularity = 30; // 5, 30, 60
+let netTimelineAggregation = "raw"; // "raw", "30", "60"
+let netProfileResolution = 60; // 60 (1h) or 30 (30m)
 
 // Trend (Hours by Project) State
 let trendGranularity = "day"; // "day", "week", "month"
@@ -1843,62 +1845,163 @@ function renderInternetSection() {
     `;
 
     // ==============================================================================
-    // 1. ORIGINAL PREVIOUS CHART: SPEED & PING TIMELINE (RESTORED)
+    // 1. ORIGINAL PREVIOUS CHART: SPEED & PING TIMELINE (WITH RAW / 30m / 1h INTERVALS)
     // ==============================================================================
     if (allNetRecordsInPeriod.length >= 2) {
-        const rawChartDiv = card.createDiv();
-        rawChartDiv.style.marginBottom = "24px";
-        rawChartDiv.createEl("h4", { text: "Connection Speed (Mbps) & Latency (ms) Timeline" }).style.margin = "0 0 8px 0";
+        const tlSection = card.createDiv();
+        tlSection.style.marginBottom = "24px";
 
-        const labels = allNetRecordsInPeriod.map(r => `${r.dateStr !== allNetRecordsInPeriod[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
-        const speedData = allNetRecordsInPeriod.map(r => r.speedMbps != null ? r.speedMbps : null);
-        const pingData = allNetRecordsInPeriod.map(r => r.pingMs != null ? r.pingMs : null);
+        const tlHeaderRow = tlSection.createDiv();
+        tlHeaderRow.style.display = "flex";
+        tlHeaderRow.style.justifyContent = "space-between";
+        tlHeaderRow.style.alignItems = "center";
+        tlHeaderRow.style.marginBottom = "8px";
+        tlHeaderRow.style.flexWrap = "wrap";
+        tlHeaderRow.style.gap = "10px";
 
-        window.renderChart({
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Speed (Mbps)',
-                        data: speedData,
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        spanGaps: true,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Ping (ms)',
-                        data: pingData,
-                        borderColor: '#fb923c',
-                        backgroundColor: 'transparent',
-                        borderDash: [4, 4],
-                        tension: 0.2,
-                        spanGaps: true,
-                        yAxisID: 'y1'
+        const tlTitleContainer = tlHeaderRow.createDiv();
+        const tlTitle = tlTitleContainer.createEl("h4", { text: "Connection Speed (Mbps) & Latency (ms) Timeline" });
+        tlTitle.style.margin = "0 0 2px 0";
+
+        const tlSub = tlTitleContainer.createEl("p");
+        tlSub.style.fontSize = "11px";
+        tlSub.style.opacity = "0.7";
+        tlSub.style.margin = "0";
+
+        const tlAggContainer = tlHeaderRow.createDiv();
+        tlAggContainer.style.display = "flex";
+        tlAggContainer.style.alignItems = "center";
+        tlAggContainer.style.gap = "4px";
+
+        const tlAggLabel = tlAggContainer.createEl("span", { text: "Interval:" });
+        tlAggLabel.style.fontSize = "12px";
+        tlAggLabel.style.fontWeight = "bold";
+
+        const tlAggOptions = [
+            { id: "raw", label: "⚡ Raw Checks" },
+            { id: "30", label: "⏱️ 30m Avg" },
+            { id: "60", label: "🕒 1h Avg" }
+        ];
+
+        const tlAggBtns = [];
+        const tlChartContainer = tlSection.createDiv();
+
+        function renderTimelineChart() {
+            tlChartContainer.innerHTML = "";
+
+            let labels = [];
+            let speedData = [];
+            let pingData = [];
+
+            if (netTimelineAggregation === "raw") {
+                tlSub.textContent = `Showing all ${allNetRecordsInPeriod.length} individual check points recorded in this period.`;
+                labels = allNetRecordsInPeriod.map(r => `${r.dateStr !== allNetRecordsInPeriod[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
+                speedData = allNetRecordsInPeriod.map(r => r.speedMbps != null ? r.speedMbps : null);
+                pingData = allNetRecordsInPeriod.map(r => r.pingMs != null ? r.pingMs : null);
+            } else {
+                const intervalMin = parseInt(netTimelineAggregation, 10);
+                tlSub.textContent = `Averaged into ${intervalMin === 60 ? '1-hour' : '30-minute'} intervals across this period (${allNetRecordsInPeriod.length} checks).`;
+
+                const bucketMap = new Map();
+                for (const r of allNetRecordsInPeriod) {
+                    const totalMin = r.hour * 60 + r.minute;
+                    const bMin = Math.floor(totalMin / intervalMin) * intervalMin;
+                    const bh = Math.floor(bMin / 60);
+                    const bm = bMin % 60;
+                    const bucketTime = `${String(bh).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
+                    const key = `${r.dateStr} ${bucketTime}`;
+                    if (!bucketMap.has(key)) {
+                        bucketMap.set(key, { dateStr: r.dateStr, time: bucketTime, records: [] });
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: { ticks: { maxTicksLimit: 12 } },
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Mbps' },
-                        position: 'left'
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Ping (ms)' },
-                        position: 'right',
-                        grid: { drawOnChartArea: false }
+                    bucketMap.get(key).records.push(r);
+                }
+
+                const buckets = Array.from(bucketMap.values());
+                const firstDate = buckets[0]?.dateStr;
+                labels = buckets.map(b => `${b.dateStr !== firstDate ? b.dateStr.slice(5) + ' ' : ''}${b.time}`);
+                speedData = buckets.map(b => {
+                    const s = b.records.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                    return s.length ? +(s.reduce((a, c) => a + c, 0) / s.length).toFixed(1) : null;
+                });
+                pingData = buckets.map(b => {
+                    const p = b.records.map(r => r.pingMs).filter(v => v != null && v > 0);
+                    return p.length ? Math.round(p.reduce((a, c) => a + c, 0) / p.length) : null;
+                });
+            }
+
+            window.renderChart({
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: netTimelineAggregation === 'raw' ? 'Speed (Mbps)' : `Avg Speed (${netTimelineAggregation === '60' ? '1h' : '30m'} Mbps)`,
+                            data: speedData,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            spanGaps: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: netTimelineAggregation === 'raw' ? 'Ping (ms)' : `Avg Ping (${netTimelineAggregation === '60' ? '1h' : '30m'} ms)`,
+                            data: pingData,
+                            borderColor: '#fb923c',
+                            backgroundColor: 'transparent',
+                            borderDash: [4, 4],
+                            tension: 0.2,
+                            spanGaps: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 12 } },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Mbps' },
+                            position: 'left'
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ping (ms)' },
+                            position: 'right',
+                            grid: { drawOnChartArea: false }
+                        }
                     }
                 }
-            }
-        }, rawChartDiv);
+            }, tlChartContainer);
+        }
+
+        tlAggOptions.forEach(opt => {
+            const btn = tlAggContainer.createEl("button", { text: opt.label });
+            btn.style.padding = "4px 8px";
+            btn.style.fontSize = "11px";
+            btn.style.borderRadius = "4px";
+            btn.style.border = "1px solid var(--background-modifier-border)";
+            btn.style.cursor = "pointer";
+            tlAggBtns.push({ id: opt.id, btn });
+
+            btn.addEventListener("click", () => {
+                netTimelineAggregation = opt.id;
+                updateTlAggBtns();
+                renderTimelineChart();
+            });
+        });
+
+        function updateTlAggBtns() {
+            tlAggBtns.forEach(({ id, btn }) => {
+                const active = (id === netTimelineAggregation);
+                btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+                btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
+                btn.style.fontWeight = active ? "bold" : "normal";
+            });
+        }
+        updateTlAggBtns();
+        renderTimelineChart();
     }
 
     // ==============================================================================
@@ -2141,6 +2244,43 @@ function renderInternetSection() {
         });
     }
 
+    // Resolution buttons for 24h Profile
+    const profResContainer = controlsRow2.createDiv();
+    profResContainer.style.display = netViewMode === "hourly_profile" ? "flex" : "none";
+    profResContainer.style.alignItems = "center";
+    profResContainer.style.gap = "4px";
+
+    const profResOptions = [
+        { val: 60, label: "1h" },
+        { val: 30, label: "30m" }
+    ];
+
+    const profResBtns = [];
+    profResOptions.forEach(opt => {
+        const btn = profResContainer.createEl("button", { text: opt.label });
+        btn.style.padding = "4px 6px";
+        btn.style.fontSize = "11px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.cursor = "pointer";
+        profResBtns.push({ val: opt.val, btn });
+
+        btn.addEventListener("click", () => {
+            netProfileResolution = opt.val;
+            updateProfResBtns();
+            updateHourlyProfileView();
+        });
+    });
+
+    function updateProfResBtns() {
+        profResBtns.forEach(({ val, btn }) => {
+            const active = (val === netProfileResolution);
+            btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+            btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
+            btn.style.fontWeight = active ? "bold" : "normal";
+        });
+    }
+
     function updateViewBtns() {
         viewBtns.forEach(({ id, btn }) => {
             const active = (id === netViewMode);
@@ -2148,7 +2288,9 @@ function renderInternetSection() {
             btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
             btn.style.fontWeight = active ? "bold" : "normal";
         });
+        profResContainer.style.display = netViewMode === "hourly_profile" ? "flex" : "none";
         granContainer.style.display = netViewMode === "timeline" ? "flex" : "none";
+        updateProfResBtns();
         updateGranBtns();
     }
     updateViewBtns();
@@ -2251,25 +2393,38 @@ function renderInternetSection() {
         chartDiv.style.marginBottom = "14px";
 
         if (netViewMode === "hourly_profile") {
-            // Mode 1: 24h Hourly Profile (00:00 to 23:00)
+            const bucketSize = netProfileResolution === 30 ? 30 : 60;
+            const numBuckets = Math.floor(1440 / bucketSize);
+
+            // Mode 1: 24h Profile
             const chartHeader = chartDiv.createEl("h4");
             chartHeader.style.margin = "0 0 4px 0";
-            chartHeader.textContent = `🕒 Hourly Profile (00:00 – 23:00) · ${displayNetName} · ${scopeLabelStr}`;
+            chartHeader.textContent = `🕒 24h Profile (${bucketSize === 30 ? '30m' : '1h'} Buckets) · ${displayNetName} · ${scopeLabelStr}`;
 
             const chartSub = chartDiv.createEl("p");
             chartSub.style.fontSize = "11px";
             chartSub.style.opacity = "0.7";
             chartSub.style.margin = "0 0 10px 0";
-            chartSub.textContent = `Showing 24-hour patterns across ${scopeLabelStr} (${activeNetRecords.length} checks analyzed).`;
+            chartSub.textContent = `Showing 24-hour daily patterns grouped into ${bucketSize === 30 ? '30-minute' : '1-hour'} averages across ${scopeLabelStr} (${activeNetRecords.length} checks analyzed).`;
 
-            const hourLabels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
+            const hourLabels = Array.from({ length: numBuckets }, (_, i) => {
+                const totalMinutes = i * bucketSize;
+                const h = Math.floor(totalMinutes / 60);
+                const m = totalMinutes % 60;
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            });
 
-            const hourlyStats = Array.from({ length: 24 }, (_, h) => {
-                const inHour = activeNetRecords.filter(r => r.hour === h);
-                const s = inHour.map(r => r.speedMbps).filter(v => v != null && v > 0);
-                const p = inHour.map(r => r.pingMs).filter(v => v != null && v > 0);
+            const hourlyStats = Array.from({ length: numBuckets }, (_, i) => {
+                const bStart = i * bucketSize;
+                const bEnd = bStart + bucketSize;
+                const inBucket = activeNetRecords.filter(r => {
+                    const m = r.hour * 60 + r.minute;
+                    return m >= bStart && m < bEnd;
+                });
+                const s = inBucket.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                const p = inBucket.map(r => r.pingMs).filter(v => v != null && v > 0);
                 return {
-                    count: inHour.length,
+                    count: inBucket.length,
                     avgSpeed: s.length ? +(s.reduce((a, b) => a + b, 0) / s.length).toFixed(1) : null,
                     minSpeed: s.length ? Math.min(...s) : null,
                     maxSpeed: s.length ? Math.max(...s) : null,
@@ -2338,8 +2493,8 @@ function renderInternetSection() {
             const hasSpeed = netShowAvgSpeed || netShowFluctuations;
             const scales = {
                 x: {
-                    title: { display: true, text: 'Hour of Day (Local Time)' },
-                    ticks: { maxTicksLimit: 24 }
+                    title: { display: true, text: 'Time of Day (Local Time)' },
+                    ticks: { maxTicksLimit: bucketSize === 30 ? 24 : 12 }
                 },
                 y: {
                     beginAtZero: true,
