@@ -353,9 +353,9 @@ let netHourlyScope = "7"; // "7", "14", "30", "period"
 let netShowAvgSpeed = true;
 let netShowFluctuations = true;
 let netShowLatency = true;
-let netGranularity = 30; // 5, 30, 60
-let netTimelineAggregation = "raw"; // "raw", "30", "60"
-let netProfileResolution = 60; // 60 (1h) or 30 (30m)
+let netGranularity = 15; // 5, 15, 30, 60
+let netTimelineAggregation = "15"; // "15", "30", "60", "raw"
+let netProfileResolution = 15; // 15 (15m), 30 (30m), 60 (1h)
 
 // Trend (Hours by Project) State
 let trendGranularity = "day"; // "day", "week", "month"
@@ -1878,9 +1878,10 @@ function renderInternetSection() {
         tlAggLabel.style.fontWeight = "bold";
 
         const tlAggOptions = [
-            { id: "raw", label: "⚡ Raw Checks" },
+            { id: "15", label: "⏱️ 15m Avg" },
             { id: "30", label: "⏱️ 30m Avg" },
-            { id: "60", label: "🕒 1h Avg" }
+            { id: "60", label: "🕒 1h Avg" },
+            { id: "raw", label: "⚡ Raw Checks" }
         ];
 
         const tlAggBtns = [];
@@ -1900,7 +1901,8 @@ function renderInternetSection() {
                 pingData = allNetRecordsInPeriod.map(r => r.pingMs != null ? r.pingMs : null);
             } else {
                 const intervalMin = parseInt(netTimelineAggregation, 10);
-                tlSub.textContent = `Averaged into ${intervalMin === 60 ? '1-hour' : '30-minute'} intervals across this period (${allNetRecordsInPeriod.length} checks).`;
+                const intervalName = intervalMin === 60 ? '1-hour' : `${intervalMin}-minute`;
+                tlSub.textContent = `Averaged into ${intervalName} intervals across this period (${allNetRecordsInPeriod.length} checks).`;
 
                 const bucketMap = new Map();
                 for (const r of allNetRecordsInPeriod) {
@@ -1929,13 +1931,14 @@ function renderInternetSection() {
                 });
             }
 
+            const intervalTag = netTimelineAggregation === '60' ? '1h' : (netTimelineAggregation === 'raw' ? '' : `${netTimelineAggregation}m`);
             window.renderChart({
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: netTimelineAggregation === 'raw' ? 'Speed (Mbps)' : `Avg Speed (${netTimelineAggregation === '60' ? '1h' : '30m'} Mbps)`,
+                            label: netTimelineAggregation === 'raw' ? 'Speed (Mbps)' : `Avg Speed (${intervalTag} Mbps)`,
                             data: speedData,
                             borderColor: '#38bdf8',
                             backgroundColor: 'rgba(56, 189, 248, 0.1)',
@@ -1945,7 +1948,7 @@ function renderInternetSection() {
                             yAxisID: 'y'
                         },
                         {
-                            label: netTimelineAggregation === 'raw' ? 'Ping (ms)' : `Avg Ping (${netTimelineAggregation === '60' ? '1h' : '30m'} ms)`,
+                            label: netTimelineAggregation === 'raw' ? 'Ping (ms)' : `Avg Ping (${intervalTag} ms)`,
                             data: pingData,
                             borderColor: '#fb923c',
                             backgroundColor: 'transparent',
@@ -2214,6 +2217,7 @@ function renderInternetSection() {
 
     const granOptions = [
         { val: 5, label: "5m" },
+        { val: 15, label: "15m" },
         { val: 30, label: "30m" },
         { val: 60, label: "1h" }
     ];
@@ -2251,8 +2255,9 @@ function renderInternetSection() {
     profResContainer.style.gap = "4px";
 
     const profResOptions = [
-        { val: 60, label: "1h" },
-        { val: 30, label: "30m" }
+        { val: 15, label: "15m" },
+        { val: 30, label: "30m" },
+        { val: 60, label: "1h" }
     ];
 
     const profResBtns = [];
@@ -2393,19 +2398,21 @@ function renderInternetSection() {
         chartDiv.style.marginBottom = "14px";
 
         if (netViewMode === "hourly_profile") {
-            const bucketSize = netProfileResolution === 30 ? 30 : 60;
+            const bucketSize = [15, 30, 60].includes(netProfileResolution) ? netProfileResolution : 15;
             const numBuckets = Math.floor(1440 / bucketSize);
+            const bucketLabel = bucketSize === 60 ? '1h' : `${bucketSize}m`;
+            const bucketName = bucketSize === 60 ? '1-hour' : `${bucketSize}-minute`;
 
             // Mode 1: 24h Profile
             const chartHeader = chartDiv.createEl("h4");
             chartHeader.style.margin = "0 0 4px 0";
-            chartHeader.textContent = `🕒 24h Profile (${bucketSize === 30 ? '30m' : '1h'} Buckets) · ${displayNetName} · ${scopeLabelStr}`;
+            chartHeader.textContent = `🕒 24h Profile (${bucketLabel} Buckets) · ${displayNetName} · ${scopeLabelStr}`;
 
             const chartSub = chartDiv.createEl("p");
             chartSub.style.fontSize = "11px";
             chartSub.style.opacity = "0.7";
             chartSub.style.margin = "0 0 10px 0";
-            chartSub.textContent = `Showing 24-hour daily patterns grouped into ${bucketSize === 30 ? '30-minute' : '1-hour'} averages across ${scopeLabelStr} (${activeNetRecords.length} checks analyzed).`;
+            chartSub.textContent = `Showing 24-hour daily patterns grouped into ${bucketName} averages across ${scopeLabelStr} (${activeNetRecords.length} checks analyzed).`;
 
             const hourLabels = Array.from({ length: numBuckets }, (_, i) => {
                 const totalMinutes = i * bucketSize;
