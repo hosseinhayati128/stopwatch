@@ -139,10 +139,11 @@ if (internetFile) {
             const speedStr = rawParts[4];
             const notes = rawParts[5];
 
+            const isOffline = status.includes("Offline");
             const parsedPing = parseFloat(pingStr);
             const pingMs = (!isNaN(parsedPing) && parsedPing > 0) ? parsedPing : null;
             const parsedSpeed = parseFloat(speedStr);
-            const speedMbps = !isNaN(parsedSpeed) ? parsedSpeed : null;
+            const speedMbps = !isNaN(parsedSpeed) ? parsedSpeed : (isOffline ? 0 : null);
             const [y, m, d] = currentDateStr.split("-").map(Number);
             const [hh, mm] = time.split(":").map(Number);
             const cleanNet = getCleanNetworkName(network);
@@ -159,10 +160,10 @@ if (internetFile) {
                 pingMs,
                 speedMbps,
                 notes,
-                isOnline: !status.includes("Offline"),
+                isOnline: !isOffline,
                 isOptimal: status.includes("Online"),
                 isSlow: status.includes("Slow"),
-                isOffline: status.includes("Offline")
+                isOffline
             });
         }
     }
@@ -2304,7 +2305,7 @@ function renderInternetSection() {
             if (netTimelineAggregation === "raw") {
                 tlSub.textContent = `Showing all ${allNetRecordsInPeriod.length} individual check points recorded in this period.`;
                 labels = allNetRecordsInPeriod.map(r => `${r.dateStr !== allNetRecordsInPeriod[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
-                speedData = allNetRecordsInPeriod.map(r => r.speedMbps != null ? r.speedMbps : null);
+                speedData = allNetRecordsInPeriod.map(r => r.isOffline ? 0 : (r.speedMbps != null ? r.speedMbps : null));
                 pingData = allNetRecordsInPeriod.map(r => r.pingMs != null ? r.pingMs : null);
             } else {
                 const intervalMin = parseInt(netTimelineAggregation, 10);
@@ -2329,8 +2330,10 @@ function renderInternetSection() {
                 const firstDate = buckets[0]?.dateStr;
                 labels = buckets.map(b => `${b.dateStr !== firstDate ? b.dateStr.slice(5) + ' ' : ''}${b.time}`);
                 speedData = buckets.map(b => {
-                    const s = b.records.map(r => r.speedMbps).filter(v => v != null && v > 0);
-                    return s.length ? +(s.reduce((a, c) => a + c, 0) / s.length).toFixed(1) : null;
+                    const speeds = b.records.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
+                    if (speeds.length === 0) return null;
+                    const avg = speeds.reduce((a, c) => a + c, 0) / speeds.length;
+                    return +avg.toFixed(1);
                 });
                 pingData = buckets.map(b => {
                     const p = b.records.map(r => r.pingMs).filter(v => v != null && v > 0);
@@ -2351,8 +2354,12 @@ function renderInternetSection() {
                             backgroundColor: 'rgba(56, 189, 248, 0.1)',
                             fill: true,
                             tension: 0.3,
-                            spanGaps: true,
-                            yAxisID: 'y'
+                            spanGaps: false,
+                            yAxisID: 'y',
+                            pointBackgroundColor: speedData.map(v => v === 0 ? '#ef4444' : '#38bdf8'),
+                            pointBorderColor: speedData.map(v => v === 0 ? '#ef4444' : '#38bdf8'),
+                            pointRadius: speedData.map(v => v === 0 ? 3.5 : ((netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5)),
+                            pointHoverRadius: 6
                         },
                         {
                             label: netTimelineAggregation === 'raw' ? 'Ping (ms)' : `Avg Ping (${intervalTag} ms)`,
@@ -2361,13 +2368,43 @@ function renderInternetSection() {
                             backgroundColor: 'transparent',
                             borderDash: [4, 4],
                             tension: 0.2,
-                            spanGaps: true,
-                            yAxisID: 'y1'
+                            spanGaps: false,
+                            yAxisID: 'y1',
+                            pointRadius: (netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5,
+                            pointHoverRadius: 6
                         }
                     ]
                 },
                 options: {
                     responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const isPing = context.dataset.yAxisID === 'y1';
+                                    const val = context.raw;
+                                    if (isPing) {
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: 🔴 Offline / Timed out`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} ms`;
+                                    } else {
+                                        if (val === 0) {
+                                            return ` ${context.dataset.label}: 🔴 0.0 Mbps (Offline)`;
+                                        }
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: - (No Data)`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} Mbps`;
+                                    }
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: { ticks: { maxTicksLimit: 12 } },
                         y: {
@@ -2835,7 +2872,7 @@ function renderInternetSection() {
                     const m = r.hour * 60 + r.minute;
                     return m >= bStart && m < bEnd;
                 });
-                const s = inBucket.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                const s = inBucket.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
                 const p = inBucket.map(r => r.pingMs).filter(v => v != null && v > 0);
                 return {
                     count: inBucket.length,
@@ -2899,7 +2936,7 @@ function renderInternetSection() {
                     pointRadius: 3,
                     pointHoverRadius: 5,
                     tension: 0.2,
-                    spanGaps: true,
+                    spanGaps: false,
                     yAxisID: pingAxis
                 });
             }
@@ -2934,6 +2971,33 @@ function renderInternetSection() {
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const isPing = context.dataset.yAxisID === 'y1' || context.dataset.label.includes('Ping');
+                                    const val = context.raw;
+                                    if (isPing) {
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: 🔴 Offline / Timed out`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} ms`;
+                                    } else {
+                                        if (val === 0) {
+                                            return ` ${context.dataset.label}: 🔴 0.0 Mbps (Offline)`;
+                                        }
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: - (No Data)`;
+                                        }
+                                        if (Array.isArray(val)) {
+                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} Mbps`;
+                                    }
+                                }
+                            }
+                        }
+                    },
                     scales: scales
                 }
             }, chartDiv);
@@ -2966,7 +3030,7 @@ function renderInternetSection() {
 
             const candles = [];
             for (const [key, val] of candleMap.entries()) {
-                const s = val.records.map(r => r.speedMbps).filter(v => v != null && v > 0);
+                const s = val.records.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
                 const p = val.records.map(r => r.pingMs).filter(v => v != null && v > 0);
                 candles.push({
                     key,
@@ -3040,7 +3104,7 @@ function renderInternetSection() {
                     pointRadius: candles.length > 50 ? 1 : 2,
                     pointHoverRadius: 5,
                     tension: 0.2,
-                    spanGaps: true,
+                    spanGaps: false,
                     yAxisID: pingAxis
                 });
             }
@@ -3074,6 +3138,33 @@ function renderInternetSection() {
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const isPing = context.dataset.yAxisID === 'y1' || context.dataset.label.includes('Ping');
+                                    const val = context.raw;
+                                    if (isPing) {
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: 🔴 Offline / Timed out`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} ms`;
+                                    } else {
+                                        if (val === 0) {
+                                            return ` ${context.dataset.label}: 🔴 0.0 Mbps (Offline)`;
+                                        }
+                                        if (val == null) {
+                                            return ` ${context.dataset.label}: - (No Data)`;
+                                        }
+                                        if (Array.isArray(val)) {
+                                            return ` ${context.dataset.label}: ${val[0]} – ${val[1]} Mbps`;
+                                        }
+                                        return ` ${context.dataset.label}: ${val} Mbps`;
+                                    }
+                                }
+                            }
+                        }
+                    },
                     scales: scales
                 }
             }, chartDiv);
@@ -3160,7 +3251,7 @@ function renderInternetSection() {
                     <td style="padding: 4px 6px;">${r.status}</td>
                     <td style="padding: 4px 6px; font-weight: bold; color: var(--text-accent);">${r.network}</td>
                     <td style="padding: 4px 6px;">${r.pingMs != null ? r.pingMs + ' ms' : '-'}</td>
-                    <td style="padding: 4px 6px; font-weight: bold; color: #38bdf8;">${r.speedMbps != null ? r.speedMbps.toFixed(1) + ' Mbps' : '-'}</td>
+                    <td style="padding: 4px 6px; font-weight: bold; color: ${r.isOffline ? 'inherit' : '#38bdf8'};">${!r.isOffline && r.speedMbps != null ? r.speedMbps.toFixed(1) + ' Mbps' : '-'}</td>
                     <td style="padding: 4px 6px; opacity: 0.8;">${r.notes || '-'}</td>
                 </tr>
             `).join("")}
