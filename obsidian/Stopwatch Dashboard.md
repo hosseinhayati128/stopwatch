@@ -354,6 +354,12 @@ let netShowFluctuations = true;
 let netShowLatency = true;
 let netGranularity = 30; // 5, 30, 60
 
+// Trend (Hours by Project) State
+let trendGranularity = "day"; // "day", "week", "month"
+let trendWindowSize = 14;     // default 14 for day, 8 for week, 6 for month, or "all"
+let trendOffset = 0;          // 0 = latest period, > 0 = shifted back into history
+let trendWheelMode = "pan";   // "pan" (scroll navigates periods) or "zoom" (scroll changes window size)
+
 function getScopeRange(scope, dateStr) {
     if (!dateStr) dateStr = new Date().toISOString().split("T")[0];
     const [y, m, d] = dateStr.split("-").map(Number);
@@ -624,76 +630,9 @@ function renderDashboard() {
     }
 
     // ========================================================
-    // --- Chart 3: Daily Trend by Project (Stacked Bar) ------
+    // --- Chart 3: Trend by Project (Stacked Bar) ------------
     // ========================================================
-    if (records.length > 0) {
-        const barHeading = chartSection.createEl("h3", { text: "📈 Daily Trend (Hours by Project)" });
-        barHeading.style.marginTop = "32px";
-
-        const barSubtitle = chartSection.createEl("p", { 
-            text: "Total hours worked per day, broken down and color-coded by project." 
-        });
-        barSubtitle.style.opacity = "0.7";
-        barSubtitle.style.fontSize = "12px";
-        barSubtitle.style.marginTop = "-6px";
-
-        const barContainer = chartSection.createDiv();
-
-        // Collect and sort unique dates
-        const dates = Array.from(new Set(records.map(r => r.dateStr))).sort();
-
-        // Project daily minutes aggregation
-        const projectDailyMinutes = {};
-        for (const proj of projectLabels) {
-            projectDailyMinutes[proj] = {};
-            for (const d of dates) {
-                projectDailyMinutes[proj][d] = 0;
-            }
-        }
-
-        for (const r of records) {
-            if (projectDailyMinutes[r.project] && r.dateStr) {
-                projectDailyMinutes[r.project][r.dateStr] = (projectDailyMinutes[r.project][r.dateStr] || 0) + r.minutes;
-            }
-        }
-
-        const dailyDatasets = projectLabels.map(proj => {
-            const dataValues = dates.map(d => +((projectDailyMinutes[proj][d] || 0) / 60).toFixed(1));
-            return {
-                label: proj,
-                data: dataValues,
-                backgroundColor: projectColorMap[proj] || '#6366f1',
-                stack: 'dailyTrend',
-                borderRadius: 2
-            };
-        });
-
-        window.renderChart({
-            type: 'bar',
-            data: {
-                labels: dates,
-                datasets: dailyDatasets
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true,
-                        title: { display: true, text: 'Date' }
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        title: { display: true, text: 'Hours' }
-                    }
-                }
-            }
-        }, barContainer);
-    }
+    renderTrendSection();
 }
 
 // ==============================================================================
@@ -2653,6 +2592,674 @@ function renderInternetSection() {
             `).join("")}
         </tbody>
     `;
+}
+
+// ==============================================================================
+// RENDER HELPER 4: DYNAMIC TREND BY PROJECT (DAILY / WEEKLY / MONTHLY)
+// WITH INTERACTIVE HOVERABLE SLIDING WINDOWS & ZOOM/PAN CONTROLS
+// ==============================================================================
+function renderTrendSection() {
+    if (allRecords.length === 0) return;
+
+    const card = chartSection.createDiv();
+    card.style.padding = "18px";
+    card.style.borderRadius = "8px";
+    card.style.backgroundColor = "var(--background-secondary)";
+    card.style.border = "1px solid var(--background-modifier-border)";
+    card.style.marginTop = "32px";
+    card.style.marginBottom = "30px";
+    card.style.position = "relative";
+
+    // 1. Helper to build all chronological periods across all records
+    function getAllPeriods(granularity) {
+        let minTime = Infinity;
+        let maxTime = -Infinity;
+        for (const r of allRecords) {
+            if (r.dateObj) {
+                const t = r.dateObj.getTime();
+                if (t < minTime) minTime = t;
+                if (t > maxTime) maxTime = t;
+            }
+        }
+        if (minTime === Infinity) return [];
+
+        const now = new Date();
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        if (todayMidnight > maxTime) {
+            maxTime = todayMidnight;
+        }
+
+        const minDate = new Date(minTime);
+        const maxDate = new Date(maxTime);
+
+        const mNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const fullMNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const dNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        const periods = [];
+
+        if (granularity === "day") {
+            const cur = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+            const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+            while (cur <= end) {
+                const y = cur.getFullYear();
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const d = String(cur.getDate()).padStart(2, '0');
+                const key = `${y}-${m}-${d}`;
+                const label = `${mNames[cur.getMonth()]} ${cur.getDate()}`;
+                const fullLabel = `${dNames[cur.getDay()]}, ${mNames[cur.getMonth()]} ${cur.getDate()}, ${y}`;
+                periods.push({
+                    key,
+                    label,
+                    fullLabel
+                });
+                cur.setDate(cur.getDate() + 1);
+            }
+        } else if (granularity === "week") {
+            function getMonday(d) {
+                const date = new Date(d);
+                const day = (date.getDay() + 6) % 7; // Monday = 0
+                date.setDate(date.getDate() - day);
+                date.setHours(0, 0, 0, 0);
+                return date;
+            }
+            function getWeekNum(d) {
+                const target = new Date(d.valueOf());
+                const dayNr = (d.getDay() + 6) % 7;
+                target.setDate(target.getDate() - dayNr + 3);
+                const firstThursday = target.valueOf();
+                target.setMonth(0, 1);
+                if (target.getDay() !== 4) {
+                    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+                }
+                return 1 + Math.ceil((firstThursday - target) / 604800000);
+            }
+
+            const cur = getMonday(minDate);
+            const end = getMonday(maxDate);
+            while (cur <= end) {
+                const sun = new Date(cur);
+                sun.setDate(cur.getDate() + 6);
+                sun.setHours(23, 59, 59, 999);
+                const wNum = getWeekNum(cur);
+                const key = `${cur.getFullYear()}-W${String(wNum).padStart(2, '0')}`;
+                const label = `W${wNum} (${mNames[cur.getMonth()]} ${cur.getDate()})`;
+                const fullLabel = `Week ${wNum}: ${mNames[cur.getMonth()]} ${cur.getDate()} – ${mNames[sun.getMonth()]} ${sun.getDate()}, ${cur.getFullYear()}`;
+                periods.push({
+                    key,
+                    label,
+                    fullLabel,
+                    startMs: cur.getTime(),
+                    endMs: sun.getTime()
+                });
+                cur.setDate(cur.getDate() + 7);
+            }
+        } else if (granularity === "month") {
+            const cur = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+            const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+            while (cur <= end) {
+                const y = cur.getFullYear();
+                const m = cur.getMonth();
+                const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+                const label = `${mNames[m]} ${y}`;
+                const fullLabel = `${fullMNames[m]} ${y}`;
+                periods.push({
+                    key,
+                    label,
+                    fullLabel,
+                    year: y,
+                    month: m
+                });
+                cur.setMonth(cur.getMonth() + 1);
+            }
+        }
+
+        return periods;
+    }
+
+    // 2. Pre-aggregate project minutes per period
+    function aggregateData(periods, granularity) {
+        const periodProjectMinutes = {};
+        for (const p of periods) {
+            periodProjectMinutes[p.key] = {};
+        }
+
+        function getWeekKey(d) {
+            const date = new Date(d);
+            const day = (date.getDay() + 6) % 7;
+            date.setDate(date.getDate() - day);
+            date.setHours(0, 0, 0, 0);
+            const target = new Date(date.valueOf());
+            const dayNr = (date.getDay() + 6) % 7;
+            target.setDate(target.getDate() - dayNr + 3);
+            const firstThursday = target.valueOf();
+            target.setMonth(0, 1);
+            if (target.getDay() !== 4) {
+                target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+            }
+            const wNum = 1 + Math.ceil((firstThursday - target) / 604800000);
+            return `${date.getFullYear()}-W${String(wNum).padStart(2, '0')}`;
+        }
+
+        for (const r of allRecords) {
+            if (!r.project || !r.minutes) continue;
+            let key = null;
+            if (granularity === "day") {
+                key = r.dateStr;
+            } else if (granularity === "week") {
+                key = getWeekKey(r.dateObj);
+            } else if (granularity === "month") {
+                key = r.dateStr ? r.dateStr.slice(0, 7) : null;
+            }
+
+            if (key && periodProjectMinutes[key]) {
+                periodProjectMinutes[key][r.project] = (periodProjectMinutes[key][r.project] || 0) + r.minutes;
+            }
+        }
+
+        return periodProjectMinutes;
+    }
+
+    // Header container
+    const headerRow = card.createDiv();
+    headerRow.style.display = "flex";
+    headerRow.style.justifyContent = "space-between";
+    headerRow.style.alignItems = "flex-start";
+    headerRow.style.flexWrap = "wrap";
+    headerRow.style.gap = "10px";
+    headerRow.style.marginBottom = "14px";
+
+    const titleCol = headerRow.createDiv();
+    const headingEl = titleCol.createEl("h3");
+    headingEl.style.margin = "0 0 4px 0";
+
+    const subtitleEl = titleCol.createEl("p");
+    subtitleEl.style.opacity = "0.7";
+    subtitleEl.style.fontSize = "12px";
+    subtitleEl.style.margin = "0";
+
+    // Top Controls: Granularity & Wheel Mode
+    const topControls = headerRow.createDiv();
+    topControls.style.display = "flex";
+    topControls.style.gap = "6px";
+    topControls.style.alignItems = "center";
+    topControls.style.flexWrap = "wrap";
+
+    // Granularity Tabs
+    const granOpts = [
+        { id: "day", label: "📅 Daily", defaultSize: 14 },
+        { id: "week", label: "📆 Weekly", defaultSize: 8 },
+        { id: "month", label: "🗓️ Monthly", defaultSize: 6 }
+    ];
+    const granBtns = [];
+
+    granOpts.forEach(opt => {
+        const btn = topControls.createEl("button", { text: opt.label });
+        btn.style.padding = "5px 12px";
+        btn.style.fontSize = "12px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.cursor = "pointer";
+        granBtns.push({ id: opt.id, btn, defaultSize: opt.defaultSize });
+
+        btn.addEventListener("click", () => {
+            if (trendGranularity !== opt.id) {
+                trendGranularity = opt.id;
+                trendWindowSize = opt.defaultSize;
+                trendOffset = 0;
+                renderView();
+            }
+        });
+    });
+
+    // Wheel Mode Button
+    const wheelModeBtn = topControls.createEl("button");
+    wheelModeBtn.style.padding = "5px 12px";
+    wheelModeBtn.style.fontSize = "12px";
+    wheelModeBtn.style.borderRadius = "4px";
+    wheelModeBtn.style.border = "1px solid var(--background-modifier-border)";
+    wheelModeBtn.style.cursor = "pointer";
+    wheelModeBtn.title = "Toggle whether mouse wheel on the chart scrolls through time or zooms window size";
+    wheelModeBtn.addEventListener("click", () => {
+        trendWheelMode = (trendWheelMode === "pan") ? "zoom" : "pan";
+        updateWheelModeBtn();
+    });
+
+    function updateWheelModeBtn() {
+        if (trendWheelMode === "pan") {
+            wheelModeBtn.textContent = "🖱️ Wheel: ↔️ Pan Time";
+            wheelModeBtn.style.backgroundColor = "var(--background-modifier-form-field)";
+            wheelModeBtn.style.color = "var(--text-normal)";
+            wheelModeBtn.style.fontWeight = "normal";
+        } else {
+            wheelModeBtn.textContent = "🖱️ Wheel: 🔍 Zoom Window";
+            wheelModeBtn.style.backgroundColor = "var(--interactive-accent)";
+            wheelModeBtn.style.color = "var(--text-on-accent)";
+            wheelModeBtn.style.fontWeight = "bold";
+        }
+    }
+    updateWheelModeBtn();
+
+    // Toolbar Row: Navigation, Window Status, Presets & Steppers
+    const toolbarRow = card.createDiv();
+    toolbarRow.style.display = "flex";
+    toolbarRow.style.justifyContent = "space-between";
+    toolbarRow.style.alignItems = "center";
+    toolbarRow.style.flexWrap = "wrap";
+    toolbarRow.style.gap = "8px";
+    toolbarRow.style.padding = "8px 12px";
+    toolbarRow.style.borderRadius = "6px";
+    toolbarRow.style.backgroundColor = "var(--background-primary)";
+    toolbarRow.style.border = "1px solid var(--background-modifier-border)";
+    toolbarRow.style.marginBottom = "10px";
+
+    // Nav group
+    const navGroup = toolbarRow.createDiv();
+    navGroup.style.display = "flex";
+    navGroup.style.gap = "4px";
+    navGroup.style.alignItems = "center";
+
+    const oldestBtn = navGroup.createEl("button", { text: "⏮️ Oldest" });
+    const prevBtn = navGroup.createEl("button", { text: "◀ Prev" });
+    const nextBtn = navGroup.createEl("button", { text: "Next ▶" });
+    const latestBtn = navGroup.createEl("button", { text: "⏭️ Latest" });
+
+    [oldestBtn, prevBtn, nextBtn, latestBtn].forEach(b => {
+        b.style.padding = "4px 8px";
+        b.style.fontSize = "11px";
+        b.style.borderRadius = "4px";
+        b.style.border = "1px solid var(--background-modifier-border)";
+        b.style.cursor = "pointer";
+    });
+
+    // Window badge (Center)
+    const badgeEl = toolbarRow.createDiv();
+    badgeEl.style.fontSize = "11px";
+    badgeEl.style.fontWeight = "bold";
+    badgeEl.style.color = "var(--text-accent)";
+    badgeEl.style.textAlign = "center";
+
+    // Presets & Steppers group (Right)
+    const presetsGroup = toolbarRow.createDiv();
+    presetsGroup.style.display = "flex";
+    presetsGroup.style.gap = "4px";
+    presetsGroup.style.alignItems = "center";
+    presetsGroup.style.flexWrap = "wrap";
+
+    // Timeline Slider Row
+    const sliderContainer = card.createDiv();
+    sliderContainer.style.display = "flex";
+    sliderContainer.style.alignItems = "center";
+    sliderContainer.style.gap = "10px";
+    sliderContainer.style.marginBottom = "12px";
+
+    const sliderPastLabel = sliderContainer.createEl("span", { text: "⏮️ Past" });
+    sliderPastLabel.style.fontSize = "11px";
+    sliderPastLabel.style.opacity = "0.7";
+    sliderPastLabel.style.whiteSpace = "nowrap";
+
+    const slider = sliderContainer.createEl("input");
+    slider.type = "range";
+    slider.style.flex = "1";
+    slider.style.cursor = "pointer";
+
+    const sliderLatestLabel = sliderContainer.createEl("span", { text: "Latest ⏭️" });
+    sliderLatestLabel.style.fontSize = "11px";
+    sliderLatestLabel.style.opacity = "0.7";
+    sliderLatestLabel.style.whiteSpace = "nowrap";
+
+    // Chart container
+    const chartDivWrapper = card.createDiv();
+    chartDivWrapper.style.position = "relative";
+    chartDivWrapper.style.marginTop = "6px";
+
+    // Hover guidance hint
+    const hintEl = chartDivWrapper.createDiv();
+    hintEl.style.fontSize = "10px";
+    hintEl.style.opacity = "0.6";
+    hintEl.style.textAlign = "right";
+    hintEl.style.marginBottom = "4px";
+    hintEl.textContent = "💡 Hover on chart to scroll • Wheel: pan time • Ctrl+Wheel: zoom window size";
+
+    const chartDiv = chartDivWrapper.createDiv();
+
+    // Floating overlay buttons on hover
+    const floatLeft = chartDivWrapper.createEl("button", { text: "◀" });
+    floatLeft.title = "View earlier period";
+    floatLeft.style.position = "absolute";
+    floatLeft.style.left = "6px";
+    floatLeft.style.top = "50%";
+    floatLeft.style.transform = "translateY(-50%)";
+    floatLeft.style.zIndex = "10";
+    floatLeft.style.padding = "10px 8px";
+    floatLeft.style.borderRadius = "6px";
+    floatLeft.style.border = "1px solid var(--background-modifier-border)";
+    floatLeft.style.backgroundColor = "var(--background-secondary)";
+    floatLeft.style.opacity = "0";
+    floatLeft.style.transition = "opacity 0.2s ease, transform 0.1s ease";
+    floatLeft.style.cursor = "pointer";
+    floatLeft.style.fontSize = "14px";
+    floatLeft.style.fontWeight = "bold";
+
+    const floatRight = chartDivWrapper.createEl("button", { text: "▶" });
+    floatRight.title = "View later period";
+    floatRight.style.position = "absolute";
+    floatRight.style.right = "6px";
+    floatRight.style.top = "50%";
+    floatRight.style.transform = "translateY(-50%)";
+    floatRight.style.zIndex = "10";
+    floatRight.style.padding = "10px 8px";
+    floatRight.style.borderRadius = "6px";
+    floatRight.style.border = "1px solid var(--background-modifier-border)";
+    floatRight.style.backgroundColor = "var(--background-secondary)";
+    floatRight.style.opacity = "0";
+    floatRight.style.transition = "opacity 0.2s ease, transform 0.1s ease";
+    floatRight.style.cursor = "pointer";
+    floatRight.style.fontSize = "14px";
+    floatRight.style.fontWeight = "bold";
+
+    chartDivWrapper.addEventListener("mouseenter", () => {
+        if (!prevBtn.disabled) floatLeft.style.opacity = "0.75";
+        if (!nextBtn.disabled) floatRight.style.opacity = "0.75";
+    });
+    chartDivWrapper.addEventListener("mouseleave", () => {
+        floatLeft.style.opacity = "0";
+        floatRight.style.opacity = "0";
+    });
+
+    // Helper step calculation
+    function getStep() {
+        return (trendGranularity === "day") ? 7 : (trendGranularity === "week" ? 2 : 1);
+    }
+
+    function renderView() {
+        // 1. Update Heading and Subtitle
+        const granWord = trendGranularity === "day" ? "Daily" : (trendGranularity === "week" ? "Weekly" : "Monthly");
+        headingEl.textContent = `📈 ${granWord} Trend (Hours by Project)`;
+        subtitleEl.textContent = `Total hours worked per ${trendGranularity}, broken down and color-coded by project.`;
+
+        // 2. Update Granularity Buttons
+        granBtns.forEach(({ id, btn }) => {
+            const active = (id === trendGranularity);
+            btn.style.backgroundColor = active ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+            btn.style.color = active ? "var(--text-on-accent)" : "var(--text-normal)";
+            btn.style.fontWeight = active ? "bold" : "normal";
+        });
+
+        // 3. Periods & Aggregation
+        const allPeriods = getAllPeriods(trendGranularity);
+        const totalPeriods = allPeriods.length;
+        if (totalPeriods === 0) {
+            chartDiv.innerHTML = "<p style='opacity:0.6;font-size:12px;'>No records found.</p>";
+            return;
+        }
+
+        const periodProjectMinutes = aggregateData(allPeriods, trendGranularity);
+
+        // 4. Calculate effective window and offset
+        let effSize = (trendWindowSize === "all") ? totalPeriods : Math.max(1, Math.min(trendWindowSize, totalPeriods));
+        const maxOffset = Math.max(0, totalPeriods - effSize);
+        trendOffset = Math.max(0, Math.min(trendOffset, maxOffset));
+
+        const endIdx = totalPeriods - 1 - trendOffset;
+        const startIdx = Math.max(0, endIdx - effSize + 1);
+        const visiblePeriods = allPeriods.slice(startIdx, endIdx + 1);
+
+        // 5. Update Navigation Buttons
+        const canGoBack = (trendOffset < maxOffset);
+        const canGoForward = (trendOffset > 0);
+
+        oldestBtn.disabled = !canGoBack;
+        oldestBtn.style.opacity = canGoBack ? "1" : "0.35";
+        oldestBtn.style.cursor = canGoBack ? "pointer" : "default";
+
+        prevBtn.disabled = !canGoBack;
+        prevBtn.style.opacity = canGoBack ? "1" : "0.35";
+        prevBtn.style.cursor = canGoBack ? "pointer" : "default";
+
+        nextBtn.disabled = !canGoForward;
+        nextBtn.style.opacity = canGoForward ? "1" : "0.35";
+        nextBtn.style.cursor = canGoForward ? "pointer" : "default";
+
+        latestBtn.disabled = !canGoForward;
+        latestBtn.style.opacity = canGoForward ? "1" : "0.35";
+        latestBtn.style.cursor = canGoForward ? "pointer" : "default";
+
+        floatLeft.disabled = !canGoBack;
+        floatLeft.style.display = canGoBack ? "block" : "none";
+        floatRight.disabled = !canGoForward;
+        floatRight.style.display = canGoForward ? "block" : "none";
+
+        // 6. Update Badge
+        const firstP = visiblePeriods[0];
+        const lastP = visiblePeriods[visiblePeriods.length - 1];
+        const unit = (trendGranularity === "day") ? "Days" : (trendGranularity === "week" ? "Weeks" : "Months");
+        const statusText = (trendOffset === 0) ? "Latest" : `${trendOffset} ${unit.toLowerCase()} back`;
+        badgeEl.textContent = `📅 ${firstP ? firstP.label : ''} – ${lastP ? lastP.label : ''} (${visiblePeriods.length} ${unit}) • [${statusText}] • ${visiblePeriods.length}/${totalPeriods} total`;
+
+        // 7. Update Timeline Slider
+        slider.min = "0";
+        slider.max = String(maxOffset);
+        slider.value = String(maxOffset - trendOffset);
+        slider.disabled = (maxOffset === 0);
+
+        // 8. Update Presets & Steppers
+        presetsGroup.innerHTML = "";
+        const lessBtn = presetsGroup.createEl("button", { text: "➖ Less" });
+        lessBtn.style.padding = "4px 8px";
+        lessBtn.style.fontSize = "11px";
+        lessBtn.style.borderRadius = "4px";
+        lessBtn.style.border = "1px solid var(--background-modifier-border)";
+        lessBtn.style.cursor = "pointer";
+        lessBtn.title = "Show fewer intervals (zoom in)";
+        lessBtn.addEventListener("click", () => {
+            const cur = (trendWindowSize === "all") ? totalPeriods : trendWindowSize;
+            trendWindowSize = Math.max(3, cur - (trendGranularity === "day" ? 2 : 1));
+            renderView();
+        });
+
+        const moreBtn = presetsGroup.createEl("button", { text: "➕ More" });
+        moreBtn.style.padding = "4px 8px";
+        moreBtn.style.fontSize = "11px";
+        moreBtn.style.borderRadius = "4px";
+        moreBtn.style.border = "1px solid var(--background-modifier-border)";
+        moreBtn.style.cursor = "pointer";
+        moreBtn.title = "Show more intervals (zoom out)";
+        moreBtn.addEventListener("click", () => {
+            const cur = (trendWindowSize === "all") ? totalPeriods : trendWindowSize;
+            trendWindowSize = Math.min(totalPeriods, cur + (trendGranularity === "day" ? 2 : 1));
+            renderView();
+        });
+
+        let presetsList = [];
+        if (trendGranularity === "day") {
+            presetsList = [{ id: 7, label: "7d" }, { id: 14, label: "14d" }, { id: 30, label: "30d" }, { id: "all", label: "All" }];
+        } else if (trendGranularity === "week") {
+            presetsList = [{ id: 4, label: "4w" }, { id: 8, label: "8w" }, { id: 12, label: "12w" }, { id: "all", label: "All" }];
+        } else {
+            presetsList = [{ id: 3, label: "3m" }, { id: 6, label: "6m" }, { id: 12, label: "12m" }, { id: "all", label: "All" }];
+        }
+
+        presetsList.forEach(p => {
+            const pBtn = presetsGroup.createEl("button", { text: p.label });
+            pBtn.style.padding = "4px 7px";
+            pBtn.style.fontSize = "11px";
+            pBtn.style.borderRadius = "4px";
+            pBtn.style.border = "1px solid var(--background-modifier-border)";
+            pBtn.style.cursor = "pointer";
+            const isActive = (trendWindowSize === p.id);
+            pBtn.style.backgroundColor = isActive ? "var(--interactive-accent)" : "var(--background-modifier-form-field)";
+            pBtn.style.color = isActive ? "var(--text-on-accent)" : "var(--text-normal)";
+            pBtn.style.fontWeight = isActive ? "bold" : "normal";
+
+            pBtn.addEventListener("click", () => {
+                trendWindowSize = p.id;
+                renderView();
+            });
+        });
+
+        // 9. Prepare Datasets
+        const activeProjectsInWindow = allProjectNames.filter(proj => {
+            return visiblePeriods.some(p => (periodProjectMinutes[p.key]?.[proj] || 0) > 0);
+        });
+        const projectsForChart = activeProjectsInWindow.length > 0 ? activeProjectsInWindow : allProjectNames;
+
+        const datasets = projectsForChart.map(proj => {
+            const dataValues = visiblePeriods.map(p => {
+                const min = periodProjectMinutes[p.key]?.[proj] || 0;
+                return +(min / 60).toFixed(1);
+            });
+            return {
+                label: proj,
+                data: dataValues,
+                backgroundColor: projectColorMap[proj] || '#6366f1',
+                stack: 'trend',
+                borderRadius: 2
+            };
+        });
+
+        // 10. Render Chart
+        chartDiv.innerHTML = "";
+        window.renderChart({
+            type: 'bar',
+            data: {
+                labels: visiblePeriods.map(p => p.label),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                if (!items || items.length === 0) return '';
+                                const idx = items[0].dataIndex;
+                                return visiblePeriods[idx]?.fullLabel || items[0].label;
+                            },
+                            label: function(item) {
+                                return ` ${item.dataset.label}: ${item.raw}h`;
+                            },
+                            footer: function(items) {
+                                let tot = 0;
+                                items.forEach(it => { tot += (it.raw || 0); });
+                                return `Total: ${tot.toFixed(1)}h`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        title: { 
+                            display: true, 
+                            text: trendGranularity === 'day' ? 'Date' : (trendGranularity === 'week' ? 'Week' : 'Month'),
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: { display: true, text: 'Hours', font: { size: 12, weight: 'bold' } }
+                    }
+                }
+            }
+        }, chartDiv);
+    }
+
+    // Event listeners
+    oldestBtn.addEventListener("click", () => {
+        const allP = getAllPeriods(trendGranularity);
+        const eff = (trendWindowSize === "all") ? allP.length : Math.min(trendWindowSize, allP.length);
+        trendOffset = Math.max(0, allP.length - eff);
+        renderView();
+    });
+
+    prevBtn.addEventListener("click", () => {
+        const allP = getAllPeriods(trendGranularity);
+        const eff = (trendWindowSize === "all") ? allP.length : Math.min(trendWindowSize, allP.length);
+        const maxO = Math.max(0, allP.length - eff);
+        trendOffset = Math.min(maxO, trendOffset + getStep());
+        renderView();
+    });
+
+    floatLeft.addEventListener("click", () => {
+        const allP = getAllPeriods(trendGranularity);
+        const eff = (trendWindowSize === "all") ? allP.length : Math.min(trendWindowSize, allP.length);
+        const maxO = Math.max(0, allP.length - eff);
+        trendOffset = Math.min(maxO, trendOffset + getStep());
+        renderView();
+    });
+
+    nextBtn.addEventListener("click", () => {
+        trendOffset = Math.max(0, trendOffset - getStep());
+        renderView();
+    });
+
+    floatRight.addEventListener("click", () => {
+        trendOffset = Math.max(0, trendOffset - getStep());
+        renderView();
+    });
+
+    latestBtn.addEventListener("click", () => {
+        trendOffset = 0;
+        renderView();
+    });
+
+    slider.addEventListener("input", (e) => {
+        const val = parseInt(e.target.value, 10);
+        const maxVal = parseInt(e.target.max, 10);
+        trendOffset = Math.max(0, maxVal - val);
+        renderView();
+    });
+
+    // Wheel Event Handler on chartDivWrapper
+    chartDivWrapper.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const allP = getAllPeriods(trendGranularity);
+        const total = allP.length;
+        if (total === 0) return;
+
+        // Is zoom mode?
+        const isZoom = (trendWheelMode === "zoom" && !e.shiftKey) || e.ctrlKey || e.metaKey;
+
+        if (isZoom) {
+            // Zoom: Show more or less
+            let cur = (trendWindowSize === "all") ? total : trendWindowSize;
+            const step = (trendGranularity === "day") ? 1 : 1;
+            if (e.deltaY < 0) {
+                // Zoom in -> show fewer
+                trendWindowSize = Math.max(3, cur - step);
+            } else {
+                // Zoom out -> show more
+                trendWindowSize = Math.min(total, cur + step);
+            }
+        } else {
+            // Pan: See previous / next periods
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+            const step = 1;
+            let eff = (trendWindowSize === "all") ? total : Math.min(trendWindowSize, total);
+            const maxO = Math.max(0, total - eff);
+
+            if (delta < 0) {
+                // Scroll up or left -> go back into past
+                trendOffset = Math.min(maxO, trendOffset + step);
+            } else {
+                // Scroll down or right -> go forward to latest
+                trendOffset = Math.max(0, trendOffset - step);
+            }
+        }
+
+        renderView();
+    }, { passive: false });
+
+    // Initial render
+    renderView();
 }
 
 // 6. Create Top Filter Buttons
