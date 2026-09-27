@@ -89,6 +89,7 @@ public partial class ProjectDashboardWindow : Window
     private readonly Func<string, DateTime, DateTime, ProjectRecordMutationResult> _addRecord;
     private readonly Func<Guid, string, DateTime, DateTime, ProjectRecordMutationResult> _updateRecord;
     private readonly Func<Guid, ProjectRecordMutationResult> _deleteRecord;
+    private readonly Func<string, ProjectDeletionResult> _deleteProject;
     private readonly Func<bool> _canMutateRecords;
     private readonly Func<string?> _recordsPersistenceWarning;
     private readonly AppSettings? _settings;
@@ -139,7 +140,8 @@ public partial class ProjectDashboardWindow : Window
         Func<Guid, ProjectRecordMutationResult> deleteRecord,
         Func<bool> canMutateRecords,
         Func<string?> recordsPersistenceWarning,
-        AppSettings? settings = null)
+        AppSettings? settings = null,
+        Func<string, ProjectDeletionResult>? deleteProject = null)
     {
         ArgumentNullException.ThrowIfNull(historyProvider);
         ArgumentNullException.ThrowIfNull(addRecord);
@@ -152,6 +154,7 @@ public partial class ProjectDashboardWindow : Window
         _addRecord = addRecord;
         _updateRecord = updateRecord;
         _deleteRecord = deleteRecord;
+        _deleteProject = deleteProject ?? (_ => new ProjectDeletionResult(ProjectDeletionStatus.NotFound, string.Empty, 0));
         _canMutateRecords = canMutateRecords;
         _recordsPersistenceWarning = recordsPersistenceWarning;
         _settings = settings;
@@ -225,7 +228,78 @@ public partial class ProjectDashboardWindow : Window
 
         _selectedProjectKey = option.Key;
         _recordsPageIndex = 0;
+        UpdateDeleteProjectButton(option);
         RefreshFromHistory();
+    }
+
+    private void UpdateDeleteProjectButton(ProjectFilterOption? option)
+    {
+        if (DeleteProjectButton == null) return;
+        if (option?.Key is not null)
+        {
+            DeleteProjectButton.Visibility = Visibility.Visible;
+            DeleteProjectButton.Content = $"🗑 Delete {option.Name}";
+            DeleteProjectButton.ToolTip = $"Permanently delete project '{option.Name}' and all its recorded sessions";
+        }
+        else
+        {
+            DeleteProjectButton.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void DeleteProjectButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProjectFilterSelector.SelectedItem is not ProjectFilterOption option || string.IsNullOrWhiteSpace(option.Key))
+            return;
+
+        EnsureRecordsMutationAvailable();
+
+        string projectName = option.Name;
+        var view = _historyProvider();
+        int recordCount = view.Intervals.Count(i =>
+            string.Equals(i.ProjectKey, option.Key, StringComparison.OrdinalIgnoreCase));
+
+        var confirmation = new ConfirmationDialogWindow(
+            title: "Delete Project",
+            heading: $"Delete Project '{projectName}'?",
+            message: $"Are you sure you want to permanently delete project '{projectName}' and all {recordCount} recorded session(s)?\n\nThis will remove the project from history and update your Stopwatch Log.md file. This action cannot be undone.",
+            confirmText: "Delete Project",
+            destructive: true)
+        {
+            Owner = this
+        };
+
+        if (ShowRecordDialog(confirmation) != true)
+            return;
+
+        ProjectDeletionResult result;
+        try
+        {
+            EnsureRecordsMutationAvailable();
+            result = _deleteProject(projectName);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
+        {
+            CrashLogger.LogRecoverable(exception, "ProjectDashboardDeleteProject");
+            UpdateRecordsMutationAvailability();
+            ShowRecordsWarning("The project could not be deleted. Refresh the dashboard and try again.");
+            return;
+        }
+
+        switch (result.Status)
+        {
+            case ProjectDeletionStatus.Success:
+                _selectedProjectKey = null;
+                RefreshFromHistory();
+                break;
+            case ProjectDeletionStatus.ActiveTimerRunning:
+                ShowRecordsWarning($"Cannot delete '{projectName}' because a timer is currently tracking this project. Pause or stop the timer first.");
+                break;
+            case ProjectDeletionStatus.NotFound:
+                ShowRecordsWarning($"Project '{projectName}' was not found. The dashboard has been refreshed.");
+                RefreshFromHistory();
+                break;
+        }
     }
 
     private void ProjectRecordsExpander_Expanded(object sender, RoutedEventArgs e) =>
@@ -906,6 +980,10 @@ public partial class ProjectDashboardWindow : Window
     {
         bool canMutate = SafeCanMutateRecords();
         AddRecordButton.IsEnabled = canMutate;
+        if (DeleteProjectButton != null)
+        {
+            DeleteProjectButton.IsEnabled = canMutate;
+        }
 
         string? warning;
         try
@@ -1008,6 +1086,8 @@ public partial class ProjectDashboardWindow : Window
         {
             _updatingProjectFilter = false;
         }
+
+        UpdateDeleteProjectButton(selected);
     }
 
     private string GetRangeHeading(DateTime asOfLocal) => _selectedRange switch

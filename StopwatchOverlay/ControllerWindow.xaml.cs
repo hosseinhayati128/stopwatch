@@ -3355,7 +3355,8 @@ namespace StopwatchOverlay
                     DeleteProjectRecord,
                     CanMutateProjectRecords,
                     GetProjectRecordsWarning,
-                    _settings);
+                    _settings,
+                    DeleteProject);
                 _projectDashboardWindow.Closed += (_, _) => _projectDashboardWindow = null;
             }
 
@@ -3561,6 +3562,66 @@ namespace StopwatchOverlay
             {
                 MarkProjectHistoryDirty();
                 CheckpointStateNow();
+            }
+
+            return result;
+        }
+
+        private ProjectDeletionResult DeleteProject(string projectName)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                return Dispatcher.Invoke(() => DeleteProject(projectName));
+            }
+
+            EnsureProjectRecordsCanMutate();
+
+            if (string.IsNullOrWhiteSpace(projectName))
+            {
+                return new ProjectDeletionResult(ProjectDeletionStatus.NotFound, projectName ?? string.Empty, 0);
+            }
+
+            string normalized = ProjectTimeHistory.NormalizeProjectName(projectName);
+            string key = ProjectTimeHistory.CreateProjectKey(normalized);
+
+            bool isRunningTimer = _timers.Any(t => t.IsRunning && string.Equals(ProjectTimeHistory.CreateProjectKey(t.Name), key, StringComparison.OrdinalIgnoreCase));
+            if (isRunningTimer)
+            {
+                return new ProjectDeletionResult(ProjectDeletionStatus.ActiveTimerRunning, normalized, 0);
+            }
+
+            ProjectDeletionResult result = _projectHistory.DeleteProject(projectName);
+            if (result.Status == ProjectDeletionStatus.Success)
+            {
+                bool timersChanged = false;
+                foreach (var timer in _timers.Where(t => string.Equals(ProjectTimeHistory.CreateProjectKey(t.Name), key, StringComparison.OrdinalIgnoreCase)))
+                {
+                    timer.Name = "";
+                    foreach (var instance in _overlayInstances.Where(item => ReferenceEquals(item.Session, timer)))
+                    {
+                        instance.Window.SetTimerName(timer.Name);
+                    }
+                    timersChanged = true;
+                }
+                if (timersChanged)
+                {
+                    RefreshCombinedOverlayState();
+                    RepositionAllOverlays();
+                    UpdateTimeDisplay();
+                    UpdateButtonStates();
+                    UpdateShortcutLabels();
+                }
+
+                if (_settings.ProjectIdleRules != null && _settings.ProjectIdleRules.Remove(normalized))
+                {
+                    SettingsStore.Save(_settings);
+                    _settingsWindow?.ReloadFromSettings();
+                }
+
+                MarkProjectHistoryDirty();
+                CheckpointStateNow();
+
+                UpdateStatus($"Project '{normalized}' deleted", Brushes.DeepSkyBlue);
             }
 
             return result;

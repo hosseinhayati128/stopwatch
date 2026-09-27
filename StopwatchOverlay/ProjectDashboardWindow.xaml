@@ -265,6 +265,16 @@
                     <ComboBox x:Name="ProjectFilterSelector" Width="230" Height="34" MinHeight="34"
                               ToolTip="Filter every dashboard view by project"
                               SelectionChanged="ProjectFilterSelector_SelectionChanged"/>
+                    <Button x:Name="DeleteProjectButton"
+                            Content="🗑 Delete Project"
+                            Style="{StaticResource ModernButton}"
+                            Height="34"
+                            Padding="12,5"
+                            FontSize="12"
+                            Margin="8,0,0,0"
+                            Visibility="Collapsed"
+                            ToolTip="Permanently delete this project and all its recorded sessions"
+                            Click="DeleteProjectButton_Click"/>
                 </StackPanel>
 
                 <StackPanel x:Name="HeaderRangePanel" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"

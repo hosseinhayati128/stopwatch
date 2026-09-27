@@ -97,6 +97,65 @@ namespace StopwatchOverlay.Tests
         }
 
         [Fact]
+        public void DeleteProject_RemovesProjectAndAllAssociatedIntervals()
+        {
+            var history = new ProjectTimeHistory();
+            history.AddManualInterval("Alpha", StartUtc, StartUtc.AddMinutes(30));
+            history.AddManualInterval("Alpha", StartUtc.AddHours(1), StartUtc.AddHours(1).AddMinutes(45));
+            history.AddManualInterval("Beta", StartUtc, StartUtc.AddMinutes(15));
+
+            Assert.Contains("Alpha", history.ProjectNames);
+            Assert.Contains("Beta", history.ProjectNames);
+            Assert.Equal(3, history.CreateView(StartUtc.AddHours(2)).Intervals.Count);
+
+            ProjectDeletionResult result = history.DeleteProject("Alpha");
+
+            Assert.Equal(ProjectDeletionStatus.Success, result.Status);
+            Assert.Equal("Alpha", result.ProjectName);
+            Assert.Equal(2, result.RecordsDeleted);
+
+            Assert.DoesNotContain("Alpha", history.ProjectNames);
+            Assert.Contains("Beta", history.ProjectNames);
+
+            var view = history.CreateView(StartUtc.AddHours(2));
+            Assert.Single(view.Intervals);
+            Assert.Equal("Beta", view.Intervals[0].ProjectName);
+        }
+
+        [Fact]
+        public void DeleteProject_ReturnsActiveTimerRunning_WhenOpenIntervalExists()
+        {
+            var history = new ProjectTimeHistory();
+            Guid timerId = Guid.NewGuid();
+            history.StartTracking(timerId, "ActiveProject", StartUtc);
+
+            ProjectDeletionResult result = history.DeleteProject("ActiveProject");
+
+            Assert.Equal(ProjectDeletionStatus.ActiveTimerRunning, result.Status);
+            Assert.Equal("ActiveProject", result.ProjectName);
+            Assert.Equal(0, result.RecordsDeleted);
+            Assert.Contains("ActiveProject", history.ProjectNames);
+            Assert.Single(history.CreateView(StartUtc.AddHours(1)).Intervals);
+        }
+
+        [Theory]
+        [InlineData("NonExistent")]
+        [InlineData("")]
+        [InlineData("   ")]
+        [InlineData(null)]
+        public void DeleteProject_ReturnsNotFound_WhenProjectDoesNotExist(string? projectName)
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Navid");
+
+            ProjectDeletionResult result = history.DeleteProject(projectName!);
+
+            Assert.Equal(ProjectDeletionStatus.NotFound, result.Status);
+            Assert.Equal(0, result.RecordsDeleted);
+            Assert.Single(history.ProjectNames);
+        }
+
+        [Fact]
         public void UpdateClosedInterval_PreservesIdentityAndUsesCanonicalProject()
         {
             var history = new ProjectTimeHistory();

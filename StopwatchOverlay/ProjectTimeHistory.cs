@@ -25,6 +25,18 @@ namespace StopwatchOverlay
         ProjectRecordMutationStatus Status,
         ProjectWorkIntervalView? Record = null);
 
+    public enum ProjectDeletionStatus
+    {
+        Success,
+        NotFound,
+        ActiveTimerRunning
+    }
+
+    public sealed record ProjectDeletionResult(
+        ProjectDeletionStatus Status,
+        string ProjectName,
+        int RecordsDeleted);
+
     /// <summary>
     /// The part of a timer session that determines whether project time should
     /// remain open when persisted timer state and project history are reconciled.
@@ -259,6 +271,45 @@ namespace StopwatchOverlay
                 return new ProjectRecordMutationResult(
                     ProjectRecordMutationStatus.Success,
                     deleted);
+            }
+        }
+
+        /// <summary>
+        /// Permanently deletes an entire project and all of its recorded intervals.
+        /// If an active (open) interval is currently tracking this project, deletion is
+        /// blocked with ActiveTimerRunning to prevent concurrent state corruption.
+        /// </summary>
+        public ProjectDeletionResult DeleteProject(string projectName)
+        {
+            if (string.IsNullOrWhiteSpace(projectName))
+                return new ProjectDeletionResult(ProjectDeletionStatus.NotFound, projectName ?? string.Empty, 0);
+
+            string displayName = NormalizeProjectName(projectName);
+            string key = CreateProjectKey(displayName);
+
+            lock (_gate)
+            {
+                int projectIndex = _projects.FindIndex(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+                bool hasIntervals = _intervals.Any(i => string.Equals(i.ProjectKey, key, StringComparison.OrdinalIgnoreCase));
+
+                if (projectIndex < 0 && !hasIntervals)
+                {
+                    return new ProjectDeletionResult(ProjectDeletionStatus.NotFound, displayName, 0);
+                }
+
+                bool hasOpenInterval = _intervals.Any(i => string.Equals(i.ProjectKey, key, StringComparison.OrdinalIgnoreCase) && !i.EndUtc.HasValue);
+                if (hasOpenInterval)
+                {
+                    return new ProjectDeletionResult(ProjectDeletionStatus.ActiveTimerRunning, displayName, 0);
+                }
+
+                int removedCount = _intervals.RemoveAll(i => string.Equals(i.ProjectKey, key, StringComparison.OrdinalIgnoreCase));
+                if (projectIndex >= 0)
+                {
+                    _projects.RemoveAt(projectIndex);
+                }
+
+                return new ProjectDeletionResult(ProjectDeletionStatus.Success, displayName, removedCount);
             }
         }
 
