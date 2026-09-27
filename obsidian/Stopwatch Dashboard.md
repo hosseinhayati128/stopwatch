@@ -491,6 +491,7 @@ function renderDashboard() {
     for (const r of records) {
         projectTotals[r.project] = (projectTotals[r.project] || 0) + r.minutes;
     }
+    const projectLabels = Object.keys(projectTotals);
 
     let topProject = "-";
     let maxMin = 0;
