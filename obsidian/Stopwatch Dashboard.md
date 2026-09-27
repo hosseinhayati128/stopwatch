@@ -158,7 +158,8 @@ if (internetFile) {
                 pingMs,
                 speedMbps,
                 notes,
-                isOnline: status.includes("Online"),
+                isOnline: !status.includes("Offline"),
+                isOptimal: status.includes("Online"),
                 isSlow: status.includes("Slow"),
                 isOffline: status.includes("Offline")
             });
@@ -1797,8 +1798,12 @@ function renderInternetSection() {
         ? Math.round(validPings.reduce((a, b) => a + b, 0) / validPings.length)
         : "-";
 
-    const onlineCount = allNetRecordsInPeriod.filter(r => r.isOnline).length;
-    const uptimePercent = Math.round((onlineCount / allNetRecordsInPeriod.length) * 100);
+    const totalNetChecks = allNetRecordsInPeriod.length;
+    const connectedCount = allNetRecordsInPeriod.filter(r => r.isOnline).length;
+    const optimalCount = allNetRecordsInPeriod.filter(r => r.isOptimal).length;
+    const slowCount = allNetRecordsInPeriod.filter(r => r.isSlow).length;
+    const offlineCount = allNetRecordsInPeriod.filter(r => r.isOffline).length;
+    const uptimePercent = totalNetChecks > 0 ? Math.round((connectedCount / totalNetChecks) * 100) : 0;
 
     const periodNetworks = Array.from(new Set(allNetRecordsInPeriod.map(r => r.cleanNetwork))).filter(Boolean);
     const activeNetwork = allNetRecordsInPeriod[allNetRecordsInPeriod.length - 1]?.cleanNetwork || periodNetworks[0] || "Unknown";
@@ -1832,8 +1837,8 @@ function renderInternetSection() {
         </div>
         <div>
             <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Connection Uptime</div>
-            <div style="font-size: 16px; font-weight: bold; color: ${uptimePercent >= 95 ? '#10b981' : (uptimePercent >= 80 ? '#fbbf24' : '#ef4444')};">${uptimePercent}%</div>
-            <div style="font-size: 11px; opacity: 0.7;">${onlineCount}/${allNetRecordsInPeriod.length} checks online</div>
+            <div style="font-size: 16px; font-weight: bold; color: ${uptimePercent >= 90 ? '#10b981' : (uptimePercent >= 75 ? '#fbbf24' : '#ef4444')};">${uptimePercent}%</div>
+            <div style="font-size: 11px; opacity: 0.7;" title="${optimalCount} optimal, ${slowCount} slow, ${offlineCount} offline">${connectedCount}/${totalNetChecks} checks online (${slowCount} slow)</div>
         </div>
     `;
 
