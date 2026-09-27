@@ -390,6 +390,7 @@ let deepDiveScope = "day"; // "day", "week", "month", "all"
 let deepDiveDate = availableDates[0] || new Date().toISOString().split("T")[0];
 let deepDiveSelectedSessionIdx = -1; // -1 = all sessions in this period combined
 let deepDiveAppFilter = "App"; // "App", "Web", "all"
+let deepDiveTimelineOpen = false; // Collapsed by default when choosing a project
 
 // Internet Performance & Wi-Fi state
 let netSelectedWifi = "__all__"; // "__all__" or specific clean network name
@@ -965,6 +966,7 @@ function renderTimeByProjectSection() {
                 deepDiveProject = proj;
                 deepDiveScope = timeByProjectScope === "all" ? "all" : (timeByProjectScope === "year" ? "month" : timeByProjectScope);
                 deepDiveDate = timeByProjectDate;
+                deepDiveTimelineOpen = false;
                 renderDashboard();
             });
 
@@ -1572,12 +1574,14 @@ function renderProjectDeepDiveSection() {
     projSelect.addEventListener("change", (e) => {
         deepDiveProject = e.target.value;
         deepDiveSelectedSessionIdx = -1;
+        deepDiveTimelineOpen = false;
         updateDeepDive();
     });
 
     scopeSelect.addEventListener("change", (e) => {
         deepDiveScope = e.target.value;
         deepDiveSelectedSessionIdx = -1;
+        deepDiveTimelineOpen = false;
         if (deepDiveScope === "all") {
             dateSelect.disabled = true;
             dateContainer.style.opacity = "0.5";
@@ -1591,6 +1595,7 @@ function renderProjectDeepDiveSection() {
     dateSelect.addEventListener("change", (e) => {
         deepDiveDate = e.target.value;
         deepDiveSelectedSessionIdx = -1;
+        deepDiveTimelineOpen = false;
         updateDeepDive();
     });
 
@@ -1834,11 +1839,60 @@ function renderProjectDeepDiveSection() {
                 }
             }, chartDiv);
 
-            // Audit log table
-            const logHeading = resultsContainer.createEl("h4", { text: "Detailed In-Session Activity Timeline" });
-            logHeading.style.margin = "20px 0 8px 0";
+            // Detailed In-Session Activity Timeline (Collapsible, collapsed by default when choosing a project)
+            const details = resultsContainer.createEl("details");
+            details.style.marginTop = "20px";
+            details.style.borderRadius = "6px";
+            details.style.backgroundColor = "var(--background-primary)";
+            details.style.border = "1px solid var(--background-modifier-border)";
+            details.style.padding = "10px 14px";
+            if (deepDiveTimelineOpen) {
+                details.open = true;
+            }
 
-            const logTable = resultsContainer.createEl("table");
+            const summary = details.createEl("summary");
+            summary.style.fontWeight = "bold";
+            summary.style.fontSize = "13px";
+            summary.style.cursor = "pointer";
+            summary.style.userSelect = "none";
+            summary.style.display = "flex";
+            summary.style.alignItems = "center";
+            summary.style.justifyContent = "space-between";
+            summary.title = "Click to expand/collapse activity timeline";
+
+            const summaryTitle = summary.createDiv();
+            summaryTitle.style.display = "flex";
+            summaryTitle.style.alignItems = "center";
+            summaryTitle.style.gap = "8px";
+            summaryTitle.innerHTML = `
+                <span>Detailed In-Session Activity Timeline</span>
+                <span class="toggle-hint" style="font-size: 11px; opacity: 0.6; font-weight: normal;">${deepDiveTimelineOpen ? "(click to collapse)" : "(click to expand)"}</span>
+            `;
+
+            const summaryBadge = summary.createEl("span", {
+                text: `${detailedIntervals.length} record${detailedIntervals.length === 1 ? '' : 's'}`
+            });
+            summaryBadge.style.fontSize = "11px";
+            summaryBadge.style.padding = "2px 8px";
+            summaryBadge.style.borderRadius = "10px";
+            summaryBadge.style.backgroundColor = "var(--background-modifier-form-field)";
+            summaryBadge.style.border = "1px solid var(--background-modifier-border)";
+            summaryBadge.style.opacity = "0.75";
+            summaryBadge.style.fontWeight = "normal";
+
+            details.addEventListener("toggle", () => {
+                deepDiveTimelineOpen = details.open;
+                const hint = summaryTitle.querySelector(".toggle-hint");
+                if (hint) {
+                    hint.textContent = details.open ? "(click to collapse)" : "(click to expand)";
+                }
+            });
+
+            const tableContainer = details.createDiv();
+            tableContainer.style.overflowX = "auto";
+            tableContainer.style.marginTop = "10px";
+
+            const logTable = tableContainer.createEl("table");
             logTable.style.width = "100%";
             logTable.style.fontSize = "11px";
             logTable.style.borderCollapse = "collapse";
