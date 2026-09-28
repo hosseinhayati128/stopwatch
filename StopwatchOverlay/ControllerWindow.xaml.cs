@@ -161,6 +161,7 @@ namespace StopwatchOverlay
         private bool _appliedStartWithWindows;
         private Internet.InternetMonitorService? _internetMonitorService;
         private ActivityWatch.ActivityWatchSyncService? _activityWatchSyncService;
+        private PeriodicReview.PeriodicReviewService? _periodicReviewService;
         private DispatcherTimer? _telegramOutboxFlushTimer;
         private bool _isNamingTimer;
         private TimerNameWindow? _projectChooserWindow;
@@ -311,6 +312,7 @@ namespace StopwatchOverlay
             InitializeInternetMonitor();
             InitializeActivityWatchSync();
             InitializeTelegramOutboxSync();
+            InitializePeriodicReview();
         }
 
         private void InitializeInternetMonitor()
@@ -406,6 +408,116 @@ namespace StopwatchOverlay
             {
                 UpdateStatus($"ActivityWatch log synced ({result.AppCount} apps, {result.WebCount} web sites)", (Brush)FindResource("AccentBrush"));
             }
+        }
+
+        private void InitializePeriodicReview()
+        {
+            _periodicReviewService?.Dispose();
+            _periodicReviewService = new PeriodicReview.PeriodicReviewService(() => _settings);
+            _periodicReviewService.PromptRequested += OnPeriodicReviewPromptRequested;
+        }
+
+        private void OnPeriodicReviewPromptRequested(DateTime startUtc, DateTime endUtc)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => OnPeriodicReviewPromptRequested(startUtc, endUtc));
+                return;
+            }
+
+            var prompt = new PeriodicReview.PeriodicReviewPromptWindow(
+                startUtc,
+                endUtc,
+                _settings.PeriodicReviewAutoDismissSeconds,
+                _settings.PeriodicReviewSnoozeMinutes,
+                _settings.PeriodicReviewIntervalMinutes,
+                result =>
+                {
+                    switch (result)
+                    {
+                        case PeriodicReview.PeriodicReviewPromptResult.Accepted:
+                            OpenPeriodicReviewWindow(startUtc, endUtc);
+                            break;
+                        case PeriodicReview.PeriodicReviewPromptResult.Skipped:
+                            _periodicReviewService?.OnPromptSkipped();
+                            break;
+                        case PeriodicReview.PeriodicReviewPromptResult.Ignored:
+                            _periodicReviewService?.OnPromptIgnored();
+                            break;
+                    }
+                });
+
+            prompt.Owner = this;
+            prompt.Show();
+        }
+
+        private void OpenPeriodicReviewWindow(DateTime startUtc, DateTime endUtc)
+        {
+            var historyView = _projectHistory.CreateView(DateTime.UtcNow);
+            var reviewWin = new PeriodicReview.PeriodicReviewWindow(
+                startUtc,
+                endUtc,
+                _settings,
+                historyView,
+                _timers,
+                slots =>
+                {
+                    ApplyPeriodicReviewSlots(slots);
+                    _periodicReviewService?.OnReviewCompleted(DateTime.UtcNow);
+                    _settings.LastPeriodicReviewCompletedUtc = DateTime.UtcNow;
+                    SettingsStore.Save(_settings);
+                });
+
+            reviewWin.Owner = this;
+            reviewWin.Show();
+        }
+
+        private void ApplyPeriodicReviewSlots(List<PeriodicReview.PeriodicReviewStopwatchSlot> slots)
+        {
+            bool anyChanges = false;
+            foreach (var slot in slots)
+            {
+                if (slot.HasChanged)
+                {
+                    anyChanges = true;
+                    if (slot.ExistingIntervalId.HasValue && !string.IsNullOrWhiteSpace(slot.SelectedProjectName))
+                    {
+                        _projectHistory.UpdateClosedInterval(slot.ExistingIntervalId.Value, slot.SelectedProjectName, slot.StartUtc, slot.EndUtc);
+                    }
+                    else if (!slot.ExistingIntervalId.HasValue && !string.IsNullOrWhiteSpace(slot.SelectedProjectName))
+                    {
+                        _projectHistory.AddManualInterval(slot.SelectedProjectName, slot.StartUtc, slot.EndUtc);
+                    }
+                    else if (slot.ExistingIntervalId.HasValue && string.IsNullOrWhiteSpace(slot.SelectedProjectName))
+                    {
+                        _projectHistory.DeleteClosedInterval(slot.ExistingIntervalId.Value);
+                    }
+                }
+            }
+
+            if (anyChanges)
+            {
+                _projectHistoryDirty = true;
+                _projectTimeStore.Save(_projectHistory);
+                var view = _projectHistory.CreateView(DateTime.UtcNow);
+                ObsidianLogSync.SyncHistory(view, _settings);
+                UpdateStatus("Periodic review saved", (Brush)FindResource("AccentBrush"));
+            }
+        }
+
+        private void TriggerPeriodicReviewManual()
+        {
+            DateTime endUtc = DateTime.UtcNow;
+            DateTime startUtc;
+            if (_periodicReviewService != null)
+            {
+                _periodicReviewService.GetReviewPeriod(out startUtc, out endUtc);
+            }
+            else
+            {
+                startUtc = endUtc.AddMinutes(-Math.Max(5, _settings.PeriodicReviewIntervalMinutes));
+            }
+            OpenPeriodicReviewWindow(startUtc, endUtc);
         }
 
         private void InitializeProjectHistory(DateTime startupUtc)
@@ -2168,7 +2280,7 @@ namespace StopwatchOverlay
                     UpdateStatus("Ready", (Brush)FindResource("SecondaryTextBrush"));
                 }
             }
-            else if (action is ShortcutAction.SyncActivityWatch)
+            else if (action is ShortcutAction.SyncActivityWatch or ShortcutAction.PeriodicReview)
             {
                 _commandMode?.Exit();
                 CloseCommandHintWindow();
@@ -2533,6 +2645,9 @@ namespace StopwatchOverlay
                 case ShortcutAction.SyncActivityWatch:
                     TriggerActivityWatchSyncManual();
                     break;
+                case ShortcutAction.PeriodicReview:
+                    Dispatcher.BeginInvoke(new Action(TriggerPeriodicReviewManual), DispatcherPriority.Input);
+                    break;
             }
         }
 
@@ -2609,6 +2724,7 @@ namespace StopwatchOverlay
             timer.Stopwatch.Stop();
             timer.IsRunning = false;
             timer.LastCountdownUpdateUtc = default;
+            timer.LastPauseUtc = transitionUtc;
 
             if (subtractDuration)
             {
@@ -2642,6 +2758,128 @@ namespace StopwatchOverlay
             string subMsg = subtractDuration ? $" (reverted {timeoutMinutes}m idle)" : "";
             UpdateStatus($"Paused: {projLabel} idle for {timeoutMinutes}m{subMsg}", Brushes.Orange);
             CrashLogger.RecordUiAction($"Idle timeout reached ({timeoutMinutes}m). Stopped {projLabel}.", "IdleDetector");
+        }
+
+        private bool DetectIntermediateTaskSwitch(
+            TimerSession timer,
+            DateTime pauseStartUtc,
+            DateTime resumeUtc,
+            out string? otherProjectName,
+            out TimeSpan otherProjectDuration)
+        {
+            otherProjectName = null;
+            otherProjectDuration = TimeSpan.Zero;
+
+            if (_projectHistory == null) return false;
+
+            string currentProjectName = !string.IsNullOrWhiteSpace(timer.Name) ? timer.Name : timer.DisplayName;
+
+            // Look for work intervals in history during [pauseStartUtc, resumeUtc]
+            // that belong to a different project or a different timer session
+            var intervals = _projectHistory.CreateView(resumeUtc).Intervals;
+            var projectDurations = new Dictionary<string, TimeSpan>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var interval in intervals)
+            {
+                // Must be a different timer session OR different project
+                bool isOther = interval.TimerSessionId != timer.Id
+                    || !ProjectAssignmentsEqual(interval.ProjectName, currentProjectName);
+
+                if (!isOther) continue;
+
+                DateTime intervalStart = interval.StartUtc;
+                DateTime intervalEnd = interval.EndUtc ?? resumeUtc;
+                DateTime overlapStart = intervalStart > pauseStartUtc ? intervalStart : pauseStartUtc;
+                DateTime overlapEnd = intervalEnd < resumeUtc ? intervalEnd : resumeUtc;
+
+                if (overlapEnd > overlapStart)
+                {
+                    TimeSpan overlap = overlapEnd - overlapStart;
+                    string pName = !string.IsNullOrWhiteSpace(interval.ProjectName) ? interval.ProjectName : "Other Task";
+                    if (!projectDurations.ContainsKey(pName))
+                        projectDurations[pName] = TimeSpan.Zero;
+                    projectDurations[pName] += overlap;
+                }
+            }
+
+            if (projectDurations.Count > 0)
+            {
+                var best = projectDurations.OrderByDescending(kv => kv.Value).First();
+                // Requirement: if the middle task time was more than 30 seconds
+                if (best.Value > TimeSpan.FromSeconds(30))
+                {
+                    otherProjectName = best.Key;
+                    otherProjectDuration = best.Value;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void PromptFocusInterruption(
+            TimerSession timer,
+            DateTime pauseStartUtc,
+            DateTime resumeUtc,
+            TimeSpan pauseDuration)
+        {
+            if (!_settings.FocusTrackingEnabled) return;
+
+            string projectName = !string.IsNullOrWhiteSpace(timer.Name) ? timer.Name : timer.DisplayName;
+
+            bool isTaskSwitch = DetectIntermediateTaskSwitch(
+                timer,
+                pauseStartUtc,
+                resumeUtc,
+                out string? otherProjectName,
+                out TimeSpan otherProjectDuration);
+
+            var dialog = new FocusInterruptionDialogWindow(
+                projectName,
+                pauseDuration,
+                _settings.FocusDistractionThresholdMinutes,
+                _settings.FocusPromptTimeoutSeconds,
+                reason =>
+                {
+                    try
+                    {
+                        string? note = (reason == FocusPauseReason.TaskSwitch && !string.IsNullOrWhiteSpace(otherProjectName))
+                            ? $"Switched to {otherProjectName} ({ObsidianLogSync.FormatDuration(otherProjectDuration)})"
+                            : null;
+
+                        var record = _projectHistory.RecordFocusPause(
+                            timer.Id,
+                            projectName,
+                            pauseStartUtc,
+                            resumeUtc,
+                            reason,
+                            note);
+
+                        MarkProjectHistoryDirty();
+
+                        CrashLogger.RecordUiAction(
+                            $"Focus interruption recorded: {record.ReasonDisplayName} ({ObsidianLogSync.FormatDuration(record.Duration)}) on {projectName}",
+                            "FocusTracker");
+
+                        if (_settings.ObsidianAutoSyncEnabled && !string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder))
+                        {
+                            ObsidianLogSync.TryAutoSync(_projectHistory.CreateView(DateTime.UtcNow), _settings);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLogger.LogRecoverable(ex, "FocusInterruptionRecording");
+                    }
+                },
+                isTaskSwitch: isTaskSwitch,
+                otherProjectName: otherProjectName,
+                otherProjectDuration: otherProjectDuration);
+
+            if (IsVisible)
+            {
+                dialog.Owner = this;
+            }
+            dialog.Show();
         }
 
         private void AdvanceRunningCountdowns(
@@ -3864,6 +4102,7 @@ namespace StopwatchOverlay
                 timer.Stopwatch.Stop();
                 timer.IsRunning = false;
                 timer.LastCountdownUpdateUtc = default;
+                timer.LastPauseUtc = transitionUtc;
                 UpdateStatus("Paused", Brushes.Orange);
             }
             else
@@ -3884,9 +4123,21 @@ namespace StopwatchOverlay
                     transitionUtc = DateTime.UtcNow;
                 }
 
+                DateTime? pauseStart = timer.LastPauseUtc;
+                timer.LastPauseUtc = null;
+
                 timer.Stopwatch.Start();
                 timer.IsRunning = true;
                 UpdateStatus("Running", Brushes.LimeGreen);
+
+                if (pauseStart.HasValue && _settings.FocusTrackingEnabled)
+                {
+                    TimeSpan pauseDuration = transitionUtc - pauseStart.Value;
+                    if (pauseDuration >= TimeSpan.FromSeconds(_settings.FocusMinimumPauseSeconds))
+                    {
+                        PromptFocusInterruption(timer, pauseStart.Value, transitionUtc, pauseDuration);
+                    }
+                }
             }
 
             SynchronizeProjectTracking(timer, transitionUtc);
@@ -3915,6 +4166,7 @@ namespace StopwatchOverlay
             timer.IsRunning = false;
             timer.CountdownInitialized = false;
             timer.LastCountdownUpdateUtc = default;
+            timer.LastPauseUtc = null;
 
             if (timer.Mode == 2)
             {
@@ -5109,6 +5361,7 @@ namespace StopwatchOverlay
             _settingsWindow.SettingsInteractionStarted += SettingsInteractionStarted;
             _settingsWindow.SettingsInteractionCompleted += SettingsInteractionCompleted;
             _settingsWindow.ShowOverlayRequested += SettingsShowOverlayRequested;
+            _settingsWindow.PeriodicReviewRequested += TriggerPeriodicReviewManual;
             _settingsWindow.Closed += SettingsWindowClosed;
             _settingsWindow.Show();
         }
@@ -5334,6 +5587,11 @@ namespace StopwatchOverlay
                     _activityWatchSyncService?.RestartTimer();
                 }
 
+                if ((changes & (SettingsChangeKind.PeriodicReview | SettingsChangeKind.Behavior)) != 0)
+                {
+                    _periodicReviewService?.RestartTimer();
+                }
+
                 if ((changes & SettingsChangeKind.Telegram) != 0)
                 {
                     if (_settings.TelegramEnabled && TelegramOutboxStore.PendingCount > 0)
@@ -5409,6 +5667,7 @@ namespace StopwatchOverlay
                 window.SettingsInteractionStarted -= SettingsInteractionStarted;
                 window.SettingsInteractionCompleted -= SettingsInteractionCompleted;
                 window.ShowOverlayRequested -= SettingsShowOverlayRequested;
+                window.PeriodicReviewRequested -= TriggerPeriodicReviewManual;
                 window.Closed -= SettingsWindowClosed;
             }
 
@@ -5604,6 +5863,12 @@ namespace StopwatchOverlay
             }
             _activityWatchSyncService?.Dispose();
             _activityWatchSyncService = null;
+            if (_periodicReviewService != null)
+            {
+                _periodicReviewService.PromptRequested -= OnPeriodicReviewPromptRequested;
+                _periodicReviewService.Dispose();
+                _periodicReviewService = null;
+            }
 
             if (_hwndSource != null)
             {

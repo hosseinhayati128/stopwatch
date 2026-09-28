@@ -143,7 +143,15 @@ if (internetFile) {
             const parsedPing = parseFloat(pingStr);
             const pingMs = (!isNaN(parsedPing) && parsedPing > 0) ? parsedPing : null;
             const parsedSpeed = parseFloat(speedStr);
-            const speedMbps = !isNaN(parsedSpeed) ? parsedSpeed : (isOffline ? 0 : null);
+            let speedMbps = !isNaN(parsedSpeed) ? parsedSpeed : (isOffline ? 0 : null);
+            let speedEstimated = false;
+
+            // Handle legacy records where speed test timed out on low-throughput connection (<0.8 Mbps for 1MB in 10s)
+            if (speedMbps == null && !isOffline && notes && (notes.includes("HttpClient.Timeout") || notes.includes("operation was canceled"))) {
+                speedMbps = 0.4;
+                speedEstimated = true;
+            }
+
             const [y, m, d] = currentDateStr.split("-").map(Number);
             const [hh, mm] = time.split(":").map(Number);
             const cleanNet = getCleanNetworkName(network);
@@ -159,6 +167,7 @@ if (internetFile) {
                 cleanNetwork: cleanNet,
                 pingMs,
                 speedMbps,
+                speedEstimated,
                 notes,
                 isOnline: !isOffline,
                 isOptimal: status.includes("Online"),
@@ -2354,11 +2363,26 @@ function renderInternetSection() {
                             backgroundColor: 'rgba(56, 189, 248, 0.1)',
                             fill: true,
                             tension: 0.3,
-                            spanGaps: false,
+                            spanGaps: true,
                             yAxisID: 'y',
-                            pointBackgroundColor: speedData.map(v => v === 0 ? '#ef4444' : '#38bdf8'),
-                            pointBorderColor: speedData.map(v => v === 0 ? '#ef4444' : '#38bdf8'),
-                            pointRadius: speedData.map(v => v === 0 ? 3.5 : ((netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5)),
+                            pointBackgroundColor: speedData.map((v, idx) => {
+                                const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
+                                if (v === 0) return '#ef4444';
+                                if (r && r.speedEstimated) return '#f59e0b';
+                                return '#38bdf8';
+                            }),
+                            pointBorderColor: speedData.map((v, idx) => {
+                                const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
+                                if (v === 0) return '#ef4444';
+                                if (r && r.speedEstimated) return '#f59e0b';
+                                return '#38bdf8';
+                            }),
+                            pointRadius: speedData.map((v, idx) => {
+                                const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
+                                if (v === 0) return 3.5;
+                                if (r && r.speedEstimated) return 3.0;
+                                return (netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5;
+                            }),
                             pointHoverRadius: 6
                         },
                         {
@@ -2368,7 +2392,7 @@ function renderInternetSection() {
                             backgroundColor: 'transparent',
                             borderDash: [4, 4],
                             tension: 0.2,
-                            spanGaps: false,
+                            spanGaps: true,
                             yAxisID: 'y1',
                             pointRadius: (netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5,
                             pointHoverRadius: 6
@@ -2387,6 +2411,9 @@ function renderInternetSection() {
                                 label: function(context) {
                                     const isPing = context.dataset.yAxisID === 'y1';
                                     const val = context.raw;
+                                    const idx = context.dataIndex;
+                                    const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
+
                                     if (isPing) {
                                         if (val == null) {
                                             return ` ${context.dataset.label}: 🔴 Offline / Timed out`;
@@ -2398,6 +2425,9 @@ function renderInternetSection() {
                                         }
                                         if (val == null) {
                                             return ` ${context.dataset.label}: - (No Data)`;
+                                        }
+                                        if (r && r.speedEstimated) {
+                                            return ` ${context.dataset.label}: ~${val} Mbps (Low speed: timeout <0.8 Mbps)`;
                                         }
                                         return ` ${context.dataset.label}: ${val} Mbps`;
                                     }
@@ -3633,8 +3663,6 @@ function renderFocusContinuitySection() {
                 </tbody>
             </table>
         `;
-    }
-}
     }
 }
 

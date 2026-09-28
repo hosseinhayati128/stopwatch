@@ -1,0 +1,208 @@
+<Window x:Class="StopwatchOverlay.FocusInterruptionDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Focus Check-in"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Window.Resources>
+        <Style x:Key="ChoiceButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource DialogSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="CardBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder" Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="CardBorder" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="KeyBadgeStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="22,18"
+            Margin="10"
+            MinWidth="380"
+            MaxWidth="460">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" Direction="270" ShadowDepth="4" Opacity="0.55"/>
+        </Border.Effect>
+
+        <StackPanel>
+            <!-- Header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="15" FontWeight="Bold"/>
+                <TextBlock Text="Focus Check-in"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="15"
+                           FontFamily="{DynamicResource AppFontFamily}"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Subtitle: Pause details -->
+            <TextBlock x:Name="PauseSummaryText"
+                       Text="Paused for 3m 12s on Project"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontSize="13"
+                       FontFamily="{DynamicResource AppFontFamily}"
+                       FontWeight="Medium"
+                       Margin="0,0,0,2"/>
+
+            <TextBlock Text="What was the reason for this pause?"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       FontSize="11.5"
+                       FontFamily="{DynamicResource AppFontFamily}"
+                       Margin="0,0,0,14"/>
+
+            <!-- Option 1: Valid Break -->
+            <Button x:Name="ValidBreakButton" Style="{StaticResource ChoiceButtonStyle}" Click="ValidBreakButton_Click">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource KeyBadgeStyle}">
+                        <TextBlock Text="1" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="☕  Valid Break / Stepped Away" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Planned break, restroom, call, errand" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <!-- Option 2: Distraction -->
+            <Button x:Name="DistractionButton" Style="{StaticResource ChoiceButtonStyle}" Click="DistractionButton_Click">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource KeyBadgeStyle}">
+                        <TextBlock Text="2" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="⚡  Distraction" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Checking phone, social media, lost focus" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                    <Border x:Name="SuggestedBadge" Grid.Column="2" VerticalAlignment="Center"
+                            Background="#33FB923C" BorderBrush="#FB923C" BorderThickness="1"
+                            CornerRadius="3" Padding="6,2" Visibility="Collapsed">
+                        <TextBlock Text="&lt; 5m default" FontSize="10" FontWeight="SemiBold" Foreground="#FB923C"/>
+                    </Border>
+                </Grid>
+            </Button>
+
+            <!-- Option 3: Quick Idea / Brainstorming -->
+            <Button x:Name="IdeaButton" Style="{StaticResource ChoiceButtonStyle}" Click="IdeaButton_Click">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource KeyBadgeStyle}">
+                        <TextBlock Text="3" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="💡  Idea / Brainstorming" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Jotting down an idea to clear mind and refocus" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <!-- Option 4: Switch Between Tasks -->
+            <Button x:Name="TaskSwitchButton" Style="{StaticResource ChoiceButtonStyle}" Click="TaskSwitchButton_Click">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource KeyBadgeStyle}">
+                        <TextBlock Text="4" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="TaskSwitchTitleText" Text="🔀  Switch Between Tasks" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock x:Name="TaskSwitchSubText" Text="Switched to another project or active timer" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                    <Border x:Name="TaskSwitchDefaultBadge" Grid.Column="2" VerticalAlignment="Center"
+                            Background="#3338BDF8" BorderBrush="#38BDF8" BorderThickness="1"
+                            CornerRadius="3" Padding="6,2" Visibility="Collapsed">
+                        <TextBlock Text="Task switch default" FontSize="10" FontWeight="SemiBold" Foreground="#38BDF8"/>
+                    </Border>
+                </Grid>
+            </Button>
+
+            <!-- Footer hint & countdown -->
+            <Grid Margin="0,6,0,0">
+                <TextBlock x:Name="FooterHintText"
+                           Text="Press 1, 2, 3, or 4 · Esc to skip"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           FontFamily="{DynamicResource AppFontFamily}"
+                           HorizontalAlignment="Left"/>
+                <TextBlock x:Name="CountdownText"
+                           Text="Closing in 12s"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           FontFamily="{DynamicResource AppFontFamily}"
+                           HorizontalAlignment="Right"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

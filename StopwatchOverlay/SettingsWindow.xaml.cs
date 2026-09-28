@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using StopwatchOverlay.Themes;
 using System.Linq;
 using System.Windows;
@@ -29,6 +30,7 @@ public partial class SettingsWindow : Window
     internal event Action? SettingsInteractionStarted;
     internal event Action? SettingsInteractionCompleted;
     public event Action? ShowOverlayRequested;
+    public event Action? PeriodicReviewRequested;
 
     internal string CurrentCategory { get; private set; } = "Overlay";
 
@@ -143,10 +145,23 @@ public partial class SettingsWindow : Window
             ActivityWatchServerUrlTextBox.Text = _settings.ActivityWatchServerUrl;
             ActivityWatchFileNameTextBox.Text = _settings.ActivityWatchExportFileName;
             ActivityWatchMinDurationTextBox.Text = _settings.ActivityWatchMinDurationSeconds.ToString();
+            PeriodicReviewEnabledCheck.IsChecked = _settings.PeriodicReviewEnabled;
+            PeriodicReviewIntervalTextBox.Text = _settings.PeriodicReviewIntervalMinutes.ToString();
+            PeriodicReviewSnoozeTextBox.Text = _settings.PeriodicReviewSnoozeMinutes.ToString();
+            PeriodicReviewAutoDismissTextBox.Text = _settings.PeriodicReviewAutoDismissSeconds.ToString();
+            PeriodicReviewMinDurationTextBox.Text = _settings.PeriodicReviewMinDurationSeconds.ToString();
             InternetMonitorEnabledCheck.IsChecked = _settings.InternetMonitorEnabled;
             InternetMonitorOnlyDuringTimersCheck.IsChecked = _settings.InternetMonitorOnlyDuringTimers;
             InternetCheckIntervalTextBox.Text = _settings.InternetMonitorIntervalMinutes.ToString();
             InternetFileNameTextBox.Text = _settings.InternetLogFileName;
+            int retDays = _settings.InternetLogRetentionDays;
+            InternetRetentionCombo.SelectedIndex = retDays switch
+            {
+                30 => 1,
+                14 => 2,
+                7 => 3,
+                _ => 0
+            };
             UpdateObsidianPathPreview();
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
@@ -231,6 +246,12 @@ public partial class SettingsWindow : Window
         ActivityWatchFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
         ActivityWatchMinDurationTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.ActivityWatch);
 
+        WireCheckBox(PeriodicReviewEnabledCheck, SettingsChangeKind.PeriodicReview);
+        PeriodicReviewIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
+        PeriodicReviewSnoozeTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
+        PeriodicReviewAutoDismissTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
+        PeriodicReviewMinDurationTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
+
         WireCheckBox(InternetMonitorEnabledCheck, SettingsChangeKind.InternetMonitor);
         WireCheckBox(InternetMonitorOnlyDuringTimersCheck, SettingsChangeKind.InternetMonitor);
         InternetCheckIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
@@ -239,6 +260,10 @@ public partial class SettingsWindow : Window
         WireCheckBox(IdleStopUnnamedCheck, SettingsChangeKind.IdleStop);
         WireCheckBox(IdleStopSubtractCheck, SettingsChangeKind.IdleStop);
         IdleStopDefaultTimeoutTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.IdleStop);
+
+        WireCheckBox(FocusTrackingEnabledCheck, SettingsChangeKind.FocusTracking);
+        FocusDistractionThresholdTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
+        FocusMinimumPauseTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -405,6 +430,19 @@ public partial class SettingsWindow : Window
                 }
             }
 
+            if ((change & SettingsChangeKind.FocusTracking) != 0)
+            {
+                _settings.FocusTrackingEnabled = FocusTrackingEnabledCheck.IsChecked == true;
+                if (int.TryParse(FocusDistractionThresholdTextBox.Text.Trim(), out int thresh) && thresh > 0)
+                {
+                    _settings.FocusDistractionThresholdMinutes = thresh;
+                }
+                if (int.TryParse(FocusMinimumPauseTextBox.Text.Trim(), out int minPause) && minPause > 0)
+                {
+                    _settings.FocusMinimumPauseSeconds = minPause;
+                }
+            }
+
             if ((change & SettingsChangeKind.Startup) != 0)
                 _settings.StartWithWindows = StartWithWindowsCheck.IsChecked == true;
 
@@ -441,6 +479,19 @@ public partial class SettingsWindow : Window
                     _settings.ActivityWatchMinDurationSeconds = minSec;
             }
 
+            if ((change & SettingsChangeKind.PeriodicReview) != 0)
+            {
+                _settings.PeriodicReviewEnabled = PeriodicReviewEnabledCheck.IsChecked == true;
+                if (int.TryParse(PeriodicReviewIntervalTextBox.Text.Trim(), out int reviewInterval) && reviewInterval > 0)
+                    _settings.PeriodicReviewIntervalMinutes = reviewInterval;
+                if (int.TryParse(PeriodicReviewSnoozeTextBox.Text.Trim(), out int snooze) && snooze > 0)
+                    _settings.PeriodicReviewSnoozeMinutes = snooze;
+                if (int.TryParse(PeriodicReviewAutoDismissTextBox.Text.Trim(), out int dismiss) && dismiss > 0)
+                    _settings.PeriodicReviewAutoDismissSeconds = dismiss;
+                if (int.TryParse(PeriodicReviewMinDurationTextBox.Text.Trim(), out int minDur) && minDur >= 0)
+                    _settings.PeriodicReviewMinDurationSeconds = minDur;
+            }
+
             if ((change & SettingsChangeKind.InternetMonitor) != 0)
             {
                 _settings.InternetMonitorEnabled = InternetMonitorEnabledCheck.IsChecked == true;
@@ -448,6 +499,8 @@ public partial class SettingsWindow : Window
                 if (int.TryParse(InternetCheckIntervalTextBox.Text.Trim(), out int interval) && interval > 0)
                     _settings.InternetMonitorIntervalMinutes = interval;
                 _settings.InternetLogFileName = InternetFileNameTextBox.Text.Trim();
+                if (InternetRetentionCombo.SelectedItem is ComboBoxItem retItem && int.TryParse(retItem.Tag?.ToString(), out int rDays))
+                    _settings.InternetLogRetentionDays = rDays;
             }
 
             UpdateValueLabels();
@@ -1107,6 +1160,50 @@ public partial class SettingsWindow : Window
         IdleProjectsItemsControl.ItemsSource = items;
     }
 
+    private async void StartActivityWatchAppButton_Click(object sender, RoutedEventArgs e)
+    {
+        StartActivityWatchAppButton.IsEnabled = false;
+        ActivityWatchStatusText.Text = "Attempting to start ActivityWatch...";
+        ActivityWatchStatusText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+
+        try
+        {
+            bool launched = ActivityWatch.ActivityWatchLauncher.TryLaunch();
+            if (!launched)
+            {
+                ActivityWatchStatusText.Text = "✗ Could not locate ActivityWatch executable (aw-qt.exe). Please start ActivityWatch manually.";
+                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+                return;
+            }
+
+            ActivityWatchStatusText.Text = "ActivityWatch starting, waiting for server to respond...";
+            var client = new ActivityWatch.ActivityWatchClient(ActivityWatchServerUrlTextBox.Text.Trim());
+            for (int i = 0; i < 12; i++)
+            {
+                await Task.Delay(500);
+                var (success, version, _) = await client.TestConnectionAsync();
+                if (success)
+                {
+                    ActivityWatchStatusText.Text = $"✓ ActivityWatch is running and connected (Version: {version})";
+                    ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
+                    return;
+                }
+            }
+
+            ActivityWatchStatusText.Text = "ActivityWatch was started, but server took longer than expected to respond. Try 'Test Connection' shortly.";
+            ActivityWatchStatusText.Foreground = Brushes.Goldenrod;
+        }
+        catch (Exception ex)
+        {
+            ActivityWatchStatusText.Text = "✗ Error: " + ex.Message;
+            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
+        }
+        finally
+        {
+            StartActivityWatchAppButton.IsEnabled = true;
+        }
+    }
+
     private async void TestActivityWatchButton_Click(object sender, RoutedEventArgs e)
     {
         TestActivityWatchButton.IsEnabled = false;
@@ -1215,6 +1312,60 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void InternetRetentionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        CommitControls(SettingsChangeKind.InternetMonitor);
+    }
+
+    private void SyncInternetLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var res = Internet.InternetLogSync.SyncLog(_settings);
+            if (res.Success)
+            {
+                int count = Internet.InternetHistoryStore.GetAll().Count;
+                InternetStatusText.Text = $"✓ Synced {count} check(s) to '{System.IO.Path.GetFileName(res.TargetFilePath)}'.";
+                InternetStatusText.Foreground = Brushes.ForestGreen;
+            }
+            else
+            {
+                InternetStatusText.Text = "✗ " + (res.Message ?? "Failed to sync internet log.");
+                InternetStatusText.Foreground = Brushes.OrangeRed;
+            }
+        }
+        catch (Exception ex)
+        {
+            InternetStatusText.Text = "✗ Sync error: " + ex.Message;
+            InternetStatusText.Foreground = Brushes.OrangeRed;
+        }
+    }
+
+    private void ClearInternetLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        var confirm = MessageBox.Show(
+            "Are you sure you want to clear your internet connection history?\n\nThis will clear the local internet history store and clear 'Internet Log.md'.",
+            "Clear Internet Log",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            Internet.InternetHistoryStore.Clear();
+            var res = Internet.InternetLogSync.SyncLog(_settings);
+            InternetStatusText.Text = "✓ Internet log and local history have been cleared.";
+            InternetStatusText.Foreground = Brushes.ForestGreen;
+        }
+        catch (Exception ex)
+        {
+            InternetStatusText.Text = "✗ Clear error: " + ex.Message;
+            InternetStatusText.Foreground = Brushes.OrangeRed;
+        }
+    }
+
     private void UpdateObsidianPathPreview()
     {
         string folder = ObsidianFolderTextBox.Text.Trim();
@@ -1238,6 +1389,12 @@ public partial class SettingsWindow : Window
     {
         CrashLogger.RecordUiAction("Overlay visibility requested", CurrentCategory);
         ShowOverlayRequested?.Invoke();
+    }
+
+    private void ReviewNowButton_Click(object sender, RoutedEventArgs e)
+    {
+        CrashLogger.RecordUiAction("Periodic review requested manually from settings", CurrentCategory);
+        PeriodicReviewRequested?.Invoke();
     }
 
     private void DoneButton_Click(object sender, RoutedEventArgs e) => Close();

@@ -25,7 +25,9 @@ internal enum SettingsChangeKind
     Telegram = 1 << 16,
     ActivityWatch = 1 << 17,
     InternetMonitor = 1 << 18,
-    IdleStop = 1 << 19
+    IdleStop = 1 << 19,
+    FocusTracking = 1 << 20,
+    PeriodicReview = 1 << 21
 }
 
 internal static class SettingsChangePolicy

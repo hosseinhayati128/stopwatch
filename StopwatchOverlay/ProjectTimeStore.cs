@@ -27,6 +27,7 @@ namespace StopwatchOverlay
         public DateTime SavedAtUtc { get; set; }
         public List<ProjectDocumentEntry> Projects { get; set; } = new();
         public List<WorkIntervalDocumentEntry> Intervals { get; set; } = new();
+        public List<FocusPauseDocumentEntry> FocusPauses { get; set; } = new();
     }
 
     public sealed class ProjectDocumentEntry
@@ -43,6 +44,17 @@ namespace StopwatchOverlay
         public string ProjectName { get; set; } = "";
         public DateTime StartUtc { get; set; }
         public DateTime? EndUtc { get; set; }
+    }
+
+    public sealed class FocusPauseDocumentEntry
+    {
+        public Guid Id { get; set; }
+        public Guid TimerSessionId { get; set; }
+        public string ProjectName { get; set; } = "";
+        public DateTime PauseStartUtc { get; set; }
+        public DateTime ResumeUtc { get; set; }
+        public string Reason { get; set; } = "Distraction";
+        public string? Note { get; set; }
     }
 
     /// <summary>
@@ -541,6 +553,20 @@ namespace StopwatchOverlay
                     DateTime currentStart = ProjectTimeHistory.NormalizeUtc(ordered[index].StartUtc);
                     if (currentStart < previousEnd)
                         throw new InvalidDataException("A timer has overlapping work intervals.");
+                }
+            }
+
+            if (document.FocusPauses != null)
+            {
+                if (document.FocusPauses.Any(p => p == null))
+                    throw new InvalidDataException("Project history contains an empty focus pause record.");
+
+                foreach (var pause in document.FocusPauses)
+                {
+                    if (pause.PauseStartUtc == default || pause.ResumeUtc == default)
+                        throw new InvalidDataException("A focus pause has an invalid timestamp.");
+                    if (pause.ResumeUtc < pause.PauseStartUtc)
+                        throw new InvalidDataException("A focus pause resumes before it started.");
                 }
             }
         }

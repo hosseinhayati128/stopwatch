@@ -27,7 +27,8 @@ namespace StopwatchOverlay
         EditTimer = 16,
         UndoTimerEdit = 17,
         AddRecord = 18,
-        SyncActivityWatch = 19
+        SyncActivityWatch = 19,
+        PeriodicReview = 20
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -198,6 +199,22 @@ namespace StopwatchOverlay
         public bool InternetMonitorOnlyDuringTimers { get; set; } = true;
         public string InternetLogFileName { get; set; } = "Internet Log.md";
         public int InternetSampleSizeBytes { get; set; } = 1_000_000;
+        public int InternetLogRetentionDays { get; set; } = 0; // 0 = Keep all time, >0 = purge older than X days
+
+        // Focus Separation & Distraction Tracking
+        public bool FocusTrackingEnabled { get; set; } = false;
+        public int FocusDistractionThresholdMinutes { get; set; } = 5;
+        public int FocusMinimumPauseSeconds { get; set; } = 10;
+        public int FocusPromptTimeoutSeconds { get; set; } = 12;
+        public string FocusLogFileName { get; set; } = "Focus Log.md";
+
+        // Periodic Activity & Time Review
+        public bool PeriodicReviewEnabled { get; set; } = false;
+        public int PeriodicReviewIntervalMinutes { get; set; } = 30;
+        public int PeriodicReviewSnoozeMinutes { get; set; } = 30;
+        public int PeriodicReviewAutoDismissSeconds { get; set; } = 5;
+        public int PeriodicReviewMinDurationSeconds { get; set; } = 15;
+        public DateTime? LastPeriodicReviewCompletedUtc { get; set; } = null;
 
         // Idle Stopwatch Inactivity Stopping
         public bool IdleStopUnnamedTimers { get; set; } = false;
@@ -418,6 +435,45 @@ namespace StopwatchOverlay
                 if (rule.IdleMinutes < 1) rule.IdleMinutes = 5;
                 else if (rule.IdleMinutes > 1440) rule.IdleMinutes = 1440;
             }
+
+            if (FocusDistractionThresholdMinutes < 1)
+                FocusDistractionThresholdMinutes = 5;
+            else if (FocusDistractionThresholdMinutes > 1440)
+                FocusDistractionThresholdMinutes = 1440;
+
+            if (FocusMinimumPauseSeconds < 1)
+                FocusMinimumPauseSeconds = 10;
+            else if (FocusMinimumPauseSeconds > 3600)
+                FocusMinimumPauseSeconds = 3600;
+
+            if (FocusPromptTimeoutSeconds < 3)
+                FocusPromptTimeoutSeconds = 12;
+            else if (FocusPromptTimeoutSeconds > 120)
+                FocusPromptTimeoutSeconds = 120;
+
+            FocusLogFileName = string.IsNullOrWhiteSpace(FocusLogFileName)
+                ? "Focus Log.md"
+                : FocusLogFileName.Trim();
+
+            if (PeriodicReviewIntervalMinutes < 1)
+                PeriodicReviewIntervalMinutes = 1;
+            else if (PeriodicReviewIntervalMinutes > 1440)
+                PeriodicReviewIntervalMinutes = 1440;
+
+            if (PeriodicReviewSnoozeMinutes < 1)
+                PeriodicReviewSnoozeMinutes = 1;
+            else if (PeriodicReviewSnoozeMinutes > 1440)
+                PeriodicReviewSnoozeMinutes = 1440;
+
+            if (PeriodicReviewAutoDismissSeconds < 1)
+                PeriodicReviewAutoDismissSeconds = 1;
+            else if (PeriodicReviewAutoDismissSeconds > 120)
+                PeriodicReviewAutoDismissSeconds = 120;
+
+            if (PeriodicReviewMinDurationSeconds < 0)
+                PeriodicReviewMinDurationSeconds = 0;
+            else if (PeriodicReviewMinDurationSeconds > 3600)
+                PeriodicReviewMinDurationSeconds = 3600;
         }
 
         private static string NormalizeChoice(

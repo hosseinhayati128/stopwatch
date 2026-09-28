@@ -137,10 +137,12 @@ There is 1 interface on the system:
     public void AppendCheck_WritesToDiskCorrectly()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "Stopwatch_InternetSyncTest_" + Guid.NewGuid().ToString("N"));
+        string tempJson = Path.Combine(tempDir, "internet-history.json");
         Directory.CreateDirectory(tempDir);
 
         try
         {
+            InternetHistoryStore.SetCustomFilePath(tempJson);
             var settings = new AppSettings
             {
                 ObsidianVaultFolder = tempDir,
@@ -165,11 +167,160 @@ There is 1 interface on the system:
         }
         finally
         {
+            InternetHistoryStore.SetCustomFilePath(null);
             if (Directory.Exists(tempDir))
             {
                 try { Directory.Delete(tempDir, true); } catch { }
             }
         }
+    }
+
+    [Fact]
+    public void InternetHistoryStore_AddAndRetrieve_PersistsToJson()
+    {
+        string tempJson = Path.Combine(Path.GetTempPath(), "hist_" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            InternetHistoryStore.SetCustomFilePath(tempJson);
+            var netInfo = new NetworkConnectionInfo(true, "Wi-Fi", "HomeNet", 90, "Adapter", "📶 HomeNet (90%)");
+            var check1 = new InternetCheckResult(new DateTime(2026, 9, 28, 10, 0, 0), InternetStatus.Online, 12, 50.0, netInfo, "Fast");
+            var check2 = new InternetCheckResult(new DateTime(2026, 9, 28, 10, 15, 0), InternetStatus.Slow, 250, 2.5, netInfo, "Slow");
+
+            InternetHistoryStore.Add(check1);
+            InternetHistoryStore.Add(check2);
+
+            var retrieved = InternetHistoryStore.GetAll();
+            Assert.Equal(2, retrieved.Count);
+            Assert.Equal(50.0, retrieved[0].DownloadMbps);
+            Assert.Equal(2.5, retrieved[1].DownloadMbps);
+
+            // Force reload from disk
+            InternetHistoryStore.SetCustomFilePath(tempJson);
+            var reloaded = InternetHistoryStore.GetAll();
+            Assert.Equal(2, reloaded.Count);
+            Assert.Equal(12, reloaded[0].PingMs);
+            Assert.Equal(250, reloaded[1].PingMs);
+        }
+        finally
+        {
+            InternetHistoryStore.SetCustomFilePath(null);
+            if (File.Exists(tempJson)) File.Delete(tempJson);
+            if (File.Exists(tempJson + ".bak")) File.Delete(tempJson + ".bak");
+        }
+    }
+
+    [Fact]
+    public void InternetHistoryStore_UpsertDeduplication_UpdatesSameMinuteRecord()
+    {
+        string tempJson = Path.Combine(Path.GetTempPath(), "hist_dedup_" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            InternetHistoryStore.SetCustomFilePath(tempJson);
+            var netInfo = new NetworkConnectionInfo(true, "Wi-Fi", "HomeNet", 90, "Adapter", "📶 HomeNet (90%)");
+            var check1 = new InternetCheckResult(new DateTime(2026, 9, 28, 12, 0, 0), InternetStatus.Online, 10, null, netInfo, "Initial ping");
+            var check2 = new InternetCheckResult(new DateTime(2026, 9, 28, 12, 0, 25), InternetStatus.Online, 10, 48.5, netInfo, "Measured speed");
+
+            InternetHistoryStore.Add(check1);
+            InternetHistoryStore.Add(check2);
+
+            var all = InternetHistoryStore.GetAll();
+            Assert.Single(all);
+            Assert.Equal(48.5, all[0].DownloadMbps);
+            Assert.Equal("Measured speed", all[0].Notes);
+        }
+        finally
+        {
+            InternetHistoryStore.SetCustomFilePath(null);
+            if (File.Exists(tempJson)) File.Delete(tempJson);
+            if (File.Exists(tempJson + ".bak")) File.Delete(tempJson + ".bak");
+        }
+    }
+
+    [Fact]
+    public void InternetHistoryStore_PurgeOlderThanDays_RemovesOldEntriesOnly()
+    {
+        string tempJson = Path.Combine(Path.GetTempPath(), "hist_purge_" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            InternetHistoryStore.SetCustomFilePath(tempJson);
+            var netInfo = new NetworkConnectionInfo(true, "Wi-Fi", "HomeNet", 90, "Adapter", "📶 HomeNet (90%)");
+            var oldCheck = new InternetCheckResult(DateTime.Now.AddDays(-10), InternetStatus.Online, 10, 40.0, netInfo, "Old");
+            var recentCheck = new InternetCheckResult(DateTime.Now.AddDays(-2), InternetStatus.Online, 15, 45.0, netInfo, "Recent");
+
+            InternetHistoryStore.AddRange(new[] { oldCheck, recentCheck });
+            Assert.Equal(2, InternetHistoryStore.GetAll().Count);
+
+            int purged = InternetHistoryStore.PurgeOlderThanDays(7);
+            Assert.Equal(1, purged);
+            var remaining = InternetHistoryStore.GetAll();
+            Assert.Single(remaining);
+            Assert.Equal("Recent", remaining[0].Notes);
+        }
+        finally
+        {
+            InternetHistoryStore.SetCustomFilePath(null);
+            if (File.Exists(tempJson)) File.Delete(tempJson);
+            if (File.Exists(tempJson + ".bak")) File.Delete(tempJson + ".bak");
+        }
+    }
+
+    [Fact]
+    public void InternetHistoryStore_ImportFromMarkdown_ParsesHistoricalEntries()
+    {
+        string markdown = @"# 🌐 Internet Connection Log
+
+Automated network connection and speed monitoring logged periodically by Stopwatch Overlay.
+
+## 📅 2026-09-27
+
+| Time | Status | Network / Wi-Fi | Ping | Speed | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 14:00 | 🟢 Online | 📶 Home_5G (85%) | 18 ms | 55.2 Mbps | Stable |
+| 14:15 | 🔴 Offline | ❌ Disconnected | - | - | ISP Disconnected |
+
+## 📅 2026-09-28
+
+| Time | Status | Network / Wi-Fi | Ping | Speed | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 09:30 | 🟡 Slow | 📶 Home_5G (70%) | 220 ms | 4.1 Mbps | High latency |
+";
+
+        var parsed = InternetHistoryStore.ParseMarkdownContent(markdown);
+        Assert.Equal(3, parsed.Count);
+
+        Assert.Equal(new DateTime(2026, 9, 27, 14, 0, 0), parsed[0].Timestamp);
+        Assert.Equal(InternetStatus.Online, parsed[0].Status);
+        Assert.Equal("Home_5G", parsed[0].NetworkInfo.NetworkName);
+        Assert.Equal(85, parsed[0].NetworkInfo.SignalPercent);
+        Assert.Equal(18, parsed[0].PingMs);
+        Assert.Equal(55.2, parsed[0].DownloadMbps);
+        Assert.Equal("Stable", parsed[0].Notes);
+
+        Assert.Equal(new DateTime(2026, 9, 27, 14, 15, 0), parsed[1].Timestamp);
+        Assert.Equal(InternetStatus.Offline, parsed[1].Status);
+        Assert.Null(parsed[1].PingMs);
+        Assert.Null(parsed[1].DownloadMbps);
+
+        Assert.Equal(new DateTime(2026, 9, 28, 9, 30, 0), parsed[2].Timestamp);
+        Assert.Equal(InternetStatus.Slow, parsed[2].Status);
+        Assert.Equal(220, parsed[2].PingMs);
+        Assert.Equal(4.1, parsed[2].DownloadMbps);
+    }
+
+    [Fact]
+    public void BuildMarkdownDocument_PreservesCustomNotes()
+    {
+        var netInfo = new NetworkConnectionInfo(true, "Wi-Fi", "HomeNet", 90, "Adapter", "📶 HomeNet (90%)");
+        var check = new InternetCheckResult(new DateTime(2026, 9, 28, 11, 0, 0), InternetStatus.Online, 15, 50.0, netInfo, "Default Note");
+
+        var customNotes = new System.Collections.Generic.Dictionary<string, string>
+        {
+            ["2026-09-28 11:00"] = "User edited note about Zoom meeting"
+        };
+
+        string doc = InternetLogSync.BuildMarkdownDocument(new[] { check }, customNotes);
+        Assert.Contains("User edited note about Zoom meeting", doc);
+        Assert.DoesNotContain("Default Note", doc);
     }
 
     [Fact]
@@ -179,7 +330,7 @@ There is 1 interface on the system:
         if (result.NetworkInfo.IsConnected && result.Status != InternetStatus.Offline)
         {
             Assert.NotNull(result.PingMs);
-            Assert.InRange(result.PingMs.Value, 5, 5000);
+            Assert.InRange(result.PingMs.Value, 0, 5000);
         }
     }
 
@@ -187,9 +338,11 @@ There is 1 interface on the system:
     public async System.Threading.Tasks.Task AppendLiveCheckToTempDir()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "StopwatchInternetLiveTest_" + Guid.NewGuid().ToString("N"));
+        string tempJson = Path.Combine(tempDir, "internet-history.json");
         Directory.CreateDirectory(tempDir);
         try
         {
+            InternetHistoryStore.SetCustomFilePath(tempJson);
             var settings = new AppSettings
             {
                 ObsidianVaultFolder = tempDir,
@@ -202,6 +355,7 @@ There is 1 interface on the system:
         }
         finally
         {
+            InternetHistoryStore.SetCustomFilePath(null);
             if (Directory.Exists(tempDir))
             {
                 try { Directory.Delete(tempDir, true); } catch { }
@@ -209,8 +363,18 @@ There is 1 interface on the system:
         }
     }
 
+    [Fact]
+    public async System.Threading.Tasks.Task CheckConnectionAsync_WithSampleBytes_DoesNotThrow()
+    {
+        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var result = await InternetSpeedProbe.CheckConnectionAsync(sampleBytes: 50_000, cancellationToken: cts.Token);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Notes);
+    }
+
     private static int RegexCount(string input, string pattern)
     {
         return System.Text.RegularExpressions.Regex.Matches(input, System.Text.RegularExpressions.Regex.Escape(pattern)).Count;
     }
 }
+

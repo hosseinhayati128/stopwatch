@@ -106,6 +106,7 @@ namespace StopwatchOverlay
         public TimeSpan ElapsedOffset => Stopwatch.ElapsedOffset;
         public bool HasAccumulatedTime => Elapsed > TimeSpan.Zero;
         public bool IsRunning { get; set; }
+        public DateTime? LastPauseUtc { get; set; }
 
         public void RestoreElapsed(TimeSpan elapsed, bool start)
             => Stopwatch.Restore(elapsed, start);
@@ -124,6 +125,7 @@ namespace StopwatchOverlay
             LapCount = 0;
             CountdownInitialized = false;
             LastCountdownUpdateUtc = default;
+            LastPauseUtc = null;
             RecBlinkVisible = false;
         }
 

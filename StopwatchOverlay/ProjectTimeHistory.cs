@@ -81,16 +81,19 @@ namespace StopwatchOverlay
         internal ProjectHistoryView(
             DateTime asOfUtc,
             IEnumerable<ProjectInfoView> projects,
-            IEnumerable<ProjectWorkIntervalView> intervals)
+            IEnumerable<ProjectWorkIntervalView> intervals,
+            IEnumerable<FocusPauseRecord>? focusPauses = null)
         {
             AsOfUtc = ProjectTimeHistory.NormalizeUtc(asOfUtc);
             Projects = new ReadOnlyCollection<ProjectInfoView>(projects.ToArray());
             Intervals = new ReadOnlyCollection<ProjectWorkIntervalView>(intervals.ToArray());
+            FocusPauses = new ReadOnlyCollection<FocusPauseRecord>((focusPauses ?? []).ToArray());
         }
 
         public DateTime AsOfUtc { get; }
         public IReadOnlyList<ProjectInfoView> Projects { get; }
         public IReadOnlyList<ProjectWorkIntervalView> Intervals { get; }
+        public IReadOnlyList<FocusPauseRecord> FocusPauses { get; }
     }
 
     /// <summary>
@@ -104,6 +107,18 @@ namespace StopwatchOverlay
         private readonly object _gate = new();
         private readonly List<ProjectEntry> _projects = new();
         private readonly List<WorkIntervalEntry> _intervals = new();
+        private readonly List<FocusPauseRecord> _focusPauses = new();
+
+        public IReadOnlyList<FocusPauseRecord> FocusPauses
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return new ReadOnlyCollection<FocusPauseRecord>(_focusPauses.ToArray());
+                }
+            }
+        }
 
         public IReadOnlyList<string> ProjectNames
         {
@@ -872,6 +887,35 @@ namespace StopwatchOverlay
             } while (mergedAny);
         }
 
+        public FocusPauseRecord RecordFocusPause(
+            Guid timerSessionId,
+            string projectName,
+            DateTime pauseStartUtc,
+            DateTime resumeUtc,
+            FocusPauseReason reason,
+            string? note = null)
+        {
+            ValidateTimerId(timerSessionId);
+            string displayName = NormalizeProjectName(projectName);
+            pauseStartUtc = NormalizeUtc(pauseStartUtc);
+            resumeUtc = NormalizeUtc(resumeUtc);
+
+            var record = new FocusPauseRecord(
+                Guid.NewGuid(),
+                timerSessionId,
+                displayName,
+                pauseStartUtc,
+                resumeUtc,
+                reason,
+                note);
+
+            lock (_gate)
+            {
+                _focusPauses.Add(record);
+                return record;
+            }
+        }
+
         public ProjectHistoryView CreateView(DateTime asOfUtc)
         {
             asOfUtc = NormalizeUtc(asOfUtc);
@@ -883,7 +927,10 @@ namespace StopwatchOverlay
                     _intervals
                         .OrderBy(interval => interval.StartUtc)
                         .ThenBy(interval => interval.Id)
-                        .Select(ToView));
+                        .Select(ToView),
+                    _focusPauses
+                        .OrderBy(p => p.PauseStartUtc)
+                        .ThenBy(p => p.Id));
             }
         }
 
@@ -909,6 +956,16 @@ namespace StopwatchOverlay
                         ProjectName = interval.ProjectName,
                         StartUtc = interval.StartUtc,
                         EndUtc = interval.EndUtc
+                    }).ToList(),
+                    FocusPauses = _focusPauses.Select(pause => new FocusPauseDocumentEntry
+                    {
+                        Id = pause.Id,
+                        TimerSessionId = pause.TimerSessionId,
+                        ProjectName = pause.ProjectName,
+                        PauseStartUtc = pause.PauseStartUtc,
+                        ResumeUtc = pause.ResumeUtc,
+                        Reason = pause.Reason.ToString(),
+                        Note = pause.Note
                     }).ToList()
                 };
             }
@@ -937,6 +994,26 @@ namespace StopwatchOverlay
                     interval.EndUtc.HasValue
                         ? NormalizeUtc(interval.EndUtc.Value)
                         : null));
+            }
+
+            if (document.FocusPauses != null)
+            {
+                foreach (FocusPauseDocumentEntry entry in document.FocusPauses)
+                {
+                    if (!Enum.TryParse<FocusPauseReason>(entry.Reason, true, out var reason))
+                    {
+                        reason = FocusPauseReason.Distraction;
+                    }
+
+                    result._focusPauses.Add(new FocusPauseRecord(
+                        entry.Id == Guid.Empty ? Guid.NewGuid() : entry.Id,
+                        entry.TimerSessionId,
+                        string.IsNullOrWhiteSpace(entry.ProjectName) ? "General" : entry.ProjectName.Trim(),
+                        NormalizeUtc(entry.PauseStartUtc),
+                        NormalizeUtc(entry.ResumeUtc),
+                        reason,
+                        entry.Note));
+                }
             }
 
             return result;

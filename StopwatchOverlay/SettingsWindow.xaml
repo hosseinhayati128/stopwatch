@@ -362,6 +362,41 @@
                         </StackPanel></Border>
 
                         <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0"><StackPanel>
+                            <TextBlock Text="Focus Continuity &amp; Distraction Tracking" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBlock Text="Categorize pauses when resuming work to track focus fragmentation, distractions, and break patterns."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,16"/>
+
+                            <CheckBox x:Name="FocusTrackingEnabledCheck" Content="Track focus interruptions &amp; distractions (default: off)" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Distraction threshold (minutes)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Pauses under this duration default to distractions (default: 5)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="FocusDistractionThresholdTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Minimum pause duration (seconds)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Pauses below this duration are ignored to avoid accidental misclicks (default: 10)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="FocusMinimumPauseTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <TextBlock Text="When enabled, resuming a paused timer shows a fast popup with shortcuts: 1 for Valid Break, 2 for Distraction, 3 for Quick Idea. Auto-closes in 12s if not answered."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel></Border>
+
+                        <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0"><StackPanel>
                             <TextBlock Text="Idle Stop (Inactivity Detection)" Style="{StaticResource SectionHeaderText}"/>
                             <TextBlock Text="Automatically stop or pause running stopwatch timers when the system is idle for a specified duration."
                                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,16"/>
@@ -611,12 +646,77 @@
                                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Button x:Name="StartActivityWatchAppButton" Content="Start ActivityWatch" Height="34" Padding="16,0" Margin="0,0,10,0"
+                                        Style="{StaticResource ModernButton}" Click="StartActivityWatchAppButton_Click"/>
                                 <Button x:Name="TestActivityWatchButton" Content="Test Connection" Height="34" Padding="16,0"
                                         Style="{StaticResource ModernButton}" Click="TestActivityWatchButton_Click"/>
                                 <Button x:Name="SyncActivityWatchNowButton" Content="Sync Today's Activity Now" Height="34" Padding="16,0" Margin="10,0,0,0"
                                         Style="{StaticResource ModernButton}" Click="SyncActivityWatchNowButton_Click"/>
                             </StackPanel>
                             <TextBlock x:Name="ActivityWatchStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel></Border>
+
+                        <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0"><StackPanel>
+                            <TextBlock Text="Periodic Activity &amp; Time Review" Style="{StaticResource SectionHeaderText}"/>
+                            <TextBlock Text="Periodically prompt to review what you were doing since the last report, reconcile background activity with stopwatch project times, and allocate untracked time."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,16"/>
+
+                            <CheckBox x:Name="PeriodicReviewEnabledCheck" Content="Enable periodic review prompts (default: off)" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Review interval (minutes)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="How often to prompt for review (x, default: 30 minutes)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="PeriodicReviewIntervalTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Snooze interval when ignored (minutes)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Re-prompt after this many minutes if ignored (z, default: 30 minutes)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="PeriodicReviewSnoozeTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Prompt auto-dismiss duration (seconds)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Seconds before floating prompt auto-dismisses if ignored (default: 5)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="PeriodicReviewAutoDismissTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Activity filtering &amp; smart bridging threshold (seconds)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Filter out activities under this threshold and bridge continuous work across quick switches (default: 15)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="PeriodicReviewMinDurationTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button x:Name="ReviewNowButton" Content="Review Now (Win+F2 then V)" Height="34" Padding="16,0"
+                                        Style="{StaticResource ModernButton}" Click="ReviewNowButton_Click"/>
+                            </StackPanel>
+                            <TextBlock Text="Tip: When the floating prompt appears, press Y to review or Esc to skip. You can also press Win+F2 then V anytime to trigger a review manually."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel></Border>
                     </StackPanel>
 
@@ -640,9 +740,23 @@
                             <TextBlock Text="Logged as a separate Markdown file in your Obsidian vault folder (default: Internet Log.md)."
                                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
+                            <TextBlock Text="History retention policy" Style="{StaticResource SectionHeaderText}"/>
+                            <ComboBox x:Name="InternetRetentionCombo" Height="34" Margin="0,6,0,6" SelectionChanged="InternetRetentionCombo_SelectionChanged">
+                                <ComboBoxItem Content="Keep all history (unlimited)" Tag="0"/>
+                                <ComboBoxItem Content="Keep last 30 days" Tag="30"/>
+                                <ComboBoxItem Content="Keep last 14 days" Tag="14"/>
+                                <ComboBoxItem Content="Keep last 7 days" Tag="7"/>
+                            </ComboBox>
+                            <TextBlock Text="Automatically purge internet speed checks older than the specified duration (default: unlimited)."
+                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <Button x:Name="TestInternetButton" Content="Test Connection Now" Height="34" Padding="16,0"
+                                <Button x:Name="TestInternetButton" Content="Test Connection Now" Height="34" Padding="14,0" Margin="0,0,8,0"
                                         Style="{StaticResource ModernButton}" Click="TestInternetButton_Click"/>
+                                <Button x:Name="SyncInternetLogButton" Content="Sync to Obsidian Now" Height="34" Padding="14,0" Margin="0,0,8,0"
+                                        Style="{StaticResource ModernButton}" Click="SyncInternetLogButton_Click"/>
+                                <Button x:Name="ClearInternetLogButton" Content="Clear Internet Log" Height="34" Padding="14,0"
+                                        Style="{StaticResource ModernButton}" Click="ClearInternetLogButton_Click"/>
                             </StackPanel>
                             <TextBlock x:Name="InternetStatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"/>
                         </StackPanel></Border>

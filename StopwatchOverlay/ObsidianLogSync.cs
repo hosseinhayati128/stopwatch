@@ -115,6 +115,8 @@ public static class ObsidianLogSync
             File.WriteAllText(tempFile, markdownContent, new UTF8Encoding(false));
             File.Move(tempFile, targetFilePath, overwrite: true);
 
+            SyncFocusLog(history, settings, folder);
+
             return new ObsidianSyncResult(
                 true,
                 closedIntervals.Count,
@@ -272,5 +274,75 @@ public static class ObsidianLogSync
             return "";
 
         return text.Replace("|", "\\|").Replace("\r", " ").Replace("\n", " ");
+    }
+
+    public static void SyncFocusLog(
+        ProjectHistoryView history,
+        AppSettings settings,
+        string folder)
+    {
+        if (history.FocusPauses == null || history.FocusPauses.Count == 0)
+            return;
+
+        try
+        {
+            string fileName = !string.IsNullOrWhiteSpace(settings.FocusLogFileName)
+                ? settings.FocusLogFileName.Trim()
+                : "Focus Log.md";
+            if (!fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                fileName += ".md";
+
+            string targetFilePath = Path.Combine(folder, fileName);
+
+            var pauses = history.FocusPauses
+                .OrderBy(p => p.PauseStartUtc)
+                .ThenBy(p => p.Id)
+                .ToList();
+
+            var sb = new StringBuilder();
+            DateTime nowLocal = DateTime.Now;
+            string timezone = TimeZoneInfo.Local.DisplayName;
+
+            sb.AppendLine("---");
+            sb.AppendLine("type: focus-interruption-log");
+            sb.AppendLine($"last_updated: {nowLocal:yyyy-MM-ddTHH:mm:sszzz}");
+            sb.AppendLine($"timezone: \"{timezone}\"");
+            sb.AppendLine("tags:");
+            sb.AppendLine("  - time-tracking");
+            sb.AppendLine("  - focus");
+            sb.AppendLine("  - distractions");
+            sb.AppendLine("---");
+            sb.AppendLine();
+            sb.AppendLine("# Focus & Interruption Log");
+            sb.AppendLine();
+            sb.AppendLine("> [!NOTE]");
+            sb.AppendLine("> Auto-generated and maintained by StopwatchOverlay. Custom text in the Notes column is preserved.");
+            sb.AppendLine();
+            sb.AppendLine("| Date | Project | Pause Start | Resume | Duration (min) | Duration | Category | Reason | Notes |");
+            sb.AppendLine("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |");
+
+            foreach (var pause in pauses)
+            {
+                DateTime startLocal = pause.PauseStartUtc.ToLocalTime();
+                DateTime resumeLocal = pause.ResumeUtc.ToLocalTime();
+                string dateStr = startLocal.ToString("yyyy-MM-dd");
+                string startStr = startLocal.ToString("HH:mm:ss");
+                string resumeStr = resumeLocal.ToString("HH:mm:ss");
+                double totalMin = pause.Duration.TotalMinutes;
+                int durationMin = (int)Math.Max(1, Math.Round(totalMin));
+                string durationFormatted = FormatDuration(pause.Duration);
+                string category = $"{pause.ReasonIcon} {pause.ReasonDisplayName}";
+
+                sb.AppendLine($"| {dateStr} | {EscapeMarkdown(pause.ProjectName)} | {startStr} | {resumeStr} | {durationMin} | {durationFormatted} | {category} | {pause.Reason} | {EscapeMarkdown(pause.Note ?? "")} |");
+            }
+
+            string tempFile = targetFilePath + $".tmp.{Guid.NewGuid():N}";
+            File.WriteAllText(tempFile, sb.ToString(), new UTF8Encoding(false));
+            File.Move(tempFile, targetFilePath, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "SyncFocusLog");
+        }
     }
 }
