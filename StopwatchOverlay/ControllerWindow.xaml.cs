@@ -447,7 +447,10 @@ namespace StopwatchOverlay
                     }
                 });
 
-            prompt.Owner = this;
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                prompt.Owner = this;
+            }
             prompt.Show();
         }
 
@@ -468,7 +471,10 @@ namespace StopwatchOverlay
                     SettingsStore.Save(_settings);
                 });
 
-            reviewWin.Owner = this;
+            if (IsVisible && WindowState != WindowState.Minimized)
+            {
+                reviewWin.Owner = this;
+            }
             reviewWin.Show();
         }
 

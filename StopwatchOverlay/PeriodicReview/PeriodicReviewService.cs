@@ -35,10 +35,13 @@ public sealed class PeriodicReviewService : IDisposable
         }
 
         int intervalMin = Math.Clamp(settings.PeriodicReviewIntervalMinutes, 1, 1440);
-        _nextPromptUtc ??= DateTime.UtcNow.AddMinutes(intervalMin);
+        if (!_nextPromptUtc.HasValue || _nextPromptUtc.Value > DateTime.UtcNow.AddMinutes(intervalMin))
+        {
+            _nextPromptUtc = DateTime.UtcNow.AddMinutes(intervalMin);
+        }
 
-        // Check every 15 seconds
-        _timer = new Timer(OnTimerTick, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+        // Check every 10 seconds
+        _timer = new Timer(OnTimerTick, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
     }
 
     private void OnTimerTick(object? state)
