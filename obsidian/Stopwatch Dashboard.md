@@ -2313,15 +2313,34 @@ function renderInternetSection() {
 
             if (netTimelineAggregation === "raw") {
                 tlSub.textContent = `Showing all ${allNetRecordsInPeriod.length} individual check points recorded in this period.`;
-                labels = allNetRecordsInPeriod.map(r => `${r.dateStr !== allNetRecordsInPeriod[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
-                speedData = allNetRecordsInPeriod.map(r => r.isOffline ? 0 : (r.speedMbps != null ? r.speedMbps : null));
-                pingData = allNetRecordsInPeriod.map(r => r.pingMs != null ? r.pingMs : null);
+                labels = [];
+                speedData = [];
+                pingData = [];
+
+                for (let i = 0; i < allNetRecordsInPeriod.length; i++) {
+                    const r = allNetRecordsInPeriod[i];
+                    if (i > 0) {
+                        const prev = allNetRecordsInPeriod[i - 1];
+                        // If same day and gap > 25 minutes, insert a break so the line doesn't bridge across hours of missing checks
+                        const diffMin = (r.dateStr === prev.dateStr)
+                            ? (r.hour * 60 + r.minute) - (prev.hour * 60 + prev.minute)
+                            : 999;
+                        if (diffMin > 25) {
+                            labels.push("•");
+                            speedData.push(null);
+                            pingData.push(null);
+                        }
+                    }
+                    labels.push(`${r.dateStr !== allNetRecordsInPeriod[0].dateStr ? r.dateStr.slice(5) + ' ' : ''}${r.time}`);
+                    speedData.push(r.isOffline ? 0 : (r.speedMbps != null ? r.speedMbps : null));
+                    pingData.push(r.pingMs != null ? r.pingMs : null);
+                }
             } else {
                 const intervalMin = parseInt(netTimelineAggregation, 10);
                 const intervalName = intervalMin === 60 ? '1-hour' : `${intervalMin}-minute`;
                 tlSub.textContent = `Averaged into ${intervalName} intervals across this period (${allNetRecordsInPeriod.length} checks).`;
 
-                const bucketMap = new Map();
+                const recordsByBucket = new Map();
                 for (const r of allNetRecordsInPeriod) {
                     const totalMin = r.hour * 60 + r.minute;
                     const bMin = Math.floor(totalMin / intervalMin) * intervalMin;
@@ -2329,22 +2348,52 @@ function renderInternetSection() {
                     const bm = bMin % 60;
                     const bucketTime = `${String(bh).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
                     const key = `${r.dateStr} ${bucketTime}`;
-                    if (!bucketMap.has(key)) {
-                        bucketMap.set(key, { dateStr: r.dateStr, time: bucketTime, records: [] });
+                    if (!recordsByBucket.has(key)) {
+                        recordsByBucket.set(key, []);
                     }
-                    bucketMap.get(key).records.push(r);
+                    recordsByBucket.get(key).push(r);
                 }
 
-                const buckets = Array.from(bucketMap.values());
+                const uniqueDates = Array.from(new Set(allNetRecordsInPeriod.map(r => r.dateStr))).sort();
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                const buckets = [];
+
+                for (const dStr of uniqueDates) {
+                    const isToday = (dStr === todayStr);
+                    let startMin = 0;
+                    let endMin = 24 * 60 - intervalMin;
+
+                    if (isToday) {
+                        const currentTotalMin = now.getHours() * 60 + now.getMinutes();
+                        endMin = Math.min(24 * 60 - intervalMin, Math.ceil(currentTotalMin / intervalMin) * intervalMin);
+                    }
+
+                    for (let m = startMin; m <= endMin; m += intervalMin) {
+                        const bh = Math.floor(m / 60);
+                        const bm = m % 60;
+                        const bucketTime = `${String(bh).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
+                        const key = `${dStr} ${bucketTime}`;
+                        buckets.push({
+                            dateStr: dStr,
+                            time: bucketTime,
+                            records: recordsByBucket.get(key) || []
+                        });
+                    }
+                }
+
                 const firstDate = buckets[0]?.dateStr;
-                labels = buckets.map(b => `${b.dateStr !== firstDate ? b.dateStr.slice(5) + ' ' : ''}${b.time}`);
+                labels = buckets.map(b => `${uniqueDates.length > 1 && b.dateStr !== firstDate ? b.dateStr.slice(5) + ' ' : ''}${b.time}`);
                 speedData = buckets.map(b => {
+                    if (!b.records || b.records.length === 0) return null;
                     const speeds = b.records.map(r => r.isOffline ? 0 : r.speedMbps).filter(v => v != null);
                     if (speeds.length === 0) return null;
                     const avg = speeds.reduce((a, c) => a + c, 0) / speeds.length;
                     return +avg.toFixed(1);
                 });
                 pingData = buckets.map(b => {
+                    if (!b.records || b.records.length === 0) return null;
                     const p = b.records.map(r => r.pingMs).filter(v => v != null && v > 0);
                     return p.length ? Math.round(p.reduce((a, c) => a + c, 0) / p.length) : null;
                 });
@@ -2363,7 +2412,7 @@ function renderInternetSection() {
                             backgroundColor: 'rgba(56, 189, 248, 0.1)',
                             fill: true,
                             tension: 0.3,
-                            spanGaps: true,
+                            spanGaps: false,
                             yAxisID: 'y',
                             pointBackgroundColor: speedData.map((v, idx) => {
                                 const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
@@ -2378,6 +2427,7 @@ function renderInternetSection() {
                                 return '#38bdf8';
                             }),
                             pointRadius: speedData.map((v, idx) => {
+                                if (v == null) return 0;
                                 const r = (netTimelineAggregation === 'raw') ? allNetRecordsInPeriod[idx] : null;
                                 if (v === 0) return 3.5;
                                 if (r && r.speedEstimated) return 3.0;
@@ -2392,9 +2442,9 @@ function renderInternetSection() {
                             backgroundColor: 'transparent',
                             borderDash: [4, 4],
                             tension: 0.2,
-                            spanGaps: true,
+                            spanGaps: false,
                             yAxisID: 'y1',
-                            pointRadius: (netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5,
+                            pointRadius: pingData.map(v => v == null ? 0 : ((netTimelineAggregation === 'raw' && labels.length > 50) ? 1.5 : 2.5)),
                             pointHoverRadius: 6
                         }
                     ]
@@ -2416,7 +2466,7 @@ function renderInternetSection() {
 
                                     if (isPing) {
                                         if (val == null) {
-                                            return ` ${context.dataset.label}: 🔴 Offline / Timed out`;
+                                            return ` ${context.dataset.label}: - (No checks recorded)`;
                                         }
                                         return ` ${context.dataset.label}: ${val} ms`;
                                     } else {
@@ -2424,7 +2474,7 @@ function renderInternetSection() {
                                             return ` ${context.dataset.label}: 🔴 0.0 Mbps (Offline)`;
                                         }
                                         if (val == null) {
-                                            return ` ${context.dataset.label}: - (No Data)`;
+                                            return ` ${context.dataset.label}: - (No checks recorded)`;
                                         }
                                         if (r && r.speedEstimated) {
                                             return ` ${context.dataset.label}: ~${val} Mbps (Low speed: timeout <0.8 Mbps)`;

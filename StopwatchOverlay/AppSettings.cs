@@ -196,7 +196,7 @@ namespace StopwatchOverlay
         // Internet & Network Monitoring
         public bool InternetMonitorEnabled { get; set; } = true;
         public int InternetMonitorIntervalMinutes { get; set; } = 10;
-        public bool InternetMonitorOnlyDuringTimers { get; set; } = true;
+        public bool InternetMonitorOnlyDuringTimers { get; set; } = false;
         public string InternetLogFileName { get; set; } = "Internet Log.md";
         public int InternetSampleSizeBytes { get; set; } = 1_000_000;
         public int InternetLogRetentionDays { get; set; } = 0; // 0 = Keep all time, >0 = purge older than X days
@@ -215,6 +215,8 @@ namespace StopwatchOverlay
         public int PeriodicReviewAutoDismissSeconds { get; set; } = 5;
         public int PeriodicReviewMinDurationSeconds { get; set; } = 15;
         public DateTime? LastPeriodicReviewCompletedUtc { get; set; } = null;
+        public bool PeriodicReviewShowIdle { get; set; } = true;
+        public bool PeriodicReviewAllowMultiProject { get; set; } = false;
 
         // Idle Stopwatch Inactivity Stopping
         public bool IdleStopUnnamedTimers { get; set; } = false;

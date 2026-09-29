@@ -20,6 +20,8 @@ public class PeriodicReviewTests
         Assert.Equal(30, settings.PeriodicReviewSnoozeMinutes);
         Assert.Equal(5, settings.PeriodicReviewAutoDismissSeconds);
         Assert.Equal(15, settings.PeriodicReviewMinDurationSeconds);
+        Assert.True(settings.PeriodicReviewShowIdle);
+        Assert.False(settings.PeriodicReviewAllowMultiProject);
         Assert.Null(settings.LastPeriodicReviewCompletedUtc);
     }
 
@@ -234,5 +236,153 @@ public class PeriodicReviewTests
         Assert.True(Math.Abs((service.NextPromptUtc.Value - expectedComplete).TotalSeconds) < 5);
 
         service.Dispose();
+    }
+
+    [Fact]
+    public void FilterAndBridgeActivities_PreservesIdlePeriodsAndDoesNotBridgeAcrossIdle()
+    {
+        var baseTime = new DateTimeOffset(2026, 9, 28, 10, 0, 0, TimeSpan.Zero);
+
+        var events = new List<RawActivityEvent>
+        {
+            // App A for 10 minutes
+            new(
+                baseTime,
+                baseTime.AddMinutes(10),
+                "Code.exe",
+                "Working on parser",
+                "App"
+            ),
+            // Idle for 5 minutes
+            new(
+                baseTime.AddMinutes(10),
+                baseTime.AddMinutes(15),
+                "Idle / Away",
+                "No keyboard or mouse activity",
+                "Idle"
+            ),
+            // App A resumes for 10 minutes
+            new(
+                baseTime.AddMinutes(15),
+                baseTime.AddMinutes(25),
+                "Code.exe",
+                "Working on parser",
+                "App"
+            )
+        };
+
+        var filtered = PeriodicReviewDataAggregator.FilterAndBridgeActivities(
+            events,
+            minDurationSeconds: 15);
+
+        // Active app work should NOT be bridged across the idle period
+        Assert.Equal(3, filtered.Count);
+        Assert.Equal("Code.exe", filtered[0].App);
+        Assert.False(filtered[0].IsIdle);
+
+        Assert.Equal("Idle / Away", filtered[1].App);
+        Assert.True(filtered[1].IsIdle);
+
+        Assert.Equal("Code.exe", filtered[2].App);
+        Assert.False(filtered[2].IsIdle);
+    }
+
+    [Fact]
+    public void BatchLabeling_OverwriteVsMultiProjectOverlap()
+    {
+        // Test requirement 3 & 3.1:
+        // By default (allowMulti = false): labeling an activity replaces previous assignment with the last labeled item.
+        // When allowMulti = true: labeling the same activity across multiple projects adds multiple slots.
+
+        var activity = new PeriodicReviewActivityItem
+        {
+            Id = Guid.NewGuid(),
+            StartLocal = new DateTime(2026, 9, 28, 10, 0, 0),
+            EndLocal = new DateTime(2026, 9, 28, 10, 30, 0),
+            App = "Research Document",
+            Type = "App"
+        };
+
+        var slots = new List<PeriodicReviewStopwatchSlot>();
+
+        // 1. Label as "Project Alpha" (allowMulti = false)
+        bool allowMulti = false;
+        string project1 = "Project Alpha";
+
+        if (!allowMulti)
+        {
+            slots.RemoveAll(s => s.SourceActivityId == activity.Id);
+            activity.AssignedProjects.Clear();
+        }
+        slots.Add(new PeriodicReviewStopwatchSlot
+        {
+            SourceActivityId = activity.Id,
+            SourceActivityName = activity.App,
+            StartUtc = activity.StartUtc,
+            EndUtc = activity.EndUtc,
+            SelectedProjectName = project1,
+            IsManuallyAdded = true
+        });
+        activity.AssignedProjects.Add(project1);
+
+        Assert.Single(slots);
+        Assert.Equal("Project Alpha", slots[0].SelectedProjectName);
+        Assert.Equal(["Project Alpha"], activity.AssignedProjects);
+
+        // 2. Re-label same activity as "Project Beta" with allowMulti = false (default)
+        // Should overwrite "Project Alpha" with "Project Beta"
+        string project2 = "Project Beta";
+
+        if (!allowMulti)
+        {
+            slots.RemoveAll(s => s.SourceActivityId == activity.Id);
+            activity.AssignedProjects.Clear();
+        }
+        slots.Add(new PeriodicReviewStopwatchSlot
+        {
+            SourceActivityId = activity.Id,
+            SourceActivityName = activity.App,
+            StartUtc = activity.StartUtc,
+            EndUtc = activity.EndUtc,
+            SelectedProjectName = project2,
+            IsManuallyAdded = true
+        });
+        activity.AssignedProjects.Add(project2);
+
+        // Overwrite verified
+        Assert.Single(slots);
+        Assert.Equal("Project Beta", slots[0].SelectedProjectName);
+        Assert.Equal(["Project Beta"], activity.AssignedProjects);
+
+        // 3. Now toggle allowMulti = true (Req 3.1) and also label as "Project Gamma"
+        allowMulti = true;
+        string project3 = "Project Gamma";
+
+        if (!allowMulti)
+        {
+            slots.RemoveAll(s => s.SourceActivityId == activity.Id);
+            activity.AssignedProjects.Clear();
+        }
+        slots.Add(new PeriodicReviewStopwatchSlot
+        {
+            SourceActivityId = activity.Id,
+            SourceActivityName = activity.App,
+            StartUtc = activity.StartUtc,
+            EndUtc = activity.EndUtc,
+            SelectedProjectName = project3,
+            IsManuallyAdded = true
+        });
+        if (!activity.AssignedProjects.Contains(project3))
+        {
+            activity.AssignedProjects.Add(project3);
+        }
+
+        // Multi-project overlap verified: both Beta and Gamma exist for this activity period
+        Assert.Equal(2, slots.Count);
+        Assert.Contains(slots, s => s.SelectedProjectName == "Project Beta");
+        Assert.Contains(slots, s => s.SelectedProjectName == "Project Gamma");
+        Assert.Equal(2, activity.AssignedProjects.Count);
+        Assert.Contains("Project Beta", activity.AssignedProjects);
+        Assert.Contains("Project Gamma", activity.AssignedProjects);
     }
 }

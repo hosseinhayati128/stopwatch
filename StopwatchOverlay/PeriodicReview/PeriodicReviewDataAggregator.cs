@@ -16,12 +16,19 @@ public sealed record RawActivityEvent(
 
 public sealed class PeriodicReviewActivityItem
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
     public DateTime StartLocal { get; set; }
     public DateTime EndLocal { get; set; }
+    public DateTime StartUtc => StartLocal.ToUniversalTime();
+    public DateTime EndUtc => EndLocal.ToUniversalTime();
     public TimeSpan Duration => EndLocal > StartLocal ? EndLocal - StartLocal : TimeSpan.Zero;
     public string App { get; set; } = "";
     public string Details { get; set; } = "";
-    public string Type { get; set; } = "App"; // "App" or "Web"
+    public string Type { get; set; } = "App"; // "App", "Web", "Idle"
+    public bool IsIdle => string.Equals(Type, "Idle", StringComparison.OrdinalIgnoreCase);
+
+    public bool IsSelected { get; set; }
+    public List<string> AssignedProjects { get; set; } = [];
 
     public string TimeDisplay => $"{StartLocal:HH:mm} – {EndLocal:HH:mm}";
     public string DurationDisplay
@@ -40,13 +47,17 @@ public sealed class PeriodicReviewActivityItem
 
 public sealed class PeriodicReviewStopwatchSlot
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
     public Guid? ExistingIntervalId { get; set; }
+    public Guid? SourceActivityId { get; set; }
+    public string? SourceActivityName { get; set; }
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
     public string? OriginalProjectName { get; set; }
     public string? SelectedProjectName { get; set; }
     public bool IsTracked { get; set; }
     public bool IsOpenTimer { get; set; }
+    public bool IsManuallyAdded { get; set; }
 
     public DateTime StartLocal => StartUtc.ToLocalTime();
     public DateTime EndLocal => EndUtc.ToLocalTime();
@@ -70,16 +81,17 @@ public sealed class PeriodicReviewStopwatchSlot
         ? (IsOpenTimer ? "⏱️ Running" : "⏱️ Tracked")
         : "⚪ Untracked / Off";
 
-    public bool HasChanged => !string.Equals(OriginalProjectName?.Trim() ?? "", SelectedProjectName?.Trim() ?? "", StringComparison.OrdinalIgnoreCase);
+    public bool HasChanged => !string.Equals(OriginalProjectName?.Trim() ?? "", SelectedProjectName?.Trim() ?? "", StringComparison.OrdinalIgnoreCase)
+                              || (IsManuallyAdded && !string.IsNullOrWhiteSpace(SelectedProjectName));
 }
 
 public sealed class PeriodicReviewModel
 {
     public DateTime StartUtc { get; init; }
     public DateTime EndUtc { get; init; }
-    public List<PeriodicReviewActivityItem> Activities { get; init; } = [];
-    public List<PeriodicReviewStopwatchSlot> StopwatchSlots { get; init; } = [];
-    public List<string> KnownProjects { get; init; } = [];
+    public List<PeriodicReviewActivityItem> Activities { get; set; } = [];
+    public List<PeriodicReviewStopwatchSlot> StopwatchSlots { get; set; } = [];
+    public List<string> KnownProjects { get; set; } = [];
     public bool ActivityWatchAvailable { get; init; }
     public string? ActivityWatchMessage { get; init; }
 
@@ -130,6 +142,8 @@ public static class PeriodicReviewDataAggregator
             for (int i = 0; i < list.Count - 1; i++)
             {
                 var first = list[i];
+                if (first.IsIdle) continue; // Do not bridge idle items across active work
+
                 int k = i + 1;
                 bool canBridge = true;
 
@@ -142,8 +156,9 @@ public static class PeriodicReviewDataAggregator
                         break;
                     }
 
-                    // Check if mid is short enough to be considered a brief glance / interruption
-                    if (mid.Duration.TotalSeconds > threshold)
+                    // Check if mid is short enough to be considered a brief glance / interruption,
+                    // and do not bridge across an idle period that exceeds threshold
+                    if (mid.Duration.TotalSeconds > threshold || mid.IsIdle)
                     {
                         canBridge = false;
                         break;
@@ -337,27 +352,115 @@ public static class PeriodicReviewDataAggregator
                 {
                     awAvailable = true;
                     var buckets = await client.GetBucketsAsync(ct).ConfigureAwait(false);
-                    var windowBuckets = buckets.Values.Where(b => b.Type == "currentwindow").ToList();
+                    var afkBucket = buckets.Values.FirstOrDefault(b =>
+                        b.Type == "afkstatus" || b.Id.StartsWith("aw-watcher-afk", StringComparison.OrdinalIgnoreCase));
+                    var windowBuckets = buckets.Values.Where(b =>
+                        b.Type == "currentwindow" || b.Id.StartsWith("aw-watcher-window", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    var rawAfkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+                    if (afkBucket != null)
+                    {
+                        var afkEvents = await client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+                        foreach (var evt in afkEvents)
+                        {
+                            if (string.Equals(evt.Status, "afk", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var evtStart = evt.Timestamp;
+                                var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                                if (evtEnd <= startUtc || evtStart >= endUtc) continue;
+
+                                var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
+                                var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
+                                if (clampedEnd > clampedStart)
+                                {
+                                    rawAfkIntervals.Add((clampedStart, clampedEnd));
+                                }
+                            }
+                        }
+                    }
+
+                    var mergedAfk = ActivityWatchSync.MergeIntervals(rawAfkIntervals);
+                    foreach (var afk in mergedAfk)
+                    {
+                        rawEvents.Add(new RawActivityEvent(
+                            afk.Start,
+                            afk.End,
+                            "Idle / Away",
+                            "No user input (mouse/keyboard idle)",
+                            "Idle"));
+                    }
 
                     foreach (var bucket in windowBuckets)
                     {
                         var events = await client.GetEventsAsync(bucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
                         foreach (var evt in events)
                         {
-                            var evtStart = evt.Timestamp.UtcDateTime;
+                            var evtStart = evt.Timestamp;
                             var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
                             if (evtEnd <= startUtc || evtStart >= endUtc) continue;
 
-                            var clampedStart = evtStart < startUtc ? startUtc : evtStart;
-                            var clampedEnd = evtEnd > endUtc ? endUtc : evtEnd;
+                            var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
+                            var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
                             if (clampedEnd <= clampedStart) continue;
 
-                            rawEvents.Add(new RawActivityEvent(
-                                clampedStart,
-                                clampedEnd,
-                                evt.App,
-                                evt.Title,
-                                "App"));
+                            if (mergedAfk.Count > 0)
+                            {
+                                var activeSegments = ActivityWatchSync.SubtractIntervals(clampedStart, clampedEnd, mergedAfk);
+                                foreach (var (segStart, segEnd) in activeSegments)
+                                {
+                                    if (segEnd > segStart)
+                                    {
+                                        rawEvents.Add(new RawActivityEvent(
+                                            segStart,
+                                            segEnd,
+                                            evt.App,
+                                            evt.Title,
+                                            "App"));
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                rawEvents.Add(new RawActivityEvent(
+                                    clampedStart,
+                                    clampedEnd,
+                                    evt.App,
+                                    evt.Title,
+                                    "App"));
+                            }
+                        }
+                    }
+
+                    if (settings.ActivityWatchIncludeWeb)
+                    {
+                        var webBuckets = buckets.Values.Where(b =>
+                            b.Type == "web.tab.current" || b.Id.StartsWith("aw-watcher-web", StringComparison.OrdinalIgnoreCase)).ToList();
+                        foreach (var webBucket in webBuckets)
+                        {
+                            var webEvents = await client.GetEventsAsync(webBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+                            foreach (var evt in webEvents)
+                            {
+                                var evtStart = evt.Timestamp;
+                                var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                                if (evtEnd <= startUtc || evtStart >= endUtc) continue;
+
+                                var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
+                                var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
+                                if (clampedEnd <= clampedStart) continue;
+
+                                string domain = "";
+                                if (!string.IsNullOrWhiteSpace(evt.Url))
+                                {
+                                    try { domain = new Uri(evt.Url).Host; } catch { domain = evt.Url; }
+                                }
+
+                                rawEvents.Add(new RawActivityEvent(
+                                    clampedStart,
+                                    clampedEnd,
+                                    !string.IsNullOrWhiteSpace(domain) ? domain : (string.IsNullOrWhiteSpace(evt.App) ? "Browser" : evt.App),
+                                    evt.Title,
+                                    "Web"));
+                            }
                         }
                     }
                 }
@@ -378,6 +481,25 @@ public static class PeriodicReviewDataAggregator
 
         var activities = FilterAndBridgeActivities(rawEvents, filterSeconds);
         var slots = SliceStopwatchIntervals(startUtc, endUtc, history, runningSessions);
+
+        // Pre-tag activities that already fall within existing tracked stopwatch intervals
+        foreach (var act in activities)
+        {
+            var matchingSlots = slots
+                .Where(s => s.IsTracked && !string.IsNullOrWhiteSpace(s.SelectedProjectName)
+                            && s.EndUtc > act.StartUtc && s.StartUtc < act.EndUtc)
+                .Select(s => s.SelectedProjectName!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var proj in matchingSlots)
+            {
+                if (!act.AssignedProjects.Contains(proj, StringComparer.OrdinalIgnoreCase))
+                {
+                    act.AssignedProjects.Add(proj);
+                }
+            }
+        }
+
         var knownProjects = history.Projects.Select(p => p.Name)
             .Concat(history.Intervals.Select(i => i.ProjectName))
             .Where(p => !string.IsNullOrWhiteSpace(p))

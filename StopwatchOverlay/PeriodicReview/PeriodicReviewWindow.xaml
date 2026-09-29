@@ -7,10 +7,10 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="True"
-        Width="860"
-        Height="580"
-        MinWidth="780"
-        MinHeight="480"
+        Width="980"
+        Height="620"
+        MinWidth="850"
+        MinHeight="500"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         PreviewKeyDown="Window_PreviewKeyDown">
@@ -141,23 +141,45 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel Grid.Row="0" Margin="0,0,0,6">
                             <TextBlock Text="📱 ActivityWatch Activity (What you were doing)" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="Filtered &amp; bridged chronological foreground apps and windows." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock Text="Filtered &amp; bridged chronological foreground apps, web, and idle periods." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         </StackPanel>
 
+                        <!-- Activity Toolbar: Idle Toggle & Selection Controls -->
+                        <Grid Grid.Row="1" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="ShowIdleCheckBox" Content="Show Idle Periods" IsChecked="True"
+                                      FontSize="11.5" Foreground="{DynamicResource PrimaryTextBrush}"
+                                      VerticalAlignment="Center" Margin="0,0,6,0" Click="ShowIdleCheckBox_Click"/>
+                            <TextBlock x:Name="SelectionSummaryText" Grid.Column="1" Text="0 selected"
+                                       FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       VerticalAlignment="Center" Margin="6,0,6,0" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="SelectAllButton" Content="Select All" Height="24" Padding="8,0" FontSize="11"
+                                        Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Click="SelectAllButton_Click"/>
+                                <Button x:Name="DeselectAllButton" Content="Clear" Height="24" Padding="8,0" FontSize="11"
+                                        Style="{StaticResource SecondaryButton}" Click="DeselectAllButton_Click"/>
+                            </StackPanel>
+                        </Grid>
+
                         <!-- Activity List -->
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel x:Name="ActivitiesListContainer">
                                 <!-- Populated dynamically in code -->
                             </StackPanel>
                         </ScrollViewer>
 
                         <!-- Empty / Status Banner -->
-                        <Border x:Name="ActivityWatchStatusCard" Grid.Row="1"
+                        <Border x:Name="ActivityWatchStatusCard" Grid.Row="2"
                                 Background="{DynamicResource SurfaceRaisedBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1" CornerRadius="8"
@@ -189,16 +211,52 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel Grid.Row="0" Margin="0,0,0,6">
                             <TextBlock Text="⏱️ Stopwatch Time Allocation" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="Assign untracked intervals or adjust recorded projects." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock Text="Assign selected activities on the left to stopwatch projects." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
                         </StackPanel>
 
+                        <!-- Batch Labeling Box -->
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,2,0,8">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="LabelSectionHeaderText" Text="🏷️ Label Selected Activities (0 selected)"
+                                               FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource PrimaryTextBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <CheckBox x:Name="AllowMultiLabelCheckBox" Grid.Column="1"
+                                              Content="Allow multi-project overlap"
+                                              ToolTip="When checked, a period can be labeled for multiple projects simultaneously. When unchecked, labeling a period again replaces its project with the latest label."
+                                              FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                                              VerticalAlignment="Center" Click="AllowMultiLabelCheckBox_Click"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="BatchProjectComboBox" Height="30" VerticalContentAlignment="Center"
+                                              FontSize="11.5" FontFamily="{DynamicResource AppFontFamily}" Margin="0,0,6,0"/>
+                                    <Button x:Name="BatchNewProjectButton" Grid.Column="1" Content="+ New" Height="30"
+                                            Padding="10,0" Margin="0,0,6,0" Style="{StaticResource SecondaryButton}"
+                                            Click="BatchNewProjectButton_Click" ToolTip="Define a new project name"/>
+                                    <Button x:Name="ApplyLabelButton" Grid.Column="2" Content="Label Selected" Height="30"
+                                            Padding="12,0" Style="{StaticResource ActionButton}" Click="ApplyLabelButton_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Stopwatch Slots List -->
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel x:Name="StopwatchSlotsContainer">
                                 <!-- Populated dynamically in code -->
                             </StackPanel>
