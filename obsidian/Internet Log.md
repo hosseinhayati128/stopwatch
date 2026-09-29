@@ -311,24 +311,60 @@ Automated network connection and speed monitoring logged periodically by Stopwat
 | 22:00 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
 | 22:05 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 2111 ms | - | Speed test failed: The request was canceled due to the configured HttpClient.Timeout of 10 seconds elapsing. |
 | 22:10 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 2312 ms | 0.8 Mbps | High latency (2312 ms) |
+| 22:14 | 🔴 Offline | 📶 HUAWEI Y7 Prime (90%) | - | - | Ping timed out (offline or blocked) |
 | 22:15 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 1674 ms | - | Speed test failed: The request was canceled due to the configured HttpClient.Timeout of 10 seconds elapsing. |
+| 22:19 | 🔴 Offline | 📶 HUAWEI Y7 Prime (90%) | - | - | Ping timed out (offline or blocked) |
 | 22:20 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 22:24 | 🔴 Offline | 📶 HUAWEI Y7 Prime (82%) | - | - | Ping timed out (offline or blocked) |
 | 22:25 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 666 ms | 0.8 Mbps | High latency (666 ms) |
+| 22:29 | 🔴 Offline | 📶 HUAWEI Y7 Prime (82%) | - | - | Ping timed out (offline or blocked) |
 | 22:30 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 1576 ms | 0.8 Mbps | High latency (1576 ms) |
+| 22:34 | 🔴 Offline | 📶 Huawei_H60_2c22 (88%) | - | - | Ping timed out (offline or blocked) |
 | 22:35 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 22:39 | 🔴 Offline | 📶 Huawei_H60_2c22 (88%) | - | - | Ping timed out (offline or blocked) |
 | 22:40 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 1119 ms | 1.2 Mbps | High latency (1119 ms) |
+| 22:44 | 🔴 Offline | 📶 Huawei_H60_2c22 (88%) | - | - | Ping timed out (offline or blocked) |
 | 22:45 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 22:49 | 🔴 Offline | 📶 Huawei_H60_2c22 (88%) | - | - | Ping timed out (offline or blocked) |
 | 22:50 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 2181 ms | - | Speed test failed: The operation was canceled. |
+| 22:54 | 🔴 Offline | 📶 Huawei_H60_2c22 (88%) | - | - | Ping timed out (offline or blocked) |
 | 22:55 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 22:59 | 🟡 Slow | 📶 HUAWEI Y7 Prime (87%) | 3083 ms | 0.6 Mbps | High latency (3083 ms) |
 | 23:00 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:04 | 🟡 Slow | 📶 HUAWEI Y7 Prime (87%) | 2823 ms | 0.9 Mbps | High latency (2823 ms) |
 | 23:05 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 2487 ms | - | Speed test failed: The request was canceled due to the configured HttpClient.Timeout of 10 seconds elapsing. |
+| 23:09 | 🔴 Offline | 📶 HUAWEI Y7 Prime (87%) | - | - | Ping timed out (offline or blocked) |
 | 23:10 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 366 ms | 1.6 Mbps | High latency (366 ms) |
+| 23:14 | 🔴 Offline | 📶 HUAWEI Y7 Prime (87%) | - | - | Ping timed out (offline or blocked) |
 | 23:15 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:19 | 🟡 Slow | 📶 HUAWEI Y7 Prime (87%) | 2798 ms | 0.4 Mbps | High latency (2798 ms) & low speed (0.4 Mbps) |
 | 23:20 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:24 | 🟡 Slow | 📶 HUAWEI Y7 Prime (88%) | 3456 ms | 0.8 Mbps | High latency (3456 ms) |
 | 23:25 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:29 | 🟡 Slow | 📶 HUAWEI Y7 Prime (88%) | 2220 ms | 0.6 Mbps | High latency (2220 ms) |
 | 23:30 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 1633 ms | - | Speed test failed: The request was canceled due to the configured HttpClient.Timeout of 10 seconds elapsing. |
+| 23:34 | 🟡 Slow | 📶 HUAWEI Y7 Prime (88%) | 3128 ms | 1.3 Mbps | High latency (3128 ms) |
 | 23:35 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:39 | 🔴 Offline | 📶 HUAWEI Y7 Prime (91%) | - | - | Ping timed out (offline or blocked) |
 | 23:40 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:44 | 🔴 Offline | 📶 HUAWEI Y7 Prime (83%) | - | - | Ping timed out (offline or blocked) |
 | 23:45 | 🔴 Offline | 📶 HUAWEI Y7 Prime (89%) | - | - | Ping timed out (offline or blocked) |
+| 23:49 | 🔴 Offline | 📶 HUAWEI Y7 Prime (91%) | - | - | Ping timed out (offline or blocked) |
 | 23:50 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 419 ms | 1.2 Mbps | High latency (419 ms) |
+| 23:54 | 🟡 Slow | 📶 HUAWEI Y7 Prime (91%) | 1982 ms | 1.0 Mbps | High latency (1982 ms) |
 | 23:55 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 1858 ms | 1.3 Mbps | High latency (1858 ms) |
+| 23:59 | 🟡 Slow | 📶 HUAWEI Y7 Prime (91%) | 3280 ms | 0.9 Mbps | High latency (3280 ms) |
+
+## 📅 2026-09-29
+
+| Time | Status | Network / Wi-Fi | Ping | Speed | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 00:04 | 🟡 Slow | 📶 HUAWEI Y7 Prime (91%) | 1113 ms | 1.2 Mbps | High latency (1113 ms) |
+| 00:09 | 🟡 Slow | 📶 HUAWEI Y7 Prime (91%) | 2747 ms | 0.5 Mbps | High latency (2747 ms) |
+| 00:14 | 🟡 Slow | 📶 HUAWEI Y7 Prime (91%) | 3208 ms | 0.7 Mbps | High latency (3208 ms) |
+| 11:18 | 🟢 Online | 📶 HUAWEI Y7 Prime (89%) | 8 ms | 3.2 Mbps | Stable |
+| 11:23 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 404 ms | 3.7 Mbps | High latency (404 ms) |
+| 11:28 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 394 ms | 4.7 Mbps | High latency (394 ms) |
+| 11:33 | 🟡 Slow | 📶 HUAWEI Y7 Prime (89%) | 437 ms | 2.6 Mbps | High latency (437 ms) |
+| 14:56 | 🟡 Slow | 📶 HUAWEI Y7 Prime (90%) | 3074 ms | 0.2 Mbps | High latency (3074 ms) & low speed (0.2 Mbps) |
+| 15:01 | 🟡 Slow | 📶 HUAWEI Y7 Prime (90%) | 2707 ms | 0.7 Mbps | High latency (2707 ms) |
