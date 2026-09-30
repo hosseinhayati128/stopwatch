@@ -8,9 +8,9 @@
         Topmost="True"
         ShowInTaskbar="True"
         Width="980"
-        Height="620"
+        Height="640"
         MinWidth="850"
-        MinHeight="500"
+        MinHeight="520"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         PreviewKeyDown="Window_PreviewKeyDown">
@@ -36,6 +36,9 @@
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="BtnBorder" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="BtnBorder" Property="Opacity" Value="0.4"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -64,6 +67,9 @@
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="SecBorder" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="SecBorder" Property="Opacity" Value="0.4"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -108,161 +114,222 @@
                             <TextBlock x:Name="PeriodRangeBadge" Text="📅 14:00 – 14:30 (30m)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="Review foreground ActivityWatch logs on the left and assign/adjust project stopwatch time on the right."
+                    <TextBlock x:Name="StepSubtitleText"
+                               Text="Step 1: Select the projects you worked on in order (or breaks), guided by your ActivityWatch percentage report."
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                FontSize="11.5"
                                FontFamily="{DynamicResource AppFontFamily}"
                                Margin="0,4,0,0"/>
                 </StackPanel>
 
-                <!-- Filter Controls on Top Right -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Filter blips &lt;" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="FilterDurationTextBox" Width="44" Height="28" TextAlignment="Center" VerticalContentAlignment="Center"
-                             Text="15" FontSize="11.5" FontFamily="{DynamicResource AppFontFamily}"
-                             Background="{DynamicResource DialogSurfaceBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
-                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,4,0"
-                             KeyDown="FilterDurationTextBox_KeyDown"/>
-                    <TextBlock Text="sec" FontSize="11.5" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Button x:Name="ApplyFilterButton" Content="Apply" Height="28" Padding="10,0" Style="{StaticResource SecondaryButton}" Click="ApplyFilterButton_Click"/>
-                </StackPanel>
+                <!-- Step Indicator on Top Right -->
+                <Border Grid.Column="1" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
+                    <TextBlock x:Name="StepIndicatorBadge" Text="Step 1 of 2: Projects &amp; Overview" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                </Border>
             </Grid>
 
-            <!-- 2. Dual Column Body -->
+            <!-- 2. Body: Step 1 vs Step 2 View Containers -->
             <Grid Grid.Row="1" Margin="0,0,0,14">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
 
-                <!-- Left Column: ActivityWatch Activities -->
-                <Border Grid.Column="0" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                <!-- ========== STEP 1 CONTAINER ========== -->
+                <Grid x:Name="Step1Container" Visibility="Visible">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="1.2*"/>
+                    </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Row="0" Margin="0,0,0,6">
-                            <TextBlock Text="📱 ActivityWatch Activity (What you were doing)" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="Filtered &amp; bridged chronological foreground apps, web, and idle periods." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        </StackPanel>
+                    <!-- Left Column: Selectable Project Cards -->
+                    <Border Grid.Column="0" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- Activity Toolbar: Idle Toggle & Selection Controls -->
-                        <Grid Grid.Row="1" Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="ShowIdleCheckBox" Content="Show Idle Periods" IsChecked="True"
-                                      FontSize="11.5" Foreground="{DynamicResource PrimaryTextBrush}"
-                                      VerticalAlignment="Center" Margin="0,0,6,0" Click="ShowIdleCheckBox_Click"/>
-                            <TextBlock x:Name="SelectionSummaryText" Grid.Column="1" Text="0 selected"
-                                       FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
-                                       VerticalAlignment="Center" Margin="6,0,6,0" TextTrimming="CharacterEllipsis"/>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="SelectAllButton" Content="Select All" Height="24" Padding="8,0" FontSize="11"
-                                        Style="{StaticResource SecondaryButton}" Margin="0,0,4,0" Click="SelectAllButton_Click"/>
-                                <Button x:Name="DeselectAllButton" Content="Clear" Height="24" Padding="8,0" FontSize="11"
-                                        Style="{StaticResource SecondaryButton}" Click="DeselectAllButton_Click"/>
+                            <!-- Header -->
+                            <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                <TextBlock Text="📋 Select Projects Worked On" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="Click cards in the order you worked on them. Click again to deselect." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
                             </StackPanel>
-                        </Grid>
 
-                        <!-- Activity List -->
-                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel x:Name="ActivitiesListContainer">
-                                <!-- Populated dynamically in code -->
-                            </StackPanel>
-                        </ScrollViewer>
+                            <!-- Project Cards Wrap Container -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <WrapPanel x:Name="ProjectCardsContainer" Margin="0,0,0,8">
+                                        <!-- Dynamically populated in code -->
+                                    </WrapPanel>
 
-                        <!-- Empty / Status Banner -->
-                        <Border x:Name="ActivityWatchStatusCard" Grid.Row="2"
-                                Background="{DynamicResource SurfaceRaisedBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1" CornerRadius="8"
-                                Padding="16" Margin="12"
-                                VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="Collapsed">
-                            <StackPanel MaxWidth="360" HorizontalAlignment="Center">
-                                <TextBlock x:Name="ActivityWatchStatusHeading" Text="⚠️ ActivityWatch is Offline" FontWeight="Bold" FontSize="13.5"
-                                           Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                <TextBlock x:Name="ActivityWatchStatusMessage"
-                                           Text="Cannot connect to ActivityWatch at localhost:5600."
-                                           Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11.5"
-                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,14"/>
-                                <StackPanel x:Name="ActivityWatchActionButtons" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button x:Name="StartActivityWatchButton" Content="Start ActivityWatch" Height="30" Padding="14,0"
-                                            Style="{StaticResource ActionButton}" Margin="0,0,8,0" Click="StartActivityWatchButton_Click"/>
-                                    <Button x:Name="RetryActivityWatchButton" Content="Retry Connection" Height="30" Padding="14,0"
-                                            Style="{StaticResource SecondaryButton}" Click="RetryActivityWatchButton_Click"/>
+                                    <!-- Add New Project Inline Bar -->
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,6,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="NewProjectTextBox" Height="28" Padding="6,2" FontSize="11.5"
+                                                     VerticalContentAlignment="Center"
+                                                     Background="{DynamicResource DialogSurfaceBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                     KeyDown="NewProjectTextBox_KeyDown"
+                                                     ToolTip="Enter a new project name"/>
+                                            <Button x:Name="AddNewProjectButton" Grid.Column="1" Content="＋ Add Project" Height="28" Padding="10,0" Margin="6,0,0,0"
+                                                    Style="{StaticResource SecondaryButton}" Click="AddNewProjectButton_Click"/>
+                                        </Grid>
+                                    </Border>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
+                            </ScrollViewer>
 
-                <!-- Column Divider (empty gap) -->
-
-                <!-- Right Column: Stopwatch Project Time Allocation -->
-                <Border Grid.Column="2" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0" Margin="0,0,0,6">
-                            <TextBlock Text="⏱️ Stopwatch Time Allocation" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="Assign selected activities on the left to stopwatch projects." FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        </StackPanel>
-
-                        <!-- Batch Labeling Box -->
-                        <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,2,0,8">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="LabelSectionHeaderText" Text="🏷️ Label Selected Activities (0 selected)"
-                                               FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource PrimaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <CheckBox x:Name="AllowMultiLabelCheckBox" Grid.Column="1"
-                                              Content="Allow multi-project overlap"
-                                              ToolTip="When checked, a period can be labeled for multiple projects simultaneously. When unchecked, labeling a period again replaces its project with the latest label."
-                                              FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
-                                              VerticalAlignment="Center" Click="AllowMultiLabelCheckBox_Click"/>
-                                </Grid>
+                            <!-- Step 1 Bottom Bar: Selection Order Preview & Continue Button -->
+                            <Border Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,10,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <ComboBox x:Name="BatchProjectComboBox" Height="30" VerticalContentAlignment="Center"
-                                              FontSize="11.5" FontFamily="{DynamicResource AppFontFamily}" Margin="0,0,6,0"/>
-                                    <Button x:Name="BatchNewProjectButton" Grid.Column="1" Content="+ New" Height="30"
-                                            Padding="10,0" Margin="0,0,6,0" Style="{StaticResource SecondaryButton}"
-                                            Click="BatchNewProjectButton_Click" ToolTip="Define a new project name"/>
-                                    <Button x:Name="ApplyLabelButton" Grid.Column="2" Content="Label Selected" Height="30"
-                                            Padding="12,0" Style="{StaticResource ActionButton}" Click="ApplyLabelButton_Click"/>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Selected Sequence:" FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="SelectedSequenceText" Text="None selected (click cards above)" FontSize="11.5" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource AccentBrush}" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <Button x:Name="ContinueToStep2Button" Grid.Column="1" Content="Continue ➔" Height="30" Padding="14,0"
+                                            Style="{StaticResource ActionButton}" Click="ContinueToStep2Button_Click"/>
                                 </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Spacer Column 1 -->
+
+                    <!-- Right Column: User-Friendly ActivityWatch Report (Percentages) -->
+                    <Border Grid.Column="2" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header -->
+                            <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                <TextBlock Text="📊 Activity Breakdown &amp; Percentages" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="Grouped summary of foreground apps, websites, and idle time during this period." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
                             </StackPanel>
+
+                            <!-- Activity Summary List -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="ActivitySummariesContainer">
+                                    <!-- Populated dynamically with percentage cards -->
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Offline / Empty Status Banner -->
+                            <Border x:Name="ActivityWatchStatusCard" Grid.Row="1"
+                                    Background="{DynamicResource SurfaceRaisedBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="8"
+                                    Padding="16" Margin="12"
+                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="Collapsed">
+                                <StackPanel MaxWidth="360" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="ActivityWatchStatusHeading" Text="⚠️ ActivityWatch is Offline" FontWeight="Bold" FontSize="13.5"
+                                               Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="ActivityWatchStatusMessage"
+                                               Text="Cannot connect to ActivityWatch at localhost:5600."
+                                               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11.5"
+                                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,14"/>
+                                    <Button x:Name="RetryActivityWatchButton" Content="Retry Connection" Height="30" Padding="14,0"
+                                            Style="{StaticResource SecondaryButton}" HorizontalAlignment="Center" Click="RetryActivityWatchButton_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+
+                <!-- ========== STEP 2 CONTAINER ========== -->
+                <Grid x:Name="Step2Container" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Bar: Allocation Summary & Visual Multi-Color Bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="Step2AllocationSummaryText" Text="Allocated: 0m / 30m · Remaining: 30m (Unallocated)"
+                                           FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="💡 Hover over any card for details (hours, %, interval)" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Grid.Column="1" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- Visual Stacked Distribution Bar -->
+                            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Height="14" SnapsToDevicePixels="True">
+                                <Grid x:Name="DistributionBarContainer">
+                                    <!-- Populated dynamically with colored bars -->
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Step 2 Dual Column: Left = Duration Sliders; Right = Sequential Timeline Preview -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column: Selected Project Duration Controls -->
+                        <Border Grid.Column="0" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                    <TextBlock Text="⏱️ Allocate Time for Each Item" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Set durations using the sliders or +/- buttons. Order can be moved with ▲ ▼." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel x:Name="AllocatedProjectsContainer">
+                                        <!-- Dynamically populated with slider cards -->
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
                         </Border>
 
-                        <!-- Stopwatch Slots List -->
-                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel x:Name="StopwatchSlotsContainer">
-                                <!-- Populated dynamically in code -->
-                            </StackPanel>
-                        </ScrollViewer>
+                        <!-- Spacer Column 1 -->
+
+                        <!-- Right Column: Chronological Timeline Preview -->
+                        <Border Grid.Column="2" Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                                    <TextBlock Text="📅 Timeline Sequence Preview" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="How intervals will be saved in your stopwatch history and .md file:" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel x:Name="TimelinePreviewContainer">
+                                        <!-- Populated dynamically with timeline cards -->
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
                     </Grid>
-                </Border>
+                </Grid>
             </Grid>
 
             <!-- 3. Footer Bar -->
@@ -272,15 +339,20 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Press Esc to skip without changes · Enter to complete report"
+                <TextBlock x:Name="FooterShortcutHintText"
+                           Text="Press Esc to skip without changes"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            FontSize="11.5"
                            FontFamily="{DynamicResource AppFontFamily}"
                            VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="SkipReportButton" Content="Skip (Esc)" Margin="0,0,10,0" Style="{StaticResource SecondaryButton}" Click="SkipReportButton_Click"/>
-                    <Button x:Name="SaveReportButton" Content="Save &amp; Complete (Enter)" Style="{StaticResource ActionButton}" Click="SaveReportButton_Click"/>
+                    <!-- Step 1 Footer Buttons -->
+                    <Button x:Name="Step1SkipButton" Content="Skip (Esc)" Margin="0,0,10,0" Style="{StaticResource SecondaryButton}" Click="SkipReportButton_Click"/>
+                    
+                    <!-- Step 2 Footer Buttons -->
+                    <Button x:Name="Step2BackButton" Content="⬅ Back" Margin="0,0,10,0" Style="{StaticResource SecondaryButton}" Visibility="Collapsed" Click="Step2BackButton_Click"/>
+                    <Button x:Name="Step2VerifyButton" Content="✓ Verify &amp; Save (Enter)" Style="{StaticResource ActionButton}" Visibility="Collapsed" Click="Step2VerifyButton_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>

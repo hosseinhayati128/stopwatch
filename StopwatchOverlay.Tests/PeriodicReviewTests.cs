@@ -385,4 +385,126 @@ public class PeriodicReviewTests
         Assert.Contains("Project Beta", activity.AssignedProjects);
         Assert.Contains("Project Gamma", activity.AssignedProjects);
     }
+
+    [Fact]
+    public void AggregateActivitiesSummary_GroupsRepeatedVisitsAndCalculatesPercentages()
+    {
+        // 30 minute review window = 1800 seconds
+        var baseTime = new DateTimeOffset(2026, 9, 30, 10, 0, 0, TimeSpan.Zero);
+        var totalPeriod = TimeSpan.FromMinutes(30);
+
+        var events = new List<RawActivityEvent>();
+
+        // 7 separate visits to ChatGPT Chat A (each 90 seconds = total 630s = 10.5m = 35%)
+        for (int i = 0; i < 7; i++)
+        {
+            events.Add(new RawActivityEvent(
+                baseTime.AddSeconds(i * 100),
+                baseTime.AddSeconds(i * 100 + 90),
+                "chrome.exe",
+                "Chat A - ChatGPT - Google Chrome",
+                "Web"));
+        }
+
+        // 3 separate visits to ChatGPT Chat B (each 126 seconds = total 378s = 6.3m = 21%)
+        for (int i = 0; i < 3; i++)
+        {
+            events.Add(new RawActivityEvent(
+                baseTime.AddSeconds(800 + i * 150),
+                baseTime.AddSeconds(800 + i * 150 + 126),
+                "chrome.exe",
+                "Chat B - ChatGPT - Google Chrome",
+                "Web"));
+        }
+
+        // Idle time totaling 558 seconds (9.3m = 31%)
+        events.Add(new RawActivityEvent(
+            baseTime.AddSeconds(1300),
+            baseTime.AddSeconds(1858),
+            "Idle / Away",
+            "No mouse/keyboard",
+            "Idle"));
+
+        // Remaining 234 seconds (3.9m = 13%) in VS Code
+        events.Add(new RawActivityEvent(
+            baseTime.AddSeconds(1858),
+            baseTime.AddSeconds(2092),
+            "Code.exe",
+            "main.cs - Stopwatch - Visual Studio Code",
+            "App"));
+
+        var summaries = PeriodicReviewDataAggregator.AggregateActivitiesSummary(events, totalPeriod);
+
+        // All 7 visits to Chat A are combined into 1 entry
+        // All 3 visits to Chat B are combined into 1 entry
+        // Idle is 1 entry, Code is 1 entry -> exactly 4 groups
+        Assert.Equal(4, summaries.Count);
+
+        // Sorted by duration descending:
+        // 1. Chat A: 35.0%
+        Assert.Equal("Chat A - ChatGPT", summaries[0].Title);
+        Assert.Equal("chrome", summaries[0].App);
+        Assert.Equal(7, summaries[0].EventCount);
+        Assert.Equal(35.0, summaries[0].Percentage);
+
+        // 2. Idle: 31.0%
+        Assert.True(summaries[1].IsIdle);
+        Assert.Equal("Idle / Away", summaries[1].App);
+        Assert.Equal(31.0, summaries[1].Percentage);
+
+        // 3. Chat B: 21.0%
+        Assert.Equal("Chat B - ChatGPT", summaries[2].Title);
+        Assert.Equal(3, summaries[2].EventCount);
+        Assert.Equal(21.0, summaries[2].Percentage);
+
+        // 4. Code: 13.0%
+        Assert.Equal("main.cs - Stopwatch", summaries[3].Title);
+        Assert.Equal("Code", summaries[3].App);
+        Assert.Equal(13.0, summaries[3].Percentage);
+    }
+
+    [Fact]
+    public void ComputeTimeline_CalculatesSequentialIntervalsWithBreakAndUnallocated()
+    {
+        // 30 minute review window from 10:00 to 10:30 UTC
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(30);
+
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Project Alpha", AllocatedMinutes = 10, SelectionOrder = 1, IsBreak = false },
+            new() { ProjectName = "Break / Empty", AllocatedMinutes = 5, SelectionOrder = 2, IsBreak = true },
+            new() { ProjectName = "Project Beta", AllocatedMinutes = 5, SelectionOrder = 3, IsBreak = false },
+            new() { ProjectName = "Project Delta", AllocatedMinutes = 5, SelectionOrder = 4, IsBreak = false }
+        };
+
+        var timeline = PeriodicReviewDataAggregator.ComputeTimeline(startUtc, endUtc, items);
+
+        Assert.Equal(4, timeline.Count);
+
+        // Slot 1: Project Alpha (10:00 - 10:10)
+        Assert.Equal(startUtc, timeline[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(10), timeline[0].EndUtc);
+        Assert.Equal("Project Alpha", timeline[0].Item.ProjectName);
+        Assert.False(timeline[0].Item.IsBreak);
+
+        // Slot 2: Break (10:10 - 10:15)
+        Assert.Equal(startUtc.AddMinutes(10), timeline[1].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(15), timeline[1].EndUtc);
+        Assert.True(timeline[1].Item.IsBreak);
+
+        // Slot 3: Project Beta (10:15 - 10:20)
+        Assert.Equal(startUtc.AddMinutes(15), timeline[2].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(20), timeline[2].EndUtc);
+        Assert.Equal("Project Beta", timeline[2].Item.ProjectName);
+
+        // Slot 4: Project Delta (10:20 - 10:25)
+        Assert.Equal(startUtc.AddMinutes(20), timeline[3].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(25), timeline[3].EndUtc);
+        Assert.Equal("Project Delta", timeline[3].Item.ProjectName);
+
+        // Remainder: timeline ended at 10:25, so 10:25 to 10:30 (5m) is unallocated (untracked)
+        Assert.True(timeline[^1].EndUtc < endUtc);
+        Assert.Equal(TimeSpan.FromMinutes(5), endUtc - timeline[^1].EndUtc);
+    }
 }

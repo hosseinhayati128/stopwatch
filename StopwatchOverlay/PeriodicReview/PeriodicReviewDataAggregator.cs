@@ -85,12 +85,53 @@ public sealed class PeriodicReviewStopwatchSlot
                               || (IsManuallyAdded && !string.IsNullOrWhiteSpace(SelectedProjectName));
 }
 
+public sealed class ActivitySummaryGroup
+{
+    public string App { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Category { get; set; } = "App"; // "App", "Web", "Idle"
+    public TimeSpan TotalDuration { get; set; }
+    public double Percentage { get; set; } // e.g. 35.0
+    public int EventCount { get; set; }
+
+    public bool IsIdle => string.Equals(Category, "Idle", StringComparison.OrdinalIgnoreCase);
+
+    public string DurationDisplay
+    {
+        get
+        {
+            int totalMin = (int)Math.Round(TotalDuration.TotalMinutes);
+            if (totalMin <= 0) return $"{Math.Max(1, (int)TotalDuration.TotalSeconds)}s";
+            int h = totalMin / 60;
+            int m = totalMin % 60;
+            return h > 0 ? (m > 0 ? $"{h}h {m}m" : $"{h}h") : $"{m}m";
+        }
+    }
+
+    public string PercentageDisplay => $"{Percentage:0.#}%";
+}
+
+public sealed class ReviewProjectSelectionItem
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string ProjectName { get; set; } = "";
+    public bool IsBreak { get; set; }
+    public int SelectionOrder { get; set; } // 1, 2, 3... 0 if unselected
+    public bool IsSelected => SelectionOrder > 0;
+    public double AllocatedMinutes { get; set; }
+    public DateTime CalculatedStartUtc { get; set; }
+    public DateTime CalculatedEndUtc { get; set; }
+
+    public string DisplayName => IsBreak ? "☕ Break / Empty" : ProjectName;
+}
+
 public sealed class PeriodicReviewModel
 {
     public DateTime StartUtc { get; init; }
     public DateTime EndUtc { get; init; }
     public List<PeriodicReviewActivityItem> Activities { get; set; } = [];
     public List<PeriodicReviewStopwatchSlot> StopwatchSlots { get; set; } = [];
+    public List<ActivitySummaryGroup> ActivitySummaries { get; set; } = [];
     public List<string> KnownProjects { get; set; } = [];
     public bool ActivityWatchAvailable { get; init; }
     public string? ActivityWatchMessage { get; init; }
@@ -221,6 +262,143 @@ public static class PeriodicReviewDataAggregator
         }
 
         return merged;
+    }
+
+    /// <summary>
+    /// Groups raw ActivityWatch events by normalized App and Title/Details,
+    /// combines repeated events (e.g. multiple visits to ChatGPT Chat A or Chat B),
+    /// combines all idle events into a single entry, and calculates percentage shares.
+    /// </summary>
+    public static List<ActivitySummaryGroup> AggregateActivitiesSummary(
+        IEnumerable<RawActivityEvent> events,
+        TimeSpan totalPeriodDuration)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+
+        var list = events.ToList();
+        if (list.Count == 0) return [];
+
+        double totalPeriodSeconds = Math.Max(1, totalPeriodDuration.TotalSeconds);
+
+        var groups = new Dictionary<string, (string App, string Title, string Category, TimeSpan Duration, int Count)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var evt in list)
+        {
+            TimeSpan duration = evt.EndUtc > evt.StartUtc ? evt.EndUtc - evt.StartUtc : TimeSpan.Zero;
+            if (duration <= TimeSpan.Zero) continue;
+
+            string app = evt.App?.Trim() ?? "";
+            string title = evt.Details?.Trim() ?? "";
+            string category = evt.Type ?? "App";
+
+            if (string.Equals(category, "Idle", StringComparison.OrdinalIgnoreCase) ||
+                app.StartsWith("Idle", StringComparison.OrdinalIgnoreCase))
+            {
+                app = "Idle / Away";
+                title = "No user input (keyboard/mouse idle)";
+                category = "Idle";
+            }
+            else
+            {
+                title = CleanActivityTitle(title, app);
+                app = CleanAppName(app);
+            }
+
+            string groupKey = $"{category}:{app}::{title}";
+
+            if (groups.TryGetValue(groupKey, out var existing))
+            {
+                groups[groupKey] = (existing.App, existing.Title, existing.Category, existing.Duration + duration, existing.Count + 1);
+            }
+            else
+            {
+                groups[groupKey] = (app, title, category, duration, 1);
+            }
+        }
+
+        var result = new List<ActivitySummaryGroup>();
+        foreach (var entry in groups.Values)
+        {
+            double pct = Math.Round((entry.Duration.TotalSeconds / totalPeriodSeconds) * 100.0, 1);
+            result.Add(new ActivitySummaryGroup
+            {
+                App = entry.App,
+                Title = string.IsNullOrWhiteSpace(entry.Title) ? entry.App : entry.Title,
+                Category = entry.Category,
+                TotalDuration = entry.Duration,
+                Percentage = pct,
+                EventCount = entry.Count
+            });
+        }
+
+        return result.OrderByDescending(g => g.TotalDuration).ToList();
+    }
+
+    public static string CleanActivityTitle(string title, string app)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return "";
+        string clean = title.Trim();
+
+        string[] suffixes = [
+            " - Google Chrome",
+            " - Microsoft Edge",
+            " - Brave",
+            " - Mozilla Firefox",
+            " - Visual Studio Code",
+            " - Telegram"
+        ];
+
+        foreach (var suffix in suffixes)
+        {
+            if (clean.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                clean = clean[..^suffix.Length].Trim();
+            }
+        }
+
+        return clean;
+    }
+
+    public static string CleanAppName(string app)
+    {
+        if (string.IsNullOrWhiteSpace(app)) return "Unknown";
+        string clean = app.Trim();
+        if (clean.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            clean = clean[..^4];
+        }
+        return clean;
+    }
+
+    /// <summary>
+    /// Computes chronological timeline intervals starting at startUtc based on the ordered list of items.
+    /// </summary>
+    public static List<(DateTime StartUtc, DateTime EndUtc, ReviewProjectSelectionItem Item)> ComputeTimeline(
+        DateTime startUtc,
+        DateTime endUtc,
+        IReadOnlyList<ReviewProjectSelectionItem> orderedItems)
+    {
+        var result = new List<(DateTime StartUtc, DateTime EndUtc, ReviewProjectSelectionItem Item)>();
+        DateTime cursor = startUtc;
+
+        foreach (var item in orderedItems)
+        {
+            if (item.AllocatedMinutes <= 0) continue;
+            TimeSpan duration = TimeSpan.FromMinutes(item.AllocatedMinutes);
+            DateTime slotStart = cursor;
+            DateTime slotEnd = cursor + duration;
+            if (slotEnd > endUtc) slotEnd = endUtc;
+            if (slotEnd <= slotStart) break;
+
+            item.CalculatedStartUtc = slotStart;
+            item.CalculatedEndUtc = slotEnd;
+            result.Add((slotStart, slotEnd, item));
+            cursor = slotEnd;
+
+            if (cursor >= endUtc) break;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -508,12 +686,15 @@ public static class PeriodicReviewDataAggregator
             .OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
+        var summaries = AggregateActivitiesSummary(rawEvents, endUtc - startUtc);
+
         return new PeriodicReviewModel
         {
             StartUtc = startUtc,
             EndUtc = endUtc,
             Activities = activities,
             StopwatchSlots = slots,
+            ActivitySummaries = summaries,
             KnownProjects = knownProjects,
             ActivityWatchAvailable = awAvailable,
             ActivityWatchMessage = awMessage
