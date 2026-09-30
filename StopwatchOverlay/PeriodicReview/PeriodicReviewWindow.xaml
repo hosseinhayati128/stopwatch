@@ -268,12 +268,19 @@
                                            Grid.Column="1" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <!-- Visual Stacked Distribution Bar -->
-                            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Height="14" SnapsToDevicePixels="True">
+                            <!-- Visual Stacked Distribution Bar (Interactive Timeline Track) -->
+                            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Height="34" SnapsToDevicePixels="True" ClipToBounds="True">
                                 <Grid x:Name="DistributionBarContainer">
-                                    <!-- Populated dynamically with colored bars -->
+                                    <!-- Populated dynamically with interactive draggable colored bars and unallocated gaps -->
                                 </Grid>
                             </Border>
+
+                            <!-- Timeline Time Scale Markers -->
+                            <Grid Margin="4,4,4,0">
+                                <TextBlock x:Name="TimelineScaleStartText" Text="10:00" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock x:Name="TimelineScaleMidText" Text="10:15" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="TimelineScaleEndText" Text="10:30" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

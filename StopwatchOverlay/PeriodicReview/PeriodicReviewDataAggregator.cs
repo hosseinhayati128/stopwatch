@@ -119,10 +119,39 @@ public sealed class ReviewProjectSelectionItem
     public int SelectionOrder { get; set; } // 1, 2, 3... 0 if unselected
     public bool IsSelected => SelectionOrder > 0;
     public double AllocatedMinutes { get; set; }
-    public DateTime CalculatedStartUtc { get; set; }
-    public DateTime CalculatedEndUtc { get; set; }
+    public DateTime? StartUtc { get; set; }
+    public DateTime? EndUtc { get; set; }
+    public bool IsExpanded { get; set; }
+
+    public DateTime CalculatedStartUtc
+    {
+        get => StartUtc ?? DateTime.MinValue;
+        set => StartUtc = value;
+    }
+
+    public DateTime CalculatedEndUtc
+    {
+        get => EndUtc ?? DateTime.MinValue;
+        set => EndUtc = value;
+    }
 
     public string DisplayName => IsBreak ? "☕ Break / Empty" : ProjectName;
+}
+
+public sealed class TimelineSlot
+{
+    public DateTime StartUtc { get; set; }
+    public DateTime EndUtc { get; set; }
+    public ReviewProjectSelectionItem? Item { get; set; }
+    public bool IsUnallocated => Item == null;
+    public bool IsBreak => Item?.IsBreak == true;
+    public string DisplayName => Item != null ? Item.DisplayName : "⚪ Unallocated (No project)";
+    public TimeSpan Duration => EndUtc > StartUtc ? EndUtc - StartUtc : TimeSpan.Zero;
+    public double DurationMinutes => Duration.TotalMinutes;
+
+    public DateTime StartLocal => StartUtc.ToLocalTime();
+    public DateTime EndLocal => EndUtc.ToLocalTime();
+    public string TimeDisplay => $"{StartLocal:HH:mm} – {EndLocal:HH:mm}";
 }
 
 public sealed class PeriodicReviewModel
@@ -372,33 +401,129 @@ public static class PeriodicReviewDataAggregator
 
     /// <summary>
     /// Computes chronological timeline intervals starting at startUtc based on the ordered list of items.
+    /// If items have explicit StartUtc/EndUtc set, their positions are respected and gaps are handled.
     /// </summary>
     public static List<(DateTime StartUtc, DateTime EndUtc, ReviewProjectSelectionItem Item)> ComputeTimeline(
         DateTime startUtc,
         DateTime endUtc,
         IReadOnlyList<ReviewProjectSelectionItem> orderedItems)
     {
-        var result = new List<(DateTime StartUtc, DateTime EndUtc, ReviewProjectSelectionItem Item)>();
-        DateTime cursor = startUtc;
+        var slots = BuildFullTimeline(startUtc, endUtc, orderedItems);
+        return slots
+            .Where(s => s.Item != null)
+            .Select(s => (s.StartUtc, s.EndUtc, s.Item!))
+            .ToList();
+    }
 
-        foreach (var item in orderedItems)
+    /// <summary>
+    /// Builds a full, contiguous timeline covering [periodStartUtc, periodEndUtc].
+    /// Project intervals and intermediate/trailing unallocated gaps are represented as TimelineSlots.
+    /// </summary>
+    public static List<TimelineSlot> BuildFullTimeline(
+        DateTime periodStartUtc,
+        DateTime periodEndUtc,
+        IReadOnlyList<ReviewProjectSelectionItem> items)
+    {
+        var activeItems = items
+            .Where(it => it.AllocatedMinutes > 0)
+            .ToList();
+
+        if (activeItems.Count == 0)
         {
-            if (item.AllocatedMinutes <= 0) continue;
-            TimeSpan duration = TimeSpan.FromMinutes(item.AllocatedMinutes);
-            DateTime slotStart = cursor;
-            DateTime slotEnd = cursor + duration;
-            if (slotEnd > endUtc) slotEnd = endUtc;
-            if (slotEnd <= slotStart) break;
-
-            item.CalculatedStartUtc = slotStart;
-            item.CalculatedEndUtc = slotEnd;
-            result.Add((slotStart, slotEnd, item));
-            cursor = slotEnd;
-
-            if (cursor >= endUtc) break;
+            return
+            [
+                new TimelineSlot
+                {
+                    StartUtc = periodStartUtc,
+                    EndUtc = periodEndUtc,
+                    Item = null
+                }
+            ];
         }
 
-        return result;
+        // Check if any items have explicit start times; if not, arrange them sequentially
+        bool anyExplicit = activeItems.Any(it => it.StartUtc.HasValue && it.StartUtc.Value >= periodStartUtc && it.StartUtc.Value < periodEndUtc);
+
+        if (!anyExplicit)
+        {
+            DateTime seqCursor = periodStartUtc;
+            foreach (var it in activeItems)
+            {
+                TimeSpan dur = TimeSpan.FromMinutes(it.AllocatedMinutes);
+                DateTime s = seqCursor;
+                DateTime e = s + dur;
+                if (e > periodEndUtc) e = periodEndUtc;
+                it.StartUtc = s;
+                it.EndUtc = e;
+                seqCursor = e;
+            }
+        }
+
+        // Sort items by StartUtc
+        var sorted = activeItems
+            .OrderBy(it => it.StartUtc ?? periodStartUtc)
+            .ToList();
+
+        var slots = new List<TimelineSlot>();
+        DateTime cursor = periodStartUtc;
+
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            var it = sorted[i];
+            TimeSpan duration = TimeSpan.FromMinutes(it.AllocatedMinutes);
+            DateTime itemStart = it.StartUtc ?? cursor;
+            if (itemStart < periodStartUtc) itemStart = periodStartUtc;
+            if (itemStart < cursor) itemStart = cursor; // prevent overlapping previous item
+
+            DateTime itemEnd = it.EndUtc ?? (itemStart + duration);
+            if (itemEnd < itemStart) itemEnd = itemStart;
+            if (itemEnd > periodEndUtc) itemEnd = periodEndUtc;
+
+            // Check if duration changed
+            if (itemEnd > itemStart)
+            {
+                it.AllocatedMinutes = Math.Round((itemEnd - itemStart).TotalMinutes);
+            }
+
+            it.StartUtc = itemStart;
+            it.EndUtc = itemEnd;
+
+            // Gap before this item? Insert Unallocated slot!
+            if (itemStart > cursor)
+            {
+                slots.Add(new TimelineSlot
+                {
+                    StartUtc = cursor,
+                    EndUtc = itemStart,
+                    Item = null
+                });
+            }
+
+            // Insert project / break slot
+            if (itemEnd > itemStart)
+            {
+                slots.Add(new TimelineSlot
+                {
+                    StartUtc = itemStart,
+                    EndUtc = itemEnd,
+                    Item = it
+                });
+                cursor = itemEnd;
+            }
+        }
+
+        // Trailing gap after last item?
+        if (cursor < periodEndUtc)
+        {
+            slots.Add(new TimelineSlot
+            {
+                StartUtc = cursor,
+                EndUtc = periodEndUtc,
+                Item = null
+            });
+        }
+
+        return slots;
     }
 
     /// <summary>

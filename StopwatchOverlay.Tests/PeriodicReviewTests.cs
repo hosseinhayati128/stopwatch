@@ -507,4 +507,73 @@ public class PeriodicReviewTests
         Assert.True(timeline[^1].EndUtc < endUtc);
         Assert.Equal(TimeSpan.FromMinutes(5), endUtc - timeline[^1].EndUtc);
     }
+
+    [Fact]
+    public void BuildFullTimeline_HandlesIntermediateAndTrailingUnallocatedGaps()
+    {
+        // 20-minute period from 10:00 to 10:20 UTC
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(20);
+
+        // User scenario:
+        // Item A: 10:00 - 10:10 (10 min)
+        // Item B moved to 10:12 - 10:17 (5 min)
+        // Resulting in: 2 min unallocated gap before B, and 3 min unallocated gap after B
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new()
+            {
+                ProjectName = "Project A",
+                AllocatedMinutes = 10,
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(10),
+                SelectionOrder = 1
+            },
+            new()
+            {
+                ProjectName = "Project B",
+                AllocatedMinutes = 5,
+                StartUtc = startUtc.AddMinutes(12),
+                EndUtc = startUtc.AddMinutes(17),
+                SelectionOrder = 2
+            }
+        };
+
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(startUtc, endUtc, items);
+
+        // Expected 4 contiguous slots:
+        // 1. Project A: 10:00 - 10:10 (10 min)
+        // 2. Unallocated: 10:10 - 10:12 (2 min)
+        // 3. Project B: 10:12 - 10:17 (5 min)
+        // 4. Unallocated: 10:17 - 10:20 (3 min)
+        Assert.Equal(4, fullTimeline.Count);
+
+        // Slot 1
+        Assert.False(fullTimeline[0].IsUnallocated);
+        Assert.Equal("Project A", fullTimeline[0].Item!.ProjectName);
+        Assert.Equal(startUtc, fullTimeline[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(10), fullTimeline[0].EndUtc);
+        Assert.Equal(10, fullTimeline[0].DurationMinutes);
+
+        // Slot 2: 2m gap on the left of B
+        Assert.True(fullTimeline[1].IsUnallocated);
+        Assert.Null(fullTimeline[1].Item);
+        Assert.Equal(startUtc.AddMinutes(10), fullTimeline[1].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(12), fullTimeline[1].EndUtc);
+        Assert.Equal(2, fullTimeline[1].DurationMinutes);
+
+        // Slot 3: Project B
+        Assert.False(fullTimeline[2].IsUnallocated);
+        Assert.Equal("Project B", fullTimeline[2].Item!.ProjectName);
+        Assert.Equal(startUtc.AddMinutes(12), fullTimeline[2].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(17), fullTimeline[2].EndUtc);
+        Assert.Equal(5, fullTimeline[2].DurationMinutes);
+
+        // Slot 4: 3m gap on the right of B
+        Assert.True(fullTimeline[3].IsUnallocated);
+        Assert.Null(fullTimeline[3].Item);
+        Assert.Equal(startUtc.AddMinutes(17), fullTimeline[3].StartUtc);
+        Assert.Equal(endUtc, fullTimeline[3].EndUtc);
+        Assert.Equal(3, fullTimeline[3].DurationMinutes);
+    }
 }
