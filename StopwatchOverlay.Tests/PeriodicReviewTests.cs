@@ -576,4 +576,87 @@ public class PeriodicReviewTests
         Assert.Equal(endUtc, fullTimeline[3].EndUtc);
         Assert.Equal(3, fullTimeline[3].DurationMinutes);
     }
+
+    [Fact]
+    public void FilterAndGroupActivitiesSummary_GroupsBelowDefaultThreshold()
+    {
+        var totalPeriod = TimeSpan.FromMinutes(30); // 1800s
+        var groups = new List<ActivitySummaryGroup>
+        {
+            new() { App = "ChatGPT", Title = "Chat A", Category = "Web", TotalDuration = TimeSpan.FromMinutes(10), Percentage = 33.3, EventCount = 5 },
+            new() { App = "VS Code", Title = "StopwatchOverlay", Category = "App", TotalDuration = TimeSpan.FromMinutes(8), Percentage = 26.7, EventCount = 4 },
+            new() { App = "Spotify", Title = "Music", Category = "App", TotalDuration = TimeSpan.FromSeconds(45), Percentage = 2.5, EventCount = 1 },
+            new() { App = "Calculator", Title = "Calc", Category = "App", TotalDuration = TimeSpan.FromSeconds(20), Percentage = 1.1, EventCount = 1 },
+            new() { App = "Terminal", Title = "git", Category = "App", TotalDuration = TimeSpan.FromSeconds(15), Percentage = 0.8, EventCount = 1 }
+        };
+
+        // Default threshold 3.0%: Spotify (2.5%), Calc (1.1%), and Terminal (0.8%) should be bundled into "Others"
+        var filtered = PeriodicReviewDataAggregator.FilterAndGroupActivitiesSummary(groups, totalPeriod, 3.0);
+
+        Assert.Equal(3, filtered.Count);
+        Assert.Equal("ChatGPT", filtered[0].App);
+        Assert.Equal("VS Code", filtered[1].App);
+
+        // "Others" group
+        var others = filtered[2];
+        Assert.Equal("Others", others.App);
+        Assert.Equal("Other", others.Category);
+        Assert.True(others.IsOther);
+        Assert.Equal(3, others.SubItems.Count);
+        Assert.Equal(3, others.EventCount);
+        Assert.Equal(TimeSpan.FromSeconds(80), others.TotalDuration);
+        Assert.Contains("minor activities", others.Title);
+        Assert.True(others.Percentage > 0);
+    }
+
+    [Fact]
+    public void FilterAndGroupActivitiesSummary_AdjustableThreshold_VariousPercentages()
+    {
+        var totalPeriod = TimeSpan.FromMinutes(30);
+        var groups = new List<ActivitySummaryGroup>
+        {
+            new() { App = "App A", Title = "Task 1", Category = "App", TotalDuration = TimeSpan.FromMinutes(12), Percentage = 40.0, EventCount = 5 },
+            new() { App = "App B", Title = "Task 2", Category = "App", TotalDuration = TimeSpan.FromMinutes(6), Percentage = 20.0, EventCount = 3 },
+            new() { App = "App C", Title = "Task 3", Category = "App", TotalDuration = TimeSpan.FromMinutes(2), Percentage = 6.7, EventCount = 2 },
+            new() { App = "App D", Title = "Task 4", Category = "App", TotalDuration = TimeSpan.FromSeconds(30), Percentage = 1.7, EventCount = 1 }
+        };
+
+        // Threshold = 0.0 (Off): all 4 items shown individually, no "Others"
+        var off = PeriodicReviewDataAggregator.FilterAndGroupActivitiesSummary(groups, totalPeriod, 0.0);
+        Assert.Equal(4, off.Count);
+        Assert.DoesNotContain(off, g => g.IsOther);
+
+        // Threshold = 5.0%: App D (1.7%) is grouped into Others
+        var at5 = PeriodicReviewDataAggregator.FilterAndGroupActivitiesSummary(groups, totalPeriod, 5.0);
+        Assert.Equal(4, at5.Count); // A, B, C, Others
+        Assert.Equal("Others", at5[3].App);
+        Assert.Single(at5[3].SubItems);
+
+        // Threshold = 10.0%: App C (6.7%) and App D (1.7%) grouped into Others
+        var at10 = PeriodicReviewDataAggregator.FilterAndGroupActivitiesSummary(groups, totalPeriod, 10.0);
+        Assert.Equal(3, at10.Count); // A, B, Others
+        Assert.Equal("Others", at10[2].App);
+        Assert.Equal(2, at10[2].SubItems.Count);
+    }
+
+    [Fact]
+    public void ProjectPersistence_WhenProjectRegistered_IsPersistedPermanently()
+    {
+        var history = new ProjectTimeHistory();
+
+        // Register a project as added from Periodic Review
+        string registered = history.RegisterProject("New Review Project");
+
+        Assert.Equal("New Review Project", registered);
+        Assert.Contains("New Review Project", history.ProjectNames);
+
+        // Verify it remains unless deleted manually
+        var view = history.CreateView(DateTime.UtcNow);
+        Assert.Contains(view.Projects, p => p.Name == "New Review Project");
+
+        // Now test manual deletion
+        var delResult = history.DeleteProject("New Review Project");
+        Assert.Equal(ProjectDeletionStatus.Success, delResult.Status);
+        Assert.DoesNotContain("New Review Project", history.ProjectNames);
+    }
 }

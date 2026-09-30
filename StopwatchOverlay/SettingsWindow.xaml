@@ -711,6 +711,18 @@
                                 <TextBox x:Name="PeriodicReviewMinDurationTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
                             </Grid>
 
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Minimum activity breakdown threshold (%)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Activities with percentage below this threshold are grouped into 'Others' (default: 3%)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="PeriodicReviewMinPercentTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="ReviewNowButton" Content="Review Now (Win+F2 then V)" Height="34" Padding="16,0"
                                         Style="{StaticResource ModernButton}" Click="ReviewNowButton_Click"/>

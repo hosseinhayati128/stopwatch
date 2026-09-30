@@ -18,10 +18,13 @@ public partial class PeriodicReviewWindow : Window
     private readonly ProjectHistoryView _history;
     private readonly IEnumerable<TimerSession>? _runningSessions;
     private readonly Action<List<PeriodicReviewStopwatchSlot>>? _onSave;
+    private readonly Func<string, string>? _onRegisterProject;
 
     private PeriodicReviewModel? _model;
     private bool _isStep2;
     private bool _handled;
+    private double _thresholdPercent;
+    private bool _isOthersExpanded;
 
     // Selection model for Step 1 & 2
     private readonly List<ReviewProjectSelectionItem> _availableProjects = [];
@@ -53,7 +56,8 @@ public partial class PeriodicReviewWindow : Window
         AppSettings settings,
         ProjectHistoryView history,
         IEnumerable<TimerSession>? runningSessions,
-        Action<List<PeriodicReviewStopwatchSlot>>? onSave)
+        Action<List<PeriodicReviewStopwatchSlot>>? onSave,
+        Func<string, string>? onRegisterProject = null)
     {
         InitializeComponent();
 
@@ -63,20 +67,61 @@ public partial class PeriodicReviewWindow : Window
         _history = history ?? throw new ArgumentNullException(nameof(history));
         _runningSessions = runningSessions;
         _onSave = onSave;
+        _onRegisterProject = onRegisterProject;
+        _thresholdPercent = _settings.PeriodicReviewMinActivityPercent;
 
         DateTime startLocal = _startUtc.ToLocalTime();
         DateTime endLocal = _endUtc.ToLocalTime();
         int totalMin = Math.Max(1, (int)Math.Round((endLocal - startLocal).TotalMinutes));
         PeriodRangeBadge.Text = $"📅 {startLocal:HH:mm} – {endLocal:HH:mm} ({totalMin}m)";
+        ThresholdPercentText.Text = _thresholdPercent <= 0.0 ? "Off" : $"{_thresholdPercent:0.#}%";
+
+        InitializeProjectsList();
     }
 
     private int TotalPeriodMinutes => Math.Max(1, (int)Math.Round((_endUtc - _startUtc).TotalMinutes));
+    private TimeSpan TotalPeriodDuration => _endUtc > _startUtc ? _endUtc - _startUtc : TimeSpan.FromMinutes(30);
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await LoadReviewDataAsync();
+        // Render project cards immediately from known history so the user sees UI instantly
+        RenderProjectCards();
+        UpdateStep1SequenceSummary();
+        RenderActivityLoadingState();
+
         Activate();
         Focus();
+
+        await LoadReviewDataAsync();
+    }
+
+    private void RenderActivityLoadingState()
+    {
+        ActivitySummariesContainer.Children.Clear();
+        var loadingPanel = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 40, 0, 0)
+        };
+        var spinner = new TextBlock
+        {
+            Text = "⏳ Loading ActivityWatch records...",
+            FontSize = 13,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("AccentBrush"),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        var sub = new TextBlock
+        {
+            Text = "Analyzing background application and web activity...",
+            FontSize = 11,
+            Foreground = (Brush)FindResource("SecondaryTextBrush"),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 5, 0, 0)
+        };
+        loadingPanel.Children.Add(spinner);
+        loadingPanel.Children.Add(sub);
+        ActivitySummariesContainer.Children.Add(loadingPanel);
     }
 
     private async Task LoadReviewDataAsync()
@@ -90,8 +135,9 @@ public partial class PeriodicReviewWindow : Window
                 _history,
                 _runningSessions);
 
-            InitializeProjectsList();
-            RenderStep1();
+            SyncKnownProjects();
+            RenderProjectCards();
+            RenderActivitySummaries();
         }
         catch (Exception ex)
         {
@@ -110,21 +156,18 @@ public partial class PeriodicReviewWindow : Window
             IsBreak = true
         });
 
-        // 2. Known projects from history
-        if (_model != null)
+        // 2. Known projects from history view
+        foreach (var p in _history.Projects)
         {
-            foreach (var proj in _model.KnownProjects)
+            if (!string.IsNullOrWhiteSpace(p.Name) &&
+                !string.Equals(p.Name, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase) &&
+                !_availableProjects.Any(ap => string.Equals(ap.ProjectName, p.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                if (!string.IsNullOrWhiteSpace(proj) &&
-                    !string.Equals(proj, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase) &&
-                    !_availableProjects.Any(p => string.Equals(p.ProjectName, proj, StringComparison.OrdinalIgnoreCase)))
+                _availableProjects.Add(new ReviewProjectSelectionItem
                 {
-                    _availableProjects.Add(new ReviewProjectSelectionItem
-                    {
-                        ProjectName = proj.Trim(),
-                        IsBreak = false
-                    });
-                }
+                    ProjectName = p.Name.Trim(),
+                    IsBreak = false
+                });
             }
         }
 
@@ -136,6 +179,31 @@ public partial class PeriodicReviewWindow : Window
                 ProjectName = "General Work",
                 IsBreak = false
             });
+        }
+    }
+
+    private void SyncKnownProjects()
+    {
+        if (_model == null) return;
+        bool anyAdded = false;
+        foreach (var proj in _model.KnownProjects)
+        {
+            if (!string.IsNullOrWhiteSpace(proj) &&
+                !string.Equals(proj, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase) &&
+                !_availableProjects.Any(p => string.Equals(p.ProjectName, proj, StringComparison.OrdinalIgnoreCase)))
+            {
+                _availableProjects.Add(new ReviewProjectSelectionItem
+                {
+                    ProjectName = proj.Trim(),
+                    IsBreak = false
+                });
+                anyAdded = true;
+            }
+        }
+
+        if (anyAdded)
+        {
+            RenderProjectCards();
         }
     }
 
@@ -308,6 +376,11 @@ public partial class PeriodicReviewWindow : Window
         string name = NewProjectTextBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(name)) return;
 
+        if (_onRegisterProject != null)
+        {
+            name = _onRegisterProject(name);
+        }
+
         var existing = _availableProjects.FirstOrDefault(p => string.Equals(p.ProjectName, name, StringComparison.OrdinalIgnoreCase));
         if (existing == null)
         {
@@ -330,13 +403,54 @@ public partial class PeriodicReviewWindow : Window
         UpdateStep1SequenceSummary();
     }
 
+    private void DecreaseThresholdButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_thresholdPercent <= 1.0) _thresholdPercent = 0.0;
+        else if (_thresholdPercent <= 2.0) _thresholdPercent = 1.0;
+        else if (_thresholdPercent <= 3.0) _thresholdPercent = 2.0;
+        else if (_thresholdPercent <= 5.0) _thresholdPercent = 3.0;
+        else if (_thresholdPercent <= 10.0) _thresholdPercent = 5.0;
+        else _thresholdPercent = Math.Max(0.0, _thresholdPercent - 5.0);
+
+        UpdateThresholdUI();
+    }
+
+    private void IncreaseThresholdButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_thresholdPercent < 1.0) _thresholdPercent = 1.0;
+        else if (_thresholdPercent < 2.0) _thresholdPercent = 2.0;
+        else if (_thresholdPercent < 3.0) _thresholdPercent = 3.0;
+        else if (_thresholdPercent < 5.0) _thresholdPercent = 5.0;
+        else if (_thresholdPercent < 10.0) _thresholdPercent = 10.0;
+        else _thresholdPercent = Math.Min(30.0, _thresholdPercent + 5.0);
+
+        UpdateThresholdUI();
+    }
+
+    private void UpdateThresholdUI()
+    {
+        ThresholdPercentText.Text = _thresholdPercent <= 0.0 ? "Off" : $"{_thresholdPercent:0.#}%";
+        _settings.PeriodicReviewMinActivityPercent = _thresholdPercent;
+        SettingsStore.Save(_settings);
+        RenderActivitySummaries();
+    }
+
     private void RenderActivitySummaries()
     {
         ActivitySummariesContainer.Children.Clear();
 
-        if (_model == null || _model.ActivitySummaries.Count == 0)
+        if (_model == null)
         {
-            if (_model != null && !_model.ActivityWatchAvailable)
+            RenderActivityLoadingState();
+            return;
+        }
+
+        var rawList = _model.RawActivitySummaries.Count > 0 ? _model.RawActivitySummaries : _model.ActivitySummaries;
+        var groups = PeriodicReviewDataAggregator.FilterAndGroupActivitiesSummary(rawList, TotalPeriodDuration, _thresholdPercent);
+
+        if (groups.Count == 0)
+        {
+            if (!_model.ActivityWatchAvailable)
             {
                 ActivityWatchStatusCard.Visibility = Visibility.Visible;
                 ActivityWatchStatusMessage.Text = _model.ActivityWatchMessage ?? "Cannot connect to ActivityWatch.";
@@ -359,7 +473,7 @@ public partial class PeriodicReviewWindow : Window
 
         ActivityWatchStatusCard.Visibility = Visibility.Collapsed;
 
-        foreach (var group in _model.ActivitySummaries)
+        foreach (var group in groups)
         {
             ActivitySummariesContainer.Children.Add(CreateActivitySummaryCard(group));
         }
@@ -389,9 +503,11 @@ public partial class PeriodicReviewWindow : Window
         topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Category badge + duration
 
         // Percentage Badge
-        Brush badgeBg = group.IsIdle
-            ? new SolidColorBrush(Color.FromArgb(180, 80, 90, 100))
-            : (group.Percentage >= 25.0 ? (Brush)FindResource("AccentBrush") : new SolidColorBrush(Color.FromArgb(200, 36, 120, 160)));
+        Brush badgeBg = group.IsOther
+            ? new SolidColorBrush(Color.FromArgb(190, 100, 115, 130))
+            : (group.IsIdle
+                ? new SolidColorBrush(Color.FromArgb(180, 80, 90, 100))
+                : (group.Percentage >= 25.0 ? (Brush)FindResource("AccentBrush") : new SolidColorBrush(Color.FromArgb(200, 36, 120, 160))));
 
         var pctBadge = new Border
         {
@@ -450,9 +566,12 @@ public partial class PeriodicReviewWindow : Window
             Padding = new Thickness(5, 1, 5, 1),
             Margin = new Thickness(0, 0, 8, 0)
         };
+        string catLabel = group.IsOther
+            ? "📦 Others"
+            : (group.IsIdle ? "💤 Idle" : (string.Equals(group.Category, "Web", StringComparison.OrdinalIgnoreCase) ? "🌐 Web" : "💻 App"));
         var catText = new TextBlock
         {
-            Text = group.IsIdle ? "💤 Idle" : (string.Equals(group.Category, "Web", StringComparison.OrdinalIgnoreCase) ? "🌐 Web" : "💻 App"),
+            Text = catLabel,
             FontSize = 10,
             Foreground = (Brush)FindResource("SecondaryTextBrush")
         };
@@ -499,6 +618,63 @@ public partial class PeriodicReviewWindow : Window
 
         Grid.SetRow(barTrack, 1);
         rootGrid.Children.Add(barTrack);
+
+        // Interactive details & expandable list for Others
+        if (group.IsOther && group.SubItems.Count > 0)
+        {
+            var tipItems = group.SubItems.Take(15).Select(s => $"• {s.Title} ({s.PercentageDisplay}, {s.DurationDisplay})");
+            string tip = string.Join("\n", tipItems);
+            if (group.SubItems.Count > 15) tip += $"\n... and {group.SubItems.Count - 15} more";
+            border.ToolTip = $"Activities below {_thresholdPercent:0.#}%:\n{tip}\n\n(Click card to toggle details)";
+            border.Cursor = Cursors.Hand;
+            border.MouseLeftButtonUp += (s, e) =>
+            {
+                _isOthersExpanded = !_isOthersExpanded;
+                RenderActivitySummaries();
+            };
+
+            if (_isOthersExpanded)
+            {
+                rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var subItemsPanel = new StackPanel { Margin = new Thickness(6, 10, 6, 2) };
+                foreach (var sub in group.SubItems)
+                {
+                    var subRow = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                    subRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    subRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    subRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var dot = new TextBlock { Text = "• ", Foreground = (Brush)FindResource("SecondaryTextBrush"), FontSize = 11 };
+                    Grid.SetColumn(dot, 0);
+                    subRow.Children.Add(dot);
+
+                    var sTitle = new TextBlock
+                    {
+                        Text = sub.Title,
+                        FontSize = 11,
+                        Foreground = (Brush)FindResource("PrimaryTextBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                        ToolTip = $"{sub.App} — {sub.Title}"
+                    };
+                    Grid.SetColumn(sTitle, 1);
+                    subRow.Children.Add(sTitle);
+
+                    var sDur = new TextBlock
+                    {
+                        Text = $"{sub.PercentageDisplay} ({sub.DurationDisplay})",
+                        FontSize = 10.5,
+                        Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                        Margin = new Thickness(6, 0, 0, 0)
+                    };
+                    Grid.SetColumn(sDur, 2);
+                    subRow.Children.Add(sDur);
+
+                    subItemsPanel.Children.Add(subRow);
+                }
+                Grid.SetRow(subItemsPanel, 2);
+                rootGrid.Children.Add(subItemsPanel);
+            }
+        }
 
         border.Child = rootGrid;
         return border;

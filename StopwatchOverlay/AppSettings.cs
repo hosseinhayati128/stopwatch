@@ -217,6 +217,7 @@ namespace StopwatchOverlay
         public DateTime? LastPeriodicReviewCompletedUtc { get; set; } = null;
         public bool PeriodicReviewShowIdle { get; set; } = true;
         public bool PeriodicReviewAllowMultiProject { get; set; } = false;
+        public double PeriodicReviewMinActivityPercent { get; set; } = 3.0;
 
         // Idle Stopwatch Inactivity Stopping
         public bool IdleStopUnnamedTimers { get; set; } = false;
@@ -476,6 +477,8 @@ namespace StopwatchOverlay
                 PeriodicReviewMinDurationSeconds = 0;
             else if (PeriodicReviewMinDurationSeconds > 3600)
                 PeriodicReviewMinDurationSeconds = 3600;
+
+            PeriodicReviewMinActivityPercent = Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0);
         }
 
         private static string NormalizeChoice(

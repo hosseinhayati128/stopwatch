@@ -95,6 +95,8 @@ public sealed class ActivitySummaryGroup
     public int EventCount { get; set; }
 
     public bool IsIdle => string.Equals(Category, "Idle", StringComparison.OrdinalIgnoreCase);
+    public bool IsOther => string.Equals(Category, "Other", StringComparison.OrdinalIgnoreCase);
+    public List<ActivitySummaryGroup> SubItems { get; set; } = [];
 
     public string DurationDisplay
     {
@@ -161,6 +163,7 @@ public sealed class PeriodicReviewModel
     public List<PeriodicReviewActivityItem> Activities { get; set; } = [];
     public List<PeriodicReviewStopwatchSlot> StopwatchSlots { get; set; } = [];
     public List<ActivitySummaryGroup> ActivitySummaries { get; set; } = [];
+    public List<ActivitySummaryGroup> RawActivitySummaries { get; set; } = [];
     public List<string> KnownProjects { get; set; } = [];
     public bool ActivityWatchAvailable { get; init; }
     public string? ActivityWatchMessage { get; init; }
@@ -202,19 +205,24 @@ public static class PeriodicReviewDataAggregator
         // Step 1: Merge contiguous intervals of the exact same app
         list = MergeConsecutiveSameApp(list);
 
-        // Step 2: Smart bridging:
-        // If list[i] is App A, followed by one or more brief activities B (each <= threshold),
-        // followed by list[k] which is also App A, bridge them together!
-        bool changed;
-        do
+        // Step 2: Linear smart bridging:
+        // For each item, look ahead to see if same app resumes after brief interruptions (each <= threshold).
+        var bridged = new List<PeriodicReviewActivityItem>(list.Count);
+        int i = 0;
+        while (i < list.Count)
         {
-            changed = false;
-            for (int i = 0; i < list.Count - 1; i++)
+            var first = list[i];
+            if (first.IsIdle)
             {
-                var first = list[i];
-                if (first.IsIdle) continue; // Do not bridge idle items across active work
+                bridged.Add(first);
+                i++;
+                continue;
+            }
 
-                int k = i + 1;
+            int lookahead = i + 1;
+            while (lookahead < list.Count)
+            {
+                int k = lookahead;
                 bool canBridge = true;
 
                 while (k < list.Count)
@@ -222,12 +230,9 @@ public static class PeriodicReviewDataAggregator
                     var mid = list[k];
                     if (string.Equals(mid.App, first.App, StringComparison.OrdinalIgnoreCase))
                     {
-                        // Found same app after brief interruptions!
                         break;
                     }
 
-                    // Check if mid is short enough to be considered a brief glance / interruption,
-                    // and do not bridge across an idle period that exceeds threshold
                     if (mid.Duration.TotalSeconds > threshold || mid.IsIdle)
                     {
                         canBridge = false;
@@ -239,22 +244,27 @@ public static class PeriodicReviewDataAggregator
 
                 if (canBridge && k < list.Count && string.Equals(list[k].App, first.App, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Bridge from i through k!
                     var target = list[k];
-                    first.EndLocal = target.EndLocal > first.EndLocal ? target.EndLocal : first.EndLocal;
+                    if (target.EndLocal > first.EndLocal)
+                    {
+                        first.EndLocal = target.EndLocal;
+                    }
                     if (string.IsNullOrWhiteSpace(first.Details) && !string.IsNullOrWhiteSpace(target.Details))
                     {
                         first.Details = target.Details;
                     }
-
-                    // Remove bridged intermediate elements and the target element
-                    int removeCount = k - i;
-                    list.RemoveRange(i + 1, removeCount);
-                    changed = true;
+                    lookahead = k + 1;
+                }
+                else
+                {
                     break;
                 }
             }
-        } while (changed);
+
+            bridged.Add(first);
+            i = lookahead;
+        }
+        list = bridged;
 
         // Step 3: Merge any newly adjacent same app items
         list = MergeConsecutiveSameApp(list);
@@ -361,6 +371,75 @@ public static class PeriodicReviewDataAggregator
         }
 
         return result.OrderByDescending(g => g.TotalDuration).ToList();
+    }
+
+    /// <summary>
+    /// Filters activity summary groups by minimum percentage threshold, bundling all items below
+    /// the threshold into a single "Others" group.
+    /// </summary>
+    public static List<ActivitySummaryGroup> FilterAndGroupActivitiesSummary(
+        IReadOnlyList<ActivitySummaryGroup> rawGroups,
+        TimeSpan totalPeriodDuration,
+        double minPercentThreshold)
+    {
+        ArgumentNullException.ThrowIfNull(rawGroups);
+        if (rawGroups.Count == 0) return [];
+
+        if (minPercentThreshold <= 0.0)
+        {
+            return rawGroups.OrderByDescending(g => g.TotalDuration).ToList();
+        }
+
+        var sorted = rawGroups.OrderByDescending(g => g.TotalDuration).ToList();
+        var topItems = new List<ActivitySummaryGroup>();
+        var otherItems = new List<ActivitySummaryGroup>();
+
+        foreach (var item in sorted)
+        {
+            if (item.Percentage >= minPercentThreshold)
+            {
+                topItems.Add(item);
+            }
+            else
+            {
+                otherItems.Add(item);
+            }
+        }
+
+        // If no single activity met the threshold, retain at least the top activity so the user has context
+        if (topItems.Count == 0 && otherItems.Count > 0)
+        {
+            topItems.Add(otherItems[0]);
+            otherItems.RemoveAt(0);
+        }
+
+        if (otherItems.Count == 0)
+        {
+            return topItems;
+        }
+
+        long totalOtherTicks = otherItems.Sum(o => o.TotalDuration.Ticks);
+        TimeSpan otherDuration = TimeSpan.FromTicks(totalOtherTicks);
+        double totalPeriodSeconds = Math.Max(1, totalPeriodDuration.TotalSeconds);
+        double otherPct = Math.Round((otherDuration.TotalSeconds / totalPeriodSeconds) * 100.0, 1);
+        if (otherPct <= 0.0 && otherDuration.TotalSeconds > 0)
+        {
+            otherPct = 0.1;
+        }
+
+        var otherGroup = new ActivitySummaryGroup
+        {
+            App = "Others",
+            Title = $"{otherItems.Count} minor {(otherItems.Count == 1 ? "activity" : "activities")} (< {minPercentThreshold:0.#}%)",
+            Category = "Other",
+            TotalDuration = otherDuration,
+            Percentage = otherPct,
+            EventCount = otherItems.Sum(o => o.EventCount),
+            SubItems = otherItems.OrderByDescending(o => o.TotalDuration).ToList()
+        };
+
+        topItems.Add(otherGroup);
+        return topItems;
     }
 
     public static string CleanActivityTitle(string title, string app)
@@ -648,36 +727,55 @@ public static class PeriodicReviewDataAggregator
         {
             try
             {
-                var client = new ActivityWatchClient(settings.ActivityWatchServerUrl);
-                var test = await client.TestConnectionAsync(ct).ConfigureAwait(false);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(TimeSpan.FromSeconds(3.5));
+                var linkedCt = cts.Token;
 
-                if (test.Success)
+                var client = new ActivityWatchClient(settings.ActivityWatchServerUrl);
+                var buckets = await client.GetBucketsAsync(linkedCt).ConfigureAwait(false);
+
+                if (buckets.Count > 0)
                 {
                     awAvailable = true;
-                    var buckets = await client.GetBucketsAsync(ct).ConfigureAwait(false);
                     var afkBucket = buckets.Values.FirstOrDefault(b =>
                         b.Type == "afkstatus" || b.Id.StartsWith("aw-watcher-afk", StringComparison.OrdinalIgnoreCase));
                     var windowBuckets = buckets.Values.Where(b =>
                         b.Type == "currentwindow" || b.Id.StartsWith("aw-watcher-window", StringComparison.OrdinalIgnoreCase)).ToList();
 
-                    var rawAfkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
-                    if (afkBucket != null)
-                    {
-                        var afkEvents = await client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
-                        foreach (var evt in afkEvents)
-                        {
-                            if (string.Equals(evt.Status, "afk", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var evtStart = evt.Timestamp;
-                                var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
-                                if (evtEnd <= startUtc || evtStart >= endUtc) continue;
+                    var afkTask = afkBucket != null
+                        ? client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 10000, linkedCt)
+                        : Task.FromResult(new List<AwEvent>());
 
-                                var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
-                                var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
-                                if (clampedEnd > clampedStart)
-                                {
-                                    rawAfkIntervals.Add((clampedStart, clampedEnd));
-                                }
+                    var windowTasks = windowBuckets
+                        .Select(b => client.GetEventsAsync(b.Id, startUtc, endUtc, 10000, linkedCt))
+                        .ToList();
+
+                    var webBuckets = (settings.ActivityWatchIncludeWeb
+                        ? buckets.Values.Where(b => b.Type == "web.tab.current" || b.Id.StartsWith("aw-watcher-web", StringComparison.OrdinalIgnoreCase))
+                        : Enumerable.Empty<AwBucketInfo>()).ToList();
+
+                    var webTasks = webBuckets
+                        .Select(b => client.GetEventsAsync(b.Id, startUtc, endUtc, 10000, linkedCt))
+                        .ToList();
+
+                    // Parallel bucket fetching across all watchers
+                    await Task.WhenAll(windowTasks.Concat(webTasks).Append(afkTask)).ConfigureAwait(false);
+
+                    var rawAfkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
+                    var afkEvents = await afkTask.ConfigureAwait(false);
+                    foreach (var evt in afkEvents)
+                    {
+                        if (string.Equals(evt.Status, "afk", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var evtStart = evt.Timestamp;
+                            var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                            if (evtEnd <= startUtc || evtStart >= endUtc) continue;
+
+                            var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
+                            var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
+                            if (clampedEnd > clampedStart)
+                            {
+                                rawAfkIntervals.Add((clampedStart, clampedEnd));
                             }
                         }
                     }
@@ -693,9 +791,9 @@ public static class PeriodicReviewDataAggregator
                             "Idle"));
                     }
 
-                    foreach (var bucket in windowBuckets)
+                    for (int bIdx = 0; bIdx < windowBuckets.Count; bIdx++)
                     {
-                        var events = await client.GetEventsAsync(bucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+                        var events = await windowTasks[bIdx].ConfigureAwait(false);
                         foreach (var evt in events)
                         {
                             var evtStart = evt.Timestamp;
@@ -734,43 +832,43 @@ public static class PeriodicReviewDataAggregator
                         }
                     }
 
-                    if (settings.ActivityWatchIncludeWeb)
+                    for (int wIdx = 0; wIdx < webBuckets.Count; wIdx++)
                     {
-                        var webBuckets = buckets.Values.Where(b =>
-                            b.Type == "web.tab.current" || b.Id.StartsWith("aw-watcher-web", StringComparison.OrdinalIgnoreCase)).ToList();
-                        foreach (var webBucket in webBuckets)
+                        var webEvents = await webTasks[wIdx].ConfigureAwait(false);
+                        foreach (var evt in webEvents)
                         {
-                            var webEvents = await client.GetEventsAsync(webBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
-                            foreach (var evt in webEvents)
+                            var evtStart = evt.Timestamp;
+                            var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
+                            if (evtEnd <= startUtc || evtStart >= endUtc) continue;
+
+                            var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
+                            var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
+                            if (clampedEnd <= clampedStart) continue;
+
+                            string domain = "";
+                            if (!string.IsNullOrWhiteSpace(evt.Url))
                             {
-                                var evtStart = evt.Timestamp;
-                                var evtEnd = evtStart.AddSeconds(Math.Max(0, evt.DurationSeconds));
-                                if (evtEnd <= startUtc || evtStart >= endUtc) continue;
-
-                                var clampedStart = evtStart < startUtc ? (DateTimeOffset)startUtc : evtStart;
-                                var clampedEnd = evtEnd > endUtc ? (DateTimeOffset)endUtc : evtEnd;
-                                if (clampedEnd <= clampedStart) continue;
-
-                                string domain = "";
-                                if (!string.IsNullOrWhiteSpace(evt.Url))
-                                {
-                                    try { domain = new Uri(evt.Url).Host; } catch { domain = evt.Url; }
-                                }
-
-                                rawEvents.Add(new RawActivityEvent(
-                                    clampedStart,
-                                    clampedEnd,
-                                    !string.IsNullOrWhiteSpace(domain) ? domain : (string.IsNullOrWhiteSpace(evt.App) ? "Browser" : evt.App),
-                                    evt.Title,
-                                    "Web"));
+                                try { domain = new Uri(evt.Url).Host; } catch { domain = evt.Url; }
                             }
+
+                            rawEvents.Add(new RawActivityEvent(
+                                clampedStart,
+                                clampedEnd,
+                                !string.IsNullOrWhiteSpace(domain) ? domain : (string.IsNullOrWhiteSpace(evt.App) ? "Browser" : evt.App),
+                                evt.Title,
+                                "Web"));
                         }
                     }
                 }
                 else
                 {
+                    var test = await client.TestConnectionAsync(ct).ConfigureAwait(false);
                     awMessage = test.ErrorMessage ?? "Could not connect to ActivityWatch.";
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                awMessage = "ActivityWatch request timed out.";
             }
             catch (Exception ex)
             {
@@ -811,7 +909,9 @@ public static class PeriodicReviewDataAggregator
             .OrderBy(p => p, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
-        var summaries = AggregateActivitiesSummary(rawEvents, endUtc - startUtc);
+        var rawSummaries = AggregateActivitiesSummary(rawEvents, endUtc - startUtc);
+        double thresholdPercent = settings.PeriodicReviewMinActivityPercent;
+        var filteredSummaries = FilterAndGroupActivitiesSummary(rawSummaries, endUtc - startUtc, thresholdPercent);
 
         return new PeriodicReviewModel
         {
@@ -819,7 +919,8 @@ public static class PeriodicReviewDataAggregator
             EndUtc = endUtc,
             Activities = activities,
             StopwatchSlots = slots,
-            ActivitySummaries = summaries,
+            RawActivitySummaries = rawSummaries,
+            ActivitySummaries = filteredSummaries,
             KnownProjects = knownProjects,
             ActivityWatchAvailable = awAvailable,
             ActivityWatchMessage = awMessage

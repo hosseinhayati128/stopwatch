@@ -150,6 +150,7 @@ public partial class SettingsWindow : Window
             PeriodicReviewSnoozeTextBox.Text = _settings.PeriodicReviewSnoozeMinutes.ToString();
             PeriodicReviewAutoDismissTextBox.Text = _settings.PeriodicReviewAutoDismissSeconds.ToString();
             PeriodicReviewMinDurationTextBox.Text = _settings.PeriodicReviewMinDurationSeconds.ToString();
+            PeriodicReviewMinPercentTextBox.Text = _settings.PeriodicReviewMinActivityPercent.ToString("0.#");
             InternetMonitorEnabledCheck.IsChecked = _settings.InternetMonitorEnabled;
             InternetMonitorOnlyDuringTimersCheck.IsChecked = _settings.InternetMonitorOnlyDuringTimers;
             InternetCheckIntervalTextBox.Text = _settings.InternetMonitorIntervalMinutes.ToString();
@@ -251,6 +252,7 @@ public partial class SettingsWindow : Window
         PeriodicReviewSnoozeTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
         PeriodicReviewAutoDismissTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
         PeriodicReviewMinDurationTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
+        PeriodicReviewMinPercentTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.PeriodicReview);
 
         WireCheckBox(InternetMonitorEnabledCheck, SettingsChangeKind.InternetMonitor);
         WireCheckBox(InternetMonitorOnlyDuringTimersCheck, SettingsChangeKind.InternetMonitor);
@@ -490,6 +492,8 @@ public partial class SettingsWindow : Window
                     _settings.PeriodicReviewAutoDismissSeconds = dismiss;
                 if (int.TryParse(PeriodicReviewMinDurationTextBox.Text.Trim(), out int minDur) && minDur >= 0)
                     _settings.PeriodicReviewMinDurationSeconds = minDur;
+                if (double.TryParse(PeriodicReviewMinPercentTextBox.Text.Trim(), out double minPct) && minPct >= 0)
+                    _settings.PeriodicReviewMinActivityPercent = minPct;
             }
 
             if ((change & SettingsChangeKind.InternetMonitor) != 0)

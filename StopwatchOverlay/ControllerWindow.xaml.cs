@@ -469,6 +469,12 @@ namespace StopwatchOverlay
                     _periodicReviewService?.OnReviewCompleted(DateTime.UtcNow);
                     _settings.LastPeriodicReviewCompletedUtc = DateTime.UtcNow;
                     SettingsStore.Save(_settings);
+                },
+                projectName =>
+                {
+                    string canonical = RegisterProjectName(projectName);
+                    _projectTimeStore.Save(_projectHistory);
+                    return canonical;
                 });
 
             if (IsVisible && WindowState != WindowState.Minimized)
@@ -483,6 +489,13 @@ namespace StopwatchOverlay
             bool anyChanges = false;
             foreach (var slot in slots)
             {
+                if (!string.IsNullOrWhiteSpace(slot.SelectedProjectName) &&
+                    !string.Equals(slot.SelectedProjectName, "Break / Empty", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(slot.SelectedProjectName, "☕ Break / Empty", StringComparison.OrdinalIgnoreCase))
+                {
+                    RegisterProjectName(slot.SelectedProjectName);
+                }
+
                 if (slot.HasChanged)
                 {
                     anyChanges = true;
