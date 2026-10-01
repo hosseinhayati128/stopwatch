@@ -489,7 +489,7 @@ public static class PeriodicReviewDataAggregator
     {
         var slots = BuildFullTimeline(startUtc, endUtc, orderedItems);
         return slots
-            .Where(s => s.Item != null)
+            .Where(s => s.Item != null && s.DurationMinutes > 0)
             .Select(s => (s.StartUtc, s.EndUtc, s.Item!))
             .ToList();
     }
@@ -500,8 +500,111 @@ public static class PeriodicReviewDataAggregator
     }
 
     /// <summary>
+    /// Rebalances allocated minutes across items when an item's allocation is changed.
+    /// If targetMinutes increases and exceeds available unallocated space, minutes are borrowed
+    /// from other items (prioritizing the largest donor).
+    /// </summary>
+    public static void RebalanceAllocatedMinutes(
+        IReadOnlyList<ReviewProjectSelectionItem> items,
+        ReviewProjectSelectionItem changedItem,
+        double targetMinutes,
+        int totalPeriodMinutes)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(changedItem);
+        if (totalPeriodMinutes <= 0 || items.Count == 0) return;
+
+        double target = Math.Clamp(Math.Round(targetMinutes), 0, totalPeriodMinutes);
+        double current = Math.Round(changedItem.AllocatedMinutes);
+        double delta = target - current;
+        if (Math.Abs(delta) < 0.001) return;
+
+        if (delta > 0)
+        {
+            double totalAllocatedOthers = items
+                .Where(it => it != changedItem)
+                .Sum(it => Math.Round(it.AllocatedMinutes));
+            double unallocatedGap = Math.Max(0, totalPeriodMinutes - (totalAllocatedOthers + current));
+
+            if (delta <= unallocatedGap)
+            {
+                changedItem.AllocatedMinutes = target;
+            }
+            else
+            {
+                double excess = delta - unallocatedGap;
+
+                while (excess > 0.001)
+                {
+                    var donor = items
+                        .Where(it => it != changedItem && it.AllocatedMinutes > 0)
+                        .OrderByDescending(it => it.AllocatedMinutes)
+                        .FirstOrDefault();
+
+                    if (donor == null)
+                    {
+                        target -= excess;
+                        excess = 0;
+                        break;
+                    }
+
+                    double deduct = Math.Min(excess, donor.AllocatedMinutes);
+                    donor.AllocatedMinutes -= deduct;
+                    excess -= deduct;
+                }
+
+                changedItem.AllocatedMinutes = target;
+            }
+        }
+        else
+        {
+            changedItem.AllocatedMinutes = target;
+        }
+    }
+
+    /// <summary>
+    /// Repacks start and end times contiguously across items within [startUtc, endUtc],
+    /// respecting existing offsets, available gaps, and item durations.
+    /// </summary>
+    public static void RepackTimelineIntervals(
+        IReadOnlyList<ReviewProjectSelectionItem> items,
+        DateTime startUtc,
+        DateTime endUtc)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        DateTime cursor = startUtc;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            var it = items[i];
+            TimeSpan dur = TimeSpan.FromMinutes(Math.Max(0, Math.Round(it.AllocatedMinutes)));
+
+            DateTime start = it.StartUtc.HasValue && it.StartUtc.Value >= cursor
+                ? it.StartUtc.Value
+                : cursor;
+
+            if (start > endUtc) start = endUtc;
+
+            if (start + dur > endUtc)
+            {
+                start = endUtc - dur;
+                if (start < cursor) start = cursor;
+            }
+
+            DateTime end = start + dur;
+            if (end > endUtc) end = endUtc;
+
+            it.StartUtc = start;
+            it.EndUtc = end;
+
+            cursor = end;
+        }
+    }
+
+    /// <summary>
     /// Builds a full, contiguous timeline covering [periodStartUtc, periodEndUtc].
-    /// Project intervals and intermediate/trailing unallocated gaps are represented as TimelineSlots.
+    /// Project intervals (including 0-minute selected items) and intermediate/trailing unallocated gaps
+    /// are represented as TimelineSlots.
     /// </summary>
     public static List<TimelineSlot> BuildFullTimeline(
         DateTime periodStartUtc,
@@ -515,11 +618,7 @@ public static class PeriodicReviewDataAggregator
             periodEndUtc = periodStartUtc.AddMinutes(1);
         }
 
-        var activeItems = items
-            .Where(it => it.AllocatedMinutes > 0)
-            .ToList();
-
-        if (activeItems.Count == 0)
+        if (items.Count == 0)
         {
             return
             [
@@ -533,27 +632,27 @@ public static class PeriodicReviewDataAggregator
         }
 
         // Check if any items have explicit start times; if not, arrange them sequentially
-        bool anyExplicit = activeItems.Any(it => it.StartUtc.HasValue && it.StartUtc.Value >= periodStartUtc && it.StartUtc.Value < periodEndUtc);
+        bool anyExplicit = items.Any(it => it.StartUtc.HasValue && it.StartUtc.Value >= periodStartUtc && it.StartUtc.Value < periodEndUtc);
 
         if (!anyExplicit)
         {
             DateTime seqCursor = periodStartUtc;
-            foreach (var it in activeItems)
+            foreach (var it in items)
             {
-                TimeSpan dur = TimeSpan.FromMinutes(Math.Max(1, Math.Round(it.AllocatedMinutes)));
+                TimeSpan dur = TimeSpan.FromMinutes(Math.Max(0, Math.Round(it.AllocatedMinutes)));
                 DateTime s = seqCursor;
                 DateTime e = s + dur;
                 if (e > periodEndUtc) e = periodEndUtc;
                 it.StartUtc = s;
                 it.EndUtc = e;
-                it.AllocatedMinutes = Math.Max(1, Math.Round((e - s).TotalMinutes));
                 seqCursor = e;
             }
         }
 
-        // Sort items by StartUtc
-        var sorted = activeItems
+        // Sort items by StartUtc, preserving selection order for equal start times
+        var sorted = items
             .OrderBy(it => it.StartUtc ?? periodStartUtc)
+            .ThenBy(it => it.SelectionOrder)
             .ToList();
 
         var slots = new List<TimelineSlot>();
@@ -562,17 +661,14 @@ public static class PeriodicReviewDataAggregator
         for (int i = 0; i < sorted.Count; i++)
         {
             var it = sorted[i];
-            TimeSpan duration = TimeSpan.FromMinutes(Math.Max(1, Math.Round(it.AllocatedMinutes)));
+            TimeSpan duration = TimeSpan.FromMinutes(Math.Max(0, Math.Round(it.AllocatedMinutes)));
             DateTime itemStart = it.StartUtc.HasValue ? TruncateToMinute(it.StartUtc.Value) : cursor;
             if (itemStart < periodStartUtc) itemStart = periodStartUtc;
             if (itemStart < cursor) itemStart = cursor; // prevent overlapping previous item
 
             DateTime itemEnd = itemStart + duration;
             if (itemEnd > periodEndUtc) itemEnd = periodEndUtc;
-            if (itemEnd <= itemStart && itemStart < periodEndUtc) itemEnd = itemStart.AddMinutes(1);
-            if (itemEnd > periodEndUtc) itemEnd = periodEndUtc;
 
-            it.AllocatedMinutes = Math.Max(0, Math.Round((itemEnd - itemStart).TotalMinutes));
             it.StartUtc = itemStart;
             it.EndUtc = itemEnd;
 
@@ -588,16 +684,14 @@ public static class PeriodicReviewDataAggregator
             }
 
             // Insert project / break slot
-            if (itemEnd > itemStart)
+            slots.Add(new TimelineSlot
             {
-                slots.Add(new TimelineSlot
-                {
-                    StartUtc = itemStart,
-                    EndUtc = itemEnd,
-                    Item = it
-                });
-                cursor = itemEnd;
-            }
+                StartUtc = itemStart,
+                EndUtc = itemEnd,
+                Item = it
+            });
+
+            cursor = itemEnd;
         }
 
         // Trailing gap after last item?

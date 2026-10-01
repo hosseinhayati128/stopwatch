@@ -792,4 +792,136 @@ public class PeriodicReviewTests
         Assert.Equal(endUtc, fullTimeline[2].EndUtc);
         Assert.Equal(5, fullTimeline[2].DurationMinutes);
     }
+
+    [Fact]
+    public void RebalanceAllocatedMinutes_WhenOneItemTakesAllTime_BorrowingAllowsZeroMinuteItemToBeIncreased()
+    {
+        int totalPeriodMinutes = 30;
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 30, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 0, SelectionOrder = 2 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2 };
+
+        // User increases P2 from 0 to 5 minutes
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p2, 5, totalPeriodMinutes);
+
+        // P2 should be 5, and P1 should be reduced to 25
+        Assert.Equal(5, p2.AllocatedMinutes);
+        Assert.Equal(25, p1.AllocatedMinutes);
+        Assert.Equal(30, items.Sum(it => it.AllocatedMinutes));
+
+        // Now user increases P2 to 30 minutes (full duration)
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p2, 30, totalPeriodMinutes);
+
+        // P2 should be 30, P1 should be 0
+        Assert.Equal(30, p2.AllocatedMinutes);
+        Assert.Equal(0, p1.AllocatedMinutes);
+
+        // Now user increases P1 from 0 to 10 minutes (P1 was at 0 and stuck previously)
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p1, 10, totalPeriodMinutes);
+
+        // P1 should be 10, P2 should be reduced to 20
+        Assert.Equal(10, p1.AllocatedMinutes);
+        Assert.Equal(20, p2.AllocatedMinutes);
+    }
+
+    [Fact]
+    public void RebalanceAllocatedMinutes_MultipleDonors_BorrowsFromLargestDonorFirst()
+    {
+        int totalPeriodMinutes = 30;
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 20, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 10, SelectionOrder = 2 };
+        var p3 = new ReviewProjectSelectionItem { ProjectName = "P3", AllocatedMinutes = 0, SelectionOrder = 3 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2, p3 };
+
+        // User increases P3 from 0 to 15m. Excess is 15m.
+        // P1 (20m) is the largest donor, so 15m should be deducted from P1!
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p3, 15, totalPeriodMinutes);
+
+        Assert.Equal(15, p3.AllocatedMinutes);
+        Assert.Equal(5, p1.AllocatedMinutes); // 20 - 15 = 5
+        Assert.Equal(10, p2.AllocatedMinutes); // untouched
+    }
+
+    [Fact]
+    public void RebalanceAllocatedMinutes_ConsumesUnallocatedGapFirstBeforeBorrowing()
+    {
+        int totalPeriodMinutes = 30;
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 10, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 5, SelectionOrder = 2 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2 };
+        // Total allocated is 15m, unallocated gap is 15m.
+
+        // User increases P2 from 5m to 12m (delta = 7m <= 15m gap)
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p2, 12, totalPeriodMinutes);
+
+        // P1 should remain completely untouched!
+        Assert.Equal(12, p2.AllocatedMinutes);
+        Assert.Equal(10, p1.AllocatedMinutes);
+    }
+
+    [Fact]
+    public void RebalanceAllocatedMinutes_DecreasingAllocation_DoesNotTouchOtherItems()
+    {
+        int totalPeriodMinutes = 30;
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 20, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 10, SelectionOrder = 2 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2 };
+
+        // User reduces P1 from 20 to 5
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, p1, 5, totalPeriodMinutes);
+
+        Assert.Equal(5, p1.AllocatedMinutes);
+        Assert.Equal(10, p2.AllocatedMinutes); // P2 untouched, difference is freed as gap
+    }
+
+    [Fact]
+    public void BuildFullTimeline_IncludesZeroMinuteSlotsForSelectedProjects()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(30);
+
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 30, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 0, SelectionOrder = 2 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2 };
+
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(startUtc, endUtc, items);
+
+        // Should return 2 slots: P1 (30m) and P2 (0m pin)
+        Assert.Equal(2, fullTimeline.Count);
+
+        Assert.Equal("P1", fullTimeline[0].Item!.ProjectName);
+        Assert.Equal(30, fullTimeline[0].DurationMinutes);
+
+        Assert.Equal("P2", fullTimeline[1].Item!.ProjectName);
+        Assert.Equal(0, fullTimeline[1].DurationMinutes);
+
+        // Ensure AllocatedMinutes was not corrupted
+        Assert.Equal(30, p1.AllocatedMinutes);
+        Assert.Equal(0, p2.AllocatedMinutes);
+    }
+
+    [Fact]
+    public void BuildFullTimeline_WhenAllItemsZeroMinutes_GeneratesSlotsAndFullUnallocatedGap()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(30);
+
+        var p1 = new ReviewProjectSelectionItem { ProjectName = "P1", AllocatedMinutes = 0, SelectionOrder = 1 };
+        var p2 = new ReviewProjectSelectionItem { ProjectName = "P2", AllocatedMinutes = 0, SelectionOrder = 2 };
+        var items = new List<ReviewProjectSelectionItem> { p1, p2 };
+
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(startUtc, endUtc, items);
+
+        // Should return 3 slots: P1 (0m), P2 (0m), and Unallocated gap (30m)
+        Assert.Equal(3, fullTimeline.Count);
+
+        Assert.Equal("P1", fullTimeline[0].Item!.ProjectName);
+        Assert.Equal(0, fullTimeline[0].DurationMinutes);
+
+        Assert.Equal("P2", fullTimeline[1].Item!.ProjectName);
+        Assert.Equal(0, fullTimeline[1].DurationMinutes);
+
+        Assert.True(fullTimeline[2].IsUnallocated);
+        Assert.Equal(30, fullTimeline[2].DurationMinutes);
+    }
 }

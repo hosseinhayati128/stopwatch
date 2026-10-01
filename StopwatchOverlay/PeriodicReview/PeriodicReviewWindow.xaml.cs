@@ -748,17 +748,8 @@ public partial class PeriodicReviewWindow : Window
         }
         else
         {
-            // Ensure StartUtc and EndUtc exist
-            DateTime cursor = _startUtc;
-            foreach (var it in _selectedItems)
-            {
-                if (!it.StartUtc.HasValue || !it.EndUtc.HasValue)
-                {
-                    it.StartUtc = cursor;
-                    it.EndUtc = cursor.AddMinutes(it.AllocatedMinutes);
-                }
-                cursor = it.EndUtc ?? cursor;
-            }
+            // Ensure StartUtc and EndUtc exist and are properly packed
+            PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
         }
 
         _isStep2 = true;
@@ -808,6 +799,13 @@ public partial class PeriodicReviewWindow : Window
         PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
 
         RenderAllocatedCards();
+        SyncAllViews(updateCards: true);
+    }
+
+    private void SetItemAllocatedMinutes(ReviewProjectSelectionItem changedItem, double targetMinutes)
+    {
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(_selectedItems, changedItem, targetMinutes, TotalPeriodMinutes);
+        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
         SyncAllViews(updateCards: true);
     }
 
@@ -1017,7 +1015,9 @@ public partial class PeriodicReviewWindow : Window
             {
                 (_selectedItems[index], _selectedItems[index - 1]) = (_selectedItems[index - 1], _selectedItems[index]);
                 for (int k = 0; k < _selectedItems.Count; k++) _selectedItems[k].SelectionOrder = k + 1;
-                RenderStep2();
+                PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
+                RenderAllocatedCards();
+                SyncAllViews(updateCards: true);
             };
             actionStack.Children.Add(upBtn);
         }
@@ -1038,7 +1038,9 @@ public partial class PeriodicReviewWindow : Window
             {
                 (_selectedItems[index], _selectedItems[index + 1]) = (_selectedItems[index + 1], _selectedItems[index]);
                 for (int k = 0; k < _selectedItems.Count; k++) _selectedItems[k].SelectionOrder = k + 1;
-                RenderStep2();
+                PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
+                RenderAllocatedCards();
+                SyncAllViews(updateCards: true);
             };
             actionStack.Children.Add(downBtn);
         }
@@ -1104,11 +1106,9 @@ public partial class PeriodicReviewWindow : Window
         {
             if (_isUpdatingViews) return;
             double newMin = Math.Round(args.NewValue);
-            if (item.AllocatedMinutes != newMin)
+            if (Math.Abs(item.AllocatedMinutes - newMin) > 0.01)
             {
-                item.AllocatedMinutes = newMin;
-                if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(newMin);
-                SyncAllViews(updateCards: true);
+                SetItemAllocatedMinutes(item, newMin);
             }
         };
 
@@ -1118,11 +1118,9 @@ public partial class PeriodicReviewWindow : Window
             if (int.TryParse(minInput.Text, out int parsed))
             {
                 int clamped = Math.Clamp(parsed, 0, maxMinutes);
-                if ((int)item.AllocatedMinutes != clamped)
+                if ((int)Math.Round(item.AllocatedMinutes) != clamped)
                 {
-                    item.AllocatedMinutes = clamped;
-                    if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(clamped);
-                    SyncAllViews(updateCards: true);
+                    SetItemAllocatedMinutes(item, clamped);
                 }
             }
         };
@@ -1149,10 +1147,7 @@ public partial class PeriodicReviewWindow : Window
             };
             btn.Click += (_, _) =>
             {
-                double newVal = Math.Clamp(item.AllocatedMinutes + delta, 0, maxMinutes);
-                item.AllocatedMinutes = newVal;
-                if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(newVal);
-                SyncAllViews(updateCards: true);
+                SetItemAllocatedMinutes(item, item.AllocatedMinutes + delta);
             };
             return btn;
         }
@@ -1400,15 +1395,14 @@ public partial class PeriodicReviewWindow : Window
         newStartUtc = PeriodicReviewDataAggregator.TruncateToMinute(newStartUtc);
 
         var sorted = _selectedItems
-            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
-            .OrderBy(it => it.StartUtc!.Value)
+            .OrderBy(it => it.StartUtc ?? _startUtc)
             .ToList();
 
         int idx = sorted.IndexOf(item);
         DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
         DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
 
-        TimeSpan duration = TimeSpan.FromMinutes(Math.Max(1, item.AllocatedMinutes));
+        TimeSpan duration = TimeSpan.FromMinutes(Math.Max(0, item.AllocatedMinutes));
 
         if (newStartUtc < minStart) newStartUtc = minStart;
         DateTime newEndUtc = newStartUtc + duration;
@@ -1421,7 +1415,6 @@ public partial class PeriodicReviewWindow : Window
 
         item.StartUtc = newStartUtc;
         item.EndUtc = newEndUtc;
-        item.AllocatedMinutes = Math.Max(1, Math.Round((newEndUtc - newStartUtc).TotalMinutes));
 
         SyncAllViews(updateCards: true);
     }
@@ -1429,33 +1422,10 @@ public partial class PeriodicReviewWindow : Window
     private void SetItemEndTime(ReviewProjectSelectionItem item, DateTime newEndUtc)
     {
         newEndUtc = PeriodicReviewDataAggregator.TruncateToMinute(newEndUtc);
-
-        var sorted = _selectedItems
-            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
-            .OrderBy(it => it.StartUtc!.Value)
-            .ToList();
-
-        int idx = sorted.IndexOf(item);
-        DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
-        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
-
-        DateTime start = item.StartUtc ?? minStart;
-        if (start < minStart) start = minStart;
-
-        if (newEndUtc > maxEnd) newEndUtc = maxEnd;
-        if (newEndUtc <= start) newEndUtc = start.AddMinutes(1);
-        if (newEndUtc > maxEnd)
-        {
-            newEndUtc = maxEnd;
-            start = maxEnd.AddMinutes(-1);
-            if (start < minStart) start = minStart;
-            item.StartUtc = start;
-        }
-
-        item.EndUtc = newEndUtc;
-        item.AllocatedMinutes = Math.Max(1, Math.Round((newEndUtc - start).TotalMinutes));
-
-        SyncAllViews(updateCards: true);
+        DateTime start = item.StartUtc ?? _startUtc;
+        if (newEndUtc < start) newEndUtc = start;
+        double newMinutes = (newEndUtc - start).TotalMinutes;
+        SetItemAllocatedMinutes(item, newMinutes);
     }
 
     private void ShiftItem(ReviewProjectSelectionItem item, int deltaMinutes)
@@ -1468,8 +1438,7 @@ public partial class PeriodicReviewWindow : Window
 
         // Find preceding and following items bounds
         var sorted = _selectedItems
-            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
-            .OrderBy(it => it.StartUtc!.Value)
+            .OrderBy(it => it.StartUtc ?? _startUtc)
             .ToList();
 
         int idx = sorted.IndexOf(item);
@@ -1496,25 +1465,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void AdjustEnd(ReviewProjectSelectionItem item, int deltaMinutes)
     {
-        if (!item.StartUtc.HasValue || !item.EndUtc.HasValue) return;
-
-        DateTime newEnd = item.EndUtc.Value.AddMinutes(deltaMinutes);
-
-        var sorted = _selectedItems
-            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
-            .OrderBy(it => it.StartUtc!.Value)
-            .ToList();
-
-        int idx = sorted.IndexOf(item);
-        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
-
-        if (newEnd > maxEnd) newEnd = maxEnd;
-        if (newEnd <= item.StartUtc.Value) newEnd = item.StartUtc.Value.AddMinutes(1);
-
-        item.EndUtc = newEnd;
-        item.AllocatedMinutes = Math.Max(1, Math.Round((newEnd - item.StartUtc.Value).TotalMinutes));
-
-        SyncAllViews(updateCards: true);
+        SetItemAllocatedMinutes(item, item.AllocatedMinutes + deltaMinutes);
     }
 
     private ToolTip CreateRichToolTip(string title, double minutes, DateTime startUtc, DateTime endUtc, bool isBreak)
@@ -1568,6 +1519,16 @@ public partial class PeriodicReviewWindow : Window
                 Margin = new Thickness(0, 2, 0, 0)
             });
         }
+        else if (minutes <= 0)
+        {
+            ttStack.Children.Add(new TextBlock
+            {
+                Text = "💡 0 minutes · Click pin or use slider below to allocate time",
+                FontSize = 11,
+                Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+        }
 
         tt.Content = ttStack;
         return tt;
@@ -1607,7 +1568,14 @@ public partial class PeriodicReviewWindow : Window
         for (int i = 0; i < slots.Count; i++)
         {
             var slot = slots[i];
-            if (slot.DurationMinutes <= 0) continue;
+            if (slot.DurationMinutes <= 0)
+            {
+                if (slot.Item != null)
+                {
+                    RenderZeroMinutePin(slot);
+                }
+                continue;
+            }
 
             DistributionBarContainer.ColumnDefinitions.Add(new ColumnDefinition
             {
@@ -1692,6 +1660,62 @@ public partial class PeriodicReviewWindow : Window
             Grid.SetColumn(segBorder, DistributionBarContainer.ColumnDefinitions.Count - 1);
             DistributionBarContainer.Children.Add(segBorder);
         }
+    }
+
+    private void RenderZeroMinutePin(TimelineSlot slot)
+    {
+        var item = slot.Item!;
+        int itemIdx = _selectedItems.IndexOf(item);
+        var segColor = PaletteColors[itemIdx >= 0 ? (itemIdx % PaletteColors.Length) : 0];
+
+        DistributionBarContainer.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(24, GridUnitType.Pixel)
+        });
+
+        var pinBorder = new Border
+        {
+            Width = 22,
+            Height = 28,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Background = item.IsBreak
+                ? new SolidColorBrush(Color.FromArgb(140, 100, 110, 120))
+                : new SolidColorBrush(Color.FromArgb(220, segColor.R, segColor.G, segColor.B)),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Margin = new Thickness(1, 0, 1, 0),
+            SnapsToDevicePixels = true,
+            ClipToBounds = true,
+            Cursor = Cursors.Hand,
+            ToolTip = CreateRichToolTip(item.DisplayName, 0, slot.StartUtc, slot.EndUtc, item.IsBreak)
+        };
+
+        var pinStack = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        pinStack.Children.Add(new TextBlock
+        {
+            Text = itemIdx >= 0 ? $"#{itemIdx + 1}" : "+",
+            FontSize = 9.5,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        pinBorder.Child = pinStack;
+
+        pinBorder.PreviewMouseLeftButtonDown += (s, e) =>
+        {
+            e.Handled = true;
+            int defaultAlloc = TotalPeriodMinutes >= 10 ? 5 : 1;
+            SetItemAllocatedMinutes(item, defaultAlloc);
+        };
+
+        Grid.SetColumn(pinBorder, DistributionBarContainer.ColumnDefinitions.Count - 1);
+        DistributionBarContainer.Children.Add(pinBorder);
     }
 
     private void AttachProjectBlockDrag(Border segBorder, ReviewProjectSelectionItem item)
@@ -1933,9 +1957,9 @@ public partial class PeriodicReviewWindow : Window
         // Add verified project intervals
         foreach (var slot in fullTimeline)
         {
-            if (slot.IsUnallocated || slot.IsBreak || slot.Item == null || string.IsNullOrWhiteSpace(slot.Item.ProjectName))
+            if (slot.IsUnallocated || slot.IsBreak || slot.Item == null || string.IsNullOrWhiteSpace(slot.Item.ProjectName) || slot.DurationMinutes <= 0)
             {
-                // Break or Unallocated gaps remain untracked (no record saved)
+                // Break, Unallocated gaps, and 0-minute slots remain untracked (no record saved)
                 continue;
             }
 
