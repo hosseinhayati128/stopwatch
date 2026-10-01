@@ -30,6 +30,21 @@ public partial class PeriodicReviewWindow : Window
     private readonly List<ReviewProjectSelectionItem> _availableProjects = [];
     private readonly List<ReviewProjectSelectionItem> _selectedItems = [];
 
+    // Selected items card view holders for immediate, bidirectional sync
+    private sealed class AllocatedCardViewHolder
+    {
+        public ReviewProjectSelectionItem Item { get; set; } = null!;
+        public Border Border { get; set; } = null!;
+        public TextBlock? RangeBadgeText { get; set; }
+        public Slider Slider { get; set; } = null!;
+        public TextBox MinInput { get; set; } = null!;
+        public TextBox? StartBox { get; set; }
+        public TextBox? EndBox { get; set; }
+    }
+
+    private readonly List<AllocatedCardViewHolder> _cardViewHolders = [];
+    private bool _isUpdatingViews;
+
     // Drag-to-move state for chart timeline
     private ReviewProjectSelectionItem? _draggingItem;
     private Point _dragStartPoint;
@@ -37,6 +52,11 @@ public partial class PeriodicReviewWindow : Window
     private TimeSpan _dragItemDuration;
     private DateTime _dragMinStartUtc;
     private DateTime _dragMaxStartUtc;
+
+    // Unallocated drag state
+    private bool _isUnallocDragging;
+    private Point _unallocStartPoint;
+    private TimelineSlot? _unallocDragSlot;
 
     // Distinct theme colors for multi-color timeline distribution bar
     private static readonly Color[] PaletteColors =
@@ -61,8 +81,12 @@ public partial class PeriodicReviewWindow : Window
     {
         InitializeComponent();
 
-        _startUtc = ProjectTimeHistory.NormalizeUtc(startUtc);
-        _endUtc = ProjectTimeHistory.NormalizeUtc(endUtc);
+        _startUtc = PeriodicReviewDataAggregator.TruncateToMinute(ProjectTimeHistory.NormalizeUtc(startUtc));
+        _endUtc = PeriodicReviewDataAggregator.TruncateToMinute(ProjectTimeHistory.NormalizeUtc(endUtc));
+        if (_endUtc <= _startUtc)
+        {
+            _endUtc = _startUtc.AddMinutes(1);
+        }
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _history = history ?? throw new ArgumentNullException(nameof(history));
         _runningSessions = runningSessions;
@@ -75,6 +99,16 @@ public partial class PeriodicReviewWindow : Window
         int totalMin = Math.Max(1, (int)Math.Round((endLocal - startLocal).TotalMinutes));
         PeriodRangeBadge.Text = $"📅 {startLocal:HH:mm} – {endLocal:HH:mm} ({totalMin}m)";
         ThresholdPercentText.Text = _thresholdPercent <= 0.0 ? "Off" : $"{_thresholdPercent:0.#}%";
+
+        DistributionBarContainer.Background = Brushes.Transparent;
+        DistributionBarContainer.PreviewMouseMove += DistributionBarContainer_PreviewMouseMove;
+        DistributionBarContainer.PreviewMouseLeftButtonUp += DistributionBarContainer_PreviewMouseLeftButtonUp;
+        DistributionBarContainer.LostMouseCapture += (_, _) =>
+        {
+            _draggingItem = null;
+            _isUnallocDragging = false;
+            _unallocDragSlot = null;
+        };
 
         InitializeProjectsList();
     }
@@ -770,18 +804,73 @@ public partial class PeriodicReviewWindow : Window
         TimelineScaleMidText.Text = midLocal.ToString("HH:mm");
         TimelineScaleEndText.Text = endLocal.ToString("HH:mm");
 
-        // Build full contiguous timeline (projects + unallocated gaps)
-        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
+        // Build full contiguous timeline FIRST so items have valid StartUtc and EndUtc
+        PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
 
         RenderAllocatedCards();
+        SyncAllViews(updateCards: true);
+    }
+
+    private void SyncAllViews(bool updateCards = true)
+    {
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
+
         RenderDistributionBar(fullTimeline);
         RenderTimelinePreview(fullTimeline);
         UpdateStep2SummaryText(fullTimeline);
+
+        if (updateCards && _cardViewHolders.Count > 0)
+        {
+            _isUpdatingViews = true;
+            try
+            {
+                foreach (var holder in _cardViewHolders)
+                {
+                    var it = holder.Item;
+                    DateTime startLocal = (it.StartUtc ?? _startUtc).ToLocalTime();
+                    DateTime endLocal = (it.EndUtc ?? _endUtc).ToLocalTime();
+                    int min = (int)Math.Round(it.AllocatedMinutes);
+
+                    if (holder.RangeBadgeText != null)
+                    {
+                        holder.RangeBadgeText.Text = $"{startLocal:HH:mm} – {endLocal:HH:mm} ({min}m)";
+                    }
+
+                    if (Math.Abs(holder.Slider.Value - it.AllocatedMinutes) > 0.01)
+                    {
+                        holder.Slider.Value = it.AllocatedMinutes;
+                    }
+
+                    string minStr = min.ToString();
+                    if (holder.MinInput.Text != minStr && !holder.MinInput.IsFocused)
+                    {
+                        holder.MinInput.Text = minStr;
+                    }
+
+                    if (holder.StartBox != null && !holder.StartBox.IsFocused)
+                    {
+                        holder.StartBox.Text = startLocal.ToString("HH:mm");
+                    }
+
+                    if (holder.EndBox != null && !holder.EndBox.IsFocused)
+                    {
+                        holder.EndBox.Text = endLocal.ToString("HH:mm");
+                    }
+
+                    holder.Border.ToolTip = CreateRichToolTip(it);
+                }
+            }
+            finally
+            {
+                _isUpdatingViews = false;
+            }
+        }
     }
 
     private void RenderAllocatedCards()
     {
         AllocatedProjectsContainer.Children.Clear();
+        _cardViewHolders.Clear();
 
         int totalMin = TotalPeriodMinutes;
 
@@ -789,12 +878,13 @@ public partial class PeriodicReviewWindow : Window
         {
             var item = _selectedItems[i];
             int index = i;
-            var card = CreateAllocatedProjectCard(item, index, totalMin);
+            var (card, holder) = CreateAllocatedProjectCard(item, index, totalMin);
+            _cardViewHolders.Add(holder);
             AllocatedProjectsContainer.Children.Add(card);
         }
     }
 
-    private UIElement CreateAllocatedProjectCard(ReviewProjectSelectionItem item, int index, int maxMinutes)
+    private (UIElement Card, AllocatedCardViewHolder Holder) CreateAllocatedProjectCard(ReviewProjectSelectionItem item, int index, int maxMinutes)
     {
         var border = new Border
         {
@@ -853,25 +943,27 @@ public partial class PeriodicReviewWindow : Window
         };
         titleStack.Children.Add(nameText);
 
-        if (item.StartUtc.HasValue && item.EndUtc.HasValue)
+        DateTime itemStartLocal = (item.StartUtc ?? _startUtc).ToLocalTime();
+        DateTime itemEndLocal = (item.EndUtc ?? _startUtc.AddMinutes(item.AllocatedMinutes)).ToLocalTime();
+
+        var rangeBadge = new Border
         {
-            var rangeBadge = new Border
-            {
-                Background = (Brush)FindResource("DialogSurfaceBrush"),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(6, 1, 6, 1),
-                Margin = new Thickness(8, 0, 0, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            rangeBadge.Child = new TextBlock
-            {
-                Text = $"{item.StartUtc.Value.ToLocalTime():HH:mm} – {item.EndUtc.Value.ToLocalTime():HH:mm} ({item.AllocatedMinutes:0}m)",
-                FontSize = 11,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("AccentBrush")
-            };
-            titleStack.Children.Add(rangeBadge);
-        }
+            Background = (Brush)FindResource("DialogSurfaceBrush"),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(6, 1, 6, 1),
+            Margin = new Thickness(8, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var rangeBadgeText = new TextBlock
+        {
+            Text = $"{itemStartLocal:HH:mm} – {itemEndLocal:HH:mm} ({item.AllocatedMinutes:0}m)",
+            FontSize = 11,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("AccentBrush")
+        };
+        rangeBadge.Child = rangeBadgeText;
+        titleStack.Children.Add(rangeBadge);
+
         Grid.SetColumn(titleStack, 1);
         headGrid.Children.Add(titleStack);
 
@@ -967,6 +1059,7 @@ public partial class PeriodicReviewWindow : Window
         {
             item.IsExpanded = !item.IsExpanded;
             RenderAllocatedCards();
+            SyncAllViews(updateCards: true);
         };
         actionStack.Children.Add(expandBtn);
 
@@ -1009,35 +1102,27 @@ public partial class PeriodicReviewWindow : Window
 
         slider.ValueChanged += (_, args) =>
         {
+            if (_isUpdatingViews) return;
             double newMin = Math.Round(args.NewValue);
             if (item.AllocatedMinutes != newMin)
             {
                 item.AllocatedMinutes = newMin;
                 if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(newMin);
-                minInput.Text = ((int)newMin).ToString();
-                border.ToolTip = CreateRichToolTip(item);
-                var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
-                RenderDistributionBar(fullTimeline);
-                RenderTimelinePreview(fullTimeline);
-                UpdateStep2SummaryText(fullTimeline);
+                SyncAllViews(updateCards: true);
             }
         };
 
         minInput.TextChanged += (_, _) =>
         {
+            if (_isUpdatingViews) return;
             if (int.TryParse(minInput.Text, out int parsed))
             {
                 int clamped = Math.Clamp(parsed, 0, maxMinutes);
                 if ((int)item.AllocatedMinutes != clamped)
                 {
                     item.AllocatedMinutes = clamped;
-                    slider.Value = clamped;
                     if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(clamped);
-                    border.ToolTip = CreateRichToolTip(item);
-                    var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
-                    RenderDistributionBar(fullTimeline);
-                    RenderTimelinePreview(fullTimeline);
-                    UpdateStep2SummaryText(fullTimeline);
+                    SyncAllViews(updateCards: true);
                 }
             }
         };
@@ -1067,13 +1152,7 @@ public partial class PeriodicReviewWindow : Window
                 double newVal = Math.Clamp(item.AllocatedMinutes + delta, 0, maxMinutes);
                 item.AllocatedMinutes = newVal;
                 if (item.StartUtc.HasValue) item.EndUtc = item.StartUtc.Value.AddMinutes(newVal);
-                slider.Value = newVal;
-                minInput.Text = ((int)newVal).ToString();
-                border.ToolTip = CreateRichToolTip(item);
-                var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
-                RenderDistributionBar(fullTimeline);
-                RenderTimelinePreview(fullTimeline);
-                UpdateStep2SummaryText(fullTimeline);
+                SyncAllViews(updateCards: true);
             };
             return btn;
         }
@@ -1086,18 +1165,35 @@ public partial class PeriodicReviewWindow : Window
         ctrlGrid.Children.Add(quickStack);
         stack.Children.Add(ctrlGrid);
 
-        // 3. Expandable Section: Exact Start & End Time Fields (when IsExpanded == true)
+        // 3. Expandable Section: Exact Start & End Time Fields
+        TextBox? startBox = null;
+        TextBox? endBox = null;
+
         if (item.IsExpanded)
         {
-            var expandPanel = CreateExactTimePanel(item);
-            stack.Children.Add(expandPanel);
+            var (panel, sBox, eBox) = CreateExactTimePanel(item);
+            startBox = sBox;
+            endBox = eBox;
+            stack.Children.Add(panel);
         }
 
         border.Child = stack;
-        return border;
+
+        var holder = new AllocatedCardViewHolder
+        {
+            Item = item,
+            Border = border,
+            RangeBadgeText = rangeBadgeText,
+            Slider = slider,
+            MinInput = minInput,
+            StartBox = startBox,
+            EndBox = endBox
+        };
+
+        return (border, holder);
     }
 
-    private UIElement CreateExactTimePanel(ReviewProjectSelectionItem item)
+    private (UIElement Panel, TextBox StartBox, TextBox EndBox) CreateExactTimePanel(ReviewProjectSelectionItem item)
     {
         var expandBorder = new Border
         {
@@ -1140,9 +1236,10 @@ public partial class PeriodicReviewWindow : Window
         startInputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         startInputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+        DateTime initialStartLocal = (item.StartUtc ?? _startUtc).ToLocalTime();
         var startBox = new TextBox
         {
-            Text = item.StartUtc?.ToLocalTime().ToString("HH:mm") ?? _startUtc.ToLocalTime().ToString("HH:mm"),
+            Text = initialStartLocal.ToString("HH:mm"),
             Height = 28,
             Padding = new Thickness(6, 2, 6, 2),
             FontSize = 12,
@@ -1155,13 +1252,13 @@ public partial class PeriodicReviewWindow : Window
         };
         startBox.LostFocus += (_, _) =>
         {
-            if (TryParseLocalTime(startBox.Text, _startUtc, out DateTime parsedUtc))
+            if (TryParseLocalTime(startBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemStartTime(item, parsedUtc);
             }
             else
             {
-                startBox.Text = item.StartUtc?.ToLocalTime().ToString("HH:mm") ?? "";
+                startBox.Text = (item.StartUtc ?? _startUtc).ToLocalTime().ToString("HH:mm");
             }
         };
         startBox.KeyDown += (_, ke) =>
@@ -1169,7 +1266,7 @@ public partial class PeriodicReviewWindow : Window
             if (ke.Key == Key.Enter)
             {
                 ke.Handled = true;
-                if (TryParseLocalTime(startBox.Text, _startUtc, out DateTime parsedUtc))
+                if (TryParseLocalTime(startBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
                 {
                     SetItemStartTime(item, parsedUtc);
                 }
@@ -1208,9 +1305,10 @@ public partial class PeriodicReviewWindow : Window
         endInputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         endInputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+        DateTime initialEndLocal = (item.EndUtc ?? _startUtc.AddMinutes(item.AllocatedMinutes)).ToLocalTime();
         var endBox = new TextBox
         {
-            Text = item.EndUtc?.ToLocalTime().ToString("HH:mm") ?? _endUtc.ToLocalTime().ToString("HH:mm"),
+            Text = initialEndLocal.ToString("HH:mm"),
             Height = 28,
             Padding = new Thickness(6, 2, 6, 2),
             FontSize = 12,
@@ -1223,13 +1321,13 @@ public partial class PeriodicReviewWindow : Window
         };
         endBox.LostFocus += (_, _) =>
         {
-            if (TryParseLocalTime(endBox.Text, _startUtc, out DateTime parsedUtc))
+            if (TryParseLocalTime(endBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemEndTime(item, parsedUtc);
             }
             else
             {
-                endBox.Text = item.EndUtc?.ToLocalTime().ToString("HH:mm") ?? "";
+                endBox.Text = (item.EndUtc ?? _endUtc).ToLocalTime().ToString("HH:mm");
             }
         };
         endBox.KeyDown += (_, ke) =>
@@ -1237,7 +1335,7 @@ public partial class PeriodicReviewWindow : Window
             if (ke.Key == Key.Enter)
             {
                 ke.Handled = true;
-                if (TryParseLocalTime(endBox.Text, _startUtc, out DateTime parsedUtc))
+                if (TryParseLocalTime(endBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
                 {
                     SetItemEndTime(item, parsedUtc);
                 }
@@ -1264,10 +1362,10 @@ public partial class PeriodicReviewWindow : Window
 
         rootStack.Children.Add(timeGrid);
         expandBorder.Child = rootStack;
-        return expandBorder;
+        return (expandBorder, startBox, endBox);
     }
 
-    private static bool TryParseLocalTime(string text, DateTime referenceUtc, out DateTime resultUtc)
+    private static bool TryParseLocalTime(string text, DateTime referenceStartUtc, DateTime referenceEndUtc, out DateTime resultUtc)
     {
         resultUtc = default;
         if (string.IsNullOrWhiteSpace(text)) return false;
@@ -1275,9 +1373,23 @@ public partial class PeriodicReviewWindow : Window
         string[] formats = ["H:mm", "HH:mm", "h:mm", "hh:mm", "H:m", "h:m"];
         if (DateTime.TryParseExact(text.Trim(), formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsed))
         {
-            DateTime refLocal = referenceUtc.ToLocalTime();
-            DateTime targetLocal = new DateTime(refLocal.Year, refLocal.Month, refLocal.Day, parsed.Hour, parsed.Minute, 0, DateTimeKind.Local);
-            resultUtc = targetLocal.ToUniversalTime();
+            DateTime refStartLocal = referenceStartUtc.ToLocalTime();
+            DateTime refEndLocal = referenceEndUtc.ToLocalTime();
+
+            DateTime candidateLocal = new DateTime(refStartLocal.Year, refStartLocal.Month, refStartLocal.Day, parsed.Hour, parsed.Minute, 0, DateTimeKind.Local);
+            DateTime candidateUtc = candidateLocal.ToUniversalTime();
+
+            if (candidateUtc < referenceStartUtc && refEndLocal.Date > refStartLocal.Date)
+            {
+                DateTime nextDayCandidate = candidateLocal.AddDays(1);
+                DateTime nextDayUtc = nextDayCandidate.ToUniversalTime();
+                if (nextDayUtc <= referenceEndUtc.AddMinutes(5))
+                {
+                    candidateUtc = nextDayUtc;
+                }
+            }
+
+            resultUtc = PeriodicReviewDataAggregator.TruncateToMinute(candidateUtc);
             return true;
         }
         return false;
@@ -1285,35 +1397,65 @@ public partial class PeriodicReviewWindow : Window
 
     private void SetItemStartTime(ReviewProjectSelectionItem item, DateTime newStartUtc)
     {
-        if (newStartUtc < _startUtc) newStartUtc = _startUtc;
-        if (newStartUtc > _endUtc) newStartUtc = _endUtc;
+        newStartUtc = PeriodicReviewDataAggregator.TruncateToMinute(newStartUtc);
 
-        TimeSpan duration = TimeSpan.FromMinutes(item.AllocatedMinutes);
+        var sorted = _selectedItems
+            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
+            .OrderBy(it => it.StartUtc!.Value)
+            .ToList();
+
+        int idx = sorted.IndexOf(item);
+        DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
+        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
+
+        TimeSpan duration = TimeSpan.FromMinutes(Math.Max(1, item.AllocatedMinutes));
+
+        if (newStartUtc < minStart) newStartUtc = minStart;
         DateTime newEndUtc = newStartUtc + duration;
-        if (newEndUtc > _endUtc)
+        if (newEndUtc > maxEnd)
         {
-            newEndUtc = _endUtc;
+            newEndUtc = maxEnd;
             newStartUtc = newEndUtc - duration;
-            if (newStartUtc < _startUtc) newStartUtc = _startUtc;
+            if (newStartUtc < minStart) newStartUtc = minStart;
         }
 
         item.StartUtc = newStartUtc;
         item.EndUtc = newEndUtc;
-        item.AllocatedMinutes = Math.Round((newEndUtc - newStartUtc).TotalMinutes);
+        item.AllocatedMinutes = Math.Max(1, Math.Round((newEndUtc - newStartUtc).TotalMinutes));
 
-        RenderStep2();
+        SyncAllViews(updateCards: true);
     }
 
     private void SetItemEndTime(ReviewProjectSelectionItem item, DateTime newEndUtc)
     {
-        if (newEndUtc > _endUtc) newEndUtc = _endUtc;
-        DateTime start = item.StartUtc ?? _startUtc;
+        newEndUtc = PeriodicReviewDataAggregator.TruncateToMinute(newEndUtc);
+
+        var sorted = _selectedItems
+            .Where(it => it.AllocatedMinutes > 0 && it.StartUtc.HasValue)
+            .OrderBy(it => it.StartUtc!.Value)
+            .ToList();
+
+        int idx = sorted.IndexOf(item);
+        DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
+        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
+
+        DateTime start = item.StartUtc ?? minStart;
+        if (start < minStart) start = minStart;
+
+        if (newEndUtc > maxEnd) newEndUtc = maxEnd;
         if (newEndUtc <= start) newEndUtc = start.AddMinutes(1);
+        if (newEndUtc > maxEnd)
+        {
+            newEndUtc = maxEnd;
+            start = maxEnd.AddMinutes(-1);
+            if (start < minStart) start = minStart;
+            item.StartUtc = start;
+        }
 
         item.EndUtc = newEndUtc;
-        item.AllocatedMinutes = Math.Round((newEndUtc - start).TotalMinutes);
+        item.AllocatedMinutes = Math.Max(1, Math.Round((newEndUtc - start).TotalMinutes));
 
-        RenderStep2();
+        SyncAllViews(updateCards: true);
     }
 
     private void ShiftItem(ReviewProjectSelectionItem item, int deltaMinutes)
@@ -1349,7 +1491,7 @@ public partial class PeriodicReviewWindow : Window
         item.StartUtc = newStart;
         item.EndUtc = newEnd;
 
-        RenderStep2();
+        SyncAllViews(updateCards: true);
     }
 
     private void AdjustEnd(ReviewProjectSelectionItem item, int deltaMinutes)
@@ -1370,20 +1512,19 @@ public partial class PeriodicReviewWindow : Window
         if (newEnd <= item.StartUtc.Value) newEnd = item.StartUtc.Value.AddMinutes(1);
 
         item.EndUtc = newEnd;
-        item.AllocatedMinutes = Math.Round((newEnd - item.StartUtc.Value).TotalMinutes);
+        item.AllocatedMinutes = Math.Max(1, Math.Round((newEnd - item.StartUtc.Value).TotalMinutes));
 
-        RenderStep2();
+        SyncAllViews(updateCards: true);
     }
 
-    private ToolTip CreateRichToolTip(ReviewProjectSelectionItem item)
+    private ToolTip CreateRichToolTip(string title, double minutes, DateTime startUtc, DateTime endUtc, bool isBreak)
     {
         int totalMin = TotalPeriodMinutes;
-        double minutes = item.AllocatedMinutes;
         double hours = minutes / 60.0;
         double percentage = totalMin > 0 ? (minutes / totalMin) * 100.0 : 0.0;
 
-        DateTime startLocal = (item.StartUtc ?? _startUtc).ToLocalTime();
-        DateTime endLocal = (item.EndUtc ?? _endUtc).ToLocalTime();
+        DateTime startLocal = startUtc.ToLocalTime();
+        DateTime endLocal = endUtc.ToLocalTime();
 
         var tt = new ToolTip
         {
@@ -1395,9 +1536,10 @@ public partial class PeriodicReviewWindow : Window
         };
 
         var ttStack = new StackPanel();
+        string icon = isBreak ? "☕" : "🏷️";
         ttStack.Children.Add(new TextBlock
         {
-            Text = $"🏷️ {item.DisplayName}",
+            Text = $"{icon} {title}",
             FontWeight = FontWeights.Bold,
             FontSize = 13,
             Foreground = (Brush)FindResource("PrimaryTextBrush"),
@@ -1429,6 +1571,30 @@ public partial class PeriodicReviewWindow : Window
 
         tt.Content = ttStack;
         return tt;
+    }
+
+    private ToolTip CreateRichToolTip(ReviewProjectSelectionItem item)
+    {
+        DateTime start = item.StartUtc ?? _startUtc;
+        DateTime end = item.EndUtc ?? start.AddMinutes(item.AllocatedMinutes);
+        return CreateRichToolTip(item.DisplayName, item.AllocatedMinutes, start, end, item.IsBreak);
+    }
+
+    private ToolTip CreateRichToolTip(TimelineSlot slot)
+    {
+        if (slot.IsUnallocated)
+        {
+            return new ToolTip
+            {
+                Background = (Brush)FindResource("DialogSurfaceBrush"),
+                BorderBrush = (Brush)FindResource("BorderBrush"),
+                BorderThickness = new Thickness(1.5),
+                Foreground = (Brush)FindResource("PrimaryTextBrush"),
+                Padding = new Thickness(10, 8, 10, 8),
+                Content = $"⚪ Unallocated Time Gap\n⏱️ {slot.DurationMinutes:0}m ({slot.DurationMinutes / 60.0:0.00}h)\n📅 {slot.StartLocal:HH:mm} – {slot.EndLocal:HH:mm}\n💡 Drag or click to shift adjacent tasks"
+            };
+        }
+        return CreateRichToolTip(slot.DisplayName, slot.DurationMinutes, slot.StartUtc, slot.EndUtc, slot.IsBreak);
     }
 
     private void RenderDistributionBar(List<TimelineSlot> slots)
@@ -1477,16 +1643,10 @@ public partial class PeriodicReviewWindow : Window
                     HorizontalAlignment = HorizontalAlignment.Center
                 });
                 segBorder.Child = unallocStack;
+                segBorder.ToolTip = CreateRichToolTip(slot);
 
-                // Tooltip
-                segBorder.ToolTip = new ToolTip
-                {
-                    Content = $"⚪ Unallocated Time Gap\n⏱️ {slot.DurationMinutes:0}m ({slot.DurationMinutes / 60.0:0.00}h)\n📅 {slot.StartLocal:HH:mm} – {slot.EndLocal:HH:mm}\n💡 Drag or click to shift adjacent tasks"
-                };
-
-                // Dragging unallocated block shifts subsequent tasks!
-                int slotIndex = i;
-                AttachUnallocatedDrag(segBorder, slot, slotIndex);
+                // Dragging unallocated block shifts adjacent tasks
+                AttachUnallocatedDrag(segBorder, slot);
             }
             else
             {
@@ -1500,7 +1660,7 @@ public partial class PeriodicReviewWindow : Window
                     : new SolidColorBrush(segColor);
 
                 segBorder.Cursor = Cursors.SizeWE;
-                segBorder.ToolTip = CreateRichToolTip(item);
+                segBorder.ToolTip = CreateRichToolTip(slot);
 
                 var segContent = new StackPanel
                 {
@@ -1526,7 +1686,6 @@ public partial class PeriodicReviewWindow : Window
                 });
                 segBorder.Child = segContent;
 
-                // Attach Drag handler to project block
                 AttachProjectBlockDrag(segBorder, item);
             }
 
@@ -1540,6 +1699,8 @@ public partial class PeriodicReviewWindow : Window
         segBorder.PreviewMouseLeftButtonDown += (s, e) =>
         {
             _draggingItem = item;
+            _isUnallocDragging = false;
+            _unallocDragSlot = null;
             _dragStartPoint = e.GetPosition(DistributionBarContainer);
             _dragOriginalStartUtc = item.StartUtc ?? _startUtc;
             _dragItemDuration = (item.EndUtc ?? _dragOriginalStartUtc.AddMinutes(item.AllocatedMinutes)) - _dragOriginalStartUtc;
@@ -1556,109 +1717,82 @@ public partial class PeriodicReviewWindow : Window
             _dragMaxStartUtc = maxEnd - _dragItemDuration;
             if (_dragMaxStartUtc < _dragMinStartUtc) _dragMaxStartUtc = _dragMinStartUtc;
 
-            segBorder.CaptureMouse();
+            DistributionBarContainer.CaptureMouse();
             e.Handled = true;
-        };
-
-        segBorder.PreviewMouseMove += (s, e) =>
-        {
-            if (_draggingItem == item && segBorder.IsMouseCaptured)
-            {
-                Point currentPoint = e.GetPosition(DistributionBarContainer);
-                double deltaX = currentPoint.X - _dragStartPoint.X;
-                double trackWidth = Math.Max(1, DistributionBarContainer.ActualWidth);
-                double deltaMinutes = (deltaX / trackWidth) * TotalPeriodMinutes;
-
-                DateTime newStart = _dragOriginalStartUtc.AddMinutes(deltaMinutes);
-                if (newStart < _dragMinStartUtc) newStart = _dragMinStartUtc;
-                if (newStart > _dragMaxStartUtc) newStart = _dragMaxStartUtc;
-
-                item.StartUtc = newStart;
-                item.EndUtc = newStart + _dragItemDuration;
-
-                var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
-                RenderDistributionBar(fullTimeline);
-                RenderTimelinePreview(fullTimeline);
-                UpdateStep2SummaryText(fullTimeline);
-            }
-        };
-
-        segBorder.PreviewMouseLeftButtonUp += (s, e) =>
-        {
-            if (_draggingItem == item)
-            {
-                _draggingItem = null;
-                segBorder.ReleaseMouseCapture();
-
-                // Snap to closest integer minute on mouse release
-                if (item.StartUtc.HasValue)
-                {
-                    DateTime sUtc = item.StartUtc.Value;
-                    int sec = sUtc.Second;
-                    DateTime rounded = sec >= 30 ? sUtc.AddSeconds(60 - sec) : sUtc.AddSeconds(-sec);
-                    if (rounded < _dragMinStartUtc) rounded = _dragMinStartUtc;
-                    if (rounded > _dragMaxStartUtc) rounded = _dragMaxStartUtc;
-                    item.StartUtc = rounded;
-                    item.EndUtc = rounded + _dragItemDuration;
-                }
-
-                RenderStep2();
-                e.Handled = true;
-            }
         };
     }
 
-    private void AttachUnallocatedDrag(Border segBorder, TimelineSlot unallocSlot, int slotIndex)
+    private void AttachUnallocatedDrag(Border segBorder, TimelineSlot unallocSlot)
     {
-        Point unallocStartPoint = default;
-        bool isUnallocDragging = false;
-
         segBorder.PreviewMouseLeftButtonDown += (s, e) =>
         {
-            isUnallocDragging = true;
-            unallocStartPoint = e.GetPosition(DistributionBarContainer);
-            segBorder.CaptureMouse();
+            _draggingItem = null;
+            _isUnallocDragging = true;
+            _unallocDragSlot = unallocSlot;
+            _unallocStartPoint = e.GetPosition(DistributionBarContainer);
+
+            DistributionBarContainer.CaptureMouse();
             e.Handled = true;
         };
+    }
 
-        segBorder.PreviewMouseMove += (s, e) =>
+    private void DistributionBarContainer_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_draggingItem != null && DistributionBarContainer.IsMouseCaptured)
         {
-            if (isUnallocDragging && segBorder.IsMouseCaptured)
+            Point currentPoint = e.GetPosition(DistributionBarContainer);
+            double deltaX = currentPoint.X - _dragStartPoint.X;
+            double trackWidth = Math.Max(1, DistributionBarContainer.ActualWidth);
+            double deltaMinutes = (deltaX / trackWidth) * TotalPeriodMinutes;
+
+            int deltaMin = (int)Math.Round(deltaMinutes);
+            DateTime newStart = _dragOriginalStartUtc.AddMinutes(deltaMin);
+            if (newStart < _dragMinStartUtc) newStart = _dragMinStartUtc;
+            if (newStart > _dragMaxStartUtc) newStart = _dragMaxStartUtc;
+
+            if (_draggingItem.StartUtc != newStart)
             {
-                Point currentPoint = e.GetPosition(DistributionBarContainer);
-                double deltaX = currentPoint.X - unallocStartPoint.X;
-                double trackWidth = Math.Max(1, DistributionBarContainer.ActualWidth);
-                double deltaMinutes = (deltaX / trackWidth) * TotalPeriodMinutes;
+                _draggingItem.StartUtc = newStart;
+                _draggingItem.EndUtc = newStart + _dragItemDuration;
+                SyncAllViews(updateCards: true);
+            }
+        }
+        else if (_isUnallocDragging && DistributionBarContainer.IsMouseCaptured && _unallocDragSlot != null)
+        {
+            Point currentPoint = e.GetPosition(DistributionBarContainer);
+            double deltaX = currentPoint.X - _unallocStartPoint.X;
+            double trackWidth = Math.Max(1, DistributionBarContainer.ActualWidth);
+            double deltaMinutes = (deltaX / trackWidth) * TotalPeriodMinutes;
 
-                if (Math.Abs(deltaMinutes) >= 1.0)
+            if (Math.Abs(deltaMinutes) >= 1.0)
+            {
+                int stepMinutes = deltaMinutes > 0 ? 1 : -1;
+                _unallocStartPoint = currentPoint;
+
+                var subsequent = _selectedItems
+                    .Where(it => it.StartUtc.HasValue && it.StartUtc.Value >= _unallocDragSlot.EndUtc)
+                    .OrderBy(it => it.StartUtc!.Value)
+                    .ToList();
+
+                if (subsequent.Count > 0)
                 {
-                    int stepMinutes = deltaMinutes > 0 ? 1 : -1;
-                    unallocStartPoint = currentPoint;
-
-                    // If dragged right, shift subsequent items right; if dragged left, shift them left
-                    var subsequent = _selectedItems
-                        .Where(it => it.StartUtc.HasValue && it.StartUtc.Value >= unallocSlot.EndUtc)
-                        .OrderBy(it => it.StartUtc!.Value)
-                        .ToList();
-
-                    if (subsequent.Count > 0)
-                    {
-                        ShiftItem(subsequent[0], stepMinutes);
-                    }
+                    ShiftItem(subsequent[0], stepMinutes);
                 }
             }
-        };
+        }
+    }
 
-        segBorder.PreviewMouseLeftButtonUp += (s, e) =>
+    private void DistributionBarContainer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_draggingItem != null || _isUnallocDragging)
         {
-            if (isUnallocDragging)
-            {
-                isUnallocDragging = false;
-                segBorder.ReleaseMouseCapture();
-                RenderStep2();
-                e.Handled = true;
-            }
-        };
+            _draggingItem = null;
+            _isUnallocDragging = false;
+            _unallocDragSlot = null;
+            DistributionBarContainer.ReleaseMouseCapture();
+            SyncAllViews(updateCards: true);
+            e.Handled = true;
+        }
     }
 
     private void RenderTimelinePreview(List<TimelineSlot> fullTimeline)
@@ -1669,18 +1803,12 @@ public partial class PeriodicReviewWindow : Window
         {
             if (slot.DurationMinutes <= 0) continue;
 
-            var card = CreateTimelineCard(
-                slot.StartLocal,
-                slot.EndLocal,
-                slot.DisplayName,
-                slot.IsBreak,
-                slot.IsUnallocated);
-
+            var card = CreateTimelineCard(slot);
             TimelinePreviewContainer.Children.Add(card);
         }
     }
 
-    private UIElement CreateTimelineCard(DateTime start, DateTime end, string title, bool isBreak, bool isUnallocated)
+    private UIElement CreateTimelineCard(TimelineSlot slot)
     {
         var border = new Border
         {
@@ -1690,7 +1818,8 @@ public partial class PeriodicReviewWindow : Window
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(10, 8, 10, 8),
             Margin = new Thickness(0, 0, 0, 6),
-            SnapsToDevicePixels = true
+            SnapsToDevicePixels = true,
+            ToolTip = CreateRichToolTip(slot)
         };
 
         var grid = new Grid();
@@ -1698,14 +1827,14 @@ public partial class PeriodicReviewWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        int durationMin = Math.Max(1, (int)Math.Round((end - start).TotalMinutes));
+        int durationMin = Math.Max(1, (int)Math.Round(slot.DurationMinutes));
 
         var timeText = new TextBlock
         {
-            Text = $"{start:HH:mm} – {end:HH:mm}",
+            Text = $"{slot.StartLocal:HH:mm} – {slot.EndLocal:HH:mm}",
             FontSize = 11.5,
             FontWeight = FontWeights.Bold,
-            Foreground = isUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("AccentBrush"),
+            Foreground = slot.IsUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("AccentBrush"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 10, 0)
         };
@@ -1714,19 +1843,19 @@ public partial class PeriodicReviewWindow : Window
 
         var titleText = new TextBlock
         {
-            Text = title,
+            Text = slot.DisplayName,
             FontSize = 11.5,
             FontWeight = FontWeights.SemiBold,
-            Foreground = isUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("PrimaryTextBrush"),
+            Foreground = slot.IsUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("PrimaryTextBrush"),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
         Grid.SetColumn(titleText, 1);
         grid.Children.Add(titleText);
 
-        var badgeText = isUnallocated
+        var badgeText = slot.IsUnallocated
             ? "Unallocated"
-            : (isBreak ? "Untracked" : "Recorded");
+            : (slot.IsBreak ? "Untracked" : "Recorded");
 
         var badge = new Border
         {
@@ -1739,7 +1868,7 @@ public partial class PeriodicReviewWindow : Window
         {
             Text = $"{durationMin}m · {badgeText}",
             FontSize = 10,
-            Foreground = isUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("PrimaryTextBrush")
+            Foreground = slot.IsUnallocated ? (Brush)FindResource("SecondaryTextBrush") : (Brush)FindResource("PrimaryTextBrush")
         };
         Grid.SetColumn(badge, 2);
         grid.Children.Add(badge);

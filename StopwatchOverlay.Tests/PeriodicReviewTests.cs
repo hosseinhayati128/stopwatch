@@ -659,4 +659,137 @@ public class PeriodicReviewTests
         Assert.Equal(ProjectDeletionStatus.Success, delResult.Status);
         Assert.DoesNotContain("New Review Project", history.ProjectNames);
     }
+
+    [Fact]
+    public void TruncateToMinute_StripsSecondsAndMilliseconds()
+    {
+        DateTime dt = new(2026, 9, 30, 10, 14, 45, 789, DateTimeKind.Utc);
+        DateTime truncated = PeriodicReviewDataAggregator.TruncateToMinute(dt);
+
+        Assert.Equal(0, truncated.Second);
+        Assert.Equal(0, truncated.Millisecond);
+        Assert.Equal(10, truncated.Hour);
+        Assert.Equal(14, truncated.Minute);
+        Assert.Equal(DateTimeKind.Utc, truncated.Kind);
+    }
+
+    [Fact]
+    public void BuildFullTimeline_TruncatesSecondsAndSynchronizes()
+    {
+        // Start and end with non-zero seconds
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 35, DateTimeKind.Utc);
+        DateTime endUtc = new(2026, 9, 30, 10, 30, 50, DateTimeKind.Utc);
+
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new()
+            {
+                ProjectName = "Project Alpha",
+                AllocatedMinutes = 10,
+                StartUtc = new(2026, 9, 30, 10, 5, 22, DateTimeKind.Utc),
+                EndUtc = new(2026, 9, 30, 10, 15, 22, DateTimeKind.Utc),
+                SelectionOrder = 1
+            },
+            new()
+            {
+                ProjectName = "Project Beta",
+                AllocatedMinutes = 10,
+                StartUtc = new(2026, 9, 30, 10, 18, 11, DateTimeKind.Utc),
+                EndUtc = new(2026, 9, 30, 10, 28, 11, DateTimeKind.Utc),
+                SelectionOrder = 2
+            }
+        };
+
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(startUtc, endUtc, items);
+
+        // Expected slots:
+        // 1. Unallocated gap 10:00 - 10:05 (5m)
+        // 2. Project Alpha 10:05 - 10:15 (10m)
+        // 3. Unallocated gap 10:15 - 10:18 (3m)
+        // 4. Project Beta 10:18 - 10:28 (10m)
+        // 5. Unallocated gap 10:28 - 10:30 (2m)
+        Assert.Equal(5, fullTimeline.Count);
+
+        Assert.All(fullTimeline, slot =>
+        {
+            Assert.Equal(0, slot.StartUtc.Second);
+            Assert.Equal(0, slot.StartUtc.Millisecond);
+            Assert.Equal(0, slot.EndUtc.Second);
+            Assert.Equal(0, slot.EndUtc.Millisecond);
+            Assert.Equal(slot.DurationMinutes, Math.Round(slot.DurationMinutes));
+        });
+
+        // Slot 1: Unallocated 10:00 - 10:05
+        Assert.True(fullTimeline[0].IsUnallocated);
+        Assert.Equal(5, fullTimeline[0].DurationMinutes);
+
+        // Slot 2: Project Alpha 10:05 - 10:15
+        Assert.Equal("Project Alpha", fullTimeline[1].Item!.ProjectName);
+        Assert.Equal(10, fullTimeline[1].DurationMinutes);
+
+        // Slot 3: Unallocated 10:15 - 10:18
+        Assert.True(fullTimeline[2].IsUnallocated);
+        Assert.Equal(3, fullTimeline[2].DurationMinutes);
+
+        // Slot 4: Project Beta 10:18 - 10:28
+        Assert.Equal("Project Beta", fullTimeline[3].Item!.ProjectName);
+        Assert.Equal(10, fullTimeline[3].DurationMinutes);
+
+        // Slot 5: Unallocated 10:28 - 10:30
+        Assert.True(fullTimeline[4].IsUnallocated);
+        Assert.Equal(2, fullTimeline[4].DurationMinutes);
+    }
+
+    [Fact]
+    public void BuildFullTimeline_WhenItemsPushed_PreservesAllocatedDurations()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = new(2026, 9, 30, 10, 30, 0, DateTimeKind.Utc);
+
+        // Item 1 has 15 minutes, starting at 10:00 (ends 10:15)
+        // Item 2 has 10 minutes, but its StartUtc was overlapping at 10:10
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new()
+            {
+                ProjectName = "Task 1",
+                AllocatedMinutes = 15,
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(15),
+                SelectionOrder = 1
+            },
+            new()
+            {
+                ProjectName = "Task 2",
+                AllocatedMinutes = 10,
+                StartUtc = startUtc.AddMinutes(10), // overlaps Task 1!
+                EndUtc = startUtc.AddMinutes(20),
+                SelectionOrder = 2
+            }
+        };
+
+        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(startUtc, endUtc, items);
+
+        // Task 2 should be pushed to 10:15, and keep its 10 minutes (ends 10:25)!
+        Assert.Equal(3, fullTimeline.Count); // Task 1, Task 2, trailing gap
+
+        // Task 1: 10:00 - 10:15 (15m)
+        Assert.Equal("Task 1", fullTimeline[0].Item!.ProjectName);
+        Assert.Equal(startUtc, fullTimeline[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(15), fullTimeline[0].EndUtc);
+        Assert.Equal(15, fullTimeline[0].DurationMinutes);
+
+        // Task 2: 10:15 - 10:25 (10m) - duration preserved!
+        Assert.Equal("Task 2", fullTimeline[1].Item!.ProjectName);
+        Assert.Equal(startUtc.AddMinutes(15), fullTimeline[1].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(25), fullTimeline[1].EndUtc);
+        Assert.Equal(10, fullTimeline[1].DurationMinutes);
+        Assert.Equal(10, items[1].AllocatedMinutes);
+
+        // Trailing gap: 10:25 - 10:30 (5m)
+        Assert.True(fullTimeline[2].IsUnallocated);
+        Assert.Equal(startUtc.AddMinutes(25), fullTimeline[2].StartUtc);
+        Assert.Equal(endUtc, fullTimeline[2].EndUtc);
+        Assert.Equal(5, fullTimeline[2].DurationMinutes);
+    }
 }

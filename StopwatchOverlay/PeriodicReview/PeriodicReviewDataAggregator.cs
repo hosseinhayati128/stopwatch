@@ -494,6 +494,11 @@ public static class PeriodicReviewDataAggregator
             .ToList();
     }
 
+    internal static DateTime TruncateToMinute(DateTime dt)
+    {
+        return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, dt.Kind);
+    }
+
     /// <summary>
     /// Builds a full, contiguous timeline covering [periodStartUtc, periodEndUtc].
     /// Project intervals and intermediate/trailing unallocated gaps are represented as TimelineSlots.
@@ -503,6 +508,13 @@ public static class PeriodicReviewDataAggregator
         DateTime periodEndUtc,
         IReadOnlyList<ReviewProjectSelectionItem> items)
     {
+        periodStartUtc = TruncateToMinute(periodStartUtc);
+        periodEndUtc = TruncateToMinute(periodEndUtc);
+        if (periodEndUtc <= periodStartUtc)
+        {
+            periodEndUtc = periodStartUtc.AddMinutes(1);
+        }
+
         var activeItems = items
             .Where(it => it.AllocatedMinutes > 0)
             .ToList();
@@ -528,12 +540,13 @@ public static class PeriodicReviewDataAggregator
             DateTime seqCursor = periodStartUtc;
             foreach (var it in activeItems)
             {
-                TimeSpan dur = TimeSpan.FromMinutes(it.AllocatedMinutes);
+                TimeSpan dur = TimeSpan.FromMinutes(Math.Max(1, Math.Round(it.AllocatedMinutes)));
                 DateTime s = seqCursor;
                 DateTime e = s + dur;
                 if (e > periodEndUtc) e = periodEndUtc;
                 it.StartUtc = s;
                 it.EndUtc = e;
+                it.AllocatedMinutes = Math.Max(1, Math.Round((e - s).TotalMinutes));
                 seqCursor = e;
             }
         }
@@ -549,21 +562,17 @@ public static class PeriodicReviewDataAggregator
         for (int i = 0; i < sorted.Count; i++)
         {
             var it = sorted[i];
-            TimeSpan duration = TimeSpan.FromMinutes(it.AllocatedMinutes);
-            DateTime itemStart = it.StartUtc ?? cursor;
+            TimeSpan duration = TimeSpan.FromMinutes(Math.Max(1, Math.Round(it.AllocatedMinutes)));
+            DateTime itemStart = it.StartUtc.HasValue ? TruncateToMinute(it.StartUtc.Value) : cursor;
             if (itemStart < periodStartUtc) itemStart = periodStartUtc;
             if (itemStart < cursor) itemStart = cursor; // prevent overlapping previous item
 
-            DateTime itemEnd = it.EndUtc ?? (itemStart + duration);
-            if (itemEnd < itemStart) itemEnd = itemStart;
+            DateTime itemEnd = itemStart + duration;
+            if (itemEnd > periodEndUtc) itemEnd = periodEndUtc;
+            if (itemEnd <= itemStart && itemStart < periodEndUtc) itemEnd = itemStart.AddMinutes(1);
             if (itemEnd > periodEndUtc) itemEnd = periodEndUtc;
 
-            // Check if duration changed
-            if (itemEnd > itemStart)
-            {
-                it.AllocatedMinutes = Math.Round((itemEnd - itemStart).TotalMinutes);
-            }
-
+            it.AllocatedMinutes = Math.Max(0, Math.Round((itemEnd - itemStart).TotalMinutes));
             it.StartUtc = itemStart;
             it.EndUtc = itemEnd;
 
