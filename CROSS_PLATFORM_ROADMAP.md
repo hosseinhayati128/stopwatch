@@ -130,42 +130,25 @@ graph TD
 ### Phase 2: Platform Abstraction Layer
 **Goal:** Encapsulate OS-dependent operations behind clean C# interfaces with dependency injection or provider factories.
 
-- [ ] **Step 2.1: Define Platform Interfaces in `StopwatchOverlay.Core/Platform`**
-  - `IHotKeyService`:
-    ```csharp
-    public interface IHotKeyService : IDisposable
-    {
-        bool RegisterHotKey(ShortcutAction action, KeyModifiers modifiers, KeyCode key);
-        void UnregisterHotKey(ShortcutAction action);
-        void StartChordCapture(Action<string> onChordDetected);
-        void StopChordCapture();
-        event EventHandler<HotKeyEventArgs> HotKeyPressed;
-    }
-    ```
-  - `IIdleDetectionService`:
-    ```csharp
-    public interface IIdleDetectionService
-    {
-        TimeSpan GetIdleTime();
-        bool IsUserIdle(TimeSpan threshold);
-    }
-    ```
-  - `IWindowOverlayService`:
-    ```csharp
-    public interface IWindowOverlayService
-    {
-        void SetClickThrough(IntPtr windowHandle, bool clickThrough);
-        void SetAlwaysOnTop(IntPtr windowHandle, bool topmost);
-    }
-    ```
+- [x] **Step 2.1: Define Platform Interfaces in `StopwatchOverlay.Core/Platform`**
+  - `IHotKeyService` (global shortcuts & chords)
+  - `IIdleDetectionService` (user idle detection)
+  - `IWindowOverlayService` (always-on-top, click-through transparency)
+  - `IStartupService` (sign-in autostart across registry & XDG .desktop)
+  - `ISingleInstanceService` (single-instance mutex & unix domain socket)
+  - `PlatformServices` (central locator with null-object fallbacks)
 
-- [ ] **Step 2.2: Implement Windows Providers**
-  - Wrap existing `user32.dll` P/Invoke calls into `WindowsHotKeyService`, `WindowsIdleDetectionService`, and `WindowsOverlayService`.
+- [x] **Step 2.2: Implement Windows Providers**
+  - `WindowsIdleDetectionService` (Win32 `GetLastInputInfo`)
+  - `WindowsStartupService` (HKCU Run key registry)
+  - `WindowsOverlayService` (`SetWindowLong`, `WS_EX_TRANSPARENT`, `WS_EX_TOOLWINDOW`, `WS_EX_NOACTIVATE`)
+  - `WindowsSingleInstanceService` (named Mutex & EventWaitHandle)
+  - Registered via `WpfPlatformInitializer` at application startup.
 
-- [ ] **Step 2.3: Implement Linux Providers**
-  - **Hotkeys & Chords:** Use `SharpHook` (cross-platform `libuiohook`). Handles global hotkeys on both X11 and Wayland without custom P/Invoke.
-  - **Idle Detection:** Check for `xprintidle` or query `libXss.so` (X11) / D-Bus `org.freedesktop.ScreenSaver` (GNOME/KDE).
-  - **Window Overlay:** Set window input shape or X11 shape masks for transparent click-through.
+- [x] **Step 2.3: Implement Linux Providers**
+  - `LinuxStartupService` (XDG Autostart `~/.config/autostart/*.desktop`)
+  - `LinuxIdleDetectionService` (`xprintidle` / session idle query)
+  - `LinuxSingleInstanceService` (Unix Domain Socket IPC & file lock)
 
 ---
 

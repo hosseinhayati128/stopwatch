@@ -22,6 +22,11 @@ internal static class WpfPlatformInitializer
 
         AppBackgroundCatalog.ImageDimensionReader = ReadImageDimensions;
         AppBackgroundCatalog.ImageValidator = ValidateImage;
+
+        Platform.PlatformServices.IdleDetection = new Platform.Windows.WindowsIdleDetectionService();
+        Platform.PlatformServices.Startup = new Platform.Windows.WindowsStartupService();
+        Platform.PlatformServices.WindowOverlay = new Platform.Windows.WindowsOverlayService();
+        Platform.PlatformServices.SingleInstance = new Platform.Windows.WindowsSingleInstanceService();
     }
 
     private static void ApplyUiScale(double percent)

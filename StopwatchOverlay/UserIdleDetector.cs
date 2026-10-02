@@ -8,15 +8,6 @@ namespace StopwatchOverlay;
 /// </summary>
 public static class UserIdleDetector
 {
-    [StructLayout(LayoutKind.Sequential)]
-    private struct LASTINPUTINFO
-    {
-        public uint cbSize;
-        public uint dwTime;
-    }
-
-    [DllImport("user32.dll")]
-    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
     /// <summary>
     /// Test hook allowing deterministic unit tests to simulate idle durations.
@@ -34,21 +25,6 @@ public static class UserIdleDetector
             return CustomIdleTimeProvider();
         }
 
-        try
-        {
-            var lii = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
-            if (GetLastInputInfo(ref lii))
-            {
-                uint currentTick = (uint)Environment.TickCount;
-                uint idleTicks = unchecked(currentTick - lii.dwTime);
-                return TimeSpan.FromMilliseconds(idleTicks);
-            }
-        }
-        catch (Exception ex)
-        {
-            CrashLogger.LogRecoverable(ex, "UserIdleDetector.GetIdleTime");
-        }
-
-        return TimeSpan.Zero;
+        return Platform.PlatformServices.IdleDetection.GetIdleTime();
     }
 }
