@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StopwatchOverlay\StopwatchOverlay.csproj" />
+    <ProjectReference Include="..\StopwatchOverlay.Core\StopwatchOverlay.Core.csproj" />
   </ItemGroup>
 
 </Project>

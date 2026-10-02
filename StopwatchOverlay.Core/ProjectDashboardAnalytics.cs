@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace StopwatchOverlay;
 
-internal enum DashboardRange
+public enum DashboardRange
 {
     Day,
     SevenDays,
@@ -15,9 +15,9 @@ internal enum DashboardRange
 /// A half-open UTC range: StartUtc is inclusive and EndUtc is exclusive.
 /// A null start represents all recorded history before EndUtc.
 /// </summary>
-internal readonly record struct DashboardUtcRange(DateTime? StartUtc, DateTime EndUtc);
+public readonly record struct DashboardUtcRange(DateTime? StartUtc, DateTime EndUtc);
 
-internal readonly record struct ClippedProjectInterval(
+public readonly record struct ClippedProjectInterval(
     DateTime StartUtc,
     DateTime EndUtc,
     bool IsLive)
@@ -25,7 +25,7 @@ internal readonly record struct ClippedProjectInterval(
     public TimeSpan Duration => EndUtc - StartUtc;
 }
 
-internal readonly record struct HeatmapDayValue(
+public readonly record struct HeatmapDayValue(
     DateTime Date,
     TimeSpan Duration,
     int RecordCount);
@@ -33,7 +33,7 @@ internal readonly record struct HeatmapDayValue(
 /// <summary>
 /// Time-zone-aware calculations shared by the project dashboard views.
 /// </summary>
-internal static class ProjectDashboardAnalytics
+public static class ProjectDashboardAnalytics
 {
     /// <summary>
     /// Creates a half-open range ending on the selected local calendar day.
@@ -41,7 +41,7 @@ internal static class ProjectDashboardAnalytics
     /// The current day ends at asOfUtc; a completed historical day ends at its
     /// following local midnight.
     /// </summary>
-    internal static DashboardUtcRange CreateRange(
+    public static DashboardUtcRange CreateRange(
         DashboardRange range,
         DateTime selectedDayLocal,
         DateTime asOfUtc,
@@ -98,7 +98,7 @@ internal static class ProjectDashboardAnalytics
     /// interval is live only when the resulting interval actually ends at the
     /// supplied as-of instant.
     /// </summary>
-    internal static ClippedProjectInterval? Clip(
+    public static ClippedProjectInterval? Clip(
         ProjectWorkIntervalView source,
         DashboardUtcRange range,
         DateTime asOfUtc)
@@ -146,7 +146,7 @@ internal static class ProjectDashboardAnalytics
     /// without records. Overlapping records are summed independently, and a
     /// record crossing midnight contributes once to each day it intersects.
     /// </summary>
-    internal static IReadOnlyList<HeatmapDayValue> BuildHeatmap(
+    public static IReadOnlyList<HeatmapDayValue> BuildHeatmap(
         ProjectHistoryView history,
         DateTime startLocalDate,
         DateTime endLocalDateInclusive,
@@ -273,7 +273,7 @@ internal static class ProjectDashboardAnalytics
     /// gap advances to the first valid minute; a repeated boundary uses the
     /// earlier UTC occurrence so no repeated time at the start is discarded.
     /// </summary>
-    internal static DateTime LocalBoundaryToUtc(DateTime local, TimeZoneInfo timeZone)
+    public static DateTime LocalBoundaryToUtc(DateTime local, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(timeZone);
 

@@ -3,7 +3,7 @@ using System;
 namespace StopwatchOverlay;
 
 [Flags]
-internal enum SettingsChangeKind
+public enum SettingsChangeKind
 {
     None = 0,
     Theme = 1 << 0,
@@ -30,7 +30,7 @@ internal enum SettingsChangeKind
     PeriodicReview = 1 << 21
 }
 
-internal static class SettingsChangePolicy
+public static class SettingsChangePolicy
 {
     private const SettingsChangeKind ContinuousChanges =
         SettingsChangeKind.OverlayAppearance
@@ -40,21 +40,21 @@ internal static class SettingsChangePolicy
         | SettingsChangeKind.ApplicationScale
         | SettingsChangeKind.Typography;
 
-    internal static bool IsContinuous(SettingsChangeKind change)
+    public static bool IsContinuous(SettingsChangeKind change)
         => (change & ContinuousChanges) != 0;
 
-    internal static bool RequiresThemeApply(SettingsChangeKind change)
+    public static bool RequiresThemeApply(SettingsChangeKind change)
         => (change & SettingsChangeKind.Theme) != 0;
 
-    internal static bool RequiresBackgroundApply(SettingsChangeKind change)
+    public static bool RequiresBackgroundApply(SettingsChangeKind change)
         => (change & (SettingsChangeKind.Theme
                       | SettingsChangeKind.BackgroundSelection
                       | SettingsChangeKind.BackgroundStrength)) != 0;
 
-    internal static bool RequiresLightRingRebuild(SettingsChangeKind change)
+    public static bool RequiresLightRingRebuild(SettingsChangeKind change)
         => (change & (SettingsChangeKind.LightRingVisibility | SettingsChangeKind.OverlayScreen)) != 0;
 
-    internal static int ResolveScreenComboIndex(int persistedIndex, int screenCount)
+    public static int ResolveScreenComboIndex(int persistedIndex, int screenCount)
     {
         int maximumIndex = Math.Max(0, screenCount);
         int defaultIndex = screenCount > 1 ? 1 : 0;

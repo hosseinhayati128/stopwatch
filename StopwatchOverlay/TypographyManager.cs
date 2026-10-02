@@ -191,7 +191,7 @@ public static class TypographyManager
         };
         if (resource != null) return element.TryFindResource(resource) as Brush;
         if (!TypographySettings.TryHexColor(choice, out var color)) return null;
-        var brush = new SolidColorBrush(color);
+        var brush = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B));
         brush.Freeze();
         return brush;
     }

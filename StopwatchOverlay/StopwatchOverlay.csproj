@@ -36,13 +36,13 @@
     <Resource Include="Assets\Fonts\Acanthus\*.ttf" />
     <Resource Include="Assets\Pirate\*.png" />
     <Resource Include="Assets\Fonts\Pirate\*.ttf" />
-    <None Update="Assets\Fonts\Pirate\*-OFL.txt"
-          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
-          ExcludeFromSingleFile="true" />
+    <None Update="Assets\Fonts\Pirate\*-OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <!-- Keep the bundled Acanthus font license readable beside single-file publishes. -->
-    <None Update="Assets\Fonts\Acanthus\OFL.txt"
-          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
-          ExcludeFromSingleFile="true" />
+    <None Update="Assets\Fonts\Acanthus\OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StopwatchOverlay.Core\StopwatchOverlay.Core.csproj" />
   </ItemGroup>
 
 </Project>

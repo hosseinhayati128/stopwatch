@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Windows.Media;
 
 namespace StopwatchOverlay;
+
+public readonly record struct TypographyRgb(byte R, byte G, byte B);
 
 public sealed class TypographyStyle
 {
@@ -61,14 +62,14 @@ public sealed class TypographySettings
         return theme ?? (TryHexColor(text, out var color) ? $"#{color.R:X2}{color.G:X2}{color.B:X2}" : ThemeDefault);
     }
 
-    public static bool TryHexColor(string? value, out Color color)
+    public static bool TryHexColor(string? value, out TypographyRgb color)
     {
         color = default;
         string hex = value?.Trim().TrimStart('#') ?? "";
         if (hex.Length == 3) hex = string.Concat(hex.Select(c => new string(c, 2)));
         if (hex.Length != 6 || !uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint rgb))
             return false;
-        color = System.Windows.Media.Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+        color = new TypographyRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
         return true;
     }
 }

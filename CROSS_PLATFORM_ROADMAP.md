@@ -106,34 +106,24 @@ graph TD
 ### Phase 1: Core Decoupling & Solution Restructuring
 **Goal:** Extract all platform-agnostic business logic, storage engines, sync modules, and math into a pure .NET 10 class library without breaking existing WPF functionality.
 
-- [ ] **Step 1.1: Create `StopwatchOverlay.Core` Project**
+- [x] **Step 1.1: Create `StopwatchOverlay.Core` Project**
   - Create directory `StopwatchOverlay.Core`.
-  - Create `StopwatchOverlay.Core.csproj`:
-    ```xml
-    <Project Sdk="Microsoft.NET.Sdk">
-      <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-      </PropertyGroup>
-      <ItemGroup>
-        <PackageReference Include="System.Text.Json" Version="9.0.0" />
-      </ItemGroup>
-    </Project>
-    ```
+  - Create `StopwatchOverlay.Core.csproj` targeting `net10.0`.
   - Add to `StopwatchOverlay.sln`.
 
-- [ ] **Step 1.2: Move Platform-Agnostic Files to `StopwatchOverlay.Core`**
-  - **Models & Settings:** `AppSettings.cs`, `TimerModels.cs`, `ReviewProjectSelectionItem`, etc.
-  - **Storage:** `SettingsStore.cs`, `ProjectTimeStore.cs`, `ProjectTimeHistory.cs`, `MarkdownStore.cs`, `TimerWorkspaceStore.cs`, `InternetHistoryStore.cs`.
-  - **ActivityWatch & Sync:** `ActivityWatchSync.cs`, `ActivityWatchClient.cs`, `ObsidianNotesSync.cs`, `ObsidianLogSync.cs`, `TelegramNotesSync.cs`.
-  - **Periodic Review Aggregator:** `PeriodicReviewDataAggregator.cs` (including `RebalanceAllocatedMinutes`, `RepackTimelineIntervals`, `BuildFullTimeline`).
+- [x] **Step 1.2: Move Platform-Agnostic Files to `StopwatchOverlay.Core`**
+  - **Models & Settings:** `AppSettings.cs`, `TimerModels.cs`, `ReviewProjectSelectionItem`, `AppThemeCatalog.cs`, `OverlayThemeCatalog.cs`, `AppUiScale.cs`, `CustomAppBackground.cs`, `TypographySettings.cs`, `SettingsChange.cs`, `NavigatorOpaqueParts.cs`.
+  - **Storage & Catalog:** `SettingsStore.cs`, `ProjectTimeStore.cs`, `ProjectTimeHistory.cs`, `TimerWorkspaceStore.cs`, `InternetHistoryStore.cs`, `AppBackgroundCatalog.cs`, `TelegramOutboxStore.cs`.
+  - **ActivityWatch & Sync:** `ActivityWatchSync.cs`, `ActivityWatchClient.cs`, `ActivityWatchLauncher.cs`, `ActivityWatchModels.cs`, `ActivityWatchSyncService.cs`, `ObsidianNotesSync.cs`, `ObsidianLogSync.cs`, `TelegramNotesSync.cs`, `InternetLogSync.cs`, `InternetMonitorService.cs`, `InternetSpeedProbe.cs`, `NetworkInfoDetector.cs`.
+  - **Periodic Review Aggregator & Analytics:** `PeriodicReviewDataAggregator.cs`, `PeriodicReviewService.cs`, `ProjectDashboardAnalytics.cs`.
+  - **Cross-Platform Diagnostics:** `CrashLogger.cs` (with pluggable UI snapshot & theme provider delegates).
 
-- [ ] **Step 1.3: Update Dependencies & Verify**
+- [x] **Step 1.3: Update Dependencies & Verify**
   - Reference `StopwatchOverlay.Core` from `StopwatchOverlay.csproj` (existing WPF app).
   - Reference `StopwatchOverlay.Core` from `StopwatchOverlay.Tests.csproj`.
-  - Run `dotnet test`: Ensure all 836 unit tests pass.
-  - Run `.\publish.ps1`: Verify WPF application builds and launches on Windows without regressions.
+  - Decouple WPF primitives via `TypographyRgb` and `WpfPlatformInitializer`.
+  - Run `dotnet test`: 100% pass (all 836 unit tests passed).
+  - Verify Release build: 0 warnings, 0 errors.
 
 ---
 

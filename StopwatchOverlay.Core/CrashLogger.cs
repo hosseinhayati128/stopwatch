@@ -6,11 +6,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows;
 
 namespace StopwatchOverlay;
 
-internal static class CrashLogger
+public static class CrashLogger
 {
     private const int MaximumEntryCharacters = 60_000;
     private const int RetainedLogCount = 10;
@@ -18,6 +17,9 @@ internal static class CrashLogger
     private static string _lastAction = "Application startup";
     private static string _lastSettingsCategory = "Not open";
     private static string _lastOpenWindowTypes = "Unavailable";
+
+    public static Func<string?>? ThemeProvider { get; set; }
+    public static Func<string?>? WindowSnapshotProvider { get; set; }
 
     internal static string LogDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -111,13 +113,15 @@ internal static class CrashLogger
         var text = new StringBuilder();
         text.AppendLine("Stopwatch Overlay diagnostic event");
         text.AppendLine($"TimestampUtc: {DateTime.UtcNow:O}");
-        text.AppendLine($"AppVersion: {typeof(App).Assembly.GetName().Version}");
+        Version? version = Assembly.GetEntryAssembly()?.GetName().Version
+            ?? typeof(CrashLogger).Assembly.GetName().Version;
+        text.AppendLine($"AppVersion: {version}");
         text.AppendLine($"Origin: {NormalizeContextToken(origin, "Unknown")}");
         text.AppendLine($"Terminating: {isTerminating}");
         text.AppendLine($"Process: {Process.GetCurrentProcess().ProcessName} ({Environment.ProcessId})");
         text.AppendLine($"ManagedThreadId: {Environment.CurrentManagedThreadId}");
         text.AppendLine($"IsThreadPoolThread: {Thread.CurrentThread.IsThreadPoolThread}");
-        text.AppendLine($"Theme: {AppThemeManager.CurrentTheme}");
+        text.AppendLine($"Theme: {ThemeProvider?.Invoke() ?? "Unknown"}");
         text.AppendLine($"OpenWindowTypes: {Volatile.Read(ref _lastOpenWindowTypes)}");
         text.AppendLine($"SettingsCategory: {Volatile.Read(ref _lastSettingsCategory)}");
         text.AppendLine($"LastUiAction: {Volatile.Read(ref _lastAction)}");
@@ -145,20 +149,14 @@ internal static class CrashLogger
     {
         try
         {
-            Application? application = Application.Current;
-            if (application == null || !application.Dispatcher.CheckAccess())
-                return;
-
-            string[] windowTypes = application.Windows
-                .OfType<Window>()
-                .Where(window => window.IsLoaded)
-                .Select(window => window.GetType().Name)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(name => name, StringComparer.Ordinal)
-                .ToArray();
-            Interlocked.Exchange(
-                ref _lastOpenWindowTypes,
-                windowTypes.Length == 0 ? "None" : string.Join(",", windowTypes));
+            if (WindowSnapshotProvider != null)
+            {
+                string? snapshot = WindowSnapshotProvider();
+                if (!string.IsNullOrEmpty(snapshot))
+                {
+                    Interlocked.Exchange(ref _lastOpenWindowTypes, snapshot);
+                }
+            }
         }
         catch
         {

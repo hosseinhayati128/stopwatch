@@ -40,6 +40,41 @@ namespace StopwatchOverlay
         public const uint MOD_SHIFT   = 0x0004;
         public const uint MOD_WIN     = 0x0008;
 
+        public static Func<uint, string>? KeyNameFormatter { get; set; }
+
+        public static string FormatKeyName(uint virtualKey)
+        {
+            if (KeyNameFormatter != null)
+                return KeyNameFormatter(virtualKey);
+
+            if (virtualKey >= 0x70 && virtualKey <= 0x87)
+                return $"F{virtualKey - 0x70 + 1}";
+            if (virtualKey >= 0x41 && virtualKey <= 0x5A)
+                return ((char)virtualKey).ToString();
+            if (virtualKey >= 0x30 && virtualKey <= 0x39)
+                return ((char)virtualKey).ToString();
+
+            return virtualKey switch
+            {
+                0x20 => "Space",
+                0x0D => "Return",
+                0x1B => "Escape",
+                0x09 => "Tab",
+                0x08 => "Back",
+                0x2E => "Delete",
+                0x2D => "Insert",
+                0x24 => "Home",
+                0x23 => "End",
+                0x21 => "PageUp",
+                0x22 => "PageDown",
+                0x25 => "Left",
+                0x26 => "Up",
+                0x27 => "Right",
+                0x28 => "Down",
+                _ => $"Key_{virtualKey}"
+            };
+        }
+
         // Renders as "Ctrl+Shift+S", "Win+F5", etc. Empty string if unbound.
         public string Format()
         {
@@ -49,7 +84,7 @@ namespace StopwatchOverlay
             if ((Modifiers & MOD_ALT) != 0) parts.Add("Alt");
             if ((Modifiers & MOD_SHIFT) != 0) parts.Add("Shift");
             if ((Modifiers & MOD_WIN) != 0) parts.Add("Win");
-            parts.Add(System.Windows.Input.KeyInterop.KeyFromVirtualKey((int)VirtualKey).ToString());
+            parts.Add(FormatKeyName(VirtualKey));
             return string.Join("+", parts);
         }
     }
