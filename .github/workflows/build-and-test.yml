@@ -1,0 +1,78 @@
+name: Build and Test Cross-Platform
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  windows-test-and-build:
+    name: Windows (Tests & Desktop Win-x64 Build)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore StopwatchOverlay.sln
+
+      - name: Run unit tests
+        run: dotnet test StopwatchOverlay.Tests/StopwatchOverlay.Tests.csproj -c Release --no-restore --verbosity normal
+
+      - name: Publish Avalonia Desktop (win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish StopwatchOverlay.Desktop/StopwatchOverlay.Desktop.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -o publish/windows-x64
+
+      - name: Verify Windows executable exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "publish/windows-x64/StopwatchOverlay.Desktop.exe")) {
+            throw "StopwatchOverlay.Desktop.exe was not produced!"
+          }
+
+  linux-build:
+    name: Linux (Ubuntu Core & Desktop Linux-x64 Build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build StopwatchOverlay.Core
+        run: dotnet build StopwatchOverlay.Core/StopwatchOverlay.Core.csproj -c Release
+
+      - name: Publish Avalonia Desktop (linux-x64 self-contained)
+        run: |
+          dotnet publish StopwatchOverlay.Desktop/StopwatchOverlay.Desktop.csproj \
+            -c Release \
+            -r linux-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o publish/linux-x64
+
+      - name: Verify Linux executable and native libraries
+        run: |
+          test -f publish/linux-x64/StopwatchOverlay.Desktop || { echo "Binary not found!"; exit 1; }
+          ls -la publish/linux-x64/

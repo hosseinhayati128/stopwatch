@@ -24,6 +24,8 @@ bld/
 ## Build results
 [Dd]ebugPublic/
 release*/
+dist/
+publish/
 *.appx
 *.appxbundle
 *.appxupload

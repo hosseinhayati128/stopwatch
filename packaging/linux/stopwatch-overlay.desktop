@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Stopwatch Overlay
+GenericName=Stopwatch and Time Tracker
+Comment=Cross-platform stopwatch overlay with transparent HUD, activity tracking, and periodic review
+Exec=stopwatch-overlay %u
+Icon=stopwatch-overlay
+Terminal=false
+Type=Application
+Categories=Utility;Clock;ProjectManagement;Office;
+StartupNotify=true
+StartupWMClass=StopwatchOverlay.Desktop
+Keywords=stopwatch;timer;clock;countdown;time;overlay;

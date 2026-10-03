@@ -66,15 +66,40 @@ jobs:
             -p:Version=$version `
             -o publish-portable
 
+      # Linux x64 Self-contained (Avalonia UI Desktop)
+      - name: Publish Linux x64
+        shell: pwsh
+        run: |
+          $version = $env:RELEASE_TAG.TrimStart('v')
+          dotnet publish StopwatchOverlay.Desktop/StopwatchOverlay.Desktop.csproj `
+            -c Release `
+            -r linux-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -p:Version=$version `
+            -o publish-linux
+
+          Copy-Item packaging/linux/stopwatch-overlay.desktop publish-linux/ -Force
+          Copy-Item packaging/linux/install.sh publish-linux/ -Force
+          Copy-Item packaging/linux/uninstall.sh publish-linux/ -Force
+          Copy-Item StopwatchOverlay/project-logo-24.png publish-linux/stopwatch-overlay.png -Force
+          Copy-Item publish-linux/StopwatchOverlay.Desktop publish-linux/stopwatch-overlay -Force
+
       - name: Package release files
         shell: pwsh
         run: |
           $standard = "StopwatchOverlay-$env:RELEASE_TAG-windows-x64.zip"
           $portable = "StopwatchOverlay-$env:RELEASE_TAG-windows-x64-portable.zip"
+          $linux = "StopwatchOverlay-$env:RELEASE_TAG-linux-x64.tar.gz"
+
           Compress-Archive -Path publish-standard/* -DestinationPath $standard
           Compress-Archive -Path publish-portable/* -DestinationPath $portable
+          tar -czf $linux -C publish-linux .
 
-          Get-FileHash $standard, $portable -Algorithm SHA256 |
+          Get-FileHash $standard, $portable, $linux -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash.ToLower()) *$(Split-Path $_.Path -Leaf)" } |
             Set-Content SHA256SUMS.txt
 
@@ -93,11 +118,16 @@ jobs:
             - **Standard (Windows x64)** — `StopwatchOverlay-${{ env.RELEASE_TAG }}-windows-x64.zip`
               Smaller download. Requires the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0/runtime).
 
-            Linux is not included because the current WPF/Windows Forms application is Windows-only.
+            ## Linux downloads
+
+            - **Self-Contained (Linux x64)** — `StopwatchOverlay-${{ env.RELEASE_TAG }}-linux-x64.tar.gz`
+              Cross-platform Avalonia UI build. Extract the archive and run `./install.sh` for system integration (`/usr/local/bin/stopwatch-overlay` and desktop application menu), or execute `./stopwatch-overlay` directly.
           files: |
             StopwatchOverlay-${{ env.RELEASE_TAG }}-windows-x64.zip
             StopwatchOverlay-${{ env.RELEASE_TAG }}-windows-x64-portable.zip
+            StopwatchOverlay-${{ env.RELEASE_TAG }}-linux-x64.tar.gz
             SHA256SUMS.txt
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
+
