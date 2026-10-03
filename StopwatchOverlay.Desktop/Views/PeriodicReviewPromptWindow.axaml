@@ -1,0 +1,87 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.PeriodicReviewPromptWindow"
+        Title="Periodic Review Prompt"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen">
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="20,16"
+            Margin="16"
+            MinWidth="380"
+            MaxWidth="440"
+            BoxShadow="0 8 28 0 #77000000">
+        <StackPanel>
+            <!-- Header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4" Spacing="4">
+                <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="15" FontWeight="Bold"/>
+                <TextBlock Text="Periodic Activity Review"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="15"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+
+            <!-- Subtitle -->
+            <TextBlock x:Name="PeriodSummaryText"
+                       Text="Review what you were doing (14:00 – 14:30)"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontSize="13"
+                       FontWeight="Medium"
+                       Margin="0,0,0,12"/>
+
+            <!-- Option 1: Y Review Now -->
+            <Button x:Name="ReviewNowButton" Classes="choice" Click="ReviewNowButton_Click">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Border Classes="keyBadge">
+                        <TextBlock Text="Y" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Check &amp; Complete Report Now" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Review ActivityWatch logs and assign stopwatch time" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <!-- Option 2: Esc Skip -->
+            <Button x:Name="SkipButton" Classes="choice" Click="SkipButton_Click">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Border Classes="keyBadge" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <TextBlock Text="Esc" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold" FontSize="11"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Skip This Term" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock x:Name="SkipSubText" Text="Remind again at next interval" FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <!-- Footer: countdown and auto-close -->
+            <Grid Margin="0,4,0,0">
+                <TextBlock x:Name="FooterHintText"
+                           Text="Press Y or Esc"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           HorizontalAlignment="Left"/>
+                <TextBlock x:Name="CountdownText"
+                           Text="Closing in 5s (snoozes for 30m)"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           HorizontalAlignment="Right"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

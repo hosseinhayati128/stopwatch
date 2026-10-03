@@ -1,9 +1,12 @@
 using System;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
+using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
+using StopwatchOverlay.PeriodicReview;
 
-namespace StopwatchOverlay.PeriodicReview;
+namespace StopwatchOverlay.Desktop.Views;
 
 public partial class PeriodicReviewPromptWindow : Window
 {
@@ -13,6 +16,13 @@ public partial class PeriodicReviewPromptWindow : Window
     private readonly int _snoozeMinutes;
     private readonly int _intervalMinutes;
     private bool _handled;
+
+    public PeriodicReviewPromptResult Result { get; private set; } = PeriodicReviewPromptResult.Ignored;
+
+    public PeriodicReviewPromptWindow()
+        : this(DateTime.UtcNow.AddMinutes(-30), DateTime.UtcNow, 5, 30, 30, null)
+    {
+    }
 
     public PeriodicReviewPromptWindow(
         DateTime startUtc,
@@ -42,9 +52,36 @@ public partial class PeriodicReviewPromptWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
+
+        Opened += OnWindowOpened;
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    public static async Task<PeriodicReviewPromptResult> ShowAsync(
+        Window? owner,
+        DateTime startUtc,
+        DateTime endUtc,
+        int timeoutSeconds,
+        int snoozeMinutes,
+        int intervalMinutes)
+    {
+        var tcs = new TaskCompletionSource<PeriodicReviewPromptResult>();
+        var dialog = new PeriodicReviewPromptWindow(
+            startUtc,
+            endUtc,
+            timeoutSeconds,
+            snoozeMinutes,
+            intervalMinutes,
+            res => tcs.TrySetResult(res));
+
+        if (owner != null)
+            dialog.Show(owner);
+        else
+            dialog.Show();
+
+        return await tcs.Task;
+    }
+
+    private void OnWindowOpened(object? sender, EventArgs e)
     {
         _timer.Start();
         Activate();
@@ -69,18 +106,20 @@ public partial class PeriodicReviewPromptWindow : Window
         if (_handled) return;
         _handled = true;
         _timer.Stop();
+        Result = result;
         _onResult?.Invoke(result);
         Close();
     }
 
-    private void ReviewNowButton_Click(object sender, RoutedEventArgs e)
+    private void ReviewNowButton_Click(object? sender, RoutedEventArgs e)
         => Finish(PeriodicReviewPromptResult.Accepted);
 
-    private void SkipButton_Click(object sender, RoutedEventArgs e)
+    private void SkipButton_Click(object? sender, RoutedEventArgs e)
         => Finish(PeriodicReviewPromptResult.Skipped);
 
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    protected override void OnKeyDown(KeyEventArgs e)
     {
+        base.OnKeyDown(e);
         if (e.Key == Key.Y)
         {
             Finish(PeriodicReviewPromptResult.Accepted);

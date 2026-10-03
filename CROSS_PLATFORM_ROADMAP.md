@@ -192,7 +192,7 @@ graph TD
   - `ProjectRecordEditorWindow.xaml` ➔ Avalonia Window.
   - `ProjectRecordDeleteWindow.xaml` ➔ Avalonia Window.
 
-- [ ] **Step 4.4: Periodic Review Windows**
+- [x] **Step 4.4: Periodic Review Windows**
   - `PeriodicReviewPromptWindow.xaml` ➔ Avalonia Window.
   - `PeriodicReviewWindow.xaml`:
     - Port dual-step review interface.
