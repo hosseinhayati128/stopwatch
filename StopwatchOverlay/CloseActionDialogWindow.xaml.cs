@@ -3,12 +3,6 @@ using System.Windows;
 
 namespace StopwatchOverlay;
 
-public enum CloseDialogResult
-{
-    Cancel,
-    MinimizeToTray,
-    CloseCompletely
-}
 
 public partial class CloseActionDialogWindow : Window
 {

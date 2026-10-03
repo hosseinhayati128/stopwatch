@@ -175,7 +175,7 @@ graph TD
 ### Phase 4: Window-by-Window UI Migration
 **Goal:** Port each WPF window to an Avalonia `Window`, maintaining identical UX, layout, and visual fidelity.
 
-- [ ] **Step 4.1: Dialog Windows (Smallest & Fastest)**
+- [x] **Step 4.1: Dialog Windows (Smallest & Fastest)**
   - `ConfirmationDialogWindow.xaml` ➔ Avalonia Window.
   - `CloseActionDialogWindow.xaml` ➔ Avalonia Window.
   - `FocusInterruptionDialogWindow.xaml` ➔ Avalonia Window.

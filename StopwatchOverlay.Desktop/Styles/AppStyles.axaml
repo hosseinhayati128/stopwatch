@@ -77,4 +77,32 @@
     <Style Selector="TextBlock.mono">
         <Setter Property="FontFamily" Value="{DynamicResource ThemeMonoFontFamily}"/>
     </Style>
+
+    <!-- Choice Card Buttons (Dialogs & Prompts) -->
+    <Style Selector="Button.choice">
+        <Setter Property="Background" Value="{DynamicResource DialogSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="14,10"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Button.choice:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+    <Style Selector="Button.choice:pressed /template/ ContentPresenter">
+        <Setter Property="Opacity" Value="0.85"/>
+    </Style>
+
+    <!-- Key Badge (for keyboard shortcut badges in dialogs) -->
+    <Style Selector="Border.keyBadge">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Margin" Value="0,0,12,0"/>
+    </Style>
 </Styles>

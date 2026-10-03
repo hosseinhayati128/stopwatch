@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.ConfirmationDialogWindow"
+        Width="500"
+        MinWidth="380"
+        SizeToContent="Height"
+        MaxHeight="780"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Margin="18"
+                Background="{DynamicResource DialogSurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+                CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+                BoxShadow="0 6 20 0 #40000000">
+            <StackPanel Margin="24" Spacing="16">
+                <!-- Heading -->
+                <TextBlock x:Name="HeadingText"
+                           Classes="heading"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+
+                <!-- Message -->
+                <TextBlock x:Name="MessageText"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="13.5"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8" />
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                    <Button x:Name="CancelButton"
+                            Classes="modern"
+                            Content="Cancel"
+                            MinWidth="88"
+                            Click="OnCancelClicked" />
+                    <Button x:Name="ConfirmButton"
+                            Classes="primary"
+                            MinWidth="112"
+                            Click="OnConfirmClicked" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</Window>
