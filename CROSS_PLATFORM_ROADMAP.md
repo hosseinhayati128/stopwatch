@@ -204,10 +204,14 @@ graph TD
   - `ProjectDashboardWindow.xaml`:
     - Port stats view, project list, date pickers, export buttons.
 
-- [ ] **Step 4.6: Settings Window**
-  - `SettingsWindow.xaml`:
-    - Replace WinForms `Screen.AllScreens` with Avalonia `Screens.All`.
-    - Replace WinForms `ColorDialog` with Avalonia's built-in `ColorPicker` control.
+- [x] **Step 4.6: Settings Window**
+  - `SettingsWindow.xaml` ➔ `SettingsWindow.axaml` & `.axaml.cs`:
+    - Ported all 10 settings tabs (Overlay & position, Appearance, Fonts & colors, Light ring, Behavior, Application, Obsidian / Markdown, Telegram, ActivityWatch, Internet & Network).
+    - Enumerate monitors cross-platform via Avalonia `Screens.All`.
+    - Live overlay preview panel with timer digits, project name, and action toolbar.
+    - Integrated `TypographyEditor` with Avalonia `ColorPicker` and hex inputs.
+    - Added `StorageProvider` folder and image picking for Obsidian and custom backgrounds.
+    - Integrated ActivityWatch, Telegram outbox sync, and internet speed check triggers.
 
 - [ ] **Step 4.7: Main Controller & Transparent Overlay**
   - `OverlayWindow.xaml`:

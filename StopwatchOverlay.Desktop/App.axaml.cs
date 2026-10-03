@@ -1,8 +1,10 @@
 using System;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media.Imaging;
 
 namespace StopwatchOverlay.Desktop;
 
@@ -11,6 +13,17 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        AppBackgroundCatalog.ImageDimensionReader = (stream, _) =>
+        {
+            using var bmp = new Bitmap(stream);
+            return (bmp.PixelSize.Width, bmp.PixelSize.Height);
+        };
+        AppBackgroundCatalog.ImageValidator = (stream, _) =>
+        {
+            using var bmp = new Bitmap(stream);
+            return (bmp.PixelSize.Width, bmp.PixelSize.Height);
+        };
     }
 
     public override void OnFrameworkInitializationCompleted()

@@ -105,4 +105,20 @@
         <Setter Property="Height" Value="24"/>
         <Setter Property="Margin" Value="0,0,12,0"/>
     </Style>
+
+    <!-- Settings Card and Section Header Styles -->
+    <Style Selector="Border.settingsCard">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{DynamicResource ThemeCardCornerRadius}"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="Margin" Value="0,0,0,16"/>
+    </Style>
+    <Style Selector="TextBlock.sectionHeader">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
 </Styles>

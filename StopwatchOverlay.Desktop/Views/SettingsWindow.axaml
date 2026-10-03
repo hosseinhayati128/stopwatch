@@ -1,0 +1,700 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:StopwatchOverlay.Desktop.Views"
+        x:Class="StopwatchOverlay.Desktop.Views.SettingsWindow"
+        Title="Settings and Overlay Inspector"
+        Width="1060" Height="740"
+        MinWidth="840" MinHeight="600"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackgroundBrush}">
+
+    <DockPanel>
+        <!-- Top Header -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource ApplicationHeaderBrush}"
+                BorderBrush="{DynamicResource SubtleDividerBrush}"
+                BorderThickness="0,0,0,1"
+                Height="54" Padding="20,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="⚙" FontSize="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Settings &amp; Overlay Inspector"
+                               FontSize="18" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Done"
+                        Classes="primary"
+                        Height="34" Padding="20,4"
+                        VerticalAlignment="Center"
+                        Click="DoneButton_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area: 3 Columns -->
+        <Grid ColumnDefinitions="340,190,*">
+
+            <!-- Column 0: Live overlay preview -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource SubtleDividerBrush}"
+                    BorderThickness="0,0,1,0"
+                    Padding="16">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <!-- Title -->
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Live overlay preview"
+                                   FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Adjust opacity and choose which parts stay visible."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Preview Workspace -->
+                    <Border Grid.Row="1" Margin="0,16"
+                            Background="{DynamicResource AppBackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="8"
+                            ClipToBounds="True">
+                        <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="12">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border x:Name="PreviewSurface"
+                                        MinWidth="280" MinHeight="100"
+                                        Padding="20,12"
+                                        CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
+                                        BorderThickness="{DynamicResource ThemeOverlayFrameBorderThickness}"
+                                        BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
+                                        HorizontalAlignment="Center">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock x:Name="PreviewTimeText" Text="00:05:10"
+                                                   HorizontalAlignment="Center"
+                                                   FontFamily="{DynamicResource ThemeTimerFontFamily}"
+                                                   FontSize="48" FontWeight="Bold"/>
+                                        <TextBlock x:Name="PreviewProjectText" Text="Programming"
+                                                   HorizontalAlignment="Center" Margin="0,4,0,0"
+                                                   FontFamily="{DynamicResource AppFontFamily}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="14"
+                                                   Opacity="0.85"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border x:Name="PreviewToolbarSurface" HorizontalAlignment="Center"
+                                        Margin="0,10,0,0" Padding="6,4"
+                                        Background="{DynamicResource OverlayToolbarSurfaceBrush}"
+                                        CornerRadius="6"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Button x:Name="PreviewCloseButton" Classes="modern" Height="28" Width="28" Padding="0" IsHitTestVisible="False">
+                                            <Path Data="M 4,4 L 12,12 M 12,4 L 4,12" Stretch="None" Stroke="{DynamicResource PrimaryTextBrush}" StrokeThickness="1.8" StrokeLineCap="Round"/>
+                                        </Button>
+                                        <Button x:Name="PreviewPauseButton" Classes="modern" Height="28" Width="28" Padding="0" IsHitTestVisible="False">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="3">
+                                                <Rectangle Width="3" Height="10" Fill="{DynamicResource PrimaryTextBrush}" RadiusX="1" RadiusY="1"/>
+                                                <Rectangle Width="3" Height="10" Fill="{DynamicResource PrimaryTextBrush}" RadiusX="1" RadiusY="1"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="PreviewResetButton" Classes="modern" Height="28" Width="28" Padding="0" IsHitTestVisible="False">
+                                            <Path Data="M 12.5,4.5 A 5.5,5.5 0 1 0 13,10 M 12.5,4.5 L 8.5,4.5 M 12.5,4.5 L 12.5,0.5"
+                                                  Stretch="Uniform" Width="13" Height="13"
+                                                  Stroke="{DynamicResource PrimaryTextBrush}" StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Viewbox>
+                    </Border>
+
+                    <!-- Show/hide active overlay button -->
+                    <Button Grid.Row="2" Content="Show or hide active overlay"
+                            Classes="modern"
+                            HorizontalAlignment="Stretch"
+                            Click="ShowOverlayButton_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- Column 1: Navigation Sidebar -->
+            <Border Grid.Column="1"
+                    Background="{DynamicResource NavigationRailBrush}"
+                    BorderBrush="{DynamicResource SubtleDividerBrush}"
+                    BorderThickness="0,0,1,0"
+                    Padding="8,12">
+                <ListBox x:Name="NavigationList" SelectedIndex="0"
+                         Background="Transparent" BorderThickness="0"
+                         SelectionChanged="NavigationList_SelectionChanged">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="12,10"/>
+                            <Setter Property="CornerRadius" Value="6"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="FontWeight" Value="Medium"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                        </Style>
+                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                            <Setter Property="Background" Value="{DynamicResource SelectionBrush}"/>
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBoxItem Content="Overlay &amp; position" Tag="Overlay"/>
+                    <ListBoxItem Content="Appearance" Tag="Appearance"/>
+                    <ListBoxItem Content="Fonts &amp; colors" Tag="Typography"/>
+                    <ListBoxItem Content="Light ring" Tag="LightRing"/>
+                    <ListBoxItem Content="Behavior" Tag="Behavior"/>
+                    <ListBoxItem Content="Application" Tag="Application"/>
+                    <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian"/>
+                    <ListBoxItem Content="Telegram" Tag="Telegram"/>
+                    <ListBoxItem Content="ActivityWatch" Tag="ActivityWatch"/>
+                    <ListBoxItem Content="Internet &amp; Network" Tag="Internet"/>
+                </ListBox>
+            </Border>
+
+            <!-- Column 2: Settings Inspector Panels inside ScrollViewer -->
+            <ScrollViewer x:Name="SettingsScrollViewer"
+                          Grid.Column="2"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="24,20">
+
+                    <!-- Panel 1: Overlay & Position -->
+                    <StackPanel x:Name="OverlayPanel" Spacing="6">
+                        <TextBlock Text="Overlay &amp; Position" Classes="heading"/>
+                        <TextBlock Text="Choose where the floating timer appears and how it interacts with capture."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Display" Classes="sectionHeader"/>
+                                <ComboBox x:Name="ScreenCombo" HorizontalAlignment="Stretch"/>
+
+                                <TextBlock Text="Position" Classes="sectionHeader" Margin="0,8,0,0"/>
+                                <ComboBox x:Name="PositionCombo" HorizontalAlignment="Stretch"/>
+
+                                <CheckBox x:Name="ClickThroughCheck" Content="Click-through" Margin="0,8,0,0"/>
+                                <CheckBox x:Name="HideOverlayCaptureCheck" Content="Hide floating timer from screen capture"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 2: Fonts & Colors (Typography) -->
+                    <StackPanel x:Name="TypographyPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Fonts &amp; Colors" Classes="heading"/>
+                        <TextBlock Text="Set text size and color throughout the app. Sizes keep the proportions of headings, labels and timer digits."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Global text" Classes="sectionHeader"/>
+                                <StackPanel x:Name="GlobalTypographyEditor"/>
+                                <TextBlock Text="Theme default preserves each theme's readable text and selection colors. Theme presets follow theme changes. Custom colors stay as chosen."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="settingsCard">
+                            <Expander x:Name="TypographyOverridesExpander" IsExpanded="False" Header="Customize individual panels">
+                                <StackPanel Spacing="10" Margin="0,8,0,0">
+                                    <TextBlock Text="Check a panel to use its own text settings. Uncheck it to follow global settings; your panel choices are kept."
+                                               Classes="subheading" TextWrapping="Wrap"/>
+                                    <StackPanel x:Name="SectionTypographyEditors"/>
+                                </StackPanel>
+                            </Expander>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 3: Appearance & Background -->
+                    <StackPanel x:Name="AppearancePanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Appearance &amp; Background" Classes="heading"/>
+                        <TextBlock Text="Choose application and floating clock themes independently."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Application theme" Classes="sectionHeader"/>
+                                <ComboBox x:Name="ThemeCombo" HorizontalAlignment="Stretch"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                                    <TextBlock Text="Page scale" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding #UiScaleSlider.Value, StringFormat={}{0:0}%}"
+                                               Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="UiScaleSlider" Minimum="70" Maximum="125" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                                <TextBlock Text="Resize text, controls and artwork on every page. Applied when you finish adjusting. Floating timer text has its own size below."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,-4,0,8"/>
+
+                                <TextBlock Text="Floating clock theme" Classes="sectionHeader"/>
+                                <ComboBox x:Name="OverlayThemeCombo" HorizontalAlignment="Stretch"
+                                          ToolTip.Tip="Styles the floating clock and hover toolbar only. Your text color, font, size and opacity are preserved. Choose Theme default under Text color to use the clock palette's text colors."/>
+
+                                <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
+                                    <StackPanel Grid.Column="0" Spacing="8">
+                                        <TextBlock Text="Text color" Classes="sectionHeader"/>
+                                        <ComboBox x:Name="TextColorCombo" HorizontalAlignment="Stretch"/>
+
+                                        <TextBlock Text="Timer font" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                        <ComboBox x:Name="FontCombo" HorizontalAlignment="Stretch"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Spacing="8">
+                                        <TextBlock Text="Outline color" Classes="sectionHeader"/>
+                                        <ComboBox x:Name="BorderColorCombo" HorizontalAlignment="Stretch"/>
+
+                                        <TextBlock Text="Time format" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                        <ComboBox x:Name="FormatCombo" HorizontalAlignment="Stretch"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                    <TextBlock Text="Text size" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="TextSizeValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="TextSizeSlider" Minimum="16" Maximum="120" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <TextBlock Text="Outline thickness" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="BorderWidthValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="BorderWidthSlider" Minimum="1" Maximum="5" SmallChange="1" LargeChange="1" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <TextBlock Text="Timer surface opacity" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="BackgroundOpacityValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="BackgroundOpacitySlider" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+                                <Expander x:Name="TransparencyDetailsExpander" IsExpanded="False" IsVisible="False" Header="Transparency details" Margin="0,6,0,6">
+                                    <StackPanel Spacing="6" Margin="0,6,0,0">
+                                        <TextBlock Text="Checked parts stay fully visible. Unchecked parts follow the opacity slider." Classes="subheading" TextWrapping="Wrap"/>
+                                        <CheckBox x:Name="ClockFrameOpaqueCheck" Content="Clock wooden frame and rope"/>
+                                        <CheckBox x:Name="ClockMapOpaqueCheck" Content="Clock parchment map"/>
+                                        <CheckBox x:Name="MetalBorderOpaqueCheck" Content="Metal border"/>
+                                        <CheckBox x:Name="MetalFillOpaqueCheck" Content="Metal background"/>
+                                        <CheckBox x:Name="TimerTextOpaqueCheck" Content="Timer digits"/>
+                                        <CheckBox x:Name="ProjectNameOpaqueCheck" Content="Project name"/>
+                                        <CheckBox x:Name="ControlBoardOpaqueCheck" Content="Button wooden frame and chain"/>
+                                        <CheckBox x:Name="ControlMapOpaqueCheck" Content="Button blue map"/>
+                                        <CheckBox x:Name="ControlDialsOpaqueCheck" Content="Button dials and icons"/>
+                                    </StackPanel>
+                                </Expander>
+
+                                <TextBlock Text="Application background" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <ComboBox x:Name="BackgroundCombo" HorizontalAlignment="Stretch"/>
+                                    <Button Grid.Column="1" Content="Add" Classes="modern" Height="34" Margin="8,0,0,0" Click="AddBackgroundButton_Click"/>
+                                    <Button x:Name="RemoveBackgroundButton" Grid.Column="2" Content="Remove" Classes="modern" Height="34" Margin="8,0,0,0" Click="RemoveBackgroundButton_Click"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                    <TextBlock Text="Background strength" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="BackgroundStrengthValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="BackgroundStrengthSlider" Minimum="10" Maximum="45" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 4: Light Ring -->
+                    <StackPanel x:Name="LightRingPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Light Ring" Classes="heading"/>
+                        <TextBlock Text="A capture-aware guide around the selected display."
+                                   Classes="subheading" Margin="0,0,0,16"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="LightRingEnabledCheck" Content="Enable light ring" Margin="0,0,0,6"/>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="Brightness" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="LightRingBrightnessValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="LightRingBrightnessSlider" Minimum="10" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                                    <TextBlock Text="Ring width" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="LightRingWidthValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="LightRingWidthSlider" Minimum="5" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
+
+                                <CheckBox x:Name="LightRingCaptureCheck" Content="Hide ring from screen capture" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 5: Behavior -->
+                    <StackPanel x:Name="BehaviorPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Behavior" Classes="heading"/>
+                        <TextBlock Text="Keep recording and presentation workflows predictable."
+                                   Classes="subheading" Margin="0,0,0,16"/>
+
+                        <!-- General Behavior Card -->
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="AutoStartCheck" Content="Auto-start when the overlay is shown"/>
+                                <CheckBox x:Name="RecCheck" Content="Show REC indicator"/>
+                                <CheckBox x:Name="BlinkCheck" Content="Blink timer colon"/>
+                                <CheckBox x:Name="SmartInputCheck" Content="Use smart countdown input"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                    <TextBlock Text="Command chaining timeout" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="CommandChainingTimeoutValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="CommandChainingTimeoutSlider" Minimum="0.2" Maximum="2.0" SmallChange="0.1" LargeChange="0.5" TickFrequency="0.1" IsSnapToTickEnabled="True"/>
+                                <TextBlock Text="Continuation window (seconds) to press subsequent commands after a command executes."
+                                           Classes="subheading" Margin="0,-4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Focus Tracking Card -->
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Focus Continuity &amp; Distraction Tracking" Classes="sectionHeader" FontSize="15"/>
+                                <TextBlock Text="Categorize pauses when resuming work to track focus fragmentation, distractions, and break patterns."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <CheckBox x:Name="FocusTrackingEnabledCheck" Content="Track focus interruptions &amp; distractions (default: off)" Margin="0,4,0,4"/>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Distraction threshold (minutes)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Pauses under this duration default to distractions (default: 5)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="FocusDistractionThresholdTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Minimum pause duration (seconds)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Pauses below this duration are ignored to avoid accidental misclicks (default: 10)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="FocusMinimumPauseTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <TextBlock Text="When enabled, resuming a paused timer shows a fast popup with shortcuts: 1 for Valid Break, 2 for Distraction, 3 for Quick Idea. Auto-closes in 12s if not answered."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Idle Stop Card -->
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Idle Stop (Inactivity Detection)" Classes="sectionHeader" FontSize="15"/>
+                                <TextBlock Text="Automatically stop or pause running stopwatch timers when the system is idle for a specified duration."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <CheckBox x:Name="IdleStopUnnamedCheck" Content="Enable idle stop for unnamed timers (default: off)" Margin="0,4,0,0"/>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Default idle timeout (minutes)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Used when a project does not have a specific duration." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="IdleStopDefaultTimeoutTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <CheckBox x:Name="IdleStopSubtractCheck" Content="Subtract idle duration when stopping (reverts time to when inactivity started)"/>
+
+                                <Separator Margin="0,8,0,8" Background="{DynamicResource BorderBrush}" Opacity="0.5"/>
+
+                                <TextBlock Text="Per-Project Idle Settings" Classes="sectionHeader"/>
+                                <TextBlock Text="Activate or deactivate idle stopping for individual projects (default: deactive for all projects)."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <ComboBox x:Name="IdleProjectComboBox" HorizontalAlignment="Stretch" Margin="0,4,0,4"/>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                    <StackPanel Spacing="8">
+                                        <CheckBox x:Name="IdleProjectActiveCheck" Content="Active for selected project" Click="IdleProjectActiveCheck_Click"/>
+                                        <Grid ColumnDefinitions="*,100">
+                                            <TextBlock Text="Project idle timeout (minutes)" VerticalAlignment="Center" Classes="sectionHeader"/>
+                                            <TextBox x:Name="IdleProjectTimeoutTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" TextChanged="IdleProjectTimeoutTextBox_TextChanged"/>
+                                        </Grid>
+                                        <TextBlock x:Name="IdleProjectStatusSummaryText" Text="Status: Deactive" Classes="subheading"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Text="Project Rules Overview" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <ItemsControl x:Name="IdleProjectsItemsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="views:ProjectIdleRuleViewModel">
+                                            <Border Padding="12,10" Margin="0,3"
+                                                    Background="{DynamicResource SurfaceBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1" CornerRadius="6">
+                                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                                    <TextBlock Text="{Binding ProjectName}"
+                                                               VerticalAlignment="Center" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+                                                               VerticalAlignment="Center" Foreground="{Binding StatusBrush}"
+                                                               FontSize="12" Margin="14,0"/>
+                                                    <Button Grid.Column="2" Content="{Binding ActionButtonText}"
+                                                            Classes="modern" Height="30" Padding="12,0" FontSize="11"
+                                                            Tag="{Binding ProjectName}"
+                                                            Click="IdleProjectQuickToggle_Click"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 6: Application -->
+                    <StackPanel x:Name="ApplicationPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Application" Classes="heading"/>
+                        <TextBlock Text="Startup and persistence preferences."
+                                   Classes="subheading" Margin="0,0,0,16"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="StartWithWindowsCheck" Content="Start with system startup"/>
+
+                                <TextBlock Text="Close button action" Classes="sectionHeader" Margin="0,8,0,0"/>
+                                <ComboBox x:Name="CloseActionCombo" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="Ask every time"/>
+                                    <ComboBoxItem Content="Minimize to system tray"/>
+                                    <ComboBoxItem Content="Exit application completely"/>
+                                </ComboBox>
+                                <TextBlock Text="Choose whether clicking the close button on the main window asks, minimizes to the notification area, or exits completely."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+                                <TextBlock Text="Your theme, backgrounds, timers, project history, positions, and shortcuts remain stored by the existing recovery system."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 7: Obsidian / Markdown -->
+                    <StackPanel x:Name="ObsidianPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Obsidian &amp; Markdown" Classes="heading"/>
+                        <TextBlock Text="Log completed timer sessions into your Obsidian vault as a structured Markdown table for reporting and AI analysis."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="ObsidianAutoSyncCheck" Content="Enable automatic export to Obsidian / Markdown"/>
+                                <CheckBox x:Name="ObsidianLogUnnamedCheck" Content="Include unnamed timers (logged as 'Timer 1', 'Timer 2', etc.)"/>
+
+                                <TextBlock Text="Target folder (Obsidian vault)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox x:Name="ObsidianFolderTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                    <Button x:Name="BrowseObsidianFolderButton" Grid.Column="1" Content="Browse..." Classes="modern" Height="34" Margin="8,0,0,0"
+                                            Padding="14,0" Click="BrowseObsidianFolderButton_Click"/>
+                                </Grid>
+
+                                <TextBlock Text="File name" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="ObsidianFileNameTextBox" Height="34" VerticalContentAlignment="Center"/>
+
+                                <TextBlock Text="Full file path" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBlock x:Name="ObsidianPathPreviewText" Classes="subheading" TextWrapping="Wrap"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="ExportNowButton" Content="Export All History Now" Classes="modern" Height="34" Padding="16,0" Click="ExportNowButton_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="ExportStatusText" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 8: Telegram -->
+                    <StackPanel x:Name="TelegramPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Telegram Integration" Classes="heading"/>
+                        <TextBlock Text="Automatically forward Quick Notes, Todos, and Reminders to your Telegram supergroup or topics."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="TelegramEnabledCheck" Content="Enable Telegram sync for notes, todos, and reminders"/>
+
+                                <TextBlock Text="Bot Token" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="TelegramBotTokenTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="The HTTP API token provided by @BotFather (e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ)."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <TextBlock Text="Group / Supergroup Chat ID" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="TelegramChatIdTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Target supergroup ID (usually starts with -100, e.g. -1001234567890). Make sure your bot is added to the group."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <TextBlock Text="Topic IDs (message_thread_id for Supergroup Topics)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBlock Text="In a forum supergroup, each topic has a unique Topic ID. Leave blank to send to General / main chat."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <Grid ColumnDefinitions="160,*" Margin="0,4,0,0">
+                                    <TextBlock Text="Quick Notes Topic:" VerticalAlignment="Center" Classes="sectionHeader"/>
+                                    <TextBox x:Name="TelegramNotesTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="160,*" Margin="0,4,0,0">
+                                    <TextBlock Text="Todos Topic:" VerticalAlignment="Center" Classes="sectionHeader"/>
+                                    <TextBox x:Name="TelegramTodosTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="160,*" Margin="0,4,0,0">
+                                    <TextBlock Text="Reminders Topic:" VerticalAlignment="Center" Classes="sectionHeader"/>
+                                    <TextBox x:Name="TelegramRemindersTopicTextBox" Grid.Column="1" Height="34" VerticalContentAlignment="Center"/>
+                                </Grid>
+
+                                <TextBlock Text="Tip: In Telegram, right-click any message in a topic, choose 'Copy Message Link', and copy the middle number (e.g. t.me/c/GROUP_ID/TOPIC_ID/MSG_ID)."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,4,0,4"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                    <Button x:Name="TestTelegramButton" Content="Test Connection" Classes="modern" Height="34" Padding="16,0" Click="TestTelegramButton_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="TelegramStatusText" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Offline Queue & Delivery Card -->
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Offline Queue &amp; Delivery" Classes="sectionHeader" FontSize="15"/>
+                                <TextBlock Text="Notes, todos, and reminders created while offline are queued locally and automatically sent to Telegram when your connection is restored."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock x:Name="TelegramOutboxStatusText" Text="Outbox: 0 notes pending" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                            <TextBlock x:Name="TelegramOutboxDetailText" Text="All notes are up to date." Classes="subheading" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                                            <Button x:Name="SendPendingNotesButton" Content="Send Pending Notes Now" Classes="modern" Height="32" Padding="14,0" Click="SendPendingNotesButton_Click"/>
+                                            <Button x:Name="ScanVaultNotesButton" Content="Scan Vault for Unsent Notes" Classes="modern" Height="32" Padding="14,0" Click="ScanVaultNotesButton_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 9: ActivityWatch -->
+                    <StackPanel x:Name="ActivityWatchPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="ActivityWatch Integration" Classes="heading"/>
+                        <TextBlock Text="Sync background activity (active applications, Obsidian notes, VLC media, and Chrome tabs) into your Obsidian vault with idle/AFK filtering."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="ActivityWatchEnabledCheck" Content="Enable ActivityWatch integration"/>
+                                <CheckBox x:Name="ActivityWatchSyncOnStopwatchCheck" Content="Auto-sync activity when stopwatch sessions are saved to Obsidian"/>
+                                <CheckBox x:Name="ActivityWatchPeriodicSyncCheck" Content="Periodically sync activity to Obsidian in the background"/>
+
+                                <TextBlock Text="Sync interval (minutes)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="ActivityWatchPeriodicSyncIntervalTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="How often to auto-sync background activity to Obsidian (default: 60 minutes / 1 hour)." Classes="subheading"/>
+
+                                <CheckBox x:Name="ActivityWatchIncludeTitlesCheck" Content="Include window &amp; document titles (Obsidian note names, VLC video titles, etc.)" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="ActivityWatchIncludeWebCheck" Content="Include browser web activity (Chrome tab titles &amp; web domains)"/>
+
+                                <TextBlock Text="ActivityWatch Server URL" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="ActivityWatchServerUrlTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Local REST API address for ActivityWatch (default: http://localhost:5600)." Classes="subheading"/>
+
+                                <TextBlock Text="Export file name (in Obsidian Vault)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="ActivityWatchFileNameTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Saved as a separate Markdown file in your configured Obsidian vault folder." Classes="subheading"/>
+
+                                <TextBlock Text="Minimum active duration (seconds)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="ActivityWatchMinDurationTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Ignore quick window switches or alt-tabs shorter than this duration (default: 15 seconds)." Classes="subheading"/>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                    <Button x:Name="StartActivityWatchAppButton" Content="Start ActivityWatch" Classes="modern" Height="34" Padding="16,0" Click="StartActivityWatchAppButton_Click"/>
+                                    <Button x:Name="TestActivityWatchButton" Content="Test Connection" Classes="modern" Height="34" Padding="16,0" Click="TestActivityWatchButton_Click"/>
+                                    <Button x:Name="SyncActivityWatchNowButton" Content="Sync Today's Activity Now" Classes="modern" Height="34" Padding="16,0" Click="SyncActivityWatchNowButton_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="ActivityWatchStatusText" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Periodic Activity & Time Review Card -->
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Periodic Activity &amp; Time Review" Classes="sectionHeader" FontSize="15"/>
+                                <TextBlock Text="Periodically prompt to review what you were doing since the last report, reconcile background activity with stopwatch project times, and allocate untracked time."
+                                           Classes="subheading" TextWrapping="Wrap"/>
+
+                                <CheckBox x:Name="PeriodicReviewEnabledCheck" Content="Enable periodic review prompts (default: off)" Margin="0,4,0,0"/>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Review interval (minutes)" Classes="sectionHeader"/>
+                                        <TextBlock Text="How often to prompt for review (x, default: 30 minutes)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="PeriodicReviewIntervalTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Snooze interval when ignored (minutes)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Re-prompt after this many minutes if ignored (z, default: 30 minutes)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="PeriodicReviewSnoozeTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Prompt auto-dismiss duration (seconds)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Seconds before floating prompt auto-dismisses if ignored (default: 5)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="PeriodicReviewAutoDismissTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Activity filtering &amp; smart bridging threshold (seconds)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Filter out activities under this threshold and bridge continuous work across quick switches (default: 15)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="PeriodicReviewMinDurationTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,100" Margin="0,4,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Minimum activity breakdown threshold (%)" Classes="sectionHeader"/>
+                                        <TextBlock Text="Activities with percentage below this threshold are grouped into 'Others' (default: 3%)." Classes="subheading"/>
+                                    </StackPanel>
+                                    <TextBox x:Name="PeriodicReviewMinPercentTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="ReviewNowButton" Content="Review Now (Win+F2 then V)" Classes="modern" Height="34" Padding="16,0" Click="ReviewNowButton_Click"/>
+                                </StackPanel>
+                                <TextBlock Text="Tip: When the floating prompt appears, press Y to review or Esc to skip. You can also press Win+F2 then V anytime to trigger a review manually."
+                                           Classes="subheading" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Panel 10: Internet & Network -->
+                    <StackPanel x:Name="InternetPanel" Spacing="6" IsVisible="False">
+                        <TextBlock Text="Internet &amp; Network Monitoring" Classes="heading"/>
+                        <TextBlock Text="Monitor internet connection status, latency (ping), download speed, and connected Wi-Fi / network adapter in the background and log to Obsidian."
+                                   Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                        <Border Classes="settingsCard">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="InternetMonitorEnabledCheck" Content="Enable background internet &amp; network monitoring"/>
+                                <CheckBox x:Name="InternetMonitorOnlyDuringTimersCheck" Content="Only check while a stopwatch timer is running (saves bandwidth)"/>
+
+                                <TextBlock Text="Check interval (minutes)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="InternetCheckIntervalTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="How often to test connection speed and latency (default: 10 minutes)." Classes="subheading"/>
+
+                                <TextBlock Text="Export file name (in Obsidian Vault)" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBox x:Name="InternetFileNameTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBlock Text="Logged as a separate Markdown file in your Obsidian vault folder (default: Internet Log.md)." Classes="subheading"/>
+
+                                <TextBlock Text="History retention policy" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <ComboBox x:Name="InternetRetentionCombo" HorizontalAlignment="Stretch" SelectionChanged="InternetRetentionCombo_SelectionChanged">
+                                    <ComboBoxItem Content="Keep all history (unlimited)" Tag="0"/>
+                                    <ComboBoxItem Content="Keep last 30 days" Tag="30"/>
+                                    <ComboBoxItem Content="Keep last 14 days" Tag="14"/>
+                                    <ComboBoxItem Content="Keep last 7 days" Tag="7"/>
+                                </ComboBox>
+                                <TextBlock Text="Automatically purge internet speed checks older than the specified duration (default: unlimited)." Classes="subheading"/>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                    <Button x:Name="TestInternetButton" Content="Test Connection Now" Classes="modern" Height="34" Padding="14,0" Click="TestInternetButton_Click"/>
+                                    <Button x:Name="SyncInternetLogButton" Content="Sync to Obsidian Now" Classes="modern" Height="34" Padding="14,0" Click="SyncInternetLogButton_Click"/>
+                                    <Button x:Name="ClearInternetLogButton" Content="Clear Internet Log" Classes="modern" Height="34" Padding="14,0" Click="ClearInternetLogButton_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="InternetStatusText" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>
