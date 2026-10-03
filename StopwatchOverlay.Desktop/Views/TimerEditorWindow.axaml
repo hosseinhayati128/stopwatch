@@ -1,0 +1,239 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="using:StopwatchOverlay"
+        x:Class="StopwatchOverlay.Desktop.Views.TimerEditorWindow"
+        Title="Edit Timer"
+        Width="600" MinWidth="460"
+        SizeToContent="Height" MaxHeight="860"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Margin="18"
+                Background="{DynamicResource DialogSurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+                CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+                BoxShadow="0 6 20 0 #40000000">
+            <StackPanel Margin="24">
+                <TextBlock x:Name="HeadingText"
+                           Text="Edit Timer"
+                           Classes="heading"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"/>
+                <TextBlock x:Name="SubheadingText"
+                           Margin="0,4,0,16"
+                           Text="Timer Details"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           FontSize="13"/>
+
+                <!-- Project Assignment -->
+                <TextBlock Text="PROJECT"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Margin="0,0,0,6"/>
+                <Grid Margin="0,0,0,8" ColumnDefinitions="*,Auto">
+                    <ComboBox x:Name="ProjectSelector"
+                              MinHeight="38"
+                              HorizontalAlignment="Stretch"
+                              SelectionChanged="ProjectSelector_SelectionChanged"/>
+                    <TextBox x:Name="CustomProjectBox"
+                             Grid.Column="0"
+                             MinHeight="38"
+                             IsVisible="False"
+                             VerticalContentAlignment="Center"
+                             TextChanged="CustomProjectBox_TextChanged"/>
+                    <Button x:Name="ToggleProjectInputButton"
+                            Grid.Column="1"
+                            Content="New..."
+                            MinWidth="60"
+                            Margin="8,0,0,0"
+                            Classes="modern"
+                            Click="ToggleProjectInputButton_Click"/>
+                </Grid>
+                <CheckBox x:Name="IdleStopForProjectCheck"
+                          Content="Idle stop active for this project (stops timer if idle)"
+                          Margin="0,0,0,14"
+                          Click="IdleStopForProjectCheck_Click"/>
+
+                <!-- Total Time Value Section -->
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,0,0,14"
+                        Padding="14">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,6" ColumnDefinitions="*,Auto">
+                            <TextBlock x:Name="TimeValueLabel"
+                                       Text="TOTAL ELAPSED TIME"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="LiveTimePreview"
+                                       Grid.Column="1"
+                                       Text=""
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <TextBox x:Name="TimeValueBox"
+                                 MinHeight="40"
+                                 FontSize="16"
+                                 FontWeight="SemiBold"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip.Tip="Enter total time as HH:mm:ss, mm:ss, or expressions like 15m, 1h 30m, 0"
+                                 TextChanged="TimeValueBox_TextChanged"/>
+
+                        <TextBlock x:Name="AdjustmentSummaryText"
+                                   Text="Total across recorded segments"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontSize="12"
+                                   Margin="0,6,0,0"
+                                   TextWrapping="Wrap"/>
+
+                        <!-- Quick Adjust row -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0" Spacing="6">
+                            <Button Content="-5m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="-300"/>
+                            <Button Content="-1m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="-60"/>
+                            <Button Content="+1m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="60"/>
+                            <Button Content="+5m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="300"/>
+                            <Button Content="+15m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="900"/>
+                            <Button Content="Zero" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="zero"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Latest Segment Start Time Section -->
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,0,0,14"
+                        Padding="14">
+                    <Grid ColumnDefinitions="*,14,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock x:Name="SegmentHeaderLabel"
+                                       Text="LATEST SEGMENT START TIME (24-HOUR)"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBox x:Name="StartTimeBox"
+                                     MinHeight="38"
+                                     MaxLength="8"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip.Tip="Latest segment start time as HH:mm:ss. Editing this adjusts elapsed duration."
+                                     TextChanged="StartTimeBox_TextChanged"/>
+                            <TextBlock x:Name="SegmentDetailText"
+                                       Text="Latest segment details"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="11"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <Button x:Name="PauseResumeButton"
+                                    Content="Pause Timer"
+                                    MinWidth="110" Height="38"
+                                    Classes="modern"
+                                    Click="PauseResumeButton_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Segments Breakdown Expander -->
+                <Expander x:Name="SegmentsExpander"
+                          Header="Recorded Segments (0)"
+                          Margin="0,0,0,14"
+                          Foreground="{DynamicResource PrimaryTextBrush}">
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Margin="0,6,0,0"
+                            Padding="10">
+                        <ItemsControl x:Name="SegmentsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="core:SegmentItem">
+                                    <Grid Margin="0,2" ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding Label}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Duration}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="10,0,0,0"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </Expander>
+
+                <!-- Record Options & Timer Actions -->
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,0,0,18"
+                        Padding="14">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="PROJECT RECORDS"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock x:Name="RecordsStatusText"
+                                       Text="Session is being tracked in project history."
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                x:Name="DiscardRecordsButton"
+                                Content="Discard from Records"
+                                MinWidth="150" Height="34"
+                                Margin="0,0,8,0"
+                                Classes="danger"
+                                Click="DiscardRecordsButton_Click"
+                                ToolTip.Tip="Removes this session's time from project records (does not log it)"/>
+                        <Button Grid.Column="2"
+                                x:Name="DeleteTimerButton"
+                                Content="Delete Timer"
+                                MinWidth="100" Height="34"
+                                Classes="modern"
+                                Click="DeleteTimerButton_Click"
+                                ToolTip.Tip="Close and remove this timer completely"/>
+                    </Grid>
+                </Border>
+
+                <!-- Bottom dialog buttons -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Content="Cancel"
+                            MinWidth="90" Height="38"
+                            Classes="modern"
+                            Click="CancelButton_Click"/>
+                    <Button Grid.Column="1"
+                            x:Name="UndoPreviousEditButton"
+                            Content="Undo Previous Edit"
+                            HorizontalAlignment="Right"
+                            Margin="0,0,10,0"
+                            MinWidth="140" Height="38"
+                            Classes="modern"
+                            IsVisible="False"
+                            ToolTip.Tip="Revert the last saved edit and restore previously separated segments (Ctrl+Z)"
+                            Click="UndoPreviousEditButton_Click"/>
+                    <Button Grid.Column="2"
+                            x:Name="SaveButton"
+                            Content="Save &amp; Apply"
+                            MinWidth="130" Height="38"
+                            Classes="primary"
+                            Click="SaveButton_Click"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</Window>

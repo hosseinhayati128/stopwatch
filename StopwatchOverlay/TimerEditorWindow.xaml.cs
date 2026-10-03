@@ -9,8 +9,6 @@ using System.Windows.Threading;
 
 namespace StopwatchOverlay
 {
-    public sealed record SegmentItem(string Label, string Duration);
-
     public partial class TimerEditorWindow : Window
     {
         private readonly TimerSession _timer;

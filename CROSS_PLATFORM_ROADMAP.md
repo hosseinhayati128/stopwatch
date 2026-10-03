@@ -186,7 +186,7 @@ graph TD
   - `NoteEntryWindow.xaml` ➔ Avalonia Window.
   - `NotesViewerWindow.xaml` ➔ Avalonia Window.
 
-- [ ] **Step 4.3: Timer & Record Editors**
+- [x] **Step 4.3: Timer & Record Editors**
   - `TimerNameWindow.xaml` ➔ Avalonia Window.
   - `TimerEditorWindow.xaml` ➔ Avalonia Window.
   - `ProjectRecordEditorWindow.xaml` ➔ Avalonia Window.

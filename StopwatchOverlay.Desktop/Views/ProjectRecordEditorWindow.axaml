@@ -1,0 +1,156 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.ProjectRecordEditorWindow"
+        Title="Project record"
+        Width="640" MinWidth="480"
+        SizeToContent="Height" MaxHeight="780"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Margin="18"
+                Background="{DynamicResource DialogSurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+                CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+                BoxShadow="0 6 20 0 #40000000">
+            <StackPanel Margin="24">
+                <TextBlock x:Name="HeadingText"
+                           Text="Add project record"
+                           Classes="heading"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"/>
+                <TextBlock x:Name="IntroText"
+                           Text="Enter the time you spent on a project. Times use your computer's local time zone."
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,5,0,20"/>
+
+                <TextBlock Text="PROJECT"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Margin="0,0,0,6"/>
+                <ComboBox x:Name="ProjectSelector"
+                          MinHeight="40"
+                          HorizontalAlignment="Stretch"
+                          SelectionChanged="ProjectSelector_SelectionChanged"/>
+
+                <Border x:Name="NewProjectPanel"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,10,0,0"
+                        IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="NEW PROJECT NAME"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBox x:Name="NewProjectBox"
+                                 MaxLength="200"
+                                 MinHeight="38"
+                                 VerticalContentAlignment="Center"
+                                 TextChanged="Input_Changed"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,16,0,0"
+                        Padding="16">
+                    <Grid ColumnDefinitions="*,16,*">
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="START"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <CalendarDatePicker x:Name="StartDatePicker"
+                                                HorizontalAlignment="Stretch"
+                                                SelectedDateChanged="DatePicker_SelectedDateChanged"/>
+                            <TextBlock Text="TIME (24-HOUR)"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Margin="0,8,0,0"/>
+                            <TextBox x:Name="StartTimeBox"
+                                     MinHeight="38"
+                                     MaxLength="8"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip.Tip="Enter time as HH:mm or HH:mm:ss, for example 09:30:15"
+                                     TextChanged="Input_Changed"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" Spacing="6">
+                            <TextBlock Text="END"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <CalendarDatePicker x:Name="EndDatePicker"
+                                                HorizontalAlignment="Stretch"
+                                                SelectedDateChanged="DatePicker_SelectedDateChanged"/>
+                            <TextBlock Text="TIME (24-HOUR)"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Margin="0,8,0,0"/>
+                            <TextBox x:Name="EndTimeBox"
+                                     MinHeight="38"
+                                     MaxLength="8"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip.Tip="Enter time as HH:mm or HH:mm:ss, for example 17:45:30"
+                                     TextChanged="Input_Changed"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Duration Preview -->
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="14,10"
+                        Margin="0,10,0,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Duration"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="DurationPreviewText"
+                                   Grid.Column="1"
+                                   Text="—"
+                                   Classes="mono"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock x:Name="ValidationText"
+                           Foreground="{DynamicResource DangerTextBrush}"
+                           TextWrapping="Wrap"
+                           FontSize="12"
+                           Margin="2,12,0,0"
+                           IsVisible="False"/>
+
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0,20,0,0"
+                            Spacing="8">
+                    <Button Content="Cancel"
+                            Classes="modern"
+                            MinWidth="90"
+                            Click="Cancel_Click"/>
+                    <Button x:Name="SaveButton"
+                            Content="Add record"
+                            Classes="primary"
+                            MinWidth="120"
+                            Click="Save_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</Window>

@@ -1,0 +1,84 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.ProjectRecordDeleteWindow"
+        Title="Delete project record"
+        Width="470" MinWidth="380"
+        SizeToContent="Height" MaxHeight="780"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border Margin="18"
+                Background="{DynamicResource DialogSurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+                CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+                BoxShadow="0 6 20 0 #40000000">
+            <StackPanel Margin="24">
+                <TextBlock Text="Delete this saved record?"
+                           Classes="heading"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"/>
+                <TextBlock Text="Review the entry before permanently removing it from your reports."
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           FontSize="13"
+                           Margin="0,6,0,18"/>
+
+                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0">
+                    <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Text="Project"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,0,12,10"/>
+                        <TextBlock x:Name="ProjectText" Grid.Row="0" Grid.Column="1"
+                                   FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <TextBlock Grid.Row="1" Text="Date"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,0,12,10"/>
+                        <TextBlock x:Name="DateText" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"/>
+
+                        <TextBlock Grid.Row="2" Text="Time"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,0,12,10"/>
+                        <TextBlock x:Name="TimeText" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <TextBlock Grid.Row="3" Text="Duration"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock x:Name="DurationText" Grid.Row="3" Grid.Column="1"
+                                   Classes="mono"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="This action cannot be undone."
+                           Foreground="{DynamicResource DangerTextBrush}"
+                           FontWeight="SemiBold"
+                           FontSize="12.5"
+                           Margin="2,14,0,0"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0" Spacing="8">
+                    <Button Content="Cancel"
+                            Classes="modern"
+                            MinWidth="86"
+                            Click="Cancel_Click"/>
+                    <Button Content="Delete record"
+                            Classes="danger"
+                            MinWidth="118"
+                            Click="Delete_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</Window>
