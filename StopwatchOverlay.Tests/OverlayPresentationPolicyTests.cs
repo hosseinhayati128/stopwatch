@@ -51,4 +51,48 @@ public class OverlayPresentationPolicyTests
 
         Assert.Null(OverlayPresentationPolicy.SelectCombinedTimer(manager.Sessions, foreign));
     }
+
+    [Theory]
+    [InlineData(5, 10)]
+    [InlineData(10, 10)]
+    [InlineData(35, 35)]
+    [InlineData(100, 100)]
+    [InlineData(150, 100)]
+    public void InactiveSeparatedOpacity_IsClampedToRange(double value, double expected)
+        => Assert.Equal(expected, OverlayPresentationPolicy.ClampInactiveSeparatedOpacity(value));
+
+    [Fact]
+    public void NonFiniteInactiveSeparatedOpacity_UsesSafeDefault()
+        => Assert.Equal(35.0, OverlayPresentationPolicy.ClampInactiveSeparatedOpacity(double.NaN));
+
+    [Fact]
+    public void CombinedOverlay_SelectsFirstHerdTimer_WhenActiveTimerIsSeparated()
+    {
+        var manager = new TimerSessionManager();
+        TimerSession first = manager.Create();
+        TimerSession second = manager.Create();
+        manager.Separate(first);
+        manager.Activate(first);
+
+        TimerSession? selected = OverlayPresentationPolicy.SelectCombinedTimer(
+            manager.Sessions,
+            manager.Active);
+
+        Assert.Same(second, selected);
+    }
+
+    [Fact]
+    public void CombinedOverlay_ReturnsNull_WhenAllTimersAreSeparated()
+    {
+        var manager = new TimerSessionManager();
+        TimerSession first = manager.Create();
+        manager.Separate(first);
+        manager.Activate(first);
+
+        TimerSession? selected = OverlayPresentationPolicy.SelectCombinedTimer(
+            manager.Sessions,
+            manager.Active);
+
+        Assert.Null(selected);
+    }
 }

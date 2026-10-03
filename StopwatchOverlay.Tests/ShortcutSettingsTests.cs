@@ -57,6 +57,9 @@ namespace StopwatchOverlay.Tests
             Assert.Equal(12, (int)ShortcutAction.CommandLeader);
             Assert.Equal(13, (int)ShortcutAction.ShowActiveOverlay);
             Assert.Equal(14, (int)ShortcutAction.OpenController);
+            Assert.Equal(21, (int)ShortcutAction.SeparateOverlay);
+            Assert.Equal(22, (int)ShortcutAction.MergeOverlay);
+            Assert.Equal(23, (int)ShortcutAction.NextSeparatedOverlay);
         }
 
         [Fact]

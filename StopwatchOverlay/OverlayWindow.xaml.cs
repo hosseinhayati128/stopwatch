@@ -51,6 +51,7 @@ namespace StopwatchOverlay
         public event Action? PauseResumeRequested;
         public event Action? ResetRequested;
         public event Action? EditRequested;
+        public event Action? SeparateMergeRequested;
 
         public OverlayWindow()
         {
@@ -135,6 +136,27 @@ namespace StopwatchOverlay
                 && _effectiveOverlayTheme == OverlayThemeCatalog.AcanthusLight
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        public void SetInactiveSeparated(bool isInactiveSeparated, double inactiveOpacity)
+        {
+            Opacity = isInactiveSeparated ? Math.Clamp(inactiveOpacity, 0.05, 1.0) : 1.0;
+            if (isInactiveSeparated)
+            {
+                SetActive(false);
+            }
+        }
+
+        public void SetSeparateMergeState(bool isSeparated)
+        {
+            if (SeparateIcon != null) SeparateIcon.Visibility = isSeparated ? Visibility.Collapsed : Visibility.Visible;
+            if (MergeIcon != null) MergeIcon.Visibility = isSeparated ? Visibility.Visible : Visibility.Collapsed;
+            if (SeparateMergeActionButton != null)
+            {
+                SeparateMergeActionButton.ToolTip = isSeparated
+                    ? "Merge with herd overlay (Win+F2 → M)"
+                    : "Separate clock overlay (Win+F2 → B)";
+            }
         }
 
         public void SetRunning(bool running)
@@ -412,6 +434,13 @@ namespace StopwatchOverlay
             HideActionPopup(true);
             ActivationRequested?.Invoke();
             EditRequested?.Invoke();
+        }
+
+        private void SeparateMergeActionButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideActionPopup(true);
+            ActivationRequested?.Invoke();
+            SeparateMergeRequested?.Invoke();
         }
 
         public void SetClickThrough(bool clickThrough)

@@ -83,6 +83,8 @@ namespace StopwatchOverlay
             ? $"Timer {Number}"
             : Name.Trim();
 
+        public bool IsSeparated { get; set; } = false;
+
         public string DisplaySummary
         {
             get

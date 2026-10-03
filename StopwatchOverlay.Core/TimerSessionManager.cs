@@ -69,6 +69,75 @@ namespace StopwatchOverlay
             return Active;
         }
 
+        public List<TimerSession> HerdSessions => _sessions.Where(s => !s.IsSeparated).ToList();
+        public List<TimerSession> SeparatedSessions => _sessions.Where(s => s.IsSeparated).ToList();
+
+        public bool Separate(TimerSession? session)
+        {
+            if (session == null || !_sessions.Contains(session))
+                return false;
+            session.IsSeparated = true;
+            return true;
+        }
+
+        public bool Merge(TimerSession? session)
+        {
+            if (session == null || !_sessions.Contains(session))
+                return false;
+            session.IsSeparated = false;
+            return true;
+        }
+
+        public bool ToggleSeparate(TimerSession? session)
+        {
+            if (session == null || !_sessions.Contains(session))
+                return false;
+            session.IsSeparated = !session.IsSeparated;
+            return true;
+        }
+
+        /// <summary>
+        /// Selects the next timer in the herd (non-separated timers), wrapping at the end.
+        /// </summary>
+        public TimerSession? CycleNextHerd()
+        {
+            var herd = HerdSessions;
+            if (herd.Count == 0) return null;
+
+            int currentIndex = Active == null ? -1 : herd.IndexOf(Active);
+            int nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % herd.Count;
+            Active = herd[nextIndex];
+            return Active;
+        }
+
+        /// <summary>
+        /// Cycles between separated overlays and the herd.
+        /// </summary>
+        public TimerSession? CycleNextSeparatedOrHerd()
+        {
+            var separated = SeparatedSessions;
+            var herd = HerdSessions;
+            if (separated.Count == 0 && herd.Count == 0) return null;
+
+            var targets = new List<TimerSession>(separated);
+            if (herd.Count > 0)
+            {
+                var activeHerd = Active != null && herd.Contains(Active) ? Active : herd[0];
+                targets.Add(activeHerd);
+            }
+
+            if (targets.Count <= 1)
+            {
+                Active = targets.FirstOrDefault();
+                return Active;
+            }
+
+            int activeIndex = Active == null ? -1 : targets.IndexOf(Active);
+            int nextIndex = activeIndex < 0 ? 0 : (activeIndex + 1) % targets.Count;
+            Active = targets[nextIndex];
+            return Active;
+        }
+
         /// <summary>
         /// Removes an owned timer. Closing the active timer selects its next
         /// neighbor, wrapping to the first timer; closing the final timer leaves

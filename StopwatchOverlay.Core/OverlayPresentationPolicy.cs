@@ -13,13 +13,25 @@ public static class OverlayPresentationPolicy
     public static double ClampBackgroundOpacity(double opacity)
         => double.IsFinite(opacity) ? System.Math.Clamp(opacity, 0, 1) : 0.5;
 
+    public static double ClampInactiveSeparatedOpacity(double opacityPercent)
+        => double.IsFinite(opacityPercent) ? System.Math.Clamp(opacityPercent, 10, 100) : 35.0;
+
     public static bool ShouldShowProjectName(string? projectName)
         => !string.IsNullOrWhiteSpace(projectName);
 
     public static TimerSession? SelectCombinedTimer(
         IEnumerable<TimerSession> sessions,
         TimerSession? activeTimer)
-        => activeTimer != null && sessions.Contains(activeTimer) ? activeTimer : null;
+    {
+        if (activeTimer != null && !sessions.Contains(activeTimer))
+            return null;
+
+        var herd = sessions.Where(s => !s.IsSeparated).ToList();
+        if (activeTimer != null && herd.Contains(activeTimer))
+            return activeTimer;
+
+        return herd.FirstOrDefault();
+    }
 
     public enum ShowOverlayDecision
     {

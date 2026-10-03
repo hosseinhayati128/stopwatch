@@ -36,7 +36,7 @@
                        FontFamily="{DynamicResource AppFontFamily}"
                        FontWeight="Medium"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync"
+            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync · B Separate · M Merge · Tab Switch"
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        FontSize="12"
                        FontFamily="{DynamicResource AppFontFamily}"

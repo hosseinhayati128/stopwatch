@@ -21,6 +21,7 @@ public sealed class TimerRailItemViewModel
     public string DisplaySummary { get; set; } = "";
     public bool IsRunning { get; set; }
     public bool IsActive { get; set; }
+    public bool IsSeparated { get; set; }
     public int Mode { get; set; }
 }
 
@@ -36,13 +37,17 @@ public partial class ControllerWindow : Window
     private readonly DispatcherTimer _saveTimer;
     private readonly DispatcherTimer _idleTimer;
 
+    private OverlayWindow? _herdOverlay;
     private readonly Dictionary<Guid, OverlayWindow> _overlays = new();
     private LightRingWindow? _lightRingWindow;
     private ProjectDashboardWindow? _dashboardWindow;
     private SettingsWindow? _settingsWindow;
     private ShortcutsWindow? _shortcutsWindow;
+    private ShortcutCommandHintWindow? _commandHintWindow;
+    private DispatcherTimer? _commandModeTimer;
+    private bool _isCommandModeActive;
+    private bool _overlaysVisible = true;
 
-    private bool _combinedOverlayMode;
     private bool _updatingUi;
     private bool _isExiting;
 
@@ -88,7 +93,7 @@ public partial class ControllerWindow : Window
     private void OnOpened(object? sender, EventArgs e)
     {
         InitializePlatformServices();
-        InitializeOverlays();
+        UpdateOverlayStates();
         UpdateLightRing();
     }
 
@@ -96,7 +101,15 @@ public partial class ControllerWindow : Window
     {
         try
         {
+            PlatformServices.HotKey.UnregisterAll();
+            PlatformServices.HotKey.HotKeyPressed -= OnHotKeyPressed;
+            PlatformServices.HotKey.CommandKeyPressed -= OnCommandKeyPressed;
             PlatformServices.HotKey.HotKeyPressed += OnHotKeyPressed;
+            PlatformServices.HotKey.CommandKeyPressed += OnCommandKeyPressed;
+
+            var leader = _settings.LeaderShortcut ?? AppSettings.DefaultLeaderShortcut();
+            PlatformServices.HotKey.RegisterHotKey(ShortcutAction.CommandLeader, leader.Modifiers, leader.VirtualKey);
+
             if (_settings.Shortcuts.TryGetValue(ShortcutAction.ShowActiveOverlay, out var overlaySc) && overlaySc != null)
             {
                 PlatformServices.HotKey.RegisterHotKey(ShortcutAction.ShowActiveOverlay, overlaySc.Modifiers, overlaySc.VirtualKey);
@@ -126,21 +139,212 @@ public partial class ControllerWindow : Window
                     Activate();
                     break;
                 case ShortcutAction.CommandLeader:
-                    ToggleStartPause();
+                    if (_isCommandModeActive)
+                    {
+                        ExitShortcutCommandMode();
+                    }
+                    else
+                    {
+                        EnterShortcutCommandMode();
+                    }
                     break;
             }
         });
     }
 
-    private void InitializeOverlays()
+    private void EnterShortcutCommandMode()
     {
-        foreach (var session in _timerManager.Sessions)
+        _isCommandModeActive = true;
+        PlatformServices.HotKey.IsInCommandMode = true;
+
+        if (_commandHintWindow == null)
         {
-            GetOrCreateOverlay(session);
+            _commandHintWindow = new ShortcutCommandHintWindow();
+            _commandHintWindow.Show();
+        }
+
+        double timeout = Math.Max(1.0, _settings.CommandChainingTimeoutSeconds);
+        if (_commandModeTimer == null)
+        {
+            _commandModeTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(timeout)
+            };
+            _commandModeTimer.Tick += (_, _) => ExitShortcutCommandMode();
+        }
+        else
+        {
+            _commandModeTimer.Stop();
+            _commandModeTimer.Interval = TimeSpan.FromSeconds(timeout);
+        }
+
+        _commandModeTimer.Start();
+    }
+
+    private void ExitShortcutCommandMode()
+    {
+        _isCommandModeActive = false;
+        PlatformServices.HotKey.IsInCommandMode = false;
+        _commandModeTimer?.Stop();
+
+        if (_commandHintWindow != null)
+        {
+            try { _commandHintWindow.Close(); } catch { }
+            _commandHintWindow = null;
         }
     }
 
-    private OverlayWindow GetOrCreateOverlay(TimerSession session)
+    private void OnCommandKeyPressed(object? sender, uint vk)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_isCommandModeActive) return;
+
+            if (ShortcutCommandMap.IsEscape(vk))
+            {
+                ExitShortcutCommandMode();
+                return;
+            }
+
+            if (ShortcutCommandMap.TryGetAction(vk, out var action))
+            {
+                if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord)
+                {
+                    ExitShortcutCommandMode();
+                }
+                else
+                {
+                    _commandModeTimer?.Stop();
+                    _commandModeTimer?.Start();
+                }
+
+                ExecuteShortcutAction(action);
+            }
+            else
+            {
+                ExitShortcutCommandMode();
+            }
+        });
+    }
+
+    private void ExecuteShortcutAction(ShortcutAction action)
+    {
+        switch (action)
+        {
+            case ShortcutAction.StartStop:
+                ToggleStartPause();
+                break;
+            case ShortcutAction.Reset:
+                ResetActiveTimer();
+                break;
+            case ShortcutAction.ToggleOverlay:
+                ToggleOverlayVisibility();
+                break;
+            case ShortcutAction.Lap:
+                AddLap();
+                break;
+            case ShortcutAction.ToggleClock:
+                ToggleClockMode();
+                break;
+            case ShortcutAction.NewTimer:
+                CreateNewTimer();
+                break;
+            case ShortcutAction.NextTimer:
+                SelectNextTimer();
+                break;
+            case ShortcutAction.CloseTimer:
+                CloseSession(CurrentTimer);
+                break;
+            case ShortcutAction.RenameTimer:
+                RenameTimerMenuItem_Click(this, new RoutedEventArgs());
+                break;
+            case ShortcutAction.EditTimer:
+                OpenTimerEditor(CurrentTimer);
+                break;
+            case ShortcutAction.OpenDashboard:
+                DashboardButton_Click(this, new RoutedEventArgs());
+                break;
+            case ShortcutAction.OpenController:
+                Show();
+                Activate();
+                break;
+            case ShortcutAction.SeparateOverlay:
+                SeparateActiveSession();
+                break;
+            case ShortcutAction.MergeOverlay:
+                MergeActiveSession();
+                break;
+            case ShortcutAction.NextSeparatedOverlay:
+                SwitchSeparatedOverlay();
+                break;
+        }
+    }
+
+    private TimerSession? GetActiveHerdSession()
+    {
+        var herd = _timerManager.HerdSessions;
+        if (herd.Count == 0) return null;
+        if (_timerManager.Active != null && !_timerManager.Active.IsSeparated)
+            return _timerManager.Active;
+        return herd[0];
+    }
+
+    private OverlayWindow EnsureHerdOverlay()
+    {
+        if (_herdOverlay != null) return _herdOverlay;
+
+        _herdOverlay = new OverlayWindow();
+        _herdOverlay.SetSeparateMergeState(false);
+        _herdOverlay.SetClickThrough(_settings.ClickThrough);
+        _herdOverlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
+
+        _herdOverlay.CloseRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null) CloseSession(herdSession);
+        };
+        _herdOverlay.PauseResumeRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null) ToggleSessionStartPause(herdSession);
+        };
+        _herdOverlay.ResetRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null) ResetSession(herdSession);
+        };
+        _herdOverlay.EditRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null) OpenTimerEditor(herdSession);
+        };
+        _herdOverlay.ActivationRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null)
+            {
+                _timerManager.Activate(herdSession);
+                RefreshTimerRail();
+                UpdateActiveTimerDisplay();
+                UpdateOverlayStates();
+            }
+        };
+        _herdOverlay.SeparateMergeRequested += () =>
+        {
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null)
+            {
+                _timerManager.Activate(herdSession);
+                SeparateActiveSession();
+            }
+        };
+
+        ApplyOverlayStyle(_herdOverlay);
+        if (_overlaysVisible) _herdOverlay.Show();
+        return _herdOverlay;
+    }
+
+    private OverlayWindow GetOrCreateSeparatedOverlay(TimerSession session)
     {
         if (_overlays.TryGetValue(session.Id, out var existing))
             return existing;
@@ -149,7 +353,7 @@ public partial class ControllerWindow : Window
         overlay.SetTimerName(session.Name);
         overlay.UpdateTime(FormatDisplayTime(session));
         overlay.SetRunning(session.IsRunning);
-        overlay.SetActive(session == _timerManager.Active);
+        overlay.SetSeparateMergeState(true);
         overlay.SetClickThrough(_settings.ClickThrough);
         overlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
 
@@ -162,13 +366,113 @@ public partial class ControllerWindow : Window
             _timerManager.Activate(session);
             RefreshTimerRail();
             UpdateActiveTimerDisplay();
+            UpdateOverlayStates();
+        };
+        overlay.SeparateMergeRequested += () =>
+        {
+            _timerManager.Activate(session);
+            MergeActiveSession();
         };
 
         ApplyOverlayStyle(overlay);
-        overlay.Show();
+        if (_herdOverlay != null)
+        {
+            var herdPos = _herdOverlay.Position;
+            overlay.Position = new PixelPoint(herdPos.X + 40, herdPos.Y + 40);
+        }
+        if (_overlaysVisible) overlay.Show();
 
         _overlays[session.Id] = overlay;
         return overlay;
+    }
+
+    private void UpdateOverlayStates()
+    {
+        var herd = _timerManager.HerdSessions;
+        var active = _timerManager.Active;
+
+        if (herd.Count > 0)
+        {
+            var herdOverlay = EnsureHerdOverlay();
+            var herdSession = GetActiveHerdSession();
+            if (herdSession != null)
+            {
+                herdOverlay.SetTimerName(herdSession.Name);
+                herdOverlay.UpdateTime(FormatDisplayTime(herdSession));
+                herdOverlay.SetRunning(herdSession.IsRunning);
+                herdOverlay.SetPauseResumeEnabled(herdSession.Mode != 1);
+
+                bool isHerdActive = active != null && !active.IsSeparated && herdSession == active;
+                herdOverlay.SetActive(isHerdActive);
+                herdOverlay.SetInactiveSeparated(!isHerdActive, _settings.InactiveSeparatedOverlayOpacity / 100.0);
+                herdOverlay.SetSeparateMergeState(false);
+                if (_overlaysVisible && !herdOverlay.IsVisible) herdOverlay.Show();
+            }
+        }
+        else if (_herdOverlay != null)
+        {
+            _herdOverlay.Hide();
+        }
+
+        var separatedIds = _timerManager.SeparatedSessions.Select(s => s.Id).ToHashSet();
+        var toRemove = _overlays.Keys.Where(id => !separatedIds.Contains(id)).ToList();
+        foreach (var id in toRemove)
+        {
+            _overlays[id].Close();
+            _overlays.Remove(id);
+        }
+
+        foreach (var session in _timerManager.SeparatedSessions)
+        {
+            var overlay = GetOrCreateSeparatedOverlay(session);
+            overlay.SetTimerName(session.Name);
+            overlay.UpdateTime(FormatDisplayTime(session));
+            overlay.SetRunning(session.IsRunning);
+            overlay.SetPauseResumeEnabled(session.Mode != 1);
+
+            bool isSessionActive = session == active;
+            overlay.SetActive(isSessionActive);
+            overlay.SetInactiveSeparated(!isSessionActive, _settings.InactiveSeparatedOverlayOpacity / 100.0);
+            overlay.SetSeparateMergeState(true);
+            if (_overlaysVisible && !overlay.IsVisible) overlay.Show();
+        }
+    }
+
+    private void SeparateActiveSession()
+    {
+        var session = CurrentTimer;
+        if (session == null || session.IsSeparated) return;
+        _timerManager.Separate(session);
+        GetOrCreateSeparatedOverlay(session);
+        UpdateOverlayStates();
+        RefreshTimerRail();
+        UpdateActiveTimerDisplay();
+    }
+
+    private void MergeActiveSession()
+    {
+        var session = CurrentTimer;
+        if (session == null || !session.IsSeparated) return;
+        _timerManager.Merge(session);
+        if (_overlays.TryGetValue(session.Id, out var overlay))
+        {
+            overlay.Close();
+            _overlays.Remove(session.Id);
+        }
+        UpdateOverlayStates();
+        RefreshTimerRail();
+        UpdateActiveTimerDisplay();
+    }
+
+    private void SwitchSeparatedOverlay()
+    {
+        var next = _timerManager.CycleNextSeparatedOrHerd();
+        if (next != null)
+        {
+            RefreshTimerRail();
+            UpdateActiveTimerDisplay();
+            UpdateOverlayStates();
+        }
     }
 
     private void ApplyOverlayStyle(OverlayWindow overlay)
@@ -248,15 +552,9 @@ public partial class ControllerWindow : Window
                     session.Stopwatch.Stop();
                 }
             }
-
-            if (_overlays.TryGetValue(session.Id, out var overlay))
-            {
-                overlay.UpdateTime(FormatDisplayTime(session));
-                overlay.SetRunning(session.IsRunning);
-                overlay.SetActive(session == _timerManager.Active);
-            }
         }
 
+        UpdateOverlayStates();
         UpdateActiveTimerDisplay();
     }
 
@@ -278,6 +576,45 @@ public partial class ControllerWindow : Window
 
         LapListBox.ItemsSource = session.LapTimes;
         LapPlaceholder.IsVisible = session.LapTimes.Count == 0;
+
+        UpdateModeRadios();
+        ToggleCombinedMenuItem.Header = session.IsSeparated ? "Merge with herd overlay" : "Separate clock overlay";
+        CombinedRailStatus.Text = session.IsSeparated ? "Separated overlay" : "Herd overlay";
+    }
+
+    private void ToggleClockMode()
+    {
+        var session = CurrentTimer;
+        if (session.Mode == 1)
+        {
+            session.Mode = session.LastNonClockMode;
+        }
+        else
+        {
+            session.LastNonClockMode = session.Mode;
+            session.Mode = 1;
+        }
+        UpdateModeRadios();
+        RefreshTimerRail();
+        UpdateActiveTimerDisplay();
+        UpdateOverlayStates();
+    }
+
+    private void UpdateModeRadios()
+    {
+        _updatingUi = true;
+        try
+        {
+            StopwatchModeRadio.IsChecked = CurrentTimer.Mode == 0;
+            ClockModeRadio.IsChecked = CurrentTimer.Mode == 1;
+            CountdownModeRadio.IsChecked = CurrentTimer.Mode == 2;
+            TimecodeModeRadio.IsChecked = CurrentTimer.Mode == 3;
+            CountdownPanel.IsVisible = CurrentTimer.Mode == 2;
+        }
+        finally
+        {
+            _updatingUi = false;
+        }
     }
 
     private static string FormatDisplayTime(TimerSession session)
@@ -299,9 +636,10 @@ public partial class ControllerWindow : Window
         {
             Id = s.Id,
             DisplayName = s.DisplayName,
-            DisplaySummary = $"{FormatDisplayTime(s)} · {(s.IsRunning ? "Running" : "Paused")}",
+            DisplaySummary = $"{FormatDisplayTime(s)} · {(s.IsRunning ? "Running" : "Paused")}{(s.IsSeparated ? " · Separated" : "")}",
             IsRunning = s.IsRunning,
             IsActive = s == active,
+            IsSeparated = s.IsSeparated,
             Mode = s.Mode
         }).ToList();
 
@@ -415,45 +753,49 @@ public partial class ControllerWindow : Window
 
     private void ToggleOverlayVisibility()
     {
-        var session = CurrentTimer;
-        if (_overlays.TryGetValue(session.Id, out var overlay))
+        _overlaysVisible = !_overlaysVisible;
+        ToggleOverlayButton.Content = _overlaysVisible ? "Hide overlay" : "Show overlay";
+        if (_herdOverlay != null)
         {
-            if (overlay.IsVisible)
-            {
-                overlay.Hide();
-                ToggleOverlayButton.Content = "Show overlay";
-            }
-            else
-            {
-                overlay.Show();
-                ToggleOverlayButton.Content = "Hide overlay";
-            }
+            if (_overlaysVisible) _herdOverlay.Show();
+            else _herdOverlay.Hide();
+        }
+        foreach (var overlay in _overlays.Values)
+        {
+            if (_overlaysVisible) overlay.Show();
+            else overlay.Hide();
         }
     }
 
     private void CreateNewTimer()
     {
         var newSession = _timerManager.Create();
-        GetOrCreateOverlay(newSession);
         RefreshTimerRail();
         UpdateActiveTimerDisplay();
+        UpdateOverlayStates();
     }
 
     private void SelectNextTimer()
     {
-        var next = _timerManager.CycleNext();
+        var next = _timerManager.CycleNextHerd() ?? _timerManager.CycleNext();
         if (next != null)
         {
             RefreshTimerRail();
             UpdateActiveTimerDisplay();
+            UpdateOverlayStates();
         }
     }
 
     private void ToggleCombinedOverlay()
     {
-        _combinedOverlayMode = !_combinedOverlayMode;
-        ToggleCombinedMenuItem.Header = _combinedOverlayMode ? "Separate overlays" : "Combine overlays";
-        CombinedRailStatus.Text = _combinedOverlayMode ? "Combined overlay" : "Separate overlays";
+        if (CurrentTimer.IsSeparated)
+        {
+            MergeActiveSession();
+        }
+        else
+        {
+            SeparateActiveSession();
+        }
     }
 
     private async void CloseSession(TimerSession session)
@@ -484,6 +826,7 @@ public partial class ControllerWindow : Window
         _timerManager.Close(session);
         RefreshTimerRail();
         UpdateActiveTimerDisplay();
+        UpdateOverlayStates();
     }
 
     private async void OpenTimerEditor(TimerSession session)
@@ -503,6 +846,7 @@ public partial class ControllerWindow : Window
             }
             UpdateActiveTimerDisplay();
             RefreshTimerRail();
+            UpdateOverlayStates();
         }
     }
 
@@ -516,6 +860,7 @@ public partial class ControllerWindow : Window
             {
                 _timerManager.Activate(session);
                 UpdateActiveTimerDisplay();
+                UpdateOverlayStates();
             }
         }
     }
@@ -611,12 +956,19 @@ public partial class ControllerWindow : Window
     private void OnSettingsChanged(SettingsChangeKind change)
     {
         _settings = SettingsStore.Load();
+        if (_herdOverlay != null)
+        {
+            ApplyOverlayStyle(_herdOverlay);
+            _herdOverlay.SetClickThrough(_settings.ClickThrough);
+            _herdOverlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
+        }
         foreach (var overlay in _overlays.Values)
         {
             ApplyOverlayStyle(overlay);
             overlay.SetClickThrough(_settings.ClickThrough);
             overlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
         }
+        UpdateOverlayStates();
         UpdateLightRing();
     }
 
@@ -681,8 +1033,11 @@ public partial class ControllerWindow : Window
         else
         {
             _isExiting = true;
+            _herdOverlay?.Close();
+            _herdOverlay = null;
             foreach (var overlay in _overlays.Values)
                 overlay.Close();
+            _overlays.Clear();
             _lightRingWindow?.Close();
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -696,7 +1051,15 @@ public partial class ControllerWindow : Window
         _timer.Stop();
         _saveTimer.Stop();
         _idleTimer.Stop();
+        _commandModeTimer?.Stop();
         PlatformServices.HotKey.HotKeyPressed -= OnHotKeyPressed;
+        PlatformServices.HotKey.CommandKeyPressed -= OnCommandKeyPressed;
+        ExitShortcutCommandMode();
+        _herdOverlay?.Close();
+        _herdOverlay = null;
+        foreach (var overlay in _overlays.Values)
+            overlay.Close();
+        _overlays.Clear();
         base.OnClosed(e);
     }
 }

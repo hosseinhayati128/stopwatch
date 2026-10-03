@@ -26,4 +26,14 @@ public interface IHotKeyService : IDisposable
     /// Event fired when a registered global hotkey is pressed.
     /// </summary>
     event EventHandler<ShortcutAction>? HotKeyPressed;
+
+    /// <summary>
+    /// Event fired when a raw key is pressed while in two-stage command mode.
+    /// </summary>
+    event EventHandler<uint>? CommandKeyPressed;
+
+    /// <summary>
+    /// Indicates whether global key capture is currently listening for a modal command key.
+    /// </summary>
+    bool IsInCommandMode { get; set; }
 }

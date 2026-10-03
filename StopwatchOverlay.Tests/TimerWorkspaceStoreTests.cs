@@ -48,6 +48,7 @@ namespace StopwatchOverlay.Tests
             first.CustomPositionsByScreen["DISPLAY-A"] = (23.25, 91.75);
             first.LastPresetPosition = "Bottom Right";
             first.CascadeIndex = 4;
+            first.IsSeparated = true;
             first.RestoreElapsed(TimeSpan.FromSeconds(9), start: false);
 
             var snapshot = TimerWorkspaceStore.Capture(source, SavedUtc);
@@ -59,6 +60,8 @@ namespace StopwatchOverlay.Tests
             Assert.Equal(4, restored.NextNumber);
 
             var actual = restored.Sessions[0];
+            Assert.True(actual.IsSeparated);
+            Assert.False(restored.Sessions[1].IsSeparated);
             Assert.Equal("Deep work", actual.Name);
             Assert.Equal(3, actual.Mode);
             Assert.Equal(TimeSpan.FromSeconds(9), actual.Elapsed);

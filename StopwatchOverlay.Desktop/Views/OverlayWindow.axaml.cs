@@ -34,6 +34,7 @@ public partial class OverlayWindow : Window
     public event Action? PauseResumeRequested;
     public event Action? ResetRequested;
     public event Action? EditRequested;
+    public event Action? SeparateMergeRequested;
 
     public OverlayWindow()
     {
@@ -100,6 +101,26 @@ public partial class OverlayWindow : Window
         ActiveIndicatorBorder.BorderBrush = active
             ? new SolidColorBrush(Color.FromArgb(220, 56, 189, 248))
             : Brushes.Transparent;
+    }
+
+    public void SetInactiveSeparated(bool isInactiveSeparated, double inactiveOpacity)
+    {
+        Opacity = isInactiveSeparated ? Math.Clamp(inactiveOpacity, 0.05, 1.0) : 1.0;
+        if (isInactiveSeparated)
+        {
+            SetActive(false);
+        }
+    }
+
+    public void SetSeparateMergeState(bool isSeparated)
+    {
+        SeparateIcon.IsVisible = !isSeparated;
+        MergeIcon.IsVisible = isSeparated;
+        ToolTip.SetTip(
+            SeparateMergeActionButton,
+            isSeparated
+                ? "Merge with herd overlay (Win+F2 → M)"
+                : "Separate clock overlay (Win+F2 → B)");
     }
 
     public void SetRunning(bool running)
@@ -303,5 +324,12 @@ public partial class OverlayWindow : Window
         ActionPopup.IsOpen = false;
         ActivationRequested?.Invoke();
         EditRequested?.Invoke();
+    }
+
+    private void SeparateMergeActionButton_Click(object? sender, RoutedEventArgs e)
+    {
+        ActionPopup.IsOpen = false;
+        ActivationRequested?.Invoke();
+        SeparateMergeRequested?.Invoke();
     }
 }

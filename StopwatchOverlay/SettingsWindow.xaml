@@ -269,6 +269,16 @@
                                         SmallChange="1" LargeChange="10" TickFrequency="1"
                                         IsSnapToTickEnabled="True" Margin="0,6,0,14"
                                         AutomationProperties.Name="Timer surface opacity"/>
+                                <Grid Margin="0,4,0,0">
+                                    <TextBlock Text="Inactive separated overlay opacity" Style="{StaticResource SectionHeaderText}"/>
+                                    <TextBlock x:Name="InactiveSeparatedOpacityValueText" HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </Grid>
+                                <Slider x:Name="InactiveSeparatedOpacitySlider" Minimum="10" Maximum="100"
+                                        Style="{StaticResource PirateSettingsSlider}"
+                                        SmallChange="5" LargeChange="10" TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Margin="0,6,0,14"
+                                        AutomationProperties.Name="Inactive separated overlay opacity"/>
                                 <Expander x:Name="TransparencyDetailsExpander"
                                           IsExpanded="False" Visibility="Collapsed" Margin="0,0,0,14">
                                     <Expander.Header><TextBlock Text="Transparency details" Foreground="{DynamicResource PrimaryTextBrush}"/></Expander.Header>

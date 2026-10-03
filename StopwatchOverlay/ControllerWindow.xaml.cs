@@ -1427,9 +1427,13 @@ namespace StopwatchOverlay
 
         private void RefreshOverlayActiveStates()
         {
+            double inactiveOpacity = _settings.InactiveSeparatedOverlayOpacity / 100.0;
             foreach (var instance in _overlayInstances)
             {
-                instance.Window.SetActive(ReferenceEquals(instance.Session, _activeTimer));
+                bool isActive = ReferenceEquals(instance.Session, _activeTimer);
+                instance.Window.SetActive(isActive);
+                instance.Window.SetInactiveSeparated(!isActive, inactiveOpacity);
+                instance.Window.SetSeparateMergeState(instance.Session.IsSeparated);
                 instance.Window.SetRunning(instance.Session.IsRunning);
                 instance.Window.SetPauseResumeEnabled(instance.Session.Mode != 1);
             }
@@ -1563,8 +1567,44 @@ namespace StopwatchOverlay
         {
             if (_timers.Count == 0) return;
             SaveActiveTimerEditorState();
-            var next = _timerManager.CycleNext();
+            var next = _timerManager.CycleNextHerd() ?? _timerManager.CycleNext();
             if (next != null) ActivateTimer(next);
+        }
+
+        private void SeparateActiveTimer()
+        {
+            if (_activeTimer == null || _activeTimer.IsSeparated)
+                return;
+
+            _timerManager.Separate(_activeTimer);
+            ShowTimerOverlays(_activeTimer);
+            RefreshOverlayActiveStates();
+            UpdateStatus($"Timer '{_activeTimer.DisplayName}' separated to dedicated overlay", Brushes.DeepSkyBlue);
+            CheckpointState();
+        }
+
+        private void MergeActiveTimer()
+        {
+            if (_activeTimer == null || !_activeTimer.IsSeparated)
+                return;
+
+            _timerManager.Merge(_activeTimer);
+            CloseTimerOverlays(_activeTimer);
+            RefreshOverlayActiveStates();
+            UpdateStatus($"Timer '{_activeTimer.DisplayName}' merged into herd overlay", Brushes.DeepSkyBlue);
+            CheckpointState();
+        }
+
+        private void CycleSeparatedOrHerdTimer()
+        {
+            if (_timers.Count == 0) return;
+            SaveActiveTimerEditorState();
+            var next = _timerManager.CycleNextSeparatedOrHerd();
+            if (next != null)
+            {
+                ActivateTimer(next);
+                RefreshOverlayActiveStates();
+            }
         }
 
         private void CloseActiveTimer()
@@ -2667,6 +2707,15 @@ namespace StopwatchOverlay
                 case ShortcutAction.PeriodicReview:
                     Dispatcher.BeginInvoke(new Action(TriggerPeriodicReviewManual), DispatcherPriority.Input);
                     break;
+                case ShortcutAction.SeparateOverlay:
+                    SeparateActiveTimer();
+                    break;
+                case ShortcutAction.MergeOverlay:
+                    MergeActiveTimer();
+                    break;
+                case ShortcutAction.NextSeparatedOverlay:
+                    CycleSeparatedOrHerdTimer();
+                    break;
             }
         }
 
@@ -3159,10 +3208,14 @@ namespace StopwatchOverlay
                     instance.Window.SetRecIndicatorVisible(timer.RecBlinkVisible);
             }
 
-            if (_combinedOverlayMode && _activeTimer != null)
+            if (_combinedOverlayMode)
             {
-                foreach (var instance in _combinedOverlayInstances)
-                    instance.Window.SetRecIndicatorVisible(_activeTimer.RecBlinkVisible);
+                TimerSession? herdTimer = OverlayPresentationPolicy.SelectCombinedTimer(_timers, _activeTimer);
+                if (herdTimer != null)
+                {
+                    foreach (var instance in _combinedOverlayInstances)
+                        instance.Window.SetRecIndicatorVisible(herdTimer.RecBlinkVisible);
+                }
             }
 
             RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
@@ -3179,11 +3232,15 @@ namespace StopwatchOverlay
                     instance.Window.UpdateTime(timerText);
             }
 
-            if (_combinedOverlayMode && _activeTimer != null)
+            if (_combinedOverlayMode)
             {
-                string timerText = GetFormattedTime(_activeTimer);
-                foreach (var instance in _combinedOverlayInstances)
-                    instance.Window.UpdateTime(timerText);
+                TimerSession? herdTimer = OverlayPresentationPolicy.SelectCombinedTimer(_timers, _activeTimer);
+                if (herdTimer != null)
+                {
+                    string timerText = GetFormattedTime(herdTimer);
+                    foreach (var instance in _combinedOverlayInstances)
+                        instance.Window.UpdateTime(timerText);
+                }
             }
 
             TimeDisplay.Text = _activeTimer == null ? "--:--" : GetFormattedTime(_activeTimer);
@@ -4395,7 +4452,13 @@ namespace StopwatchOverlay
                     CreateCombinedOverlayForScreen(screen);
             }
 
+            foreach (var timer in _timers.Where(t => t.IsSeparated && t.OverlayVisible))
+            {
+                ShowTimerOverlays(timer);
+            }
+
             RefreshCombinedOverlayState();
+            RefreshOverlayActiveStates();
         }
 
         private void CreateCombinedOverlayForScreen(Screen screen)
@@ -4433,6 +4496,15 @@ namespace StopwatchOverlay
                 if (_activeTimer != null)
                     EditActiveTimer();
             };
+            overlay.SeparateMergeRequested += () =>
+            {
+                TimerSession? herdTimer = OverlayPresentationPolicy.SelectCombinedTimer(_timers, _activeTimer);
+                if (herdTimer != null)
+                {
+                    ActivateTimer(herdTimer, announce: false, checkpoint: false);
+                    SeparateActiveTimer();
+                }
+            };
 
             ApplyOverlaySettings(overlay);
             overlay.Show();
@@ -4454,11 +4526,22 @@ namespace StopwatchOverlay
                 _timers,
                 _activeTimer);
             if (timer == null)
+            {
+                foreach (var instance in _combinedOverlayInstances)
+                    instance.Window.Visibility = Visibility.Collapsed;
                 return;
+            }
+
+            bool isHerdActive = _activeTimer != null && !_activeTimer.IsSeparated;
+            double inactiveOpacity = _settings.InactiveSeparatedOverlayOpacity / 100.0;
+
             foreach (var instance in _combinedOverlayInstances)
             {
+                instance.Window.Visibility = Visibility.Visible;
                 instance.Window.SetTimerName(timer.Name);
-                instance.Window.SetActive(true);
+                instance.Window.SetActive(isHerdActive);
+                instance.Window.SetInactiveSeparated(!isHerdActive, inactiveOpacity);
+                instance.Window.SetSeparateMergeState(false);
                 instance.Window.SetRunning(timer.IsRunning);
                 instance.Window.SetPauseResumeEnabled(timer.Mode != 1);
                 instance.Window.SetRecIndicatorVisible(timer.RecBlinkVisible);
@@ -4509,7 +4592,7 @@ namespace StopwatchOverlay
 
         private void ShowTimerOverlays(TimerSession timer)
         {
-            if (_combinedOverlayMode) return;
+            if (_combinedOverlayMode && !timer.IsSeparated) return;
             if (_overlayInstances.Any(item => ReferenceEquals(item.Session, timer))) return;
             foreach (var screen in SelectedScreens())
                 CreateOverlayForScreen(timer, screen);
@@ -4559,10 +4642,21 @@ namespace StopwatchOverlay
                 ActivateTimer(timer, announce: false, checkpoint: false);
                 EditTimer(timer);
             };
+            overlay.SeparateMergeRequested += () =>
+            {
+                ActivateTimer(timer, announce: false, checkpoint: false);
+                if (timer.IsSeparated)
+                    MergeActiveTimer();
+                else
+                    SeparateActiveTimer();
+            };
 
             ApplyOverlaySettings(overlay);
             overlay.SetTimerName(timer.Name);
-            overlay.SetActive(ReferenceEquals(timer, _activeTimer));
+            bool isActive = ReferenceEquals(timer, _activeTimer);
+            overlay.SetActive(isActive);
+            overlay.SetInactiveSeparated(!isActive, _settings.InactiveSeparatedOverlayOpacity / 100.0);
+            overlay.SetSeparateMergeState(timer.IsSeparated);
             overlay.SetRunning(timer.IsRunning);
             overlay.SetPauseResumeEnabled(timer.Mode != 1);
             overlay.Show();

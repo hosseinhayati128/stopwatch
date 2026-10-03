@@ -15,6 +15,8 @@ public sealed class SharpHookHotKeyService : IHotKeyService
     private readonly CancellationTokenSource _cts = new();
 
     public event EventHandler<ShortcutAction>? HotKeyPressed;
+    public event EventHandler<uint>? CommandKeyPressed;
+    public bool IsInCommandMode { get; set; }
 
     public SharpHookHotKeyService()
     {
@@ -64,13 +66,20 @@ public sealed class SharpHookHotKeyService : IHotKeyService
         if (mask.HasFlag(ModifierMask.Shift)) mods |= Shortcut.MOD_SHIFT;
         if (mask.HasFlag(ModifierMask.Meta)) mods |= Shortcut.MOD_WIN;
 
+        bool matchedHotKey = false;
         foreach (var (action, (regMods, regVk)) in _registered)
         {
             if (regVk == vk && regMods == mods)
             {
                 HotKeyPressed?.Invoke(this, action);
+                matchedHotKey = true;
                 break;
             }
+        }
+
+        if (!matchedHotKey && IsInCommandMode)
+        {
+            CommandKeyPressed?.Invoke(this, vk);
         }
     }
 

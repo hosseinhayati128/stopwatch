@@ -38,6 +38,13 @@ namespace StopwatchOverlay.Tests
         [InlineData('a', ShortcutAction.AddRecord)]
         [InlineData('S', ShortcutAction.SyncActivityWatch)]
         [InlineData('s', ShortcutAction.SyncActivityWatch)]
+        [InlineData('B', ShortcutAction.SeparateOverlay)]
+        [InlineData('b', ShortcutAction.SeparateOverlay)]
+        [InlineData('M', ShortcutAction.MergeOverlay)]
+        [InlineData('m', ShortcutAction.MergeOverlay)]
+        [InlineData('\t', ShortcutAction.NextSeparatedOverlay)]
+        [InlineData('J', ShortcutAction.NextSeparatedOverlay)]
+        [InlineData('j', ShortcutAction.NextSeparatedOverlay)]
         public void TryGetAction_FromChar_MapsToExpectedAction(char keyChar, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(keyChar, out ShortcutAction action);
@@ -61,6 +68,10 @@ namespace StopwatchOverlay.Tests
         [InlineData(ShortcutCommandMode.VK_KEY_U, ShortcutAction.UndoTimerEdit)]
         [InlineData(ShortcutCommandMode.VK_KEY_A, ShortcutAction.AddRecord)]
         [InlineData(ShortcutCommandMode.VK_KEY_S, ShortcutAction.SyncActivityWatch)]
+        [InlineData(ShortcutCommandMode.VK_KEY_B, ShortcutAction.SeparateOverlay)]
+        [InlineData(ShortcutCommandMode.VK_KEY_M, ShortcutAction.MergeOverlay)]
+        [InlineData(ShortcutCommandMode.VK_TAB, ShortcutAction.NextSeparatedOverlay)]
+        [InlineData(ShortcutCommandMode.VK_KEY_J, ShortcutAction.NextSeparatedOverlay)]
         public void TryGetAction_FromVirtualKey_MapsToExpectedAction(uint vk, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(vk, out ShortcutAction action);
@@ -93,13 +104,13 @@ namespace StopwatchOverlay.Tests
 
         [Theory]
         [InlineData('q')]
-        [InlineData('b')]
+        [InlineData('k')]
         [InlineData('f')]
         [InlineData('z')]
         [InlineData('1')]
         [InlineData('9')]
         [InlineData('\r')]
-        [InlineData('\t')]
+        [InlineData('\n')]
         public void TryGetAction_UnsupportedKeys_ReturnFalse(char unsupportedChar)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(unsupportedChar, out _);

@@ -175,5 +175,62 @@ namespace StopwatchOverlay.Tests
             Assert.True(timer.Stopwatch.IsRunning);
             Assert.Equal(TimeSpan.Zero, timer.ElapsedOffset);
         }
+
+        [Fact]
+        public void SeparateAndMerge_UpdatesHerdAndSeparatedCollections()
+        {
+            var manager = new TimerSessionManager();
+            var t1 = manager.Create();
+            var t2 = manager.Create();
+            var t3 = manager.Create();
+
+            Assert.Equal(3, manager.HerdSessions.Count);
+            Assert.Empty(manager.SeparatedSessions);
+
+            Assert.True(manager.Separate(t2));
+            Assert.True(t2.IsSeparated);
+            Assert.Equal(2, manager.HerdSessions.Count);
+            Assert.Single(manager.SeparatedSessions);
+            Assert.Same(t2, manager.SeparatedSessions[0]);
+
+            Assert.True(manager.Merge(t2));
+            Assert.False(t2.IsSeparated);
+            Assert.Equal(3, manager.HerdSessions.Count);
+            Assert.Empty(manager.SeparatedSessions);
+        }
+
+        [Fact]
+        public void CycleNextHerd_SkipsSeparatedTimers()
+        {
+            var manager = new TimerSessionManager();
+            var t1 = manager.Create();
+            var t2 = manager.Create();
+            var t3 = manager.Create();
+
+            manager.Separate(t2);
+            manager.Activate(t1);
+
+            Assert.Same(t3, manager.CycleNextHerd());
+            Assert.Same(t1, manager.CycleNextHerd());
+            Assert.Same(t3, manager.CycleNextHerd());
+        }
+
+        [Fact]
+        public void CycleNextSeparatedOrHerd_CyclesBetweenSeparatedAndHerd()
+        {
+            var manager = new TimerSessionManager();
+            var t1 = manager.Create();
+            var t2 = manager.Create();
+            var t3 = manager.Create();
+
+            manager.Separate(t2);
+            manager.Separate(t3);
+            manager.Activate(t1);
+
+            Assert.Same(t2, manager.CycleNextSeparatedOrHerd());
+            Assert.Same(t3, manager.CycleNextSeparatedOrHerd());
+            Assert.Same(t1, manager.CycleNextSeparatedOrHerd());
+            Assert.Same(t2, manager.CycleNextSeparatedOrHerd());
+        }
     }
 }

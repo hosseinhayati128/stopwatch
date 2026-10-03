@@ -71,7 +71,7 @@
                         <TextBlock Grid.Row="0" Text="Command mode keys (fixed):" FontWeight="SemiBold"
                                    Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,8"/>
                         <ScrollViewer Grid.Row="1" MaxHeight="180" VerticalScrollBarVisibility="Auto">
-                            <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Space" FontWeight="Bold" Margin="0,3,8,3"/>
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="Start or stop the active timer" Margin="0,3,0,3"/>
 
@@ -114,8 +114,17 @@
                                 <TextBlock Grid.Row="13" Grid.Column="0" Text="S" FontWeight="Bold" Margin="0,3,8,3"/>
                                 <TextBlock Grid.Row="13" Grid.Column="1" Text="Sync ActivityWatch log to Obsidian now" Margin="0,3,0,3"/>
 
-                                <TextBlock Grid.Row="14" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
-                                <TextBlock Grid.Row="14" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
+                                <TextBlock Grid.Row="14" Grid.Column="0" Text="B" FontWeight="Bold" Margin="0,3,8,3"/>
+                                <TextBlock Grid.Row="14" Grid.Column="1" Text="Separate active timer onto its own clock overlay" Margin="0,3,0,3"/>
+
+                                <TextBlock Grid.Row="15" Grid.Column="0" Text="M" FontWeight="Bold" Margin="0,3,8,3"/>
+                                <TextBlock Grid.Row="15" Grid.Column="1" Text="Merge active separated overlay back into herd" Margin="0,3,0,3"/>
+
+                                <TextBlock Grid.Row="16" Grid.Column="0" Text="Tab / J" FontWeight="Bold" Margin="0,3,8,3"/>
+                                <TextBlock Grid.Row="16" Grid.Column="1" Text="Switch between separated clock overlays" Margin="0,3,0,3"/>
+
+                                <TextBlock Grid.Row="17" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
+                                <TextBlock Grid.Row="17" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
                             </Grid>
                         </ScrollViewer>
                     </Grid>

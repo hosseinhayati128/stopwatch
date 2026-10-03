@@ -105,6 +105,7 @@ public partial class SettingsWindow : Window
             LoadTypographyEditors();
             BorderWidthSlider.Value = _settings.BorderWidth;
             BackgroundOpacitySlider.Value = _settings.BackgroundOpacity;
+            InactiveSeparatedOpacitySlider.Value = _settings.InactiveSeparatedOverlayOpacity;
             foreach (var (control, part) in TransparencyPartControls)
                 control.IsChecked = (_settings.OpaqueOverlayParts & part) != 0;
             BackgroundStrengthSlider.Value = _settings.PanelBackgroundStrength;
@@ -199,6 +200,7 @@ public partial class SettingsWindow : Window
         WireSlider(UiScaleSlider, SettingsChangeKind.ApplicationScale);
         WireSlider(BorderWidthSlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundOpacitySlider, SettingsChangeKind.OverlayAppearance);
+        WireSlider(InactiveSeparatedOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundStrengthSlider, SettingsChangeKind.BackgroundStrength);
         WireSlider(LightRingBrightnessSlider, SettingsChangeKind.LightRingAppearance);
         WireSlider(LightRingWidthSlider, SettingsChangeKind.LightRingAppearance);
@@ -378,6 +380,7 @@ public partial class SettingsWindow : Window
                 _settings.TextSize = TextSizeSlider.Value;
                 _settings.BorderWidth = BorderWidthSlider.Value;
                 _settings.BackgroundOpacity = BackgroundOpacitySlider.Value;
+                _settings.InactiveSeparatedOverlayOpacity = InactiveSeparatedOpacitySlider.Value;
                 _settings.OpaqueOverlayParts = TransparencyPartControls
                     .Where(item => item.Control.IsChecked == true)
                     .Aggregate((NavigatorOpaqueParts)0, (parts, item) => parts | item.Part);
@@ -533,6 +536,7 @@ public partial class SettingsWindow : Window
         TextSizeValueText.Text = $"{Math.Round(TextSizeSlider.Value):0} px";
         BorderWidthValueText.Text = $"{Math.Round(BorderWidthSlider.Value):0} px";
         BackgroundOpacityValueText.Text = $"{Math.Round(BackgroundOpacitySlider.Value):0}%";
+        InactiveSeparatedOpacityValueText.Text = $"{Math.Round(InactiveSeparatedOpacitySlider.Value):0}%";
         BackgroundStrengthValueText.Text = $"{Math.Round(BackgroundStrengthSlider.Value):0}%";
         LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
         LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";

@@ -259,6 +259,12 @@
                                 </Grid>
                                 <Slider x:Name="BackgroundOpacitySlider" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
 
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <TextBlock Text="Inactive separated overlay opacity" Classes="sectionHeader" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="InactiveSeparatedOpacityValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Slider x:Name="InactiveSeparatedOpacitySlider" Minimum="10" Maximum="100" SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True"/>
+
                                 <Expander x:Name="TransparencyDetailsExpander" IsExpanded="False" IsVisible="False" Header="Transparency details" Margin="0,6,0,6">
                                     <StackPanel Spacing="6" Margin="0,6,0,0">
                                         <TextBlock Text="Checked parts stay fully visible. Unchecked parts follow the opacity slider." Classes="subheading" TextWrapping="Wrap"/>

@@ -276,6 +276,33 @@
                                   StrokeEndLineCap="Round"
                                   StrokeLineJoin="Round"/>
                         </Button>
+
+                        <Button x:Name="SeparateMergeActionButton"
+                                ac:NavigatorVisual.Action="Expand"
+                                Style="{StaticResource OverlayActionButtonStyle}"
+                                ToolTip="Separate clock overlay (Win+F2 → B)"
+                                Click="SeparateMergeActionButton_Click">
+                            <Grid Width="14" Height="14">
+                                <Path x:Name="SeparateIcon"
+                                      Data="M 2,12 L 12,2 M 12,2 L 6,2 M 12,2 L 12,8"
+                                      Stretch="Uniform"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                                      StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Visibility="Visible"/>
+                                <Path x:Name="MergeIcon"
+                                      Data="M 12,2 L 6,8 M 6,8 L 6,4 M 6,8 L 10,8 M 2,12 L 8,6"
+                                      Stretch="Uniform"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                                      StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Visibility="Collapsed"/>
+                            </Grid>
+                        </Button>
                     </ac:NavigatorToolbarPanel>
                 </Border>
             </Grid>

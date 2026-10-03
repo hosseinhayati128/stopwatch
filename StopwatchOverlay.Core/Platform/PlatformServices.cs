@@ -69,6 +69,8 @@ public static class PlatformServices
         public void UnregisterHotKey(ShortcutAction action) { }
         public void UnregisterAll() { }
         public event EventHandler<ShortcutAction>? HotKeyPressed { add { } remove { } }
+        public event EventHandler<uint>? CommandKeyPressed { add { } remove { } }
+        public bool IsInCommandMode { get; set; }
         public void Dispose() { }
     }
 

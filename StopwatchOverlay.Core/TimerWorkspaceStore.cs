@@ -41,6 +41,7 @@ namespace StopwatchOverlay
         public int Number { get; set; }
         public string Name { get; set; } = "";
         public bool IsRunning { get; set; }
+        public bool IsSeparated { get; set; }
         public TimeSpan Elapsed { get; set; }
 
         public int Mode { get; set; }
@@ -567,6 +568,7 @@ namespace StopwatchOverlay
                 Number = timer.Number,
                 Name = timer.Name,
                 IsRunning = timer.IsRunning,
+                IsSeparated = timer.IsSeparated,
                 Elapsed = timer.Elapsed,
                 Mode = timer.Mode,
                 LastNonClockMode = timer.LastNonClockMode,
@@ -627,6 +629,7 @@ namespace StopwatchOverlay
             {
                 Name = saved.Name ?? "",
                 IsRunning = saved.IsRunning,
+                IsSeparated = saved.IsSeparated,
                 Mode = saved.Mode,
                 LastNonClockMode = saved.LastNonClockMode,
                 CountdownDuration = saved.CountdownDuration,

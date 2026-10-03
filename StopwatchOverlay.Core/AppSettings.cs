@@ -28,7 +28,10 @@ namespace StopwatchOverlay
         UndoTimerEdit = 17,
         AddRecord = 18,
         SyncActivityWatch = 19,
-        PeriodicReview = 20
+        PeriodicReview = 20,
+        SeparateOverlay = 21,
+        MergeOverlay = 22,
+        NextSeparatedOverlay = 23
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -177,6 +180,7 @@ namespace StopwatchOverlay
         public double TextSize { get; set; } = 48;
         public double BorderWidth { get; set; } = 2;
         public double BackgroundOpacity { get; set; } = 50;
+        public double InactiveSeparatedOverlayOpacity { get; set; } = 35;
         public NavigatorOpaqueParts OpaqueOverlayParts { get; set; } = NavigatorOpaqueParts.Default;
         public bool HideOverlayFromCapture { get; set; } = false;
 

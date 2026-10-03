@@ -139,6 +139,9 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Space" FontWeight="Bold" Margin="0,3,8,3"/>
@@ -183,8 +186,17 @@
                         <TextBlock Grid.Row="13" Grid.Column="0" Text="S" FontWeight="Bold" Margin="0,3,8,3"/>
                         <TextBlock Grid.Row="13" Grid.Column="1" Text="Sync ActivityWatch log to Obsidian now" Margin="0,3,0,3"/>
 
-                        <TextBlock Grid.Row="14" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="14" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
+                        <TextBlock Grid.Row="14" Grid.Column="0" Text="B" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="14" Grid.Column="1" Text="Break out / Separate active timer to its own dedicated clock overlay" Margin="0,3,0,3"/>
+
+                        <TextBlock Grid.Row="15" Grid.Column="0" Text="M" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="15" Grid.Column="1" Text="Merge active separated clock overlay back into herd overlay" Margin="0,3,0,3"/>
+
+                        <TextBlock Grid.Row="16" Grid.Column="0" Text="Tab / J" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="16" Grid.Column="1" Text="Switch focus between separated clock overlays and herd" Margin="0,3,0,3"/>
+
+                        <TextBlock Grid.Row="17" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
+                        <TextBlock Grid.Row="17" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
                     </Grid>
                 </ScrollViewer>
             </Grid>
