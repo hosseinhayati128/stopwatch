@@ -200,7 +200,7 @@ graph TD
     - Synchronized cards, slider, minute box, preset buttons.
     - Activity breakdown list with adjustable threshold stepper.
 
-- [ ] **Step 4.5: Project Dashboard Window**
+- [x] **Step 4.5: Project Dashboard Window**
   - `ProjectDashboardWindow.xaml`:
     - Port stats view, project list, date pickers, export buttons.
 

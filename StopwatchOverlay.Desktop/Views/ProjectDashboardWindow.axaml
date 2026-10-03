@@ -1,0 +1,379 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.ProjectDashboardWindow"
+        Title="Project time overview"
+        Width="1120" Height="800"
+        MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <DockPanel>
+        <!-- Header -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource ApplicationHeaderBrush}"
+                BorderBrush="{DynamicResource SubtleDividerBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="22,15">
+            <Grid x:Name="HeaderLayout" RowDefinitions="Auto,Auto">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Row 0: Title and Top Action Buttons -->
+                <StackPanel x:Name="HeaderTitlePanel" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Project time"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Analytics and project records"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel x:Name="HeaderActionsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <Button Content="Export" Classes="modern" Height="34" Padding="13,5" FontSize="12"
+                            ToolTip.Tip="Export records to Obsidian Markdown"
+                            Click="ExportButton_Click"/>
+                    <Button Content="Records" Classes="modern" Height="34" Padding="13,5" FontSize="12"
+                            Click="RecordsButton_Click"/>
+                    <Button Content="Refresh" Classes="modern" Height="34" Padding="13,5" FontSize="12"
+                            Click="RefreshButton_Click"/>
+                </StackPanel>
+
+                <!-- Row 1: Project Filter & Date Ranges -->
+                <StackPanel x:Name="HeaderProjectPanel" Grid.Row="1" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,14,16,0" Spacing="8">
+                    <TextBlock Text="Project" Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <ComboBox x:Name="ProjectFilterSelector" Width="230" Height="34"
+                              ToolTip.Tip="Filter every dashboard view by project"
+                              SelectionChanged="ProjectFilterSelector_SelectionChanged"/>
+                    <Button x:Name="DeleteProjectButton"
+                            Content="🗑 Delete Project"
+                            Classes="modern danger"
+                            Height="34"
+                            Padding="12,5"
+                            FontSize="12"
+                            IsVisible="False"
+                            ToolTip.Tip="Permanently delete this project and all its recorded sessions"
+                            Click="DeleteProjectButton_Click"/>
+                </StackPanel>
+
+                <StackPanel x:Name="HeaderRangePanel" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,14,0,0" Spacing="5">
+                    <Button x:Name="PreviousDayButton" Content="‹"
+                            Classes="modern"
+                            Width="34" Height="34" Padding="0" FontSize="16"
+                            ToolTip.Tip="Previous day"
+                            Click="PreviousDayButton_Click"/>
+                    <Button x:Name="DayButton" Content="Day" Classes="modern"
+                            Height="34" MinWidth="62" Padding="13,5" FontSize="12" Tag="Day" ToolTip.Tip="Show today"
+                            Click="RangeButton_Click"/>
+                    <Button x:Name="NextDayButton" Content="›"
+                            Classes="modern"
+                            Width="34" Height="34" Padding="0" FontSize="16"
+                            Margin="0,0,8,0"
+                            ToolTip.Tip="Next day"
+                            Click="NextDayButton_Click"/>
+                    <Button x:Name="SevenDaysButton" Content="7 days" Classes="modern"
+                            Height="34" MinWidth="74" Padding="13,5" FontSize="12"
+                            Tag="SevenDays" Click="RangeButton_Click"/>
+                    <Button x:Name="ThirtyDaysButton" Content="30 days" Classes="modern"
+                            Height="34" MinWidth="78" Padding="13,5" FontSize="12"
+                            Tag="ThirtyDays" Click="RangeButton_Click"/>
+                    <Button x:Name="AllTimeButton" Content="All time" Classes="modern"
+                            Height="34" MinWidth="74" Padding="13,5" FontSize="12"
+                            Tag="AllTime" Click="RangeButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Body Scroll Viewer -->
+        <ScrollViewer x:Name="DashboardScrollViewer" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="22,20,22,26" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+
+                <!-- 0. Range Heading -->
+                <Grid Grid.Row="0" Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+                    <TextBlock x:Name="RangeHeadingText" Text="Today" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <TextBlock x:Name="UpdatedText" Grid.Column="1" FontSize="12"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               VerticalAlignment="Bottom" Margin="16,0,0,3"/>
+                </Grid>
+
+                <!-- 1. KPI Cards -->
+                <UniformGrid x:Name="SummaryGrid" Grid.Row="1" Rows="1" Columns="4" Margin="0,0,-10,18">
+                    <!-- Total Tracked Time -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Margin="0,0,10,0"
+                            Padding="16,14">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="TRACKED TIMER TIME" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock x:Name="TotalTrackedText" Text="0m" FontSize="25" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Simultaneous timers are added" FontSize="10"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Sessions Count -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Margin="0,0,10,0"
+                            Padding="16,14">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="SESSIONS" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock x:Name="SessionCountText" Text="0" FontSize="25" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Projects Count -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Margin="0,0,10,0"
+                            Padding="16,14">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="PROJECTS" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock x:Name="ProjectCountText" Text="0" FontSize="25" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Active Now -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Margin="0,0,10,0"
+                            Padding="16,14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="ACTIVE NOW" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <TextBlock x:Name="ActiveCountText" Text="0" FontSize="25" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <Ellipse Grid.Column="1" x:Name="ActiveStatusDot" Width="10" Height="10"
+                                     Fill="{DynamicResource AccentBrush}" VerticalAlignment="Bottom" Margin="8,4,0,4"/>
+                        </Grid>
+                    </Border>
+                </UniformGrid>
+
+                <!-- 2. Charts Grid: Time by project (3*) & Daily totals (2*) -->
+                <Grid x:Name="ChartsGrid" Grid.Row="2" Margin="0,0,0,16" ColumnDefinitions="3*,2*">
+                    <Border Grid.Column="0" Background="{DynamicResource DialogSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="18" Margin="0,0,8,0" MinHeight="230">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Time by project" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <TextBlock Text="Compared within the selected period" FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,14"/>
+                            <StackPanel x:Name="ProjectBarsPanel"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="{DynamicResource DialogSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="18" Margin="8,0,0,0" MinHeight="230">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Daily totals" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <TextBlock Text="Tracked time by local date" FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,14"/>
+                            <StackPanel x:Name="DailyBarsPanel"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 3. Heatmap Card -->
+                <Border x:Name="HeatmapCard" Grid.Row="3" Background="{DynamicResource DialogSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="18" Margin="0,0,0,16">
+                    <StackPanel Spacing="6">
+                        <Grid Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                                <TextBlock Text="Activity heatmap" FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="Use the Project filter above; select a day to open that day's statistics"
+                                           FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <TextBlock x:Name="HeatmapScopeText" Grid.Column="1"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       MaxWidth="300" TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Bottom" Margin="18,0,0,1"/>
+                        </Grid>
+
+                        <ScrollViewer x:Name="HeatmapScrollViewer"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <Grid x:Name="HeatmapHost"/>
+                        </ScrollViewer>
+
+                        <Grid Margin="0,10,0,0">
+                            <TextBlock x:Name="HeatmapEmptyText" FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       VerticalAlignment="Center"/>
+                            <StackPanel x:Name="HeatmapLegendPanel"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Spacing="4"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Daily Timeline Card -->
+                <Border x:Name="TimelineCard" Grid.Row="4" Background="{DynamicResource DialogSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="18" Margin="0,0,0,16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Daily timeline" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <TextBlock Text="Each row spans 00:00–24:00; overlapping timers use separate lanes"
+                                   FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,14"/>
+                        <StackPanel x:Name="TimelineDaysPanel"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. Project Records Expander -->
+                <Grid Grid.Row="5" Margin="0,0,0,16">
+                    <Expander x:Name="ProjectRecordsExpander"
+                              Background="{DynamicResource SurfaceBrush}"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              BorderThickness="1"
+                              CornerRadius="8"
+                              Padding="16"
+                              IsExpanded="False">
+                        <Expander.Header>
+                            <StackPanel Margin="0,0,170,0">
+                                <TextBlock Text="Project records" FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock x:Name="ProjectRecordsSummaryText"
+                                           Text="No records in the selected period"
+                                           FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Margin="0,3,0,0" MaxWidth="650" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Expander.Header>
+
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <StackPanel MinWidth="760" Margin="0,10,0,0">
+                                <Border x:Name="RecordsPersistenceWarningPanel"
+                                        Background="{DynamicResource SurfaceRaisedBrush}"
+                                        BorderBrush="{DynamicResource WarningBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12,9"
+                                        Margin="0,0,0,12"
+                                        IsVisible="False">
+                                    <TextBlock x:Name="RecordsPersistenceWarningText"
+                                               Foreground="{DynamicResource WarningBrush}"
+                                               TextWrapping="Wrap"/>
+                                </Border>
+
+                                <Grid Margin="0,0,0,12" ColumnDefinitions="*,Auto">
+                                    <StackPanel>
+                                        <TextBlock x:Name="RecordsHeadingText"
+                                                   Text="Records in this period"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock Text="Rows show the selected-period portion; Edit opens the full saved record. Times use your local time zone."
+                                                   FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="6">
+                                        <Button x:Name="PreviousRecordsPageButton"
+                                                Content="‹ Previous"
+                                                Classes="modern"
+                                                Height="32" Padding="11,4" FontSize="12"
+                                                Click="PreviousRecordsPageButton_Click"/>
+                                        <TextBlock x:Name="RecordsPageStatusText"
+                                                   Text="0 records"
+                                                   FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   MinWidth="105" TextAlignment="Center" VerticalAlignment="Center"/>
+                                        <Button x:Name="NextRecordsPageButton"
+                                                Content="Next ›"
+                                                Classes="modern"
+                                                Height="32" Padding="11,4" FontSize="12"
+                                                Click="NextRecordsPageButton_Click"/>
+                                        <Button Content="Refresh"
+                                                Classes="modern"
+                                                Height="32" Padding="12,4" FontSize="12"
+                                                Margin="6,0,0,0"
+                                                Click="RefreshButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel x:Name="RecordsPanel"/>
+                                <StackPanel x:Name="RecordsEmptyState"
+                                            HorizontalAlignment="Center"
+                                            Margin="24,18"
+                                            IsVisible="False">
+                                    <TextBlock x:Name="RecordsEmptyHeadingText"
+                                               Text="No project records here"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="RecordsEmptyDetailText"
+                                               Text="Add a record manually or choose another date."
+                                               FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                               HorizontalAlignment="Center" TextAlignment="Center"
+                                               TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Expander>
+
+                    <!-- Add record button floating at top-right of the records card -->
+                    <Button x:Name="AddRecordButton"
+                            ZIndex="2"
+                            Content="＋ Add record"
+                            Classes="primary"
+                            Height="34"
+                            Padding="13,5"
+                            FontSize="12"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,9,46,0"
+                            Click="AddRecordButton_Click"/>
+                </Grid>
+
+                <!-- 6. Overall Empty State -->
+                <Border x:Name="EmptyState" Grid.Row="6"
+                        Background="{DynamicResource DialogSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="28" Margin="0,16,0,0"
+                        IsVisible="False">
+                    <StackPanel HorizontalAlignment="Center" Spacing="6">
+                        <TextBlock x:Name="EmptyStateHeadingText" Text="No tracked time in this period"
+                                   FontSize="17" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="EmptyStateDetailText" Text="Name a timer and start it. Its work sessions will appear here."
+                                   FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                   HorizontalAlignment="Center" TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
