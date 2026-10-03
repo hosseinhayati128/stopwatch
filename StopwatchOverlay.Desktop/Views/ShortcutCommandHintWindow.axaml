@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.ShortcutCommandHintWindow"
+        Title="Timer Command Mode"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight">
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="16,10"
+            Margin="8"
+            BoxShadow="0 4 14 0 #55000000">
+        <StackPanel HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4" Spacing="4">
+                <TextBlock Text="✦ " Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="Bold"/>
+                <TextBlock Text="Timer Commands:"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="12"
+                           FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Text="Space Start/Stop · R Reset · O Overlay · L Lap · W Controller"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontSize="12"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontSize="12"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"
+                       Margin="0,3,0,0"/>
+            <TextBlock Text="Press key to select · Esc to cancel"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       FontSize="11"
+                       HorizontalAlignment="Center"
+                       Margin="0,3,0,0"/>
+        </StackPanel>
+    </Border>
+</Window>

@@ -21,12 +21,12 @@ public static class CrashLogger
     public static Func<string?>? ThemeProvider { get; set; }
     public static Func<string?>? WindowSnapshotProvider { get; set; }
 
-    internal static string LogDirectory => Path.Combine(
+    public static string LogDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "StopwatchOverlay",
         "Logs");
 
-    internal static void RecordUiAction(string action, string? settingsCategory = null)
+    public static void RecordUiAction(string action, string? settingsCategory = null)
     {
         Interlocked.Exchange(ref _lastAction, NormalizeContextToken(action, "Unavailable"));
         if (!string.IsNullOrWhiteSpace(settingsCategory))
@@ -37,10 +37,10 @@ public static class CrashLogger
         }
     }
 
-    internal static void LogFatal(Exception exception, string origin, bool isTerminating)
+    public static void LogFatal(Exception exception, string origin, bool isTerminating)
         => TryWrite(exception, origin, isTerminating);
 
-    internal static void LogUnhandledObject(object? exceptionObject, string origin, bool isTerminating)
+    public static void LogUnhandledObject(object? exceptionObject, string origin, bool isTerminating)
     {
         Exception exception = exceptionObject as Exception
             ?? new InvalidOperationException(
@@ -48,10 +48,10 @@ public static class CrashLogger
         TryWrite(exception, origin, isTerminating);
     }
 
-    internal static void LogRecoverable(Exception exception, string origin)
+    public static void LogRecoverable(Exception exception, string origin)
         => TryWrite(exception, origin, isTerminating: false);
 
-    internal static bool TryWrite(
+    public static bool TryWrite(
         Exception exception,
         string origin,
         bool isTerminating,

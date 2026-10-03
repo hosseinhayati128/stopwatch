@@ -180,7 +180,7 @@ graph TD
   - `CloseActionDialogWindow.xaml` ➔ Avalonia Window.
   - `FocusInterruptionDialogWindow.xaml` ➔ Avalonia Window.
 
-- [ ] **Step 4.2: Note & Command Windows**
+- [x] **Step 4.2: Note & Command Windows**
   - `NoteCommandHintWindow.xaml` ➔ Avalonia Window.
   - `ShortcutCommandHintWindow.xaml` ➔ Avalonia Window.
   - `NoteEntryWindow.xaml` ➔ Avalonia Window.

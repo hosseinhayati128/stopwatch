@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="StopwatchOverlay" />
+    <InternalsVisibleTo Include="StopwatchOverlay.Desktop" />
     <InternalsVisibleTo Include="StopwatchOverlay.Tests" />
   </ItemGroup>
 

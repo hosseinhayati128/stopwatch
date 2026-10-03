@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.NotesViewerWindow"
+        Title="Notes, Todos &amp; Reminders"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="True"
+        Width="640" Height="480"
+        MinWidth="400" MinHeight="340"
+        WindowStartupLocation="CenterScreen">
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="16"
+            Margin="10"
+            BoxShadow="0 8 28 0 #77000000">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <!-- Header (Draggable) -->
+            <Grid Grid.Row="0" Margin="0,0,0,8" PointerPressed="OnHeaderPointerPressed" Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="ViewerHeading"
+                           Text="✦ Notes, Todos &amp; Reminders"
+                           Classes="heading"
+                           VerticalAlignment="Center"/>
+
+                <Border x:Name="CountdownBadge"
+                        Grid.Column="1"
+                        Background="{DynamicResource DialogSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderSoftBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8,4"
+                        VerticalAlignment="Center"
+                        Margin="0,0,10,0">
+                    <TextBlock x:Name="CountdownText"
+                               Text="Auto-closing in 30s"
+                               FontSize="11"
+                               Foreground="{DynamicResource AccentBrush}"/>
+                </Border>
+
+                <Button x:Name="CloseButton"
+                        Grid.Column="2"
+                        Width="28" Height="28"
+                        Classes="modern"
+                        Padding="0"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="Close (Enter or Esc)"
+                        Click="OnCloseClicked">
+                    <TextBlock Text="✕" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
+
+            <!-- Filter Strip -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource DialogSurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="4,2"
+                    Margin="0,0,0,10"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <RadioButton x:Name="FilterAllRadio" Content="All" GroupName="NoteType" IsChecked="True"
+                                 IsCheckedChanged="OnFilterChanged"/>
+                    <RadioButton x:Name="FilterTodosRadio" Content="Todos" GroupName="NoteType"
+                                 IsCheckedChanged="OnFilterChanged"/>
+                    <RadioButton x:Name="FilterNotesRadio" Content="Notes" GroupName="NoteType"
+                                 IsCheckedChanged="OnFilterChanged"/>
+                    <RadioButton x:Name="FilterRemindersRadio" Content="Reminders" GroupName="NoteType"
+                                 IsCheckedChanged="OnFilterChanged"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Content Area -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource DialogSurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderSoftBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="8">
+                <ScrollViewer x:Name="NotesScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="ItemsContainer">
+                        <TextBlock x:Name="EmptyMessageText"
+                                   Text="Loading notes..."
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontSize="12"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Margin="8,20,8,8"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Footer -->
+            <Grid Grid.Row="3" Margin="0,10,0,0">
+                <TextBlock Text="Press Enter or Esc to close immediately"
+                           FontSize="11"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           HorizontalAlignment="Left"/>
+                <TextBlock x:Name="VaultLocationText"
+                           Text=""
+                           FontSize="11"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           HorizontalAlignment="Right"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

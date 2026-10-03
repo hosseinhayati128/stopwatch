@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.NoteEntryWindow"
+        Title="Note Entry"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="True"
+        Width="520" Height="270"
+        MinWidth="360" MinHeight="220"
+        WindowStartupLocation="CenterScreen">
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="16"
+            Margin="10"
+            BoxShadow="0 8 28 0 #77000000">
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- Header (Draggable) -->
+            <Grid Grid.Row="0" Margin="0,0,0,12" PointerPressed="OnHeaderPointerPressed" Background="Transparent">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock x:Name="BadgeIcon" Text="✦" FontSize="16" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="HeadingText" Text="Add Note" Classes="heading" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button x:Name="CloseButton"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Width="28" Height="28"
+                        Classes="modern"
+                        Padding="0"
+                        ToolTip.Tip="Close (Esc)"
+                        Click="OnCancelClicked">
+                    <TextBlock Text="✕" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
+
+            <!-- Note Input Body -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource DialogSurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderSoftBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="6"
+                    MinHeight="80">
+                <TextBox x:Name="NoteInputBox"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         FontSize="14"
+                         Watermark="What needs to be done?"
+                         VerticalAlignment="Stretch"/>
+            </Border>
+
+            <!-- Footer: Buttons & Shortcut Hint -->
+            <StackPanel Grid.Row="2" Margin="0,12,0,0" Spacing="8">
+                <Grid ColumnDefinitions="*,14,*">
+                    <Button Grid.Column="0"
+                            x:Name="CancelButton"
+                            Content="Cancel"
+                            Classes="modern"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            ToolTip.Tip="Cancel (Esc)"
+                            Click="OnCancelClicked"/>
+                    <Button Grid.Column="2"
+                            x:Name="SaveButton"
+                            Content="Save"
+                            Classes="primary"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            ToolTip.Tip="Save (Ctrl+Enter)"
+                            Click="OnSaveClicked"/>
+                </Grid>
+                <TextBlock Text="Ctrl+Enter to Save  ·  Esc to Cancel"
+                           HorizontalAlignment="Center"
+                           FontSize="10.5"
+                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
