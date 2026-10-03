@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.LightRingWindow"
+        Title="Light Ring"
+        SystemDecorations="None"
+        Background="{x:Null}"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Focusable="False"
+        IsHitTestVisible="False">
+    
+    <!-- Border around the entire screen - interior is transparent -->
+    <Border x:Name="LightRingBorder"
+            BorderBrush="White"
+            BorderThickness="20"
+            Background="{x:Null}"
+            CornerRadius="0"
+            IsHitTestVisible="False" />
+</Window>

@@ -32,7 +32,7 @@ public partial class App : Application
         {
             // By default on desktop, don't exit when the last window closes if tray icon is active
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            desktop.MainWindow = new Views.MainWindow();
+            desktop.MainWindow = new Views.ControllerWindow();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -44,7 +44,7 @@ public partial class App : Application
         {
             if (desktop.MainWindow == null)
             {
-                desktop.MainWindow = new Views.MainWindow();
+                desktop.MainWindow = new Views.ControllerWindow();
             }
             desktop.MainWindow.Show();
             desktop.MainWindow.Activate();
@@ -53,7 +53,9 @@ public partial class App : Application
 
     private void OnOpenDashboardClicked(object? sender, EventArgs e)
     {
-        // Placeholder for Dashboard window activation in Phase 4
+        var dashboard = new Views.ProjectDashboardWindow();
+        dashboard.Show();
+        dashboard.Activate();
     }
 
     private void OnExitClicked(object? sender, EventArgs e)

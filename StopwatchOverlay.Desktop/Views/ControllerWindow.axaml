@@ -1,0 +1,231 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:StopwatchOverlay.Desktop.Views"
+        x:Class="StopwatchOverlay.Desktop.Views.ControllerWindow"
+        Title="Stopwatch Controller"
+        Width="1040" Height="720" MinWidth="600" MinHeight="520"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource HeaderBrush}"
+                BorderBrush="{DynamicResource SubtleDividerBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- Brand Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <Path Width="22" Height="22"
+                          Data="M 12,2 C 6.48,2 2,6.48 2,12 C 2,17.52 6.48,22 12,22 C 17.52,22 22,17.52 22,12 C 22,6.48 17.52,2 12,2 Z M 12.5,7 L 11,7 L 11,13 L 16.25,16.15 L 17,14.92 L 12.5,12.25 L 12.5,7 Z"
+                          Fill="{DynamicResource PrimaryAccentBrush}"
+                          Stretch="Uniform" VerticalAlignment="Center"/>
+                    <TextBlock Classes="heading" Text="Stopwatch Overlay" FontSize="18" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Top Action Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="DashboardTopButton" Classes="modern" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
+                    <Button x:Name="SettingsTopButton" Classes="modern" Content="Settings" Click="SettingsButton_Click"/>
+                    <Button x:Name="ShortcutsTopButton" Classes="modern" Content="Shortcuts" Click="ShortcutsButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Menu Bar -->
+        <Menu Grid.Row="1" Background="{DynamicResource NavigationRailBrush}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
+            <MenuItem Header="_Timers">
+                <MenuItem Header="_New timer" Click="NewTimerMenuItem_Click"/>
+                <MenuItem Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
+                <MenuItem x:Name="ToggleCombinedMenuItem" Header="_Combine overlays" Click="ToggleCombinedOverlayMenuItem_Click"/>
+                <Separator/>
+                <MenuItem Header="_Edit active timer..." Click="EditTimerMenuItem_Click"/>
+                <MenuItem Header="Set _project..." Click="RenameTimerMenuItem_Click"/>
+                <MenuItem Header="_Close active timer" Click="CloseTimerMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Dashboard" Click="DashboardButton_Click"/>
+            <MenuItem Header="_Shortcuts" Click="ShortcutsButton_Click"/>
+            <MenuItem Header="_Settings" Click="SettingsButton_Click"/>
+        </Menu>
+
+        <!-- Main Body -->
+        <Grid Grid.Row="2" ColumnDefinitions="260,*">
+            
+            <!-- Left Rail: Timers List -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource NavigationRailBrush}"
+                    BorderBrush="{DynamicResource SubtleDividerBrush}"
+                    BorderThickness="0,0,1,0"
+                    Padding="12">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Row="0" Text="Timers" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+                    
+                    <ListBox Grid.Row="1" x:Name="TimerRailList"
+                             Background="Transparent" BorderThickness="0"
+                             SelectionChanged="TimerRailList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="views:TimerRailItemViewModel">
+                                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,8" Margin="0,2">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding DisplaySummary}" FontSize="12" Opacity="0.75" FontFamily="Consolas, monospace"/>
+                                        </StackPanel>
+                                        <Ellipse Grid.Column="1" Width="8" Height="8"
+                                                 Fill="{DynamicResource PrimaryAccentBrush}"
+                                                 IsVisible="{Binding IsRunning}"
+                                                 VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="2" Margin="0,10,0,0" Spacing="6">
+                        <TextBlock x:Name="CombinedRailStatus" Text="Separate overlays" FontSize="11" Opacity="0.6" HorizontalAlignment="Center"/>
+                        <Button x:Name="NewTimerRailButton" Classes="primary" Content="+ New timer" HorizontalAlignment="Stretch" Click="NewTimerMenuItem_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Right Workspace -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="24,18">
+                    
+                    <!-- Title and New Timer Button -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading" Text="Active Timer" FontSize="20" VerticalAlignment="Center"/>
+                            <Button Content="Set Project" Classes="modern" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="+ New timer" Classes="modern" Click="NewTimerMenuItem_Click"/>
+                    </Grid>
+
+                    <!-- Mode Selector -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12" Margin="0,0,0,16">
+                        <RadioButton x:Name="StopwatchModeRadio" Content="Stopwatch" IsChecked="True" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                        <RadioButton x:Name="ClockModeRadio" Content="Clock" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                        <RadioButton x:Name="CountdownModeRadio" Content="Countdown" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                        <RadioButton x:Name="TimecodeModeRadio" Content="Timecode" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                    </StackPanel>
+
+                    <!-- Countdown Options (Visible only in Countdown mode) -->
+                    <Border Grid.Row="2" x:Name="CountdownPanel"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16,12"
+                            Margin="0,0,0,16"
+                            IsVisible="False"
+                            HorizontalAlignment="Center">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                                <RadioButton x:Name="CountdownDurationRadio" Content="Duration" IsChecked="True" GroupName="CountdownType" Checked="CountdownTypeRadio_Checked"/>
+                                <RadioButton x:Name="CountdownUntilRadio" Content="Until clock time" GroupName="CountdownType" Checked="CountdownTypeRadio_Checked"/>
+                            </StackPanel>
+
+                            <!-- Fixed duration inputs -->
+                            <StackPanel x:Name="CountdownDurationPanel" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <TextBlock Text="Duration:" VerticalAlignment="Center"/>
+                                <NumericUpDown x:Name="CountdownMinutesBox" Minimum="0" Maximum="999" Value="5" FormatString="0" Width="80"/>
+                                <TextBlock Text="min" VerticalAlignment="Center"/>
+                                <NumericUpDown x:Name="CountdownSecondsBox" Minimum="0" Maximum="59" Value="0" FormatString="0" Width="70"/>
+                                <TextBlock Text="sec" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Presets -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <Button Content="1m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="1"/>
+                                <Button Content="5m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="5"/>
+                                <Button Content="10m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="10"/>
+                                <Button Content="15m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="15"/>
+                                <Button Content="25m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="25"/>
+                                <Button Content="30m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="30"/>
+                                <Button Content="45m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="45"/>
+                                <Button Content="60m" Classes="modern" Padding="8,4" Click="PresetButton_Click" Tag="60"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Hero Time Display -->
+                    <Border Grid.Row="3"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1.5"
+                            CornerRadius="12"
+                            Padding="32,20"
+                            Margin="0,0,0,18"
+                            HorizontalAlignment="Stretch">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                                <Ellipse x:Name="RecIndicator" Width="18" Height="18" Fill="#EF4444" IsVisible="False" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="TimeDisplay"
+                                           Text="00:00:00.0"
+                                           FontFamily="Consolas, monospace"
+                                           FontSize="64"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock x:Name="ProjectSubtitle" Text="" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0" IsVisible="False"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Control Buttons -->
+                    <WrapPanel Grid.Row="4" HorizontalAlignment="Center" Margin="0,0,0,18">
+                        <Button x:Name="StartStopButton" Classes="primary" Content="Start" MinWidth="110" Height="40" Margin="0,0,10,6" Click="StartStopButton_Click"/>
+                        <Button x:Name="LapButton" Classes="modern" Content="Add lap" MinWidth="90" Height="40" Margin="0,0,10,6" Click="LapButton_Click"/>
+                        <Button x:Name="ResetButton" Classes="modern" Content="Reset" MinWidth="90" Height="40" Margin="0,0,10,6" Click="ResetButton_Click"/>
+                        <Button x:Name="ToggleOverlayButton" Classes="modern" Content="Hide overlay" MinWidth="110" Height="40" Margin="0,0,10,6" Click="ToggleOverlayButton_Click"/>
+                        <Button x:Name="EditButton" Classes="modern" Content="Edit" MinWidth="80" Height="40" Margin="0,0,0,6" Click="EditTimerMenuItem_Click"/>
+                    </WrapPanel>
+
+                    <!-- Lap Times List -->
+                    <Border Grid.Row="5"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource SubtleDividerBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14,10"
+                            MinHeight="100"
+                            MaxHeight="180">
+                        <Grid RowDefinitions="Auto,*">
+                            <TextBlock Grid.Row="0" Text="Lap times" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                            <ListBox Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="13" Margin="0,1"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
+                                       Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Status Bar -->
+                    <Border Grid.Row="6" Margin="0,16,0,0" Padding="0,8,0,0"
+                            BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,1,0,0">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="Gray"/>
+                                <TextBlock x:Name="StatusText" Text="Ready" FontSize="12" Opacity="0.8"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontSize="11" Opacity="0.6"
+                                       Text="Win+F2 → Space Start/Stop · R Reset · O Overlay · L Lap · W Controller"/>
+                        </Grid>
+                    </Border>
+
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

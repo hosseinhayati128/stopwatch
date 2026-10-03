@@ -21,4 +21,9 @@ public interface IWindowOverlayService
     /// Configures the window to not steal focus on activation and hide from task switchers (Alt+Tab).
     /// </summary>
     void SetNoActivateToolWindow(IntPtr windowHandle);
+
+    /// <summary>
+    /// Configures whether the window is excluded from screen capture (video recording / screenshots).
+    /// </summary>
+    void SetCaptureAffinity(IntPtr windowHandle, bool excludeFromCapture);
 }

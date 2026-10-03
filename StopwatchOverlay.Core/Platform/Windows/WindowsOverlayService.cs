@@ -71,4 +71,23 @@ public sealed class WindowsOverlayService : IWindowOverlayService
             CrashLogger.LogRecoverable(ex, "WindowsOverlayService.SetNoActivateToolWindow");
         }
     }
+
+    private const uint WDA_NONE = 0x00000000;
+    private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+
+    public void SetCaptureAffinity(IntPtr windowHandle, bool excludeFromCapture)
+    {
+        if (windowHandle == IntPtr.Zero) return;
+        try
+        {
+            SetWindowDisplayAffinity(windowHandle, excludeFromCapture ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "WindowsOverlayService.SetCaptureAffinity");
+        }
+    }
 }

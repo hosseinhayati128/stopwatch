@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 using StopwatchOverlay.Platform;
 
 namespace StopwatchOverlay.Platform.Windows;
 
+[SupportedOSPlatform("windows")]
 public sealed class WindowsSingleInstanceService : ISingleInstanceService
 {
     private const string SingleInstanceMutexName = @"Local\StopwatchOverlay.SingleInstance";

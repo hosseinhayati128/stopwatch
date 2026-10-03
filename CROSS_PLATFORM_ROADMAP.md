@@ -213,14 +213,22 @@ graph TD
     - Added `StorageProvider` folder and image picking for Obsidian and custom backgrounds.
     - Integrated ActivityWatch, Telegram outbox sync, and internet speed check triggers.
 
-- [ ] **Step 4.7: Main Controller & Transparent Overlay**
-  - `OverlayWindow.xaml`:
+- [x] **Step 4.7: Main Controller & Transparent Overlay**
+  - `OverlayWindow.xaml` ➔ `OverlayWindow.axaml` & `.axaml.cs`:
     - Always-on-top transparent timer HUD overlay.
-    - Click-through and repositioning.
-  - `ControllerWindow.xaml`:
-    - Main control window and timer management.
-  - `LightRingWindow.xaml`:
+    - Click-through and repositioning drag via `BeginMoveDrag`.
+    - Floating action toolbar with Close, Pause/Resume, Reset, and Edit actions.
+    - Vector iconography, text outline shadows, REC indicator, and capture affinity.
+  - `ControllerWindow.xaml` ➔ `ControllerWindow.axaml` & `.axaml.cs`:
+    - Master controller with timer rail, session cards, large timer display.
+    - Preset buttons, stopwatch, countdown, and clock modes.
+    - Integrated with `TimerSessionManager`, `TimerWorkspaceStore`, and `ProjectTimeStore`.
+    - Wire global hotkeys via `SharpHookHotKeyService` and system tray.
+  - `LightRingWindow.xaml` ➔ `LightRingWindow.axaml` & `.axaml.cs`:
     - Visual screen-edge pulse/glow indicator.
+    - Border thickness, brightness alpha, and capture exclusion.
+  - `ShortcutsWindow.xaml` ➔ `ShortcutsWindow.axaml` & `.axaml.cs`:
+    - Keyboard shortcut configuration and command mode reference table.
 
 ---
 

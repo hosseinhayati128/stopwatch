@@ -1,0 +1,192 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="StopwatchOverlay.Desktop.Views.OverlayWindow"
+        Title="Stopwatch Overlay"
+        SystemDecorations="None"
+        Background="{x:Null}"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Focusable="False"
+        SizeToContent="WidthAndHeight">
+
+    <Grid x:Name="RootLayout" Background="{x:Null}">
+        <!-- Timer Background Surface -->
+        <Border x:Name="OverlayBackgroundSurface"
+                CornerRadius="8"
+                IsHitTestVisible="False" />
+
+        <!-- Timer Border & Interactive Surface -->
+        <Border x:Name="OverlayBorder"
+                Background="Transparent"
+                BorderThickness="2"
+                CornerRadius="8"
+                Padding="16,10"
+                PointerEntered="OnTimerSurfacePointerEntered"
+                PointerExited="OnTimerSurfacePointerExited"
+                PointerPressed="OnTimerSurfacePointerPressed">
+            <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- REC Indicator -->
+                    <Ellipse x:Name="RecIndicator"
+                             Width="14" Height="14"
+                             Fill="#EF4444"
+                             Margin="0,0,10,0"
+                             VerticalAlignment="Center"
+                             IsVisible="False" />
+
+                    <!-- Outlined text effect using multiple TextBlocks -->
+                    <Grid x:Name="TimeTextGrid">
+                        <TextBlock x:Name="TimeTextShadow1"
+                                   Text="00:00:00.0"
+                                   FontFamily="Consolas"
+                                   FontSize="48"
+                                   FontWeight="Bold"
+                                   Foreground="Black">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform X="2" Y="2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBlock x:Name="TimeTextShadow2"
+                                   Text="00:00:00.0"
+                                   FontFamily="Consolas"
+                                   FontSize="48"
+                                   FontWeight="Bold"
+                                   Foreground="Black">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform X="-2" Y="-2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBlock x:Name="TimeTextShadow3"
+                                   Text="00:00:00.0"
+                                   FontFamily="Consolas"
+                                   FontSize="48"
+                                   FontWeight="Bold"
+                                   Foreground="Black">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform X="2" Y="-2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBlock x:Name="TimeTextShadow4"
+                                   Text="00:00:00.0"
+                                   FontFamily="Consolas"
+                                   FontSize="48"
+                                   FontWeight="Bold"
+                                   Foreground="Black">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform X="-2" Y="2"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBlock x:Name="TimeText"
+                                   Text="00:00:00.0"
+                                   FontFamily="Consolas"
+                                   FontSize="48"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Project / Timer name text -->
+                <TextBlock x:Name="TimerNameText"
+                           IsVisible="False"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           FontFamily="Segoe UI, Inter, Sans-Serif"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Opacity="0.85"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Active Border Indicator -->
+        <Border x:Name="ActiveIndicatorBorder"
+                BorderBrush="Transparent"
+                BorderThickness="1.5"
+                CornerRadius="8"
+                IsHitTestVisible="False" />
+
+        <!-- Action Popup (Bottom Floating Toolbar) -->
+        <Popup x:Name="ActionPopup"
+               PlacementTarget="{Binding #OverlayBorder}"
+               Placement="Bottom"
+               HorizontalOffset="0"
+               VerticalOffset="6"
+               IsLightDismissEnabled="False">
+            <Border x:Name="ActionSurface"
+                    Background="{DynamicResource SurfaceRaisedBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="6,4"
+                    PointerEntered="ActionSurface_PointerEntered"
+                    PointerExited="ActionSurface_PointerExited">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="CloseActionButton"
+                            Classes="modern"
+                            Width="30" Height="30" Padding="0"
+                            ToolTip.Tip="Close timer"
+                            Click="CloseActionButton_Click">
+                        <Path Width="12" Height="12"
+                              Data="M 2,2 L 10,10 M 10,2 L 2,10"
+                              Stretch="Uniform"
+                              Stroke="{DynamicResource PrimaryTextBrush}"
+                              StrokeThickness="1.8"
+                              StrokeLineCap="Round"/>
+                    </Button>
+
+                    <Button x:Name="PauseResumeActionButton"
+                            Classes="modern"
+                            Width="30" Height="30" Padding="0"
+                            ToolTip.Tip="Pause timer"
+                            Click="PauseResumeActionButton_Click">
+                        <Grid Width="14" Height="14">
+                            <StackPanel x:Name="PauseIcon" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="3">
+                                <Rectangle Width="3" Height="11" Fill="{DynamicResource PrimaryTextBrush}" RadiusX="1" RadiusY="1"/>
+                                <Rectangle Width="3" Height="11" Fill="{DynamicResource PrimaryTextBrush}" RadiusX="1" RadiusY="1"/>
+                            </StackPanel>
+                            <Path x:Name="ResumeIcon"
+                                  IsVisible="False"
+                                  Margin="2,1,0,1"
+                                  Data="M 2,1 L 12,7 L 2,13 Z"
+                                  Stretch="Fill"
+                                  Fill="{DynamicResource PrimaryTextBrush}"/>
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="ResetActionButton"
+                            Classes="modern"
+                            Width="30" Height="30" Padding="0"
+                            ToolTip.Tip="Reset timer"
+                            Click="ResetActionButton_Click">
+                        <Path Width="14" Height="14"
+                              Data="M 12.5,4.5 A 5.5,5.5 0 1 0 13,10 M 12.5,4.5 L 8.5,4.5 M 12.5,4.5 L 12.5,0.5"
+                              Stretch="Uniform"
+                              Stroke="{DynamicResource PrimaryTextBrush}"
+                              StrokeThickness="1.7"
+                              StrokeLineCap="Round"
+                              StrokeJoin="Round"/>
+                    </Button>
+
+                    <Button x:Name="EditActionButton"
+                            Classes="modern"
+                            Width="30" Height="30" Padding="0"
+                            ToolTip.Tip="Edit timer (Win+F2 → E)"
+                            Click="EditActionButton_Click">
+                        <Path Width="13" Height="13"
+                              Data="M 9.5,1.5 L 11.5,3.5 L 3.5,11.5 L 1.5,11.5 L 1.5,9.5 Z M 8,3 L 10,5"
+                              Stretch="Uniform"
+                              Stroke="{DynamicResource PrimaryTextBrush}"
+                              StrokeThickness="1.5"
+                              StrokeLineCap="Round"
+                              StrokeJoin="Round"/>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</Window>

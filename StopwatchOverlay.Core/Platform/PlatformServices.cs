@@ -60,6 +60,7 @@ public static class PlatformServices
         public void SetClickThrough(IntPtr windowHandle, bool clickThrough) { }
         public void SetAlwaysOnTop(IntPtr windowHandle, bool topmost) { }
         public void SetNoActivateToolWindow(IntPtr windowHandle) { }
+        public void SetCaptureAffinity(IntPtr windowHandle, bool excludeFromCapture) { }
     }
 
     private sealed class NullHotKeyService : IHotKeyService
