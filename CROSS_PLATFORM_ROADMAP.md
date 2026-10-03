@@ -155,34 +155,20 @@ graph TD
 ### Phase 3: Avalonia UI Setup & Asset Migration
 **Goal:** Initialize the Avalonia UI desktop project, port themes, styles, brush palettes, and vector assets.
 
-- [ ] **Step 3.1: Create `StopwatchOverlay.Desktop` Project**
+- [x] **Step 3.1: Create `StopwatchOverlay.Desktop` Project**
   - Target: `<TargetFramework>net10.0</TargetFramework>`.
-  - Packages:
-    - `Avalonia` (11.2+)
-    - `Avalonia.Desktop`
-    - `Avalonia.Themes.Fluent`
-    - `Avalonia.Svg.Skia`
-    - `SharpHook`
+  - Packages: `Avalonia 11.2.4`, `Avalonia.Desktop`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`, `Avalonia.Svg.Skia`, and `SharpHook`.
   - Reference `StopwatchOverlay.Core`.
+  - Added to `StopwatchOverlay.sln`.
 
-- [ ] **Step 3.2: Port Styling & Theme Resources (`App.axaml`)**
-  - Convert WPF brush resources (`PrimaryTextBrush`, `SecondaryTextBrush`, `AccentBrush`, `DialogSurfaceBrush`, `SurfaceRaisedBrush`, `BorderBrush`, `WarningBrush`, `SuccessBrush`) to Avalonia `ResourceDictionary`.
-  - Convert SVG and image assets (`Assets/Ornaments/*.svg`, logos, background themes).
-  - Embed fonts (`Acanthus`, `Pirate`).
+- [x] **Step 3.2: Port Styling & Theme Resources (`App.axaml`)**
+  - Created `Midnight.axaml` and `Daylight.axaml` resource dictionaries.
+  - Created `AppStyles.axaml` for modern button, typography, and window styling.
+  - Copied all font, ornament SVG, background image, and pirate texture assets into `StopwatchOverlay.Desktop/Assets/`.
 
-- [ ] **Step 3.3: Implement Cross-Platform System Tray**
-  - Use Avalonia's native `<TrayIcon>` in `App.axaml`:
-    ```xml
-    <TrayIcon.Menu>
-      <NativeMenu>
-        <NativeMenuItem Header="Open Stopwatch" Click="ShowController_Click" />
-        <NativeMenuItem Header="Dashboard" Click="ShowDashboard_Click" />
-        <NativeMenuItemSeparator />
-        <NativeMenuItem Header="Exit" Click="Exit_Click" />
-      </NativeMenu>
-    </TrayIcon.Menu>
-    ```
-  - Eliminates `System.Windows.Forms.NotifyIcon` completely.
+- [x] **Step 3.3: Implement Cross-Platform System Tray**
+  - Configured Avalonia native `<TrayIcon>` in `App.axaml` with native context menu items (Open Stopwatch, Dashboard, Exit).
+  - Configured `ShutdownMode.OnExplicitShutdown` so the background tray continues running when windows close.
 
 ---
 
