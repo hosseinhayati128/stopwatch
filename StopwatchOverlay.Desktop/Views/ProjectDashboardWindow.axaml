@@ -163,6 +163,8 @@
                                        Foreground="{DynamicResource SecondaryTextBrush}"/>
                             <TextBlock x:Name="SessionCountText" Text="0" FontSize="25" FontWeight="SemiBold"
                                        Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Work sessions completed" FontSize="10"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
@@ -178,6 +180,8 @@
                                        Foreground="{DynamicResource SecondaryTextBrush}"/>
                             <TextBlock x:Name="ProjectCountText" Text="0" FontSize="25" FontWeight="SemiBold"
                                        Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Tracked projects in range" FontSize="10"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
@@ -194,6 +198,8 @@
                                            Foreground="{DynamicResource SecondaryTextBrush}"/>
                                 <TextBlock x:Name="ActiveCountText" Text="0" FontSize="25" FontWeight="SemiBold"
                                            Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                                <TextBlock Text="Currently running" FontSize="10"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
                             </StackPanel>
                             <Ellipse Grid.Column="1" x:Name="ActiveStatusDot" Width="10" Height="10"
                                      Fill="{DynamicResource AccentBrush}" VerticalAlignment="Bottom" Margin="8,4,0,4"/>

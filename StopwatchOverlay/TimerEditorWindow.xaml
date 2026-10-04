@@ -65,34 +65,47 @@
                           Margin="0,0,0,10" Style="{StaticResource PirateSettingsSwitch}"
                           Click="IdleStopForProjectCheck_Click"/>
 
-                <!-- Category Assignment -->
-                <TextBlock Text="CATEGORY" Style="{StaticResource EditorLabel}"/>
+                <!-- Category & Score per Hour Assignment -->
                 <Grid Margin="0,0,0,14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
-                    <ComboBox x:Name="CategorySelector" MinHeight="38" SelectionChanged="CategorySelector_SelectionChanged"/>
-                    <TextBox x:Name="CustomCategoryBox" Grid.Column="0" MinHeight="38" Visibility="Collapsed"
-                             VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"
-                             TextChanged="CustomCategoryBox_TextChanged"/>
-                    <Button x:Name="ToggleCategoryInputButton" Grid.Column="1" Content="New..." MinWidth="60" Margin="8,0,0,0"
-                            Style="{StaticResource ModernButton}" Click="ToggleCategoryInputButton_Click"/>
-                </Grid>
 
-                <!-- Score per Hour Assignment -->
-                <TextBlock Text="SCORE PER HOUR" Style="{StaticResource EditorLabel}"/>
-                <Grid Margin="0,0,0,14">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="ScorePerHourBox" Text="1.0" MinHeight="38"
-                             VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"/>
-                    <TextBlock Grid.Column="1" Text="pts / hr"
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               FontSize="12" Margin="10,0,0,0"/>
+                    <!-- Category -->
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="CATEGORY" Style="{StaticResource EditorLabel}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="CategorySelector" MinHeight="38" SelectionChanged="CategorySelector_SelectionChanged"/>
+                            <TextBox x:Name="CustomCategoryBox" Grid.Column="0" MinHeight="38" Visibility="Collapsed"
+                                     VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"
+                                     TextChanged="CustomCategoryBox_TextChanged"/>
+                            <Button x:Name="ToggleCategoryInputButton" Grid.Column="1" Content="New..." MinWidth="60" Margin="8,0,0,0"
+                                    Style="{StaticResource ModernButton}" Click="ToggleCategoryInputButton_Click"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Score per Hour -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="SCORE / HOUR" Style="{StaticResource EditorLabel}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ScorePerHourBox" Text="1.0" MinHeight="38"
+                                     VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                                     Style="{StaticResource TimeInputBox}"/>
+                            <TextBlock Grid.Column="1" Text="pts/hr"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="12" Margin="8,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
                 </Grid>
 
                 <!-- Total Time Value Section -->

@@ -368,6 +368,8 @@
                         <StackPanel>
                             <TextBlock Text="SESSIONS" Style="{StaticResource DashboardKpiCaption}" FontWeight="SemiBold"/>
                             <TextBlock x:Name="SessionCountText" Text="0" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0" Style="{StaticResource DashboardKpi}"/>
+                            <TextBlock Text="Work sessions completed" Style="{StaticResource Caption}"
+                                       FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                     </Border>
@@ -377,6 +379,8 @@
                         <StackPanel>
                             <TextBlock Text="PROJECTS" Style="{StaticResource DashboardKpiCaption}" FontWeight="SemiBold"/>
                             <TextBlock x:Name="ProjectCountText" Text="0" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0" Style="{StaticResource DashboardKpi}"/>
+                            <TextBlock Text="Tracked projects in range" Style="{StaticResource Caption}"
+                                       FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                     </Border>
@@ -391,6 +395,8 @@
                             <StackPanel>
                                 <TextBlock Text="ACTIVE NOW" Style="{StaticResource DashboardKpiCaption}" FontWeight="SemiBold"/>
                                 <TextBlock x:Name="ActiveCountText" Text="0" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0" Style="{StaticResource DashboardKpi}"/>
+                                <TextBlock Text="Currently running" Style="{StaticResource Caption}"
+                                           FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <Ellipse Grid.Column="1" x:Name="ActiveStatusDot" Width="9" Height="9"
                                      Fill="{DynamicResource AccentBrush}" VerticalAlignment="Bottom" Margin="8,4,0,0"/>

@@ -102,9 +102,9 @@ namespace StopwatchOverlay
                 TimeSpan value = Mode == 1 ? DateTime.Now.TimeOfDay
                     : Mode == 2 ? CountdownRemaining
                     : Elapsed;
-                string catBadge = !string.IsNullOrWhiteSpace(Category) ? $"  ·  [{Category}]" : "";
-                string sepBadge = IsSeparated ? "  ·  Separated" : "";
-                return $"{value:hh\\:mm\\:ss}  ·  {state}  ·  {mode}{catBadge}{sepBadge}";
+                string catBadge = !string.IsNullOrWhiteSpace(Category) ? $"  \u00b7  [{Category}]" : "";
+                string sepBadge = IsSeparated ? "  \u00b7  Separated" : "";
+                return $"{value:hh\\:mm\\:ss}  \u00b7  {state}  \u00b7  {mode}{catBadge}{sepBadge}";
             }
         }
         public ResumableStopwatch Stopwatch { get; } = new();

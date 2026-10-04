@@ -80,35 +80,69 @@
             </StackPanel>
         </Border>
 
-        <TextBlock Text="Category" Style="{StaticResource SectionHeaderText}" Margin="0,14,0,7"/>
-        <Grid>
+        <!-- Category & Score / Hour Row -->
+        <Grid Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
-            <ComboBox x:Name="CategorySelector"
-                      MinHeight="44"
-                      AutomationProperties.Name="Category"
-                      SelectionChanged="CategorySelector_SelectionChanged"
-                      DropDownClosed="CategorySelector_DropDownClosed"/>
-            <Button x:Name="AddCategoryButton"
-                    Grid.Column="1"
-                    Content="+"
-                    Width="44"
-                    Height="44"
-                    Padding="0"
-                    Margin="8,0,0,0"
-                    FontSize="20"
-                    Style="{StaticResource ModernButton}"
-                    ToolTip="Add custom category"
-                    AutomationProperties.Name="Add custom category"
-                    AutomationProperties.HelpText="Open a field for entering a custom category name"
-                    Click="AddCategoryButton_Click"/>
+
+            <!-- Category -->
+            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                <TextBlock Text="Category" Style="{StaticResource SectionHeaderText}" Margin="0,0,0,7"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="CategorySelector"
+                              MinHeight="44"
+                              AutomationProperties.Name="Category"
+                              SelectionChanged="CategorySelector_SelectionChanged"
+                              DropDownClosed="CategorySelector_DropDownClosed"/>
+                    <Button x:Name="AddCategoryButton"
+                            Grid.Column="1"
+                            Content="+"
+                            Width="44"
+                            Height="44"
+                            Padding="0"
+                            Margin="8,0,0,0"
+                            FontSize="20"
+                            Style="{StaticResource ModernButton}"
+                            ToolTip="Add custom category"
+                            AutomationProperties.Name="Add custom category"
+                            AutomationProperties.HelpText="Open a field for entering a custom category name"
+                            Click="AddCategoryButton_Click"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Score per hour -->
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="Score / hour" Style="{StaticResource SectionHeaderText}" Margin="0,0,0,7"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ScorePerHourBox"
+                             Text="1.0"
+                             MinHeight="44"
+                             AutomationProperties.Name="Score per hour"
+                             Style="{StaticResource TimeInputBox}"
+                             VerticalContentAlignment="Center"
+                             HorizontalContentAlignment="Center"
+                             KeyDown="ScorePerHourBox_KeyDown"/>
+                    <TextBlock Grid.Column="1" Text="pts/hr"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="12" Margin="8,0,0,0"/>
+                </Grid>
+            </StackPanel>
         </Grid>
 
         <Border x:Name="NewCategoryPanel"
                 Style="{StaticResource SettingsCard}"
-                Margin="0,12,0,0"
+                Margin="0,10,0,0"
                 Visibility="Collapsed">
             <StackPanel>
                 <TextBlock Text="New category name (e.g. Work, Learning, Health, Hobbies)"
@@ -129,25 +163,6 @@
                            Visibility="Collapsed"/>
             </StackPanel>
         </Border>
-
-        <TextBlock Text="Score per hour" Style="{StaticResource SectionHeaderText}" Margin="0,14,0,7"/>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="ScorePerHourBox"
-                     Text="1.0"
-                     MinHeight="44"
-                     AutomationProperties.Name="Score per hour"
-                     Style="{StaticResource TimeInputBox}"
-                     VerticalContentAlignment="Center"
-                     KeyDown="ScorePerHourBox_KeyDown"/>
-            <TextBlock Grid.Column="1" Text="pts / hr"
-                       VerticalAlignment="Center"
-                       Foreground="{DynamicResource SecondaryTextBrush}"
-                       FontSize="13" Margin="10,0,0,0"/>
-        </Grid>
 
         <TextBlock x:Name="NoProjectHintText"
                    Text="Choose 'No project' to keep this timer out of reports."
