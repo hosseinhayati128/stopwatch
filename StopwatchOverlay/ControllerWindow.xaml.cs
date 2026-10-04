@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -475,6 +476,10 @@ namespace StopwatchOverlay
                     string canonical = RegisterProjectName(projectName);
                     _projectTimeStore.Save(_projectHistory);
                     return canonical;
+                },
+                mood =>
+                {
+                    SavePeriodicReviewMood(mood);
                 });
 
             if (IsVisible && WindowState != WindowState.Minimized)
@@ -482,6 +487,39 @@ namespace StopwatchOverlay
                 reviewWin.Owner = this;
             }
             reviewWin.Show();
+        }
+
+        private void SavePeriodicReviewMood(StopwatchOverlay.Mood.MoodEntry mood)
+        {
+            if (mood == null) return;
+            try
+            {
+                // 1. Append to local JSON store
+                StopwatchOverlay.Mood.MoodHistoryStore.Add(mood);
+
+                // 2. Append to Obsidian Mood Log.md in vault
+                var result = StopwatchOverlay.Mood.MoodLogSync.AppendMood(mood, _settings);
+                if (result.Success && !string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder))
+                {
+                    // 3. Keep repo copy in sync if obsidian folder exists
+                    try
+                    {
+                        string repoDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "obsidian");
+                        string repoFile = Path.Combine(repoDir, _settings.MoodLogFileName);
+                        if (File.Exists(result.TargetFilePath) && Directory.Exists(repoDir))
+                        {
+                            File.Copy(result.TargetFilePath, repoFile, overwrite: true);
+                        }
+                    }
+                    catch { }
+                }
+
+                UpdateStatus($"Mood logged: {mood.ScoreDisplay}/10 {mood.MoodEmoji}", (Brush)FindResource("AccentBrush"));
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogRecoverable(ex, "ControllerWindow.SavePeriodicReviewMood");
+            }
         }
 
         private void ApplyPeriodicReviewSlots(List<PeriodicReview.PeriodicReviewStopwatchSlot> slots)

@@ -256,6 +256,121 @@
                         </Border>
                     </Grid>
                 </Grid>
+
+                <!-- ========== STEP 3 CONTAINER: FEELINGS & MOOD ========== -->
+                <Grid x:Name="Step3Container" IsVisible="False" ColumnDefinitions="1*,14,1.2*">
+                    <!-- Left Column: Mood Score Slider & Visual Feedback -->
+                    <Border Grid.Column="0" Background="{DynamicResource DialogSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="18,16">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+                            <!-- Header -->
+                            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                                <TextBlock Text="🌟 How Was Your Mood?" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="Rate how you felt on a scale of 1.0 to 10.0 (drag slider or use ± buttons)."
+                                           FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+
+                            <!-- Big Visual Score Badge Card -->
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    CornerRadius="8" Padding="16,14" Margin="0,0,0,16">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <!-- Score Number Display -->
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <TextBlock x:Name="MoodScoreBigText" Text="7.0" FontSize="38" FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="/10" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
+                                    </StackPanel>
+
+                                    <!-- Mood State Descriptor & Emoji -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <Border x:Name="MoodEmojiBadge" Background="{DynamicResource DialogSurfaceBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                CornerRadius="14" Padding="10,4" HorizontalAlignment="Left">
+                                            <TextBlock x:Name="MoodDescriptorText" Text="😊 Good / Content" FontSize="12.5" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource AccentBrush}"/>
+                                        </Border>
+                                        <TextBlock x:Name="MoodSubtext" Text="Positive &amp; productive mindset" FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="2,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Slider with Minus/Plus 0.1 Steppers -->
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,10">
+                                <Button x:Name="DecreaseMoodButton" Grid.Column="0" Content="− 0.1" Width="44" Height="30"
+                                        Classes="modern" Padding="0" Click="DecreaseMoodButton_Click"
+                                        ToolTip.Tip="Decrease mood score by 0.1"/>
+
+                                <Slider x:Name="MoodSlider" Grid.Column="1" Margin="10,0"
+                                        Minimum="1.0" Maximum="10.0" Value="7.0"
+                                        SmallChange="0.1" LargeChange="0.5"
+                                        VerticalAlignment="Center"/>
+
+                                <Button x:Name="IncreaseMoodButton" Grid.Column="2" Content="+ 0.1" Width="44" Height="30"
+                                        Classes="modern" Padding="0" Click="IncreaseMoodButton_Click"
+                                        ToolTip.Tip="Increase mood score by 0.1"/>
+                            </Grid>
+
+                            <!-- Scale Range Markers -->
+                            <Grid Grid.Row="3" Margin="46,0,46,14">
+                                <TextBlock Text="1.0 (Low)" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Left"/>
+                                <TextBlock Text="5.0 (Neutral)" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="10.0 (Thrilled)" FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <!-- Quick Preset Pills -->
+                            <StackPanel Grid.Row="4" VerticalAlignment="Top">
+                                <TextBlock Text="Quick Jump Presets:" FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,6"/>
+                                <WrapPanel x:Name="MoodPresetsContainer" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right Column: Keywords / Feelings Tags & Notes -->
+                    <Border Grid.Column="2" Background="{DynamicResource DialogSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="8" Padding="18,16">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <!-- Header -->
+                            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                <TextBlock Text="🏷️ What Were You Feeling?" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="Click keywords to select or deselect. You can pick multiple."
+                                           FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+
+                            <!-- Keyword Tags & Custom Tag Input -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <WrapPanel x:Name="FeelingsKeywordsContainer" Margin="0,0,0,10" />
+
+                                    <!-- Add Custom Keyword Bar -->
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,6,0,10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox x:Name="NewKeywordTextBox" Height="28" Padding="6,2" FontSize="11.5"
+                                                     VerticalContentAlignment="Center"
+                                                     KeyDown="NewKeywordTextBox_KeyDown"
+                                                     ToolTip.Tip="Type a custom feeling (e.g. Grateful, Distracted, Creative) and press Enter"/>
+                                            <Button x:Name="AddNewKeywordButton" Grid.Column="1" Content="＋ Add Tag" Height="28" Padding="10,0" Margin="6,0,0,0"
+                                                    Classes="modern" Click="AddNewKeywordButton_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Bottom: Optional Quick Reflection / Note -->
+                            <StackPanel Grid.Row="2" Margin="0,8,0,0">
+                                <TextBlock Text="Optional Reflection / Note:" FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="MoodNoteTextBox" Height="48" Padding="8,6" FontSize="11.5"
+                                         TextWrapping="Wrap" AcceptsReturn="True"
+                                         ToolTip.Tip="Any note about why you felt this way or what influenced your mood"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
 
             <!-- 3. Footer Bar -->
@@ -267,12 +382,27 @@
                            VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                    <!-- Step 1 Footer Buttons -->
                     <Button x:Name="Step1SkipButton" Content="Skip (Esc)"
                             Classes="modern" Click="SkipReportButton_Click"/>
+
+                    <!-- Step 2 Footer Buttons -->
                     <Button x:Name="Step2BackButton" Content="⬅ Back"
                             Classes="modern" IsVisible="False" Click="Step2BackButton_Click"/>
+                    <Button x:Name="Step2SkipFeelingsButton" Content="Skip Feelings &amp; Save"
+                            Classes="modern" IsVisible="False" Click="Step2SkipFeelingsButton_Click"/>
                     <Button x:Name="Step2VerifyButton" Content="✓ Verify &amp; Save (Enter)"
                             Classes="primary" IsVisible="False" Click="Step2VerifyButton_Click"/>
+                    <Button x:Name="Step2ContinueButton" Content="Next: Feelings ➔"
+                            Classes="primary" IsVisible="False" Click="Step2ContinueButton_Click"/>
+
+                    <!-- Step 3 Footer Buttons -->
+                    <Button x:Name="Step3BackButton" Content="⬅ Back"
+                            Classes="modern" IsVisible="False" Click="Step3BackButton_Click"/>
+                    <Button x:Name="Step3SkipButton" Content="Skip Feelings (Save Time Only)"
+                            Classes="modern" IsVisible="False" Click="Step3SkipButton_Click"/>
+                    <Button x:Name="Step3SaveButton" Content="✓ Save &amp; Complete (Enter)"
+                            Classes="primary" IsVisible="False" Click="Step3SaveButton_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>

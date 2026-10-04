@@ -217,6 +217,24 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="DashboardScoreBox" TargetType="TextBox" BasedOn="{StaticResource TimeInputBox}">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0,0,0,3"/>
+            <Style.Triggers>
+                <Trigger Property="ac:PirateVisual.Enabled" Value="True">
+                    <Setter Property="FontFamily" Value="{DynamicResource PirateBodyFont}"/>
+                    <Setter Property="FontSize" Value="17"/>
+                    <Setter Property="Foreground" Value="#301B10"/>
+                    <Setter Property="CaretBrush" Value="#301B10"/>
+                    <Setter Property="Background" Value="{DynamicResource PiratePaperBrush}"/>
+                    <Setter Property="BorderBrush" Value="#89603B"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="Padding" Value="0,0,0,2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <DockPanel Style="{StaticResource DashboardFrame}" LayoutTransform="{DynamicResource ApplicationScaleTransform}">
@@ -269,8 +287,7 @@
                         <TextBlock Text="Score:" Style="{StaticResource DashboardWoodCaption}"
                                    FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBox x:Name="ProjectScoreBox" Width="60" Height="34" MinHeight="34"
-                                 VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
-                                 Style="{StaticResource TimeInputBox}"
+                                 Style="{StaticResource DashboardScoreBox}"
                                  LostFocus="ProjectScoreBox_LostFocus"
                                  KeyDown="ProjectScoreBox_KeyDown"/>
                         <TextBlock Text="pts/hr" Style="{StaticResource DashboardWoodCaption}"

@@ -127,6 +127,8 @@
                     <TextBox x:Name="ScorePerHourBox"
                              Text="1.0"
                              MinHeight="44"
+                             TextAlignment="Center"
+                             Padding="0,0,0,2"
                              AutomationProperties.Name="Score per hour"
                              Style="{StaticResource TimeInputBox}"
                              VerticalContentAlignment="Center"

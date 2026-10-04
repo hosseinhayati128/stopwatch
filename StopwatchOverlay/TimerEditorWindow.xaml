@@ -98,6 +98,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="ScorePerHourBox" Text="1.0" MinHeight="38"
+                                     TextAlignment="Center"
+                                     Padding="0,0,0,2"
                                      VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                                      Style="{StaticResource TimeInputBox}"/>
                             <TextBlock Grid.Column="1" Text="pts/hr"

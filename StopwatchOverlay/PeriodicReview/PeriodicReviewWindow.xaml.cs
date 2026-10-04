@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using StopwatchOverlay.ActivityWatch;
+using StopwatchOverlay.Mood;
 
 namespace StopwatchOverlay.PeriodicReview;
 
@@ -19,12 +20,20 @@ public partial class PeriodicReviewWindow : Window
     private readonly IEnumerable<TimerSession>? _runningSessions;
     private readonly Action<List<PeriodicReviewStopwatchSlot>>? _onSave;
     private readonly Func<string, string>? _onRegisterProject;
+    private readonly Action<MoodEntry>? _onSaveMood;
 
     private PeriodicReviewModel? _model;
-    private bool _isStep2;
+    private int _currentStep = 1;
+    private bool _isStep2 => _currentStep == 2;
+    private bool _isStep3 => _currentStep == 3;
     private bool _handled;
     private double _thresholdPercent;
     private bool _isOthersExpanded;
+
+    // Mood & Feelings state for Step 3
+    private double _currentMoodScore = 7.0;
+    private readonly HashSet<string> _selectedKeywords = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _allKeywords = [];
 
     // Selection model for Step 1 & 2
     private readonly List<ReviewProjectSelectionItem> _availableProjects = [];
@@ -77,7 +86,8 @@ public partial class PeriodicReviewWindow : Window
         ProjectHistoryView history,
         IEnumerable<TimerSession>? runningSessions,
         Action<List<PeriodicReviewStopwatchSlot>>? onSave,
-        Func<string, string>? onRegisterProject = null)
+        Func<string, string>? onRegisterProject = null,
+        Action<MoodEntry>? onSaveMood = null)
     {
         InitializeComponent();
 
@@ -92,13 +102,26 @@ public partial class PeriodicReviewWindow : Window
         _runningSessions = runningSessions;
         _onSave = onSave;
         _onRegisterProject = onRegisterProject;
+        _onSaveMood = onSaveMood;
         _thresholdPercent = _settings.PeriodicReviewMinActivityPercent;
+
+        _currentMoodScore = _settings.DefaultMoodScore;
+        _allKeywords = new List<string>(_settings.MoodPresetKeywords ??
+        [
+            "Anxious", "Depressed", "Sad", "Happy", "Thrilled",
+            "Calm", "Focused", "Tired", "Frustrated", "Motivated",
+            "Bored", "Overwhelmed", "Energetic", "Peaceful", "Distracted"
+        ]);
 
         DateTime startLocal = _startUtc.ToLocalTime();
         DateTime endLocal = _endUtc.ToLocalTime();
         int totalMin = Math.Max(1, (int)Math.Round((endLocal - startLocal).TotalMinutes));
         PeriodRangeBadge.Text = $"📅 {startLocal:HH:mm} – {endLocal:HH:mm} ({totalMin}m)";
         ThresholdPercentText.Text = _thresholdPercent <= 0.0 ? "Off" : $"{_thresholdPercent:0.#}%";
+
+        StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
+            ? "Step 1 of 3: Projects & Overview"
+            : "Step 1 of 2: Projects & Overview";
 
         DistributionBarContainer.Background = Brushes.Transparent;
         DistributionBarContainer.PreviewMouseMove += DistributionBarContainer_PreviewMouseMove;
@@ -752,34 +775,58 @@ public partial class PeriodicReviewWindow : Window
             PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
         }
 
-        _isStep2 = true;
+        _currentStep = 2;
         Step1Container.Visibility = Visibility.Collapsed;
         Step2Container.Visibility = Visibility.Visible;
+        Step3Container.Visibility = Visibility.Collapsed;
 
-        StepIndicatorBadge.Text = "Step 2 of 2: Time Allocation";
+        StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
+            ? "Step 2 of 3: Time Allocation"
+            : "Step 2 of 2: Time Allocation";
         StepSubtitleText.Text = "Step 2: Allocate & position time. Drag items on the timeline to move them. Click ∨ to set exact times.";
-        FooterShortcutHintText.Text = "Press Esc to go back · Enter to verify and save";
 
         Step1SkipButton.Visibility = Visibility.Collapsed;
         Step2BackButton.Visibility = Visibility.Visible;
-        Step2VerifyButton.Visibility = Visibility.Visible;
+
+        if (_settings.PeriodicReviewFeelingsEnabled)
+        {
+            Step2SkipFeelingsButton.Visibility = Visibility.Visible;
+            Step2ContinueButton.Visibility = Visibility.Visible;
+            Step2VerifyButton.Visibility = Visibility.Collapsed;
+            FooterShortcutHintText.Text = "Press Esc to go back · Enter to proceed to feelings";
+        }
+        else
+        {
+            Step2SkipFeelingsButton.Visibility = Visibility.Collapsed;
+            Step2ContinueButton.Visibility = Visibility.Collapsed;
+            Step2VerifyButton.Visibility = Visibility.Visible;
+            FooterShortcutHintText.Text = "Press Esc to go back · Enter to verify and save";
+        }
 
         RenderStep2();
     }
 
     private void Step2BackButton_Click(object sender, RoutedEventArgs e)
     {
-        _isStep2 = false;
+        _currentStep = 1;
         Step2Container.Visibility = Visibility.Collapsed;
+        Step3Container.Visibility = Visibility.Collapsed;
         Step1Container.Visibility = Visibility.Visible;
 
-        StepIndicatorBadge.Text = "Step 1 of 2: Projects & Overview";
+        StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
+            ? "Step 1 of 3: Projects & Overview"
+            : "Step 1 of 2: Projects & Overview";
         StepSubtitleText.Text = "Step 1: Select the projects you worked on in order (or breaks), guided by your ActivityWatch percentage report.";
         FooterShortcutHintText.Text = "Press Esc to skip without changes";
 
         Step1SkipButton.Visibility = Visibility.Visible;
         Step2BackButton.Visibility = Visibility.Collapsed;
+        Step2SkipFeelingsButton.Visibility = Visibility.Collapsed;
+        Step2ContinueButton.Visibility = Visibility.Collapsed;
         Step2VerifyButton.Visibility = Visibility.Collapsed;
+        Step3BackButton.Visibility = Visibility.Collapsed;
+        Step3SkipButton.Visibility = Visibility.Collapsed;
+        Step3SaveButton.Visibility = Visibility.Collapsed;
 
         RenderStep1();
     }
@@ -1925,10 +1972,295 @@ public partial class PeriodicReviewWindow : Window
     }
 
     // ==========================================
+    // STEP 3: Feelings & Mood & Verification
+    // ==========================================
+
+    private void Step2ContinueButton_Click(object sender, RoutedEventArgs e)
+    {
+        _currentStep = 3;
+        Step1Container.Visibility = Visibility.Collapsed;
+        Step2Container.Visibility = Visibility.Collapsed;
+        Step3Container.Visibility = Visibility.Visible;
+
+        StepIndicatorBadge.Text = "Step 3 of 3: Feelings & Mood";
+        StepSubtitleText.Text = "Step 3: Rate your mood (1.0 to 10.0) and choose what you were feeling. This step can be skipped.";
+        FooterShortcutHintText.Text = "Press Esc to go back · Enter to save review & feelings";
+
+        Step1SkipButton.Visibility = Visibility.Collapsed;
+        Step2BackButton.Visibility = Visibility.Collapsed;
+        Step2SkipFeelingsButton.Visibility = Visibility.Collapsed;
+        Step2ContinueButton.Visibility = Visibility.Collapsed;
+        Step2VerifyButton.Visibility = Visibility.Collapsed;
+
+        Step3BackButton.Visibility = Visibility.Visible;
+        Step3SkipButton.Visibility = Visibility.Visible;
+        Step3SaveButton.Visibility = Visibility.Visible;
+
+        RenderStep3();
+    }
+
+    private void Step3BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        _currentStep = 2;
+        Step1Container.Visibility = Visibility.Collapsed;
+        Step3Container.Visibility = Visibility.Collapsed;
+        Step2Container.Visibility = Visibility.Visible;
+
+        StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
+            ? "Step 2 of 3: Time Allocation"
+            : "Step 2 of 2: Time Allocation";
+        StepSubtitleText.Text = "Step 2: Allocate & position time. Drag items on the timeline to move them. Click ∨ to set exact times.";
+        FooterShortcutHintText.Text = "Press Esc to go back · Enter to proceed to feelings";
+
+        Step3BackButton.Visibility = Visibility.Collapsed;
+        Step3SkipButton.Visibility = Visibility.Collapsed;
+        Step3SaveButton.Visibility = Visibility.Collapsed;
+
+        Step2BackButton.Visibility = Visibility.Visible;
+        Step2SkipFeelingsButton.Visibility = Visibility.Visible;
+        Step2ContinueButton.Visibility = Visibility.Visible;
+        Step2VerifyButton.Visibility = Visibility.Collapsed;
+    }
+
+    private void RenderStep3()
+    {
+        // 1. Initialize mood slider
+        MoodSlider.Value = _currentMoodScore;
+        UpdateMoodScoreDisplay(_currentMoodScore);
+
+        // 2. Render quick preset pills
+        MoodPresetsContainer.Children.Clear();
+        double[] presets = [1.0, 3.0, 5.0, 7.0, 8.5, 10.0];
+        foreach (var preset in presets)
+        {
+            var btn = new Button
+            {
+                Content = preset.ToString("0.0"),
+                Style = (Style)FindResource("SecondaryButton"),
+                Padding = new Thickness(10, 4, 10, 4),
+                Margin = new Thickness(0, 0, 6, 6),
+                FontSize = 11,
+                Tag = preset
+            };
+            btn.Click += (s, e) =>
+            {
+                MoodSlider.Value = preset;
+            };
+            MoodPresetsContainer.Children.Add(btn);
+        }
+
+        // 3. Render feelings keyword chips
+        RenderKeywordChips();
+    }
+
+    private void UpdateMoodScoreDisplay(double score)
+    {
+        _currentMoodScore = Math.Clamp(Math.Round(score, 1), 1.0, 10.0);
+        MoodScoreBigText.Text = _currentMoodScore.ToString("0.0");
+
+        string emoji;
+        string descriptor;
+        string subtext;
+        Color badgeColor;
+
+        if (_currentMoodScore < 3.0)
+        {
+            emoji = "😭";
+            descriptor = "Distressed / Low";
+            subtext = "Very low mood, struggling or overwhelmed";
+            badgeColor = Color.FromRgb(255, 85, 85);
+        }
+        else if (_currentMoodScore < 5.0)
+        {
+            emoji = "🙁";
+            descriptor = "Down / Struggling";
+            subtext = "Below average, feeling sad, tired, or drained";
+            badgeColor = Color.FromRgb(255, 170, 68);
+        }
+        else if (_currentMoodScore < 7.0)
+        {
+            emoji = "😐";
+            descriptor = "Neutral / Okay";
+            subtext = "Steady, moderate, routine headspace";
+            badgeColor = Color.FromRgb(230, 198, 68);
+        }
+        else if (_currentMoodScore < 8.5)
+        {
+            emoji = "😊";
+            descriptor = "Good / Content";
+            subtext = "Positive, clear, content & engaged";
+            badgeColor = Color.FromRgb(68, 204, 119);
+        }
+        else
+        {
+            emoji = "🌟";
+            descriptor = "Thrilled / Great";
+            subtext = "Energized, thrilled, peak satisfaction";
+            badgeColor = Color.FromRgb(51, 221, 221);
+        }
+
+        MoodDescriptorText.Text = $"{emoji} {descriptor}";
+        MoodDescriptorText.Foreground = new SolidColorBrush(badgeColor);
+        MoodSubtext.Text = subtext;
+    }
+
+    private void RenderKeywordChips()
+    {
+        FeelingsKeywordsContainer.Children.Clear();
+
+        foreach (var keyword in _allKeywords)
+        {
+            bool isSelected = _selectedKeywords.Contains(keyword);
+            var chip = CreateKeywordChip(keyword, isSelected);
+            FeelingsKeywordsContainer.Children.Add(chip);
+        }
+    }
+
+    private Border CreateKeywordChip(string keyword, bool isSelected)
+    {
+        var border = new Border
+        {
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(12, 6, 12, 6),
+            Margin = new Thickness(0, 0, 8, 8),
+            Cursor = Cursors.Hand,
+            BorderThickness = new Thickness(1),
+            Tag = keyword
+        };
+
+        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        var checkText = new TextBlock
+        {
+            Text = isSelected ? "✓ " : "",
+            FontSize = 11,
+            FontWeight = FontWeights.Bold,
+            Foreground = isSelected ? Brushes.White : (Brush)FindResource("AccentBrush"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var labelText = new TextBlock
+        {
+            Text = keyword,
+            FontSize = 11.5,
+            FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal,
+            Foreground = isSelected ? Brushes.White : (Brush)FindResource("PrimaryTextBrush"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        sp.Children.Add(checkText);
+        sp.Children.Add(labelText);
+        border.Child = sp;
+
+        if (isSelected)
+        {
+            border.Background = (Brush)FindResource("AccentBrush");
+            border.BorderBrush = (Brush)FindResource("AccentBrush");
+        }
+        else
+        {
+            border.Background = (Brush)FindResource("SurfaceRaisedBrush");
+            border.BorderBrush = (Brush)FindResource("BorderBrush");
+        }
+
+        border.MouseLeftButtonDown += (s, e) =>
+        {
+            ToggleKeyword(keyword);
+        };
+
+        return border;
+    }
+
+    private void ToggleKeyword(string keyword)
+    {
+        if (_selectedKeywords.Contains(keyword))
+        {
+            _selectedKeywords.Remove(keyword);
+        }
+        else
+        {
+            _selectedKeywords.Add(keyword);
+        }
+
+        RenderKeywordChips();
+    }
+
+    private void AddNewKeywordButton_Click(object sender, RoutedEventArgs e)
+    {
+        AddCustomKeywordFromInput();
+    }
+
+    private void NewKeywordTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            AddCustomKeywordFromInput();
+        }
+    }
+
+    private void AddCustomKeywordFromInput()
+    {
+        string raw = NewKeywordTextBox.Text?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(raw)) return;
+
+        string canonical = char.ToUpperInvariant(raw[0]) + (raw.Length > 1 ? raw[1..] : "");
+
+        if (!_allKeywords.Contains(canonical, StringComparer.OrdinalIgnoreCase))
+        {
+            _allKeywords.Add(canonical);
+        }
+
+        _selectedKeywords.Add(canonical);
+        NewKeywordTextBox.Text = "";
+        RenderKeywordChips();
+    }
+
+    private void MoodSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        UpdateMoodScoreDisplay(e.NewValue);
+    }
+
+    private void MoodSlider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        double delta = e.Delta > 0 ? 0.1 : -0.1;
+        MoodSlider.Value = Math.Clamp(Math.Round(MoodSlider.Value + delta, 1), 1.0, 10.0);
+        e.Handled = true;
+    }
+
+    private void DecreaseMoodButton_Click(object sender, RoutedEventArgs e)
+    {
+        MoodSlider.Value = Math.Clamp(Math.Round(MoodSlider.Value - 0.1, 1), 1.0, 10.0);
+    }
+
+    private void IncreaseMoodButton_Click(object sender, RoutedEventArgs e)
+    {
+        MoodSlider.Value = Math.Clamp(Math.Round(MoodSlider.Value + 0.1, 1), 1.0, 10.0);
+    }
+
+    // ==========================================
     // SAVE & VERIFY
     // ==========================================
 
+    private void Step2SkipFeelingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExecuteSave(includeMood: false);
+    }
+
+    private void Step3SkipButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExecuteSave(includeMood: false);
+    }
+
+    private void Step3SaveButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExecuteSave(includeMood: true);
+    }
+
     private void Step2VerifyButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExecuteSave(includeMood: false);
+    }
+
+    private void ExecuteSave(bool includeMood)
     {
         if (_handled) return;
         _handled = true;
@@ -1975,6 +2307,27 @@ public partial class PeriodicReviewWindow : Window
         }
 
         _onSave?.Invoke(slotsToSave);
+
+        if (includeMood)
+        {
+            var mood = new MoodEntry
+            {
+                PeriodStartUtc = _startUtc,
+                PeriodEndUtc = _endUtc,
+                TimestampUtc = DateTime.UtcNow,
+                Score = Math.Round(_currentMoodScore, 1),
+                Keywords = _selectedKeywords.OrderBy(k => k).ToList(),
+                Note = string.IsNullOrWhiteSpace(MoodNoteTextBox?.Text) ? null : MoodNoteTextBox.Text.Trim(),
+                AssociatedProjects = _selectedItems
+                    .Where(i => !string.IsNullOrWhiteSpace(i.ProjectName) && !i.IsBreak)
+                    .Select(i => i.ProjectName.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
+                IsSkipped = false
+            };
+            _onSaveMood?.Invoke(mood);
+        }
+
         Close();
     }
 
@@ -1990,7 +2343,11 @@ public partial class PeriodicReviewWindow : Window
         if (e.Key == Key.Escape)
         {
             e.Handled = true;
-            if (_isStep2)
+            if (_currentStep == 3)
+            {
+                Step3BackButton_Click(sender, e);
+            }
+            else if (_currentStep == 2)
             {
                 Step2BackButton_Click(sender, e);
             }
@@ -1999,12 +2356,27 @@ public partial class PeriodicReviewWindow : Window
                 SkipReportButton_Click(sender, e);
             }
         }
-        else if (e.Key == Key.Enter && !NewProjectTextBox.IsFocused)
+        else if (e.Key == Key.Enter &&
+                 !NewProjectTextBox.IsFocused &&
+                 !NewKeywordTextBox.IsFocused &&
+                 !MoodNoteTextBox.IsFocused)
         {
-            if (_isStep2)
+            if (_currentStep == 3)
             {
                 e.Handled = true;
-                Step2VerifyButton_Click(sender, e);
+                Step3SaveButton_Click(sender, e);
+            }
+            else if (_currentStep == 2)
+            {
+                e.Handled = true;
+                if (_settings.PeriodicReviewFeelingsEnabled)
+                {
+                    Step2ContinueButton_Click(sender, e);
+                }
+                else
+                {
+                    Step2VerifyButton_Click(sender, e);
+                }
             }
             else if (_selectedItems.Count > 0)
             {

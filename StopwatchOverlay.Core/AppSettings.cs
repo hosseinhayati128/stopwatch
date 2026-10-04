@@ -269,6 +269,15 @@ namespace StopwatchOverlay
         public bool PeriodicReviewShowIdle { get; set; } = true;
         public bool PeriodicReviewAllowMultiProject { get; set; } = false;
         public double PeriodicReviewMinActivityPercent { get; set; } = 3.0;
+        public bool PeriodicReviewFeelingsEnabled { get; set; } = true;
+        public string MoodLogFileName { get; set; } = "Mood Log.md";
+        public double DefaultMoodScore { get; set; } = 7.0;
+        public List<string> MoodPresetKeywords { get; set; } =
+        [
+            "Anxious", "Depressed", "Sad", "Happy", "Thrilled",
+            "Calm", "Focused", "Tired", "Frustrated", "Motivated",
+            "Bored", "Overwhelmed", "Energetic", "Peaceful", "Distracted"
+        ];
 
         // Idle Stopwatch Inactivity Stopping
         public bool IdleStopUnnamedTimers { get; set; } = false;
@@ -530,6 +539,22 @@ namespace StopwatchOverlay
                 PeriodicReviewMinDurationSeconds = 3600;
 
             PeriodicReviewMinActivityPercent = Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0);
+
+            MoodLogFileName = string.IsNullOrWhiteSpace(MoodLogFileName)
+                ? "Mood Log.md"
+                : MoodLogFileName.Trim();
+
+            DefaultMoodScore = Math.Clamp(Math.Round(DefaultMoodScore, 1), 1.0, 10.0);
+
+            if (MoodPresetKeywords == null || MoodPresetKeywords.Count == 0)
+            {
+                MoodPresetKeywords =
+                [
+                    "Anxious", "Depressed", "Sad", "Happy", "Thrilled",
+                    "Calm", "Focused", "Tired", "Frustrated", "Motivated",
+                    "Bored", "Overwhelmed", "Energetic", "Peaceful", "Distracted"
+                ];
+            }
 
             ProjectCategories = GetNormalizedProjectCategories();
         }

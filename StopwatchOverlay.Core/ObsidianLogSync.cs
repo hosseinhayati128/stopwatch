@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace StopwatchOverlay;
 
@@ -116,6 +117,7 @@ public static class ObsidianLogSync
             File.Move(tempFile, targetFilePath, overwrite: true);
 
             SyncFocusLog(history, settings, folder);
+            SyncProjectScores(history, folder);
 
             return new ObsidianSyncResult(
                 true,
@@ -343,6 +345,54 @@ public static class ObsidianLogSync
         catch (Exception ex)
         {
             CrashLogger.LogRecoverable(ex, "SyncFocusLog");
+        }
+    }
+
+    public static void SyncProjectScores(
+        ProjectHistoryView history,
+        string folder)
+    {
+        if (history?.Projects == null || history.Projects.Count == 0)
+            return;
+
+        try
+        {
+            string targetFilePath = Path.Combine(folder, "Project Scores.json");
+            var scoresDict = new SortedDictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+            if (File.Exists(targetFilePath))
+            {
+                try
+                {
+                    string existingJson = File.ReadAllText(targetFilePath, Encoding.UTF8);
+                    var existing = JsonSerializer.Deserialize<Dictionary<string, double>>(existingJson);
+                    if (existing != null)
+                    {
+                        foreach (var kvp in existing)
+                            scoresDict[kvp.Key] = kvp.Value;
+                    }
+                }
+                catch { }
+            }
+
+            foreach (var proj in history.Projects)
+            {
+                if (!string.IsNullOrWhiteSpace(proj.Name))
+                {
+                    scoresDict[proj.Name] = proj.ScorePerHour;
+                }
+            }
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(scoresDict, options);
+
+            string tempFile = targetFilePath + $".tmp.{Guid.NewGuid():N}";
+            File.WriteAllText(tempFile, json, new UTF8Encoding(false));
+            File.Move(tempFile, targetFilePath, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "SyncProjectScores");
         }
     }
 }
