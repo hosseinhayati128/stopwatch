@@ -100,6 +100,7 @@
                                    Margin="0,0,0,6"/>
                         <Grid ColumnDefinitions="*,Auto">
                             <NumericUpDown x:Name="ScorePerHourBox"
+                                           VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                                            Minimum="0" Maximum="1000" Increment="0.5" FormatString="0.0"
                                            MinHeight="38" Value="1.0"
                                            HorizontalAlignment="Stretch"/>

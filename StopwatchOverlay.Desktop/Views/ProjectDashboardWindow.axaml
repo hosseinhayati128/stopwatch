@@ -56,6 +56,7 @@
                         <TextBlock Text="Score:" Foreground="{DynamicResource SecondaryTextBrush}"
                                    FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                         <NumericUpDown x:Name="ProjectScoreBox" Width="84" Height="34"
+                                       VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                                        Minimum="0" Maximum="1000" Increment="0.5" FormatString="0.0"
                                        ValueChanged="ProjectScoreBox_ValueChanged"/>
                         <TextBlock Text="pts/hr" Foreground="{DynamicResource SecondaryTextBrush}"
