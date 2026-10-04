@@ -478,7 +478,7 @@
 
                         <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0"><StackPanel>
                             <TextBlock Text="Project Categories" Style="{StaticResource SectionHeaderText}"/>
-                            <TextBlock Text="Group projects and timers into categories (e.g. Work, Productive, Rest, Routine) to organize work and reports."
+                            <TextBlock Text="Group projects and timers into categories (e.g. Work, Learning, Health, Hobbies, Chores, Social, Rest) to organize work and reports."
                                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,14"/>
 
                             <Grid Margin="0,0,0,8">

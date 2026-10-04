@@ -108,7 +108,7 @@
                         Margin="0,12,0,0"
                         IsVisible="False">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="New category name (e.g. Work, Rest, Routine, Productive)"
+                        <TextBlock Text="New category name (e.g. Work, Learning, Health, Hobbies)"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>

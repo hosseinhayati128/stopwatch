@@ -140,7 +140,16 @@ namespace StopwatchOverlay
         public const double MinimumCommandChainingTimeoutSeconds = 0.2;
         public const double MaximumCommandChainingTimeoutSeconds = 2.0;
 
-        public static readonly IReadOnlyList<string> DefaultProjectCategories = ["Work", "Productive", "Rest", "Routine"];
+        public static readonly IReadOnlyList<string> DefaultProjectCategories =
+        [
+            "Work",
+            "Learning",
+            "Health",
+            "Hobbies",
+            "Chores",
+            "Social",
+            "Rest"
+        ];
         public List<string> ProjectCategories { get; set; } = new(DefaultProjectCategories);
 
         public int ShortcutSchemaVersion { get; set; } = 2;

@@ -445,7 +445,7 @@
                         <Border Classes="settingsCard">
                             <StackPanel Spacing="10">
                                 <TextBlock Text="Project Categories" Classes="sectionHeader" FontSize="15"/>
-                                <TextBlock Text="Label or group projects and timers into categories (e.g. Work, Productive, Rest, Routine, or define custom ones)."
+                                <TextBlock Text="Label or group projects and timers into categories (e.g. Work, Learning, Health, Hobbies, Chores, Social, Rest, or define custom ones)."
                                            Classes="subheading" TextWrapping="Wrap"/>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,4">

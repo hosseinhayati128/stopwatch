@@ -13,9 +13,12 @@ namespace StopwatchOverlay.Tests
             var settings = new AppSettings();
             Assert.NotNull(settings.ProjectCategories);
             Assert.Contains("Work", settings.ProjectCategories);
-            Assert.Contains("Productive", settings.ProjectCategories);
+            Assert.Contains("Learning", settings.ProjectCategories);
+            Assert.Contains("Health", settings.ProjectCategories);
+            Assert.Contains("Hobbies", settings.ProjectCategories);
+            Assert.Contains("Chores", settings.ProjectCategories);
+            Assert.Contains("Social", settings.ProjectCategories);
             Assert.Contains("Rest", settings.ProjectCategories);
-            Assert.Contains("Routine", settings.ProjectCategories);
         }
 
         [Fact]
@@ -23,14 +26,14 @@ namespace StopwatchOverlay.Tests
         {
             var settings = new AppSettings
             {
-                ProjectCategories = ["  Work  ", "work", "Productive", "", "   ", "Study", "Study "]
+                ProjectCategories = ["  Work  ", "work", "Learning", "", "   ", "Study", "Study "]
             };
 
             settings.NormalizeForRuntime();
 
             Assert.Equal(3, settings.ProjectCategories.Count);
             Assert.Equal("Work", settings.ProjectCategories[0]);
-            Assert.Equal("Productive", settings.ProjectCategories[1]);
+            Assert.Equal("Learning", settings.ProjectCategories[1]);
             Assert.Equal("Study", settings.ProjectCategories[2]);
         }
 
