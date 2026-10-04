@@ -538,6 +538,19 @@ namespace StopwatchOverlay
         {
             var list = new List<string>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Always ensure all default system presets are included first
+            foreach (var preset in DefaultProjectCategories)
+            {
+                if (!string.IsNullOrWhiteSpace(preset))
+                {
+                    var trimmed = preset.Trim();
+                    if (seen.Add(trimmed))
+                        list.Add(trimmed);
+                }
+            }
+
+            // Include any custom categories configured in settings
             if (ProjectCategories != null)
             {
                 foreach (var c in ProjectCategories)
@@ -550,10 +563,7 @@ namespace StopwatchOverlay
                     }
                 }
             }
-            if (list.Count == 0)
-            {
-                list.AddRange(DefaultProjectCategories);
-            }
+
             return list;
         }
 

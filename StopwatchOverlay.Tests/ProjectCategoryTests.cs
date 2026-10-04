@@ -31,10 +31,13 @@ namespace StopwatchOverlay.Tests
 
             settings.NormalizeForRuntime();
 
-            Assert.Equal(3, settings.ProjectCategories.Count);
-            Assert.Equal("Work", settings.ProjectCategories[0]);
-            Assert.Equal("Learning", settings.ProjectCategories[1]);
-            Assert.Equal("Study", settings.ProjectCategories[2]);
+            // 7 default presets + 1 custom (Study)
+            Assert.Equal(8, settings.ProjectCategories.Count);
+            foreach (var preset in AppSettings.DefaultProjectCategories)
+            {
+                Assert.Contains(preset, settings.ProjectCategories);
+            }
+            Assert.Contains("Study", settings.ProjectCategories);
         }
 
         [Fact]
