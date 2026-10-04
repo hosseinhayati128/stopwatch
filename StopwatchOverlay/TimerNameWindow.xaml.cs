@@ -13,18 +13,26 @@ namespace StopwatchOverlay
     {
         private readonly string _currentName;
         private readonly bool _isCreatingTimer;
+        private readonly Func<string, string>? _getProjectCategory;
         private bool _isAddingProject;
+        private bool _isAddingCategory;
 
         public TimerNameWindow(
             string currentName,
             IEnumerable<string> projectNames,
             bool isCreatingTimer = false,
-            string renameShortcut = "")
+            string renameShortcut = "",
+            IEnumerable<string>? categories = null,
+            string currentCategory = "Work",
+            Func<string, string>? getProjectCategory = null)
         {
             InitializeComponent();
 
             _isCreatingTimer = isCreatingTimer;
             _currentName = (currentName ?? "").Trim();
+            _getProjectCategory = getProjectCategory;
+            Category = string.IsNullOrWhiteSpace(currentCategory) ? "Work" : currentCategory.Trim();
+
             var projects = (projectNames ?? Enumerable.Empty<string>())
                 .Select(name => name?.Trim() ?? "")
                 .Where(name => name.Length > 0)
@@ -51,6 +59,29 @@ namespace StopwatchOverlay
                 });
             }
 
+            var cats = (categories ?? AppSettings.DefaultProjectCategories)
+                .Select(c => c?.Trim() ?? "")
+                .Where(c => c.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (cats.Count == 0)
+                cats.AddRange(AppSettings.DefaultProjectCategories);
+
+            if (!string.IsNullOrWhiteSpace(Category) && !cats.Contains(Category, StringComparer.OrdinalIgnoreCase))
+                cats.Insert(0, Category);
+
+            foreach (string cat in cats)
+            {
+                CategorySelector.Items.Add(new ComboBoxItem
+                {
+                    Content = cat,
+                    Tag = cat
+                });
+            }
+
+            SelectInitialCategory();
+
             if (_isCreatingTimer)
             {
                 Title = "Create timer";
@@ -75,6 +106,7 @@ namespace StopwatchOverlay
         }
 
         public string TimerName { get; private set; } = "";
+        public string Category { get; private set; } = "Work";
         public bool WasAccepted { get; private set; }
 
         private void SelectInitialProject()
@@ -96,6 +128,45 @@ namespace StopwatchOverlay
             ProjectSelector.SelectedIndex = 0;
         }
 
+        private void SelectInitialCategory()
+        {
+            if (!string.IsNullOrWhiteSpace(Category))
+            {
+                foreach (object? candidate in CategorySelector.Items)
+                {
+                    if (candidate is ComboBoxItem item
+                        && item.Tag is string cat
+                        && string.Equals(cat, Category, StringComparison.OrdinalIgnoreCase))
+                    {
+                        CategorySelector.SelectedItem = item;
+                        return;
+                    }
+                }
+            }
+
+            if (CategorySelector.Items.Count > 0)
+                CategorySelector.SelectedIndex = 0;
+        }
+
+        private void SetSelectedCategory(string category)
+        {
+            foreach (object? candidate in CategorySelector.Items)
+            {
+                if (candidate is ComboBoxItem item
+                    && item.Tag is string cat
+                    && string.Equals(cat, category, StringComparison.OrdinalIgnoreCase))
+                {
+                    CategorySelector.SelectedItem = item;
+                    return;
+                }
+            }
+
+            // Category wasn't in the list; add it and select it
+            var newItem = new ComboBoxItem { Content = category, Tag = category };
+            CategorySelector.Items.Add(newItem);
+            CategorySelector.SelectedItem = newItem;
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Activate();
@@ -109,9 +180,22 @@ namespace StopwatchOverlay
                 return;
 
             if (_isAddingProject)
+            {
                 ShowNewProjectEditor(false);
+            }
             else
+            {
                 ValidationText.Visibility = Visibility.Collapsed;
+                string selectedProject = (ProjectSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+                if (!string.IsNullOrWhiteSpace(selectedProject) && _getProjectCategory != null)
+                {
+                    string knownCat = _getProjectCategory(selectedProject);
+                    if (!string.IsNullOrWhiteSpace(knownCat))
+                    {
+                        SetSelectedCategory(knownCat);
+                    }
+                }
+            }
         }
 
         private void ProjectSelector_DropDownClosed(object? sender, EventArgs e)
@@ -164,6 +248,65 @@ namespace StopwatchOverlay
             AcceptSelection();
         }
 
+        private void CategorySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (NewCategoryPanel == null)
+                return;
+
+            if (_isAddingCategory)
+                ShowNewCategoryEditor(false);
+            else
+                CategoryValidationText.Visibility = Visibility.Collapsed;
+        }
+
+        private void CategorySelector_DropDownClosed(object? sender, EventArgs e)
+        {
+            if (_isAddingCategory && CategorySelector.SelectedIndex >= 0)
+                ShowNewCategoryEditor(false);
+        }
+
+        private void AddCategoryButton_Click(object sender, RoutedEventArgs e)
+            => ShowNewCategoryEditor(!_isAddingCategory);
+
+        private void ShowNewCategoryEditor(bool show)
+        {
+            _isAddingCategory = show;
+            NewCategoryPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            AddCategoryButton.Content = show ? "×" : "+";
+            AddCategoryButton.ToolTip = show ? "Cancel adding category" : "Add custom category";
+            AutomationProperties.SetName(
+                AddCategoryButton,
+                show ? "Cancel adding category" : "Add custom category");
+            AutomationProperties.SetHelpText(
+                AddCategoryButton,
+                show
+                    ? "Close the custom category name field"
+                    : "Open a field for entering a custom category name");
+            CategoryValidationText.Visibility = Visibility.Collapsed;
+
+            if (show)
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    NewCategoryBox.Focus();
+                    NewCategoryBox.SelectAll();
+                }), DispatcherPriority.Input);
+            }
+            else if (IsLoaded)
+            {
+                CategorySelector.Focus();
+            }
+        }
+
+        private void NewCategoryBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+                return;
+
+            e.Handled = true;
+            AcceptSelection();
+        }
+
         private void ProjectSelector_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.Enter || ProjectSelector.IsDropDownOpen)
@@ -175,10 +318,12 @@ namespace StopwatchOverlay
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape && !ProjectSelector.IsDropDownOpen)
+            if (e.Key == Key.Escape && !ProjectSelector.IsDropDownOpen && !CategorySelector.IsDropDownOpen)
             {
                 e.Handled = true;
-                if (_isAddingProject)
+                if (_isAddingCategory)
+                    ShowNewCategoryEditor(false);
+                else if (_isAddingProject)
                     ShowNewProjectEditor(false);
                 else
                     Close();
@@ -199,6 +344,7 @@ namespace StopwatchOverlay
                 selectedName = NewProjectBox.Text.Trim();
                 if (selectedName.Length == 0)
                 {
+                    ValidationText.Text = "Enter a project name.";
                     ValidationText.Visibility = Visibility.Visible;
                     NewProjectBox.Focus();
                     return;
@@ -221,7 +367,31 @@ namespace StopwatchOverlay
                 selectedName = (ProjectSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
             }
 
+            string selectedCategory;
+            if (_isAddingCategory)
+            {
+                selectedCategory = NewCategoryBox.Text.Trim();
+                if (selectedCategory.Length == 0)
+                {
+                    CategoryValidationText.Text = "Enter a category name.";
+                    CategoryValidationText.Visibility = Visibility.Visible;
+                    NewCategoryBox.Focus();
+                    return;
+                }
+                if (selectedCategory.Length > 40)
+                {
+                    selectedCategory = selectedCategory.Substring(0, 40).Trim();
+                }
+            }
+            else
+            {
+                selectedCategory = (CategorySelector.SelectedItem as ComboBoxItem)?.Tag as string
+                    ?? (CategorySelector.SelectedItem as string)
+                    ?? "Work";
+            }
+
             TimerName = selectedName;
+            Category = string.IsNullOrWhiteSpace(selectedCategory) ? "Work" : selectedCategory;
             WasAccepted = true;
             Close();
         }

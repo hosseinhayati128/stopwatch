@@ -170,6 +170,7 @@ public partial class SettingsWindow : Window
             UpdateDependentControlStates();
             UpdateTelegramOutboxUi();
             LoadIdleStopControls();
+            PopulateCategories();
         }
         finally
         {
@@ -1407,6 +1408,83 @@ public partial class SettingsWindow : Window
 
     private void DoneButton_Click(object sender, RoutedEventArgs e) => Close();
 
+    private void PopulateCategories()
+    {
+        var items = new List<ProjectCategoryItemViewModel>();
+        var cats = _settings.GetNormalizedProjectCategories();
+        var defaultSet = new HashSet<string>(AppSettings.DefaultProjectCategories, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var c in cats)
+        {
+            bool isDefault = defaultSet.Contains(c);
+            items.Add(new ProjectCategoryItemViewModel
+            {
+                Name = c,
+                Description = isDefault ? "Default preset" : "Custom category",
+                CanDelete = !isDefault
+            });
+        }
+
+        CategoriesItemsControl.ItemsSource = items;
+    }
+
+    private void AddCategorySettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        SubmitNewCategory();
+    }
+
+    private void NewCategoryTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            SubmitNewCategory();
+        }
+    }
+
+    private void SubmitNewCategory()
+    {
+        string name = NewCategoryTextBox.Text?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            CategoryValidationStatusText.Text = "Please enter a category name.";
+            CategoryValidationStatusText.Visibility = Visibility.Visible;
+            NewCategoryTextBox.Focus();
+            return;
+        }
+
+        if (name.Length > 40)
+        {
+            name = name.Substring(0, 40).Trim();
+        }
+
+        if (!_settings.AddProjectCategory(name))
+        {
+            CategoryValidationStatusText.Text = $"Category '{name}' already exists.";
+            CategoryValidationStatusText.Visibility = Visibility.Visible;
+            NewCategoryTextBox.Focus();
+            return;
+        }
+
+        CategoryValidationStatusText.Visibility = Visibility.Collapsed;
+        NewCategoryTextBox.Text = "";
+        SettingsStore.Save(_settings);
+        CommitControls(SettingsChangeKind.Behavior);
+        PopulateCategories();
+    }
+
+    private void DeleteCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string catName })
+        {
+            _settings.ProjectCategories?.RemoveAll(c => string.Equals(c, catName, StringComparison.OrdinalIgnoreCase));
+            _settings.NormalizeForRuntime();
+            SettingsStore.Save(_settings);
+            CommitControls(SettingsChangeKind.Behavior);
+            PopulateCategories();
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
@@ -1416,3 +1494,12 @@ public partial class SettingsWindow : Window
         base.OnClosed(e);
     }
 }
+
+public sealed class ProjectCategoryItemViewModel
+{
+    public string Name { get; init; } = "";
+    public string Description { get; init; } = "";
+    public bool CanDelete { get; init; }
+    public Visibility DeleteVisibility => CanDelete ? Visibility.Visible : Visibility.Collapsed;
+}
+

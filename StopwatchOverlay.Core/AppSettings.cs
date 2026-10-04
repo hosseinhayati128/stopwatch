@@ -140,6 +140,9 @@ namespace StopwatchOverlay
         public const double MinimumCommandChainingTimeoutSeconds = 0.2;
         public const double MaximumCommandChainingTimeoutSeconds = 2.0;
 
+        public static readonly IReadOnlyList<string> DefaultProjectCategories = ["Work", "Productive", "Rest", "Routine"];
+        public List<string> ProjectCategories { get; set; } = new(DefaultProjectCategories);
+
         public int ShortcutSchemaVersion { get; set; } = 2;
         public Shortcut LeaderShortcut { get; set; } = DefaultLeaderShortcut();
         public Shortcut NoteLeaderShortcut { get; set; } = DefaultNoteLeaderShortcut();
@@ -518,6 +521,50 @@ namespace StopwatchOverlay
                 PeriodicReviewMinDurationSeconds = 3600;
 
             PeriodicReviewMinActivityPercent = Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0);
+
+            ProjectCategories = GetNormalizedProjectCategories();
+        }
+
+        public List<string> GetNormalizedProjectCategories()
+        {
+            var list = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (ProjectCategories != null)
+            {
+                foreach (var c in ProjectCategories)
+                {
+                    if (!string.IsNullOrWhiteSpace(c))
+                    {
+                        var trimmed = c.Trim();
+                        if (seen.Add(trimmed))
+                            list.Add(trimmed);
+                    }
+                }
+            }
+            if (list.Count == 0)
+            {
+                list.AddRange(DefaultProjectCategories);
+            }
+            return list;
+        }
+
+        public static string NormalizeProjectCategory(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                return "Work";
+            return category.Trim();
+        }
+
+        public bool AddProjectCategory(string category)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                return false;
+            string trimmed = category.Trim();
+            ProjectCategories ??= new(DefaultProjectCategories);
+            if (ProjectCategories.Any(c => string.Equals(c?.Trim(), trimmed, StringComparison.OrdinalIgnoreCase)))
+                return false;
+            ProjectCategories.Add(trimmed);
+            return true;
         }
 
         private static string NormalizeChoice(

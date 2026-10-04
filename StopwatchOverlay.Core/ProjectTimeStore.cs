@@ -34,6 +34,7 @@ namespace StopwatchOverlay
     {
         public string Key { get; set; } = "";
         public string Name { get; set; } = "";
+        public string Category { get; set; } = "";
     }
 
     public sealed class WorkIntervalDocumentEntry

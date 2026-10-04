@@ -46,7 +46,7 @@ namespace StopwatchOverlay
         string? ProjectName,
         bool IsRunning);
 
-    public sealed record ProjectInfoView(string Key, string Name);
+    public sealed record ProjectInfoView(string Key, string Name, string Category = "");
 
     /// <summary>
     /// An immutable, UTC work interval suitable for dashboard queries.
@@ -132,14 +132,43 @@ namespace StopwatchOverlay
             }
         }
 
-        public string RegisterProject(string projectName)
+        public string RegisterProject(string projectName, string? category = null)
         {
             string displayName = NormalizeProjectName(projectName);
             string key = CreateProjectKey(displayName);
 
             lock (_gate)
             {
-                return RegisterProjectCore(key, displayName).Name;
+                return RegisterProjectCore(key, displayName, category).Name;
+            }
+        }
+
+        public string GetProjectCategory(string projectName)
+        {
+            if (string.IsNullOrWhiteSpace(projectName)) return "";
+            string key = CreateProjectKey(projectName.Trim());
+            lock (_gate)
+            {
+                var match = _projects.FirstOrDefault(p => ProjectKeysEqual(p.Key, key));
+                return match?.Category ?? "";
+            }
+        }
+
+        public bool SetProjectCategory(string projectName, string category)
+        {
+            if (string.IsNullOrWhiteSpace(projectName)) return false;
+            string displayName = NormalizeProjectName(projectName);
+            string key = CreateProjectKey(displayName);
+            lock (_gate)
+            {
+                var match = _projects.FirstOrDefault(p => ProjectKeysEqual(p.Key, key));
+                if (match != null)
+                {
+                    match.Category = (category ?? "").Trim();
+                    return true;
+                }
+                RegisterProjectCore(key, displayName, category);
+                return true;
             }
         }
 
@@ -923,7 +952,7 @@ namespace StopwatchOverlay
             {
                 return new ProjectHistoryView(
                     asOfUtc,
-                    _projects.Select(project => new ProjectInfoView(project.Key, project.Name)),
+                    _projects.Select(project => new ProjectInfoView(project.Key, project.Name, project.Category)),
                     _intervals
                         .OrderBy(interval => interval.StartUtc)
                         .ThenBy(interval => interval.Id)
@@ -946,7 +975,8 @@ namespace StopwatchOverlay
                     Projects = _projects.Select(project => new ProjectDocumentEntry
                     {
                         Key = project.Key,
-                        Name = project.Name
+                        Name = project.Name,
+                        Category = project.Category
                     }).ToList(),
                     Intervals = _intervals.Select(interval => new WorkIntervalDocumentEntry
                     {
@@ -980,7 +1010,8 @@ namespace StopwatchOverlay
             {
                 result._projects.Add(new ProjectEntry(
                     project.Key,
-                    project.Name));
+                    project.Name,
+                    project.Category ?? ""));
             }
 
             foreach (WorkIntervalDocumentEntry interval in document.Intervals)
@@ -1075,14 +1106,20 @@ namespace StopwatchOverlay
         private static bool ProjectKeysEqual(string left, string right)
             => StringComparer.OrdinalIgnoreCase.Equals(left, right);
 
-        private ProjectEntry RegisterProjectCore(string key, string displayName)
+        private ProjectEntry RegisterProjectCore(string key, string displayName, string? category = null)
         {
             ProjectEntry? existing = _projects.FirstOrDefault(
                 project => ProjectKeysEqual(project.Key, key));
             if (existing != null)
+            {
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    existing.Category = category.Trim();
+                }
                 return existing;
+            }
 
-            var project = new ProjectEntry(key, displayName);
+            var project = new ProjectEntry(key, displayName, (category ?? "").Trim());
             _projects.Add(project);
             return project;
         }
@@ -1140,7 +1177,19 @@ namespace StopwatchOverlay
                 throw new ArgumentException("A timer id must be non-empty.", nameof(timerSessionId));
         }
 
-        private sealed record ProjectEntry(string Key, string Name);
+        private sealed class ProjectEntry
+        {
+            public ProjectEntry(string key, string name, string category = "")
+            {
+                Key = key;
+                Name = name;
+                Category = category;
+            }
+
+            public string Key { get; }
+            public string Name { get; }
+            public string Category { get; set; }
+        }
 
         private sealed class WorkIntervalEntry
         {

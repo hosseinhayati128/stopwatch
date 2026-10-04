@@ -80,6 +80,56 @@
             </StackPanel>
         </Border>
 
+        <TextBlock Text="Category" Style="{StaticResource SectionHeaderText}" Margin="0,14,0,7"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ComboBox x:Name="CategorySelector"
+                      MinHeight="44"
+                      AutomationProperties.Name="Category"
+                      SelectionChanged="CategorySelector_SelectionChanged"
+                      DropDownClosed="CategorySelector_DropDownClosed"/>
+            <Button x:Name="AddCategoryButton"
+                    Grid.Column="1"
+                    Content="+"
+                    Width="44"
+                    Height="44"
+                    Padding="0"
+                    Margin="8,0,0,0"
+                    FontSize="20"
+                    Style="{StaticResource ModernButton}"
+                    ToolTip="Add custom category"
+                    AutomationProperties.Name="Add custom category"
+                    AutomationProperties.HelpText="Open a field for entering a custom category name"
+                    Click="AddCategoryButton_Click"/>
+        </Grid>
+
+        <Border x:Name="NewCategoryPanel"
+                Style="{StaticResource SettingsCard}"
+                Margin="0,12,0,0"
+                Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Text="New category name (e.g. Work, Rest, Routine, Productive)"
+                           Style="{StaticResource SectionHeaderText}"
+                           Margin="0,0,0,7"/>
+                <TextBox x:Name="NewCategoryBox"
+                         MaxLength="40"
+                         MinHeight="42"
+                         AutomationProperties.Name="New category name"
+                         Style="{StaticResource TimeInputBox}"
+                         VerticalContentAlignment="Center"
+                         KeyDown="NewCategoryBox_KeyDown"/>
+                <TextBlock x:Name="CategoryValidationText"
+                           Text="Enter a category name."
+                           Foreground="{DynamicResource DangerTextBrush}"
+                           AutomationProperties.LiveSetting="Assertive"
+                           Margin="2,7,0,0"
+                           Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+
         <TextBlock x:Name="NoProjectHintText"
                    Text="Choose ‘No project’ to keep this timer out of reports."
                    Foreground="{DynamicResource SecondaryTextBrush}"

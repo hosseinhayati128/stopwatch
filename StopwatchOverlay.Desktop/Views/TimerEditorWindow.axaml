@@ -58,8 +58,34 @@
                 </Grid>
                 <CheckBox x:Name="IdleStopForProjectCheck"
                           Content="Idle stop active for this project (stops timer if idle)"
-                          Margin="0,0,0,14"
+                          Margin="0,0,0,10"
                           Click="IdleStopForProjectCheck_Click"/>
+
+                <!-- Category Assignment -->
+                <TextBlock Text="CATEGORY"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Margin="0,0,0,6"/>
+                <Grid Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+                    <ComboBox x:Name="CategorySelector"
+                              MinHeight="38"
+                              HorizontalAlignment="Stretch"
+                              SelectionChanged="CategorySelector_SelectionChanged"/>
+                    <TextBox x:Name="CustomCategoryBox"
+                             Grid.Column="0"
+                             MinHeight="38"
+                             IsVisible="False"
+                             VerticalContentAlignment="Center"
+                             TextChanged="CustomCategoryBox_TextChanged"/>
+                    <Button x:Name="ToggleCategoryInputButton"
+                            Grid.Column="1"
+                            Content="New..."
+                            MinWidth="60"
+                            Margin="8,0,0,0"
+                            Classes="modern"
+                            Click="ToggleCategoryInputButton_Click"/>
+                </Grid>
 
                 <!-- Total Time Value Section -->
                 <Border Background="{DynamicResource SurfaceRaisedBrush}"

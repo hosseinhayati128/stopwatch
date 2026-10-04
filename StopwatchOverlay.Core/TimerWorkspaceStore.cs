@@ -40,6 +40,7 @@ namespace StopwatchOverlay
         public Guid Id { get; set; }
         public int Number { get; set; }
         public string Name { get; set; } = "";
+        public string Category { get; set; } = "Work";
         public bool IsRunning { get; set; }
         public bool IsSeparated { get; set; }
         public TimeSpan Elapsed { get; set; }
@@ -567,6 +568,7 @@ namespace StopwatchOverlay
                 Id = timer.Id,
                 Number = timer.Number,
                 Name = timer.Name,
+                Category = string.IsNullOrWhiteSpace(timer.Category) ? "Work" : timer.Category.Trim(),
                 IsRunning = timer.IsRunning,
                 IsSeparated = timer.IsSeparated,
                 Elapsed = timer.Elapsed,
@@ -628,6 +630,7 @@ namespace StopwatchOverlay
             var timer = new TimerSession(saved.Id, saved.Number)
             {
                 Name = saved.Name ?? "",
+                Category = string.IsNullOrWhiteSpace(saved.Category) ? "Work" : saved.Category.Trim(),
                 IsRunning = saved.IsRunning,
                 IsSeparated = saved.IsSeparated,
                 Mode = saved.Mode,

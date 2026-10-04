@@ -1459,10 +1459,10 @@ namespace StopwatchOverlay
                 return;
             }
 
-            string? projectName = await ChooseProjectAsync(
+            var result = await ChooseProjectAsync(
                 currentName: "",
                 isCreatingTimer: true);
-            if (projectName == null || _isExiting)
+            if (!result.Accepted || _isExiting)
                 return;
 
             // The chooser leaves overlays interactive. Recheck after it closes in case
@@ -1478,7 +1478,16 @@ namespace StopwatchOverlay
 
             SaveActiveTimerEditorState();
             var timer = CreateTimerModel();
-            timer.Name = RegisterProjectName(projectName);
+            timer.Name = RegisterProjectName(result.ProjectName);
+            timer.Category = result.Category;
+            if (!string.IsNullOrWhiteSpace(timer.Name))
+            {
+                _projectHistory.SetProjectCategory(timer.Name, result.Category);
+            }
+            if (_settings.AddProjectCategory(result.Category))
+            {
+                SettingsStore.Save(_settings);
+            }
             RestoreActiveTimerEditorState();
 
             timer.OverlayVisible = true;
@@ -1504,18 +1513,22 @@ namespace StopwatchOverlay
             CheckpointState();
         }
 
-        private async Task<string?> ChooseProjectAsync(
+        private async Task<(bool Accepted, string ProjectName, string Category)> ChooseProjectAsync(
             string currentName,
-            bool isCreatingTimer)
+            bool isCreatingTimer,
+            string currentCategory = "Work")
         {
             if (_isNamingTimer)
-                return null;
+                return (false, "", "Work");
 
             var dialog = new TimerNameWindow(
                 currentName,
                 _projectHistory.ProjectNames,
                 isCreatingTimer,
-                ShortcutText(ShortcutAction.RenameTimer));
+                ShortcutText(ShortcutAction.RenameTimer),
+                categories: _settings.GetNormalizedProjectCategories(),
+                currentCategory: currentCategory,
+                getProjectCategory: name => _projectHistory.GetProjectCategory(name));
             if (IsActive && IsVisible && WindowState != WindowState.Minimized)
             {
                 dialog.Owner = this;
@@ -1545,7 +1558,7 @@ namespace StopwatchOverlay
                 // completion keeps the controller flow linear without blocking overlays.
                 dialog.Show();
                 bool accepted = await completion.Task;
-                return accepted ? dialog.TimerName : null;
+                return (accepted, dialog.TimerName, dialog.Category);
             }
             finally
             {
@@ -1643,10 +1656,11 @@ namespace StopwatchOverlay
 
             var timer = _activeTimer;
             if (ProjectTransitionIsTemporarilyBlocked(timer, alwaysBlock: true)) return;
-            string? projectName = await ChooseProjectAsync(
+            var result = await ChooseProjectAsync(
                 timer.Name,
-                isCreatingTimer: false);
-            if (projectName == null || _isExiting || !_timers.Contains(timer))
+                isCreatingTimer: false,
+                currentCategory: timer.Category);
+            if (!result.Accepted || _isExiting || !_timers.Contains(timer))
             {
                 return;
             }
@@ -1656,7 +1670,7 @@ namespace StopwatchOverlay
             if (ProjectTransitionIsTemporarilyBlocked(timer, alwaysBlock: true))
                 return;
 
-            string requestedName = projectName.Trim();
+            string requestedName = result.ProjectName.Trim();
             bool assignmentChanged = !ProjectAssignmentsEqual(timer.Name, requestedName);
             bool wasRunning = timer.IsRunning;
             bool hadAccumulatedTime = timer.HasAccumulatedTime;
@@ -1676,6 +1690,15 @@ namespace StopwatchOverlay
             string registeredName = RegisterProjectName(requestedName);
             assignmentChanged = !ProjectAssignmentsEqual(timer.Name, registeredName);
             timer.Name = registeredName;
+            timer.Category = result.Category;
+            if (!string.IsNullOrWhiteSpace(registeredName))
+            {
+                _projectHistory.SetProjectCategory(registeredName, result.Category);
+            }
+            if (_settings.AddProjectCategory(result.Category))
+            {
+                SettingsStore.Save(_settings);
+            }
 
             bool resetForNewProject = assignmentChanged && hadAccumulatedTime;
             if (resetForNewProject)
@@ -1815,6 +1838,16 @@ namespace StopwatchOverlay
                     {
                         instance.Window.SetTimerName(timer.Name);
                     }
+                }
+
+                timer.Category = dialog.NewCategory;
+                if (!string.IsNullOrWhiteSpace(timer.Name))
+                {
+                    _projectHistory.SetProjectCategory(timer.Name, dialog.NewCategory);
+                }
+                if (_settings.AddProjectCategory(dialog.NewCategory))
+                {
+                    SettingsStore.Save(_settings);
                 }
 
                 TimeSpan newTime = dialog.NewTimeValue;

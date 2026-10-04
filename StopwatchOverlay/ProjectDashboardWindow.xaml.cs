@@ -842,14 +842,16 @@ public partial class ProjectDashboardWindow : Window
             Margin = new Thickness(0, 1, 0, 1)
         });
 
+        string category = _history?.Projects.FirstOrDefault(p => string.Equals(p.Key, record.ProjectKey, StringComparison.OrdinalIgnoreCase))?.Category ?? "";
+        string displayProject = !string.IsNullOrWhiteSpace(category) ? $"{record.ProjectName}  [{category}]" : record.ProjectName;
         var project = new TextBlock
         {
-            Text = record.ProjectName,
+            Text = displayProject,
             FontWeight = FontWeights.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(12, 0, 10, 0),
-            ToolTip = record.ProjectName
+            ToolTip = displayProject
         };
         Grid.SetColumn(project, 1);
         grid.Children.Add(project);
@@ -1196,13 +1198,16 @@ public partial class ProjectDashboardWindow : Window
                 Fill = GetProjectBrush(project.Key),
                 Margin = new Thickness(0, 0, 8, 0)
             });
+            string projectCat = _history?.Projects.FirstOrDefault(p => string.Equals(p.Key, project.Key, StringComparison.OrdinalIgnoreCase))?.Category ?? "";
+            string barDisplay = !string.IsNullOrWhiteSpace(projectCat) ? $"{project.Name} [{projectCat}]" : project.Name;
             label.Children.Add(new TextBlock
             {
-                Text = project.Name,
+                Text = barDisplay,
                 Foreground = DashboardTextBrush("PrimaryTextBrush"),
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                MaxWidth = 118,
-                VerticalAlignment = VerticalAlignment.Center
+                MaxWidth = 140,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = barDisplay
             });
             row.Children.Add(label);
 

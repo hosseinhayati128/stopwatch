@@ -24,6 +24,7 @@ namespace StopwatchOverlay
         private bool _isUpdatingInternally;
         private bool _discardRecords;
         private bool _isCustomProjectMode;
+        private bool _isCustomCategoryMode;
         private bool _isRunning;
         private TimeSpan _currentTimeSpan;
 
@@ -34,6 +35,7 @@ namespace StopwatchOverlay
         public TimeSpan NewTimeValue { get; private set; }
         public TimeSpan Delta => NewTimeValue - _originalTotalElapsed;
         public string? NewProjectName { get; private set; }
+        public string NewCategory { get; private set; } = "Work";
         public bool NewIsRunning { get; private set; }
 
         public TimerEditorWindow(
@@ -91,6 +93,29 @@ namespace StopwatchOverlay
             }
             ProjectSelector.SelectedIndex = selectedIndex;
             UpdateIdleStopCheck();
+
+            // Populate Categories
+            var categories = (_settings?.GetNormalizedProjectCategories() ?? AppSettings.DefaultProjectCategories)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            string currentCat = string.IsNullOrWhiteSpace(timer.Category) ? "Work" : timer.Category.Trim();
+            if (!categories.Contains(currentCat, StringComparer.OrdinalIgnoreCase))
+            {
+                categories.Insert(0, currentCat);
+            }
+
+            int catSelectedIndex = 0;
+            for (int i = 0; i < categories.Count; i++)
+            {
+                CategorySelector.Items.Add(categories[i]);
+                if (string.Equals(categories[i], currentCat, StringComparison.OrdinalIgnoreCase))
+                {
+                    catSelectedIndex = i;
+                }
+            }
+            CategorySelector.SelectedIndex = catSelectedIndex;
+            NewCategory = currentCat;
 
             // Populate Segments List
             var segmentItems = new List<SegmentItem>();
@@ -444,6 +469,33 @@ namespace StopwatchOverlay
             }
         }
 
+        private void ToggleCategoryInputButton_Click(object sender, RoutedEventArgs e)
+        {
+            _isCustomCategoryMode = !_isCustomCategoryMode;
+            if (_isCustomCategoryMode)
+            {
+                CategorySelector.Visibility = Visibility.Collapsed;
+                CustomCategoryBox.Visibility = Visibility.Visible;
+                ToggleCategoryInputButton.Content = "List...";
+                CustomCategoryBox.Focus();
+            }
+            else
+            {
+                CustomCategoryBox.Visibility = Visibility.Collapsed;
+                CategorySelector.Visibility = Visibility.Visible;
+                ToggleCategoryInputButton.Content = "New...";
+                CategorySelector.Focus();
+            }
+        }
+
+        private void CategorySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+        }
+
+        private void CustomCategoryBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+        }
+
         private string? GetCurrentSelectedProject()
         {
             if (_isCustomProjectMode)
@@ -543,6 +595,20 @@ namespace StopwatchOverlay
             else
             {
                 NewProjectName = "";
+            }
+
+            if (_isCustomCategoryMode)
+            {
+                string customCat = CustomCategoryBox.Text.Trim();
+                NewCategory = string.IsNullOrWhiteSpace(customCat) ? "Work" : customCat;
+            }
+            else if (CategorySelector.SelectedItem is string cat && !string.IsNullOrWhiteSpace(cat))
+            {
+                NewCategory = cat.Trim();
+            }
+            else
+            {
+                NewCategory = "Work";
             }
 
             WasSaved = true;

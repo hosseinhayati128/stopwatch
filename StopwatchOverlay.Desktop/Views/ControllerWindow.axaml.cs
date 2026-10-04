@@ -565,8 +565,9 @@ public partial class ControllerWindow : Window
         ActiveWorkspaceTitle.Text = session.DisplayName;
 
         bool hasProject = !string.IsNullOrWhiteSpace(session.Name);
-        ProjectSubtitle.IsVisible = hasProject;
-        ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}" : "";
+        string catBadge = !string.IsNullOrWhiteSpace(session.Category) ? $" [{session.Category}]" : "";
+        ProjectSubtitle.IsVisible = hasProject || !string.IsNullOrWhiteSpace(session.Category);
+        ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}{catBadge}" : $"[{session.Category}]";
 
         StartStopButton.Content = session.IsRunning ? "Pause" : "Start";
         RecIndicator.IsVisible = session.IsRunning && _settings.ShowRecIndicator;
@@ -636,7 +637,7 @@ public partial class ControllerWindow : Window
         {
             Id = s.Id,
             DisplayName = s.DisplayName,
-            DisplaySummary = $"{FormatDisplayTime(s)} · {(s.IsRunning ? "Running" : "Paused")}{(s.IsSeparated ? " · Separated" : "")}",
+            DisplaySummary = $"{FormatDisplayTime(s)} · {(s.IsRunning ? "Running" : "Paused")}{(!string.IsNullOrWhiteSpace(s.Category) ? $" · [{s.Category}]" : "")}{(s.IsSeparated ? " · Separated" : "")}",
             IsRunning = s.IsRunning,
             IsActive = s == active,
             IsSeparated = s.IsSeparated,
@@ -844,6 +845,15 @@ public partial class ControllerWindow : Window
                 if (_overlays.TryGetValue(session.Id, out var overlay))
                     overlay.SetTimerName(session.Name);
             }
+            session.Category = editor.NewCategory;
+            if (!string.IsNullOrWhiteSpace(session.Name))
+            {
+                _projectHistory.SetProjectCategory(session.Name, editor.NewCategory);
+            }
+            if (_settings.AddProjectCategory(editor.NewCategory))
+            {
+                SettingsStore.Save(_settings);
+            }
             UpdateActiveTimerDisplay();
             RefreshTimerRail();
             UpdateOverlayStates();
@@ -910,11 +920,27 @@ public partial class ControllerWindow : Window
     {
         var session = CurrentTimer;
         var projectNames = _projectHistory.ProjectNames.ToList();
-        var dialog = new TimerNameWindow(session.Name, projectNames);
+        var dialog = new TimerNameWindow(
+            session.Name,
+            projectNames,
+            isCreatingTimer: false,
+            renameShortcut: "",
+            categories: _settings.GetNormalizedProjectCategories(),
+            currentCategory: session.Category,
+            getProjectCategory: name => _projectHistory.GetProjectCategory(name));
         await dialog.ShowDialog(this);
         if (dialog.WasAccepted)
         {
             session.Name = dialog.TimerName;
+            session.Category = dialog.Category;
+            if (!string.IsNullOrWhiteSpace(session.Name))
+            {
+                _projectHistory.SetProjectCategory(session.Name, dialog.Category);
+            }
+            if (_settings.AddProjectCategory(dialog.Category))
+            {
+                SettingsStore.Save(_settings);
+            }
             if (_overlays.TryGetValue(session.Id, out var overlay))
             {
                 overlay.SetTimerName(session.Name);

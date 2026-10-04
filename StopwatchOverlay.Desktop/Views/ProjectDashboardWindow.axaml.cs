@@ -371,15 +371,18 @@ public partial class ProjectDashboardWindow : Window
                 Fill = GetProjectBrush(project.Key),
                 VerticalAlignment = VerticalAlignment.Center
             });
+            string projectCat = _history?.Projects.FirstOrDefault(p => string.Equals(p.Key, project.Key, StringComparison.OrdinalIgnoreCase))?.Category ?? "";
+            string barDisplay = !string.IsNullOrWhiteSpace(projectCat) ? $"{project.Name} [{projectCat}]" : project.Name;
             var nameBlock = new TextBlock
             {
-                Text = project.Name,
+                Text = barDisplay,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 MaxWidth = 118,
                 VerticalAlignment = VerticalAlignment.Center
             };
             if (Application.Current?.TryFindResource("PrimaryTextBrush", out var pb) == true && pb is IBrush pBrush)
                 nameBlock.Foreground = pBrush;
+            ToolTip.SetTip(nameBlock, barDisplay);
             label.Children.Add(nameBlock);
             row.Children.Add(label);
 
@@ -1039,9 +1042,11 @@ public partial class ProjectDashboardWindow : Window
         Grid.SetColumn(stripe, 0);
         grid.Children.Add(stripe);
 
+        string category = _history?.Projects.FirstOrDefault(p => string.Equals(p.Key, record.ProjectKey, StringComparison.OrdinalIgnoreCase))?.Category ?? "";
+        string displayProject = !string.IsNullOrWhiteSpace(category) ? $"{record.ProjectName}  [{category}]" : record.ProjectName;
         var project = new TextBlock
         {
-            Text = record.ProjectName,
+            Text = displayProject,
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
@@ -1049,7 +1054,7 @@ public partial class ProjectDashboardWindow : Window
         };
         if (Application.Current?.TryFindResource("PrimaryTextBrush", out var pb) == true && pb is IBrush pBrush)
             project.Foreground = pBrush;
-        ToolTip.SetTip(project, record.ProjectName);
+        ToolTip.SetTip(project, displayProject);
         Grid.SetColumn(project, 1);
         grid.Children.Add(project);
 

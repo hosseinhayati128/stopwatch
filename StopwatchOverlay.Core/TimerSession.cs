@@ -79,6 +79,7 @@ namespace StopwatchOverlay
         public Guid Id { get; }
         public int Number { get; }
         public string Name { get; set; } = "";
+        public string Category { get; set; } = "Work";
         public string DisplayName => string.IsNullOrWhiteSpace(Name)
             ? $"Timer {Number}"
             : Name.Trim();
@@ -100,7 +101,9 @@ namespace StopwatchOverlay
                 TimeSpan value = Mode == 1 ? DateTime.Now.TimeOfDay
                     : Mode == 2 ? CountdownRemaining
                     : Elapsed;
-                return $"{value:hh\\:mm\\:ss}  ·  {state}  ·  {mode}";
+                string catBadge = !string.IsNullOrWhiteSpace(Category) ? $"  ·  [{Category}]" : "";
+                string sepBadge = IsSeparated ? "  ·  Separated" : "";
+                return $"{value:hh\\:mm\\:ss}  ·  {state}  ·  {mode}{catBadge}{sepBadge}";
             }
         }
         public ResumableStopwatch Stopwatch { get; } = new();

@@ -76,6 +76,55 @@
                     </StackPanel>
                 </Border>
 
+                <TextBlock Text="CATEGORY"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Margin="0,14,0,6"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <ComboBox x:Name="CategorySelector"
+                              MinHeight="40"
+                              HorizontalAlignment="Stretch"
+                              SelectionChanged="CategorySelector_SelectionChanged"/>
+                    <Button x:Name="AddCategoryButton"
+                            Grid.Column="1"
+                            Content="+"
+                            Width="40" Height="40"
+                            Padding="0"
+                            Margin="8,0,0,0"
+                            FontSize="18"
+                            Classes="modern"
+                            ToolTip.Tip="Add custom category"
+                            Click="AddCategoryButton_Click"/>
+                </Grid>
+
+                <Border x:Name="NewCategoryPanel"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,12,0,0"
+                        IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="New category name (e.g. Work, Rest, Routine, Productive)"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBox x:Name="NewCategoryBox"
+                                 MaxLength="40"
+                                 MinHeight="38"
+                                 VerticalContentAlignment="Center"
+                                 KeyDown="NewCategoryBox_KeyDown"/>
+                        <TextBlock x:Name="CategoryValidationText"
+                                   Text="Enter a category name."
+                                   Foreground="{DynamicResource DangerTextBrush}"
+                                   FontSize="11.5"
+                                   IsVisible="False"/>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock x:Name="NoProjectHintText"
                            Text="Choose ‘No project’ to keep this timer out of reports."
                            Foreground="{DynamicResource SecondaryTextBrush}"
