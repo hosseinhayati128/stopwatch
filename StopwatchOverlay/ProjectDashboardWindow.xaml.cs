@@ -468,8 +468,8 @@ public partial class ProjectDashboardWindow : Window
         Grid.SetColumnSpan(HeaderRangePanel, compact ? 2 : 1);
         HeaderRangePanel.Margin = compact ? new Thickness(0, 8, 0, 0) : new Thickness(0, 14, 0, 0);
 
-        SummaryGrid.Columns = compact ? 2 : 4;
-        SummaryGrid.Rows = compact ? 2 : 1;
+        SummaryGrid.Columns = compact ? 2 : 5;
+        SummaryGrid.Rows = compact ? 3 : 1;
         foreach (Border card in SummaryGrid.Children.OfType<Border>())
             card.Margin = new Thickness(0, 0, 10, compact ? 10 : 0);
     }
@@ -540,7 +540,7 @@ public partial class ProjectDashboardWindow : Window
             // A dashboard refresh should never take down the controller. The next
             // automatic refresh will try the provider again.
             CrashLogger.LogRecoverable(exception, "ProjectDashboardHistoryProvider");
-            UpdatedText.Text = "Refresh failed â€” showing earlier data";
+            UpdatedText.Text = "Refresh failed \u2014 showing earlier data";
             UpdatedText.SetResourceReference(TextBlock.ForegroundProperty, "WarningBrush");
             ShowRecordsWarning("Project records could not be loaded. Your existing data has not been changed.");
             _refreshFailed = true;
@@ -837,7 +837,7 @@ public partial class ProjectDashboardWindow : Window
         int last = Math.Min(_records.Count, (_recordsPageIndex + 1) * RecordsPerPage);
         RecordsPageStatusText.Text = _records.Count == 0
             ? "0 records"
-            : $"{first}â€“{last} of {_records.Count.ToString(CultureInfo.CurrentCulture)}";
+            : $"{first}\u2013{last} of {_records.Count.ToString(CultureInfo.CurrentCulture)}";
         PreviousRecordsPageButton.IsEnabled = _recordsPageIndex > 0;
         NextRecordsPageButton.IsEnabled = _recordsPageIndex + 1 < pageCount;
 
@@ -941,7 +941,7 @@ public partial class ProjectDashboardWindow : Window
             : endLocal.Date == startLocal.Date
                 ? FormatLocalTime(endLocal, interval.EndUtc)
                 : $"{endLocal.ToString("MMM d", CultureInfo.CurrentCulture)}, {FormatLocalTime(endLocal, interval.EndUtc)}";
-        string timeLabel = $"{startTimeLabel} â€“ {endLabel}";
+        string timeLabel = $"{startTimeLabel} \u2013 {endLabel}";
         var times = CreateRecordsSecondaryCell(timeLabel);
         times.ToolTip = isClipped
             ? $"{timeLabel}. Showing only the part inside the selected period; Edit changes the full record."
@@ -1970,7 +1970,7 @@ public partial class ProjectDashboardWindow : Window
         string end = fragment.IsLive && fragment.EndsAtIntervalEnd
             ? "Now"
             : FormatLocalTime(fragment.EndLocal, fragment.EndUtc);
-        return $"{fragment.ProjectName}\n{FormatLocalTime(fragment.StartLocal, fragment.StartUtc)} â€“ {end}\n{FormatDetailedDuration(fragment.Duration)}";
+        return $"{fragment.ProjectName}\n{FormatLocalTime(fragment.StartLocal, fragment.StartUtc)} \u2013 {end}\n{FormatDetailedDuration(fragment.Duration)}";
     }
 
     private static List<TimelineItem> AssignTimelineLanes(IReadOnlyList<DayFragment> fragments)

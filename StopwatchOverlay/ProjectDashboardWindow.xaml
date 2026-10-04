@@ -462,7 +462,7 @@
                 <Border x:Name="TimelineCard" Grid.Row="4" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Daily timeline" Style="{StaticResource ChartTitle}"/>
-                        <TextBlock Text="Each row spans 00:00â€“24:00; overlapping timers use separate lanes"
+                        <TextBlock Text="Each row spans 00:00&#x2013;24:00; overlapping timers use separate lanes"
                                    Style="{StaticResource Caption}" Margin="0,4,0,16"/>
                         <StackPanel x:Name="TimelineDaysPanel"/>
                     </StackPanel>
@@ -521,7 +521,7 @@
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center">
                                     <Button x:Name="PreviousRecordsPageButton"
-                                            Content="â€¹ Previous"
+                                            Content="&#x2039; Previous"
                                             Style="{StaticResource ModernButton}"
                                             Height="32"
                                             Padding="11,4"
@@ -535,7 +535,7 @@
                                                VerticalAlignment="Center"
                                                Margin="8,0"/>
                                     <Button x:Name="NextRecordsPageButton"
-                                            Content="Next â€º"
+                                            Content="Next &#x203A;"
                                             Style="{StaticResource ModernButton}"
                                             Height="32"
                                             Padding="11,4"
@@ -574,7 +574,7 @@
 
                     <Button x:Name="AddRecordButton"
                             Panel.ZIndex="2"
-                            Content="ï¼‹ Add record"
+                            Content="+ Add record"
                             Style="{StaticResource StartButton}"
                             Height="34"
                             Padding="13,5"

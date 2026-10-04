@@ -98,13 +98,13 @@ namespace StopwatchOverlay
                     ? "You can assign it later from Timers > Set project."
                     : $"You can assign it later with {renameShortcut}.";
                 NoProjectHintText.Text =
-                    $"Leave â€˜Select a projectâ€™ selected to create an unnamed timer. {assignmentHint}";
+                    $"Leave 'Select a project' selected to create an unnamed timer. {assignmentHint}";
                 SaveButton.Content = "Create timer";
             }
             else
             {
                 NoProjectHintText.Text =
-                    "Choose â€˜Select a projectâ€™ to make this an unnamed timer.";
+                    "Choose 'Select a project' to make this an unnamed timer.";
                 SaveButton.Content = "Apply project";
             }
 
@@ -231,7 +231,7 @@ namespace StopwatchOverlay
         {
             _isAddingProject = show;
             NewProjectPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-            AddProjectButton.Content = show ? "Ã—" : "+";
+            AddProjectButton.Content = show ? "\u00d7" : "+";
             AddProjectButton.ToolTip = show ? "Cancel adding project" : "Add new project";
             AutomationProperties.SetName(
                 AddProjectButton,
@@ -290,7 +290,7 @@ namespace StopwatchOverlay
         {
             _isAddingCategory = show;
             NewCategoryPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-            AddCategoryButton.Content = show ? "Ã—" : "+";
+            AddCategoryButton.Content = show ? "\u00d7" : "+";
             AddCategoryButton.ToolTip = show ? "Cancel adding category" : "Add custom category";
             AutomationProperties.SetName(
                 AddCategoryButton,

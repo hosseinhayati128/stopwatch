@@ -133,7 +133,7 @@ namespace StopwatchOverlay
                 if (dur < TimeSpan.Zero) dur = TimeSpan.Zero;
                 string endStr = end.HasValue ? end.Value.ToString("HH:mm:ss") : "Now (Running)";
                 segmentItems.Add(new SegmentItem(
-                    $"Segment {i + 1}: {start:HH:mm:ss} â€“ {endStr}",
+                    $"Segment {i + 1}: {start:HH:mm:ss} \u2013 {endStr}",
                     FormatDuration(dur)));
             }
             SegmentsList.ItemsSource = segmentItems;
@@ -153,7 +153,7 @@ namespace StopwatchOverlay
                 string segEnd = _latestEndLocal.HasValue ? _latestEndLocal.Value.ToString("HH:mm:ss") : "Now (running)";
                 TimeSpan segDur = (_latestEndLocal ?? DateTime.Now) - _latestStartLocal.Value;
                 if (segDur < TimeSpan.Zero) segDur = TimeSpan.Zero;
-                SegmentDetailText.Text = $"Latest segment ({_intervals.Count} of {_intervals.Count}): {_latestStartLocal:HH:mm:ss} â€“ {segEnd} ({FormatDuration(segDur)})";
+                SegmentDetailText.Text = $"Latest segment ({_intervals.Count} of {_intervals.Count}): {_latestStartLocal:HH:mm:ss} \u2013 {segEnd} ({FormatDuration(segDur)})";
             }
             else
             {
