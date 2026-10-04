@@ -14,11 +14,13 @@ public partial class TimerNameWindow : Window
     private readonly string _currentName;
     private readonly bool _isCreatingTimer;
     private readonly Func<string, string>? _getProjectCategory;
+    private readonly Func<string, double>? _getProjectScore;
     private bool _isAddingProject;
     private bool _isAddingCategory;
 
     public string TimerName { get; private set; } = "";
     public string Category { get; private set; } = "Work";
+    public double ScorePerHour { get; private set; } = 1.0;
     public bool WasAccepted { get; private set; }
 
     public TimerNameWindow() : this("", Array.Empty<string>())
@@ -32,14 +34,19 @@ public partial class TimerNameWindow : Window
         string renameShortcut = "",
         IEnumerable<string>? categories = null,
         string currentCategory = "Work",
-        Func<string, string>? getProjectCategory = null)
+        Func<string, string>? getProjectCategory = null,
+        double currentScorePerHour = 1.0,
+        Func<string, double>? getProjectScore = null)
     {
         InitializeComponent();
 
         _isCreatingTimer = isCreatingTimer;
         _currentName = (currentName ?? "").Trim();
         _getProjectCategory = getProjectCategory;
+        _getProjectScore = getProjectScore;
         Category = string.IsNullOrWhiteSpace(currentCategory) ? "Work" : currentCategory.Trim();
+        ScorePerHour = (double.IsNaN(currentScorePerHour) || double.IsInfinity(currentScorePerHour) || currentScorePerHour < 0) ? 1.0 : currentScorePerHour;
+        ScorePerHourBox.Value = (decimal)ScorePerHour;
 
         var projects = (projectNames ?? Enumerable.Empty<string>())
             .Select(name => name?.Trim() ?? "")
@@ -111,7 +118,7 @@ public partial class TimerNameWindow : Window
         Opened += (_, _) => ProjectSelector.Focus();
     }
 
-    public static async Task<(bool Accepted, string ProjectName, string Category)> ShowAsync(
+    public static async Task<(bool Accepted, string ProjectName, string Category, double ScorePerHour)> ShowAsync(
         Window? owner,
         string currentName,
         IEnumerable<string> projectNames,
@@ -119,17 +126,19 @@ public partial class TimerNameWindow : Window
         string renameShortcut = "",
         IEnumerable<string>? categories = null,
         string currentCategory = "Work",
-        Func<string, string>? getProjectCategory = null)
+        Func<string, string>? getProjectCategory = null,
+        double currentScorePerHour = 1.0,
+        Func<string, double>? getProjectScore = null)
     {
-        var dialog = new TimerNameWindow(currentName, projectNames, isCreatingTimer, renameShortcut, categories, currentCategory, getProjectCategory);
+        var dialog = new TimerNameWindow(currentName, projectNames, isCreatingTimer, renameShortcut, categories, currentCategory, getProjectCategory, currentScorePerHour, getProjectScore);
         if (owner != null)
         {
             var res = await dialog.ShowDialog<bool>(owner);
-            return (res, dialog.TimerName, dialog.Category);
+            return (res, dialog.TimerName, dialog.Category, dialog.ScorePerHour);
         }
 
-        var tcs = new TaskCompletionSource<(bool, string, string)>();
-        dialog.Closed += (_, _) => tcs.TrySetResult((dialog.WasAccepted, dialog.TimerName, dialog.Category));
+        var tcs = new TaskCompletionSource<(bool, string, string, double)>();
+        dialog.Closed += (_, _) => tcs.TrySetResult((dialog.WasAccepted, dialog.TimerName, dialog.Category, dialog.ScorePerHour));
         dialog.Show();
         return await tcs.Task;
     }
@@ -186,12 +195,23 @@ public partial class TimerNameWindow : Window
         {
             ValidationText.IsVisible = false;
             string selectedProject = (ProjectSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
-            if (!string.IsNullOrWhiteSpace(selectedProject) && _getProjectCategory != null)
+            if (!string.IsNullOrWhiteSpace(selectedProject))
             {
-                string knownCat = _getProjectCategory(selectedProject);
-                if (!string.IsNullOrWhiteSpace(knownCat))
+                if (_getProjectCategory != null)
                 {
-                    SetSelectedCategory(knownCat);
+                    string knownCat = _getProjectCategory(selectedProject);
+                    if (!string.IsNullOrWhiteSpace(knownCat))
+                    {
+                        SetSelectedCategory(knownCat);
+                    }
+                }
+                if (_getProjectScore != null)
+                {
+                    double knownScore = _getProjectScore(selectedProject);
+                    if (knownScore >= 0 && !double.IsNaN(knownScore) && !double.IsInfinity(knownScore))
+                    {
+                        ScorePerHourBox.Value = (decimal)knownScore;
+                    }
                 }
             }
         }
@@ -375,6 +395,8 @@ public partial class TimerNameWindow : Window
 
         TimerName = selectedName;
         Category = string.IsNullOrWhiteSpace(selectedCategory) ? "Work" : selectedCategory;
+        decimal boxVal = ScorePerHourBox.Value ?? 1.0m;
+        ScorePerHour = (boxVal < 0) ? 1.0 : (double)boxVal;
         WasAccepted = true;
         Close(true);
     }

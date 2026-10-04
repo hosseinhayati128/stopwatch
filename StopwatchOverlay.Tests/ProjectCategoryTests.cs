@@ -173,5 +173,90 @@ namespace StopwatchOverlay.Tests
                 if (File.Exists(tempFile + ".bak")) File.Delete(tempFile + ".bak");
             }
         }
+
+        [Fact]
+        public void TimerSession_DefaultScorePerHour_IsOne()
+        {
+            var timer = new TimerSession(1);
+            Assert.Equal(1.0, timer.ScorePerHour);
+        }
+
+        [Fact]
+        public void ProjectTimeHistory_GetAndSetScorePerHour_WorksCorrectly()
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Deep Work", "Work", 2.5);
+            Assert.Equal(2.5, history.GetProjectScorePerHour("Deep Work"));
+
+            // Default for new project without explicit score is 1.0
+            history.RegisterProject("Admin", "Chores");
+            Assert.Equal(1.0, history.GetProjectScorePerHour("Admin"));
+
+            // Updating score per hour
+            bool updated = history.SetProjectScorePerHour("Admin", 0.5);
+            Assert.True(updated);
+            Assert.Equal(0.5, history.GetProjectScorePerHour("Admin"));
+
+            var view = history.CreateView(DateTime.UtcNow);
+            var deepWorkView = view.Projects.First(p => p.Name == "Deep Work");
+            var adminView = view.Projects.First(p => p.Name == "Admin");
+
+            Assert.Equal(2.5, deepWorkView.ScorePerHour);
+            Assert.Equal(0.5, adminView.ScorePerHour);
+        }
+
+        [Fact]
+        public void ProjectTimeStore_SavesAndRestoresScorePerHourToDisk()
+        {
+            string tempFile = Path.Combine(Path.GetTempPath(), $"project-score-test-{Guid.NewGuid():N}.json");
+            try
+            {
+                var history = new ProjectTimeHistory();
+                history.RegisterProject("Programming", "Work", 2.0);
+                history.RegisterProject("Gaming", "Hobbies", 0.5);
+
+                var store = new ProjectTimeStore(tempFile);
+                bool saved = store.Save(history);
+                Assert.True(saved);
+
+                bool loaded = store.TryLoad(out var loadedHistory);
+                Assert.True(loaded);
+                Assert.NotNull(loadedHistory);
+
+                Assert.Equal(2.0, loadedHistory!.GetProjectScorePerHour("Programming"));
+                Assert.Equal(0.5, loadedHistory.GetProjectScorePerHour("Gaming"));
+
+                var view = loadedHistory.CreateView(DateTime.UtcNow);
+                var prog = view.Projects.First(p => p.Name == "Programming");
+                var game = view.Projects.First(p => p.Name == "Gaming");
+
+                Assert.Equal(2.0, prog.ScorePerHour);
+                Assert.Equal(0.5, game.ScorePerHour);
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+                if (File.Exists(tempFile + ".bak")) File.Delete(tempFile + ".bak");
+            }
+        }
+
+        [Fact]
+        public void TimerWorkspaceStore_PreservesScorePerHourAcrossSnapshotAndRestore()
+        {
+            var timer = new TimerSession(42)
+            {
+                Name = "Important Project",
+                Category = "Work",
+                ScorePerHour = 3.5
+            };
+
+            var snapshot = TimerWorkspaceStore.CaptureTimer(timer);
+            Assert.Equal(3.5, snapshot.ScorePerHour);
+
+            var restored = TimerWorkspaceStore.RestoreTimer(snapshot, TimeSpan.Zero, DateTime.UtcNow, DateTime.Now);
+            Assert.Equal("Important Project", restored.Name);
+            Assert.Equal("Work", restored.Category);
+            Assert.Equal(3.5, restored.ScorePerHour);
+        }
     }
 }

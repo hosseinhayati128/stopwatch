@@ -265,8 +265,19 @@
                     <ComboBox x:Name="ProjectFilterSelector" Width="230" Height="34" MinHeight="34"
                               ToolTip="Filter every dashboard view by project"
                               SelectionChanged="ProjectFilterSelector_SelectionChanged"/>
+                    <StackPanel x:Name="ProjectScorePanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Score:" Style="{StaticResource DashboardWoodCaption}"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox x:Name="ProjectScoreBox" Width="60" Height="34" MinHeight="34"
+                                 VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                                 Style="{StaticResource TimeInputBox}"
+                                 LostFocus="ProjectScoreBox_LostFocus"
+                                 KeyDown="ProjectScoreBox_KeyDown"/>
+                        <TextBlock Text="pts/hr" Style="{StaticResource DashboardWoodCaption}"
+                                   VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    </StackPanel>
                     <Button x:Name="DeleteProjectButton"
-                            Content="🗑 Delete Project"
+                            Content="Delete Project"
                             Style="{StaticResource ModernButton}"
                             Height="34"
                             Padding="12,5"
@@ -328,7 +339,7 @@
                                VerticalAlignment="Bottom" Margin="16,0,0,3"/>
                 </Grid>
 
-                <UniformGrid x:Name="SummaryGrid" Grid.Row="1" Rows="1" Columns="4" Margin="0,0,-10,18">
+                <UniformGrid x:Name="SummaryGrid" Grid.Row="1" Rows="1" Columns="5" Margin="0,0,-10,18">
                     <Border Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
@@ -336,6 +347,17 @@
                             <TextBlock Text="TRACKED TIMER TIME" Style="{StaticResource DashboardKpiCaption}" FontWeight="SemiBold"/>
                             <TextBlock x:Name="TotalTrackedText" Text="0m" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0" Style="{StaticResource DashboardKpi}"/>
                             <TextBlock Text="Simultaneous timers are added" Style="{StaticResource Caption}"
+                                       FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SummaryCard}">
+                        <Grid>
+                            <Rectangle Style="{StaticResource DashboardSkull}"/>
+                        <StackPanel>
+                            <TextBlock Text="VALUE SCORE" Style="{StaticResource DashboardKpiCaption}" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="TotalScoreText" Text="0.0 pts" FontSize="25" FontWeight="SemiBold" Margin="0,6,0,0" Style="{StaticResource DashboardKpi}"/>
+                            <TextBlock Text="Weighted by project score / hr" Style="{StaticResource Caption}"
                                        FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
@@ -440,7 +462,7 @@
                 <Border x:Name="TimelineCard" Grid.Row="4" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Daily timeline" Style="{StaticResource ChartTitle}"/>
-                        <TextBlock Text="Each row spans 00:00–24:00; overlapping timers use separate lanes"
+                        <TextBlock Text="Each row spans 00:00â€“24:00; overlapping timers use separate lanes"
                                    Style="{StaticResource Caption}" Margin="0,4,0,16"/>
                         <StackPanel x:Name="TimelineDaysPanel"/>
                     </StackPanel>
@@ -499,7 +521,7 @@
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center">
                                     <Button x:Name="PreviousRecordsPageButton"
-                                            Content="‹ Previous"
+                                            Content="â€¹ Previous"
                                             Style="{StaticResource ModernButton}"
                                             Height="32"
                                             Padding="11,4"
@@ -513,7 +535,7 @@
                                                VerticalAlignment="Center"
                                                Margin="8,0"/>
                                     <Button x:Name="NextRecordsPageButton"
-                                            Content="Next ›"
+                                            Content="Next â€º"
                                             Style="{StaticResource ModernButton}"
                                             Height="32"
                                             Padding="11,4"
@@ -552,7 +574,7 @@
 
                     <Button x:Name="AddRecordButton"
                             Panel.ZIndex="2"
-                            Content="＋ Add record"
+                            Content="ï¼‹ Add record"
                             Style="{StaticResource StartButton}"
                             Height="34"
                             Padding="13,5"

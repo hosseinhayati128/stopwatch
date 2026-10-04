@@ -80,6 +80,7 @@ namespace StopwatchOverlay
         public int Number { get; }
         public string Name { get; set; } = "";
         public string Category { get; set; } = "Work";
+        public double ScorePerHour { get; set; } = 1.0;
         public string DisplayName => string.IsNullOrWhiteSpace(Name)
             ? $"Timer {Number}"
             : Name.Trim();

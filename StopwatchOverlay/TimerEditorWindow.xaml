@@ -80,6 +80,21 @@
                             Style="{StaticResource ModernButton}" Click="ToggleCategoryInputButton_Click"/>
                 </Grid>
 
+                <!-- Score per Hour Assignment -->
+                <TextBlock Text="SCORE PER HOUR" Style="{StaticResource EditorLabel}"/>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="ScorePerHourBox" Text="1.0" MinHeight="38"
+                             VerticalContentAlignment="Center" Style="{StaticResource TimeInputBox}"/>
+                    <TextBlock Grid.Column="1" Text="pts / hr"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="12" Margin="10,0,0,0"/>
+                </Grid>
+
                 <!-- Total Time Value Section -->
                 <Border Style="{StaticResource SettingsCard}" Margin="0,0,0,14" Padding="14">
                     <StackPanel>

@@ -846,9 +846,12 @@ public partial class ControllerWindow : Window
                     overlay.SetTimerName(session.Name);
             }
             session.Category = editor.NewCategory;
+            session.ScorePerHour = editor.NewScorePerHour;
             if (!string.IsNullOrWhiteSpace(session.Name))
             {
                 _projectHistory.SetProjectCategory(session.Name, editor.NewCategory);
+                _projectHistory.SetProjectScorePerHour(session.Name, editor.NewScorePerHour);
+                _projectTimeStore.Save(_projectHistory);
             }
             if (_settings.AddProjectCategory(editor.NewCategory))
             {
@@ -927,15 +930,20 @@ public partial class ControllerWindow : Window
             renameShortcut: "",
             categories: _settings.GetNormalizedProjectCategories(),
             currentCategory: session.Category,
-            getProjectCategory: name => _projectHistory.GetProjectCategory(name));
+            getProjectCategory: name => _projectHistory.GetProjectCategory(name),
+            currentScorePerHour: session.ScorePerHour,
+            getProjectScore: name => _projectHistory.GetProjectScorePerHour(name));
         await dialog.ShowDialog(this);
         if (dialog.WasAccepted)
         {
             session.Name = dialog.TimerName;
             session.Category = dialog.Category;
+            session.ScorePerHour = dialog.ScorePerHour;
             if (!string.IsNullOrWhiteSpace(session.Name))
             {
                 _projectHistory.SetProjectCategory(session.Name, dialog.Category);
+                _projectHistory.SetProjectScorePerHour(session.Name, dialog.ScorePerHour);
+                _projectTimeStore.Save(_projectHistory);
             }
             if (_settings.AddProjectCategory(dialog.Category))
             {
@@ -950,11 +958,66 @@ public partial class ControllerWindow : Window
         }
     }
 
+    private bool SetProjectScore(string projectName, double scorePerHour)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+            return false;
+
+        bool updated = _projectHistory.SetProjectScorePerHour(projectName, scorePerHour);
+        if (updated)
+        {
+            foreach (var timer in _timerManager.Sessions.Where(t => string.Equals(t.Name, projectName, StringComparison.OrdinalIgnoreCase)))
+            {
+                timer.ScorePerHour = scorePerHour;
+            }
+            _projectTimeStore.Save(_projectHistory);
+        }
+        return updated;
+    }
+
     private void DashboardButton_Click(object? sender, RoutedEventArgs e)
     {
         if (_dashboardWindow == null || !_dashboardWindow.IsVisible)
         {
-            _dashboardWindow = new ProjectDashboardWindow();
+            _dashboardWindow = new ProjectDashboardWindow(
+                () => _projectHistory.CreateView(DateTime.UtcNow),
+                (name, start, end) =>
+                {
+                    var record = _projectHistory.AddManualInterval(name, start, end);
+                    _projectTimeStore.Save(_projectHistory);
+                    return new ProjectRecordMutationResult(ProjectRecordMutationStatus.Success, record);
+                },
+                (id, name, start, end) =>
+                {
+                    var result = _projectHistory.UpdateClosedInterval(id, name, start, end);
+                    if (result.Status == ProjectRecordMutationStatus.Success)
+                    {
+                        _projectTimeStore.Save(_projectHistory);
+                    }
+                    return result;
+                },
+                id =>
+                {
+                    var result = _projectHistory.DeleteClosedInterval(id);
+                    if (result.Status == ProjectRecordMutationStatus.Success)
+                    {
+                        _projectTimeStore.Save(_projectHistory);
+                    }
+                    return result;
+                },
+                () => true,
+                () => null,
+                _settings,
+                projectName =>
+                {
+                    var result = _projectHistory.DeleteProject(projectName);
+                    if (result.Status == ProjectDeletionStatus.Success)
+                    {
+                        _projectTimeStore.Save(_projectHistory);
+                    }
+                    return result;
+                },
+                SetProjectScore);
             _dashboardWindow.Closed += (_, _) => _dashboardWindow = null;
             _dashboardWindow.Show();
         }

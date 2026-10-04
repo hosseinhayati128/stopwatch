@@ -36,6 +36,7 @@ namespace StopwatchOverlay
         public TimeSpan Delta => NewTimeValue - _originalTotalElapsed;
         public string? NewProjectName { get; private set; }
         public string NewCategory { get; private set; } = "Work";
+        public double NewScorePerHour { get; private set; } = 1.0;
         public bool NewIsRunning { get; private set; }
 
         public TimerEditorWindow(
@@ -69,7 +70,7 @@ namespace StopwatchOverlay
             };
             string state = _isRunning ? "Running" : "Paused";
             string proj = string.IsNullOrWhiteSpace(timer.Name) ? "Unassigned" : timer.Name;
-            SubheadingText.Text = $"{mode} · {state} · Project: {proj}";
+            SubheadingText.Text = $"{mode} Â· {state} Â· Project: {proj}";
 
             TimeValueLabel.Text = timer.Mode == 2
                 ? "REMAINING TIME"
@@ -117,6 +118,10 @@ namespace StopwatchOverlay
             CategorySelector.SelectedIndex = catSelectedIndex;
             NewCategory = currentCat;
 
+            double initialScore = timer.ScorePerHour > 0 ? timer.ScorePerHour : 1.0;
+            ScorePerHourBox.Text = initialScore.ToString("0.0", CultureInfo.InvariantCulture);
+            NewScorePerHour = initialScore;
+
             // Populate Segments List
             var segmentItems = new List<SegmentItem>();
             for (int i = 0; i < _intervals.Count; i++)
@@ -128,7 +133,7 @@ namespace StopwatchOverlay
                 if (dur < TimeSpan.Zero) dur = TimeSpan.Zero;
                 string endStr = end.HasValue ? end.Value.ToString("HH:mm:ss") : "Now (Running)";
                 segmentItems.Add(new SegmentItem(
-                    $"Segment {i + 1}: {start:HH:mm:ss} – {endStr}",
+                    $"Segment {i + 1}: {start:HH:mm:ss} â€“ {endStr}",
                     FormatDuration(dur)));
             }
             SegmentsList.ItemsSource = segmentItems;
@@ -148,7 +153,7 @@ namespace StopwatchOverlay
                 string segEnd = _latestEndLocal.HasValue ? _latestEndLocal.Value.ToString("HH:mm:ss") : "Now (running)";
                 TimeSpan segDur = (_latestEndLocal ?? DateTime.Now) - _latestStartLocal.Value;
                 if (segDur < TimeSpan.Zero) segDur = TimeSpan.Zero;
-                SegmentDetailText.Text = $"Latest segment ({_intervals.Count} of {_intervals.Count}): {_latestStartLocal:HH:mm:ss} – {segEnd} ({FormatDuration(segDur)})";
+                SegmentDetailText.Text = $"Latest segment ({_intervals.Count} of {_intervals.Count}): {_latestStartLocal:HH:mm:ss} â€“ {segEnd} ({FormatDuration(segDur)})";
             }
             else
             {
@@ -609,6 +614,15 @@ namespace StopwatchOverlay
             else
             {
                 NewCategory = "Work";
+            }
+
+            if (double.TryParse(ScorePerHourBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedScore) && parsedScore >= 0 && !double.IsNaN(parsedScore) && !double.IsInfinity(parsedScore))
+            {
+                NewScorePerHour = parsedScore;
+            }
+            else
+            {
+                NewScorePerHour = 1.0;
             }
 
             WasSaved = true;

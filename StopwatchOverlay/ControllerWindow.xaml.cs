@@ -491,7 +491,7 @@ namespace StopwatchOverlay
             {
                 if (!string.IsNullOrWhiteSpace(slot.SelectedProjectName) &&
                     !string.Equals(slot.SelectedProjectName, "Break / Empty", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(slot.SelectedProjectName, "☕ Break / Empty", StringComparison.OrdinalIgnoreCase))
+                    !string.Equals(slot.SelectedProjectName, "â˜• Break / Empty", StringComparison.OrdinalIgnoreCase))
                 {
                     RegisterProjectName(slot.SelectedProjectName);
                 }
@@ -1345,8 +1345,8 @@ namespace StopwatchOverlay
                     TimeDisplay.Text = "--:--";
                     LapListBox.ItemsSource = null;
                     LapPlaceholder.Text = createShortcut.Length > 0
-                        ? $"No timers — press {createShortcut} to create one"
-                        : "No timers — use Timers > New timer";
+                        ? $"No timers â€” press {createShortcut} to create one"
+                        : "No timers â€” use Timers > New timer";
                     LapPlaceholder.Visibility = Visibility.Visible;
                     CountdownPanel.Visibility = Visibility.Collapsed;
                     return;
@@ -1480,9 +1480,12 @@ namespace StopwatchOverlay
             var timer = CreateTimerModel();
             timer.Name = RegisterProjectName(result.ProjectName);
             timer.Category = result.Category;
+            timer.ScorePerHour = result.ScorePerHour;
             if (!string.IsNullOrWhiteSpace(timer.Name))
             {
                 _projectHistory.SetProjectCategory(timer.Name, result.Category);
+                _projectHistory.SetProjectScorePerHour(timer.Name, result.ScorePerHour);
+                MarkProjectHistoryDirty();
             }
             if (_settings.AddProjectCategory(result.Category))
             {
@@ -1513,13 +1516,14 @@ namespace StopwatchOverlay
             CheckpointState();
         }
 
-        private async Task<(bool Accepted, string ProjectName, string Category)> ChooseProjectAsync(
+        private async Task<(bool Accepted, string ProjectName, string Category, double ScorePerHour)> ChooseProjectAsync(
             string currentName,
             bool isCreatingTimer,
-            string currentCategory = "Work")
+            string currentCategory = "Work",
+            double currentScorePerHour = 1.0)
         {
             if (_isNamingTimer)
-                return (false, "", "Work");
+                return (false, "", "Work", 1.0);
 
             var dialog = new TimerNameWindow(
                 currentName,
@@ -1528,7 +1532,9 @@ namespace StopwatchOverlay
                 ShortcutText(ShortcutAction.RenameTimer),
                 categories: _settings.GetNormalizedProjectCategories(),
                 currentCategory: currentCategory,
-                getProjectCategory: name => _projectHistory.GetProjectCategory(name));
+                getProjectCategory: name => _projectHistory.GetProjectCategory(name),
+                currentScorePerHour: currentScorePerHour,
+                getProjectScore: name => _projectHistory.GetProjectScorePerHour(name));
             if (IsActive && IsVisible && WindowState != WindowState.Minimized)
             {
                 dialog.Owner = this;
@@ -1558,7 +1564,7 @@ namespace StopwatchOverlay
                 // completion keeps the controller flow linear without blocking overlays.
                 dialog.Show();
                 bool accepted = await completion.Task;
-                return (accepted, dialog.TimerName, dialog.Category);
+                return (accepted, dialog.TimerName, dialog.Category, dialog.ScorePerHour);
             }
             finally
             {
@@ -1641,8 +1647,8 @@ namespace StopwatchOverlay
                 UpdateShortcutLabels();
                 string createShortcut = ShortcutText(ShortcutAction.NewTimer);
                 UpdateStatus(createShortcut.Length > 0
-                    ? $"No timers — press {createShortcut}"
-                    : "No timers — use Timers > New timer", Brushes.Gray);
+                    ? $"No timers â€” press {createShortcut}"
+                    : "No timers â€” use Timers > New timer", Brushes.Gray);
                 CheckpointState();
                 return;
             }
@@ -1659,7 +1665,8 @@ namespace StopwatchOverlay
             var result = await ChooseProjectAsync(
                 timer.Name,
                 isCreatingTimer: false,
-                currentCategory: timer.Category);
+                currentCategory: timer.Category,
+                currentScorePerHour: timer.ScorePerHour);
             if (!result.Accepted || _isExiting || !_timers.Contains(timer))
             {
                 return;
@@ -1691,9 +1698,12 @@ namespace StopwatchOverlay
             assignmentChanged = !ProjectAssignmentsEqual(timer.Name, registeredName);
             timer.Name = registeredName;
             timer.Category = result.Category;
+            timer.ScorePerHour = result.ScorePerHour;
             if (!string.IsNullOrWhiteSpace(registeredName))
             {
                 _projectHistory.SetProjectCategory(registeredName, result.Category);
+                _projectHistory.SetProjectScorePerHour(registeredName, result.ScorePerHour);
+                MarkProjectHistoryDirty();
             }
             if (_settings.AddProjectCategory(result.Category))
             {
@@ -1841,9 +1851,12 @@ namespace StopwatchOverlay
                 }
 
                 timer.Category = dialog.NewCategory;
+                timer.ScorePerHour = dialog.NewScorePerHour;
                 if (!string.IsNullOrWhiteSpace(timer.Name))
                 {
                     _projectHistory.SetProjectCategory(timer.Name, dialog.NewCategory);
+                    _projectHistory.SetProjectScorePerHour(timer.Name, dialog.NewScorePerHour);
+                    MarkProjectHistoryDirty();
                 }
                 if (_settings.AddProjectCategory(dialog.NewCategory))
                 {
@@ -2285,7 +2298,7 @@ namespace StopwatchOverlay
                 return;
 
             MessageBoxResult confirmation = System.Windows.MessageBox.Show(
-                $"Remove “{choice.DisplayName}” from your background library?\n\n" +
+                $"Remove â€œ{choice.DisplayName}â€ from your background library?\n\n" +
                 "The app-managed copy will be deleted. This cannot be undone.",
                 "Remove background",
                 MessageBoxButton.YesNo,
@@ -3703,7 +3716,8 @@ namespace StopwatchOverlay
                     CanMutateProjectRecords,
                     GetProjectRecordsWarning,
                     _settings,
-                    DeleteProject);
+                    DeleteProject,
+                    SetProjectScore);
                 _projectDashboardWindow.Closed += (_, _) => _projectDashboardWindow = null;
             }
 
@@ -3788,7 +3802,7 @@ namespace StopwatchOverlay
 
                 if (result.Success)
                 {
-                    UpdateStatus($"✓ ActivityWatch log synced ({result.AppCount} apps, {result.WebCount} web sites)", Brushes.ForestGreen);
+                    UpdateStatus($"âœ“ ActivityWatch log synced ({result.AppCount} apps, {result.WebCount} web sites)", Brushes.ForestGreen);
                 }
                 else
                 {
@@ -3912,6 +3926,29 @@ namespace StopwatchOverlay
             }
 
             return result;
+        }
+
+        private bool SetProjectScore(string projectName, double scorePerHour)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                return Dispatcher.Invoke(() => SetProjectScore(projectName, scorePerHour));
+            }
+
+            if (string.IsNullOrWhiteSpace(projectName))
+                return false;
+
+            bool updated = _projectHistory.SetProjectScorePerHour(projectName, scorePerHour);
+            if (updated)
+            {
+                foreach (var timer in _timers.Where(t => string.Equals(t.Name, projectName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    timer.ScorePerHour = scorePerHour;
+                }
+                MarkProjectHistoryDirty();
+                CheckpointStateNow();
+            }
+            return updated;
         }
 
         private ProjectDeletionResult DeleteProject(string projectName)
@@ -4125,7 +4162,7 @@ namespace StopwatchOverlay
 
             string span = FormatApproxSpan(remaining);
             string target = (now + remaining).ToString("ddd HH:mm");
-            SmartPreview.Text = $"in {span}  →  {target}";
+            SmartPreview.Text = $"in {span}  â†’  {target}";
             SmartPreview.Foreground = (Brush)FindResource("SecondaryTextBrush");
         }
 
@@ -4419,8 +4456,8 @@ namespace StopwatchOverlay
                 {
                     string createShortcut = ShortcutText(ShortcutAction.NewTimer);
                     UpdateStatus(createShortcut.Length > 0
-                        ? $"No timers — press {createShortcut}"
-                        : "No timers — use Timers > New timer", Brushes.Gray);
+                        ? $"No timers â€” press {createShortcut}"
+                        : "No timers â€” use Timers > New timer", Brushes.Gray);
                     return;
                 }
 
@@ -4432,8 +4469,8 @@ namespace StopwatchOverlay
                 RefreshOverlayActiveStates();
                 string nextShortcut = ShortcutText(ShortcutAction.NextTimer);
                 UpdateStatus(nextShortcut.Length > 0
-                    ? $"Timers combined — use {nextShortcut} to switch"
-                    : "Timers combined — use Timers > Next active timer to switch",
+                    ? $"Timers combined â€” use {nextShortcut} to switch"
+                    : "Timers combined â€” use Timers > Next active timer to switch",
                     Brushes.DeepSkyBlue);
             }
 
@@ -5267,7 +5304,7 @@ namespace StopwatchOverlay
             }
             if (CombinedRailStatus != null)
                 CombinedRailStatus.Text = _combinedOverlayMode
-                    ? "Combined overlay · active timer only"
+                    ? "Combined overlay Â· active timer only"
                     : "Separate overlays";
             if (ActiveWorkspaceTitle != null)
                 ActiveWorkspaceTitle.Text = _activeTimer?.DisplayName ?? "No active timer";
@@ -5298,13 +5335,13 @@ namespace StopwatchOverlay
             return requested;
         }
 
-        // "  ·  Win+F5" suffix for button captions; "" if the action is unbound.
+        // "  Â·  Win+F5" suffix for button captions; "" if the action is unbound.
         private string ComboSuffix(ShortcutAction action)
         {
             if (_shortcuts.TryGetValue(action, out var s))
             {
                 var text = s.Format();
-                if (text.Length > 0) return $"  ·  {text}";
+                if (text.Length > 0) return $"  Â·  {text}";
             }
             return "";
         }
@@ -5316,14 +5353,14 @@ namespace StopwatchOverlay
         private void UpdateShortcutLabels()
         {
             string leaderText = _leaderShortcut.Format();
-            string prefix = string.IsNullOrEmpty(leaderText) ? "" : $"{leaderText} → ";
+            string prefix = string.IsNullOrEmpty(leaderText) ? "" : $"{leaderText} â†’ ";
 
             string startVerb = _isRunning ? "Stop" : "Start";
-            StartStopButton.Content = startVerb + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}Space");
-            ResetButton.Content = "Reset" + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}R");
+            StartStopButton.Content = startVerb + (string.IsNullOrEmpty(prefix) ? "" : $"  Â·  {prefix}Space");
+            ResetButton.Content = "Reset" + (string.IsNullOrEmpty(prefix) ? "" : $"  Â·  {prefix}R");
             ToggleOverlayButton.Content = (ActiveOverlayIsVisible() ? "Hide overlay" : "Show overlay")
-                + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}O");
-            LapButton.Content = "Add lap" + (string.IsNullOrEmpty(prefix) ? "" : $"  ·  {prefix}L");
+                + (string.IsNullOrEmpty(prefix) ? "" : $"  Â·  {prefix}O");
+            LapButton.Content = "Add lap" + (string.IsNullOrEmpty(prefix) ? "" : $"  Â·  {prefix}L");
 
             NewTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}N";
             NextTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}T";
@@ -5346,8 +5383,8 @@ namespace StopwatchOverlay
                 : $"Create a new timer and choose its project ({prefix}N)";
             LapPlaceholder.Text = _activeTimer == null
                 ? (string.IsNullOrEmpty(prefix)
-                    ? "No timers — use Timers > New timer"
-                    : $"No timers — press {prefix}N to create one")
+                    ? "No timers â€” use Timers > New timer"
+                    : $"No timers â€” press {prefix}N to create one")
                 : (string.IsNullOrEmpty(prefix)
                     ? "Click Lap to record split times"
                     : $"Press {prefix}L or click Lap to record split times");

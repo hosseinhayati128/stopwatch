@@ -130,8 +130,27 @@
             </StackPanel>
         </Border>
 
+        <TextBlock Text="Score per hour" Style="{StaticResource SectionHeaderText}" Margin="0,14,0,7"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="ScorePerHourBox"
+                     Text="1.0"
+                     MinHeight="44"
+                     AutomationProperties.Name="Score per hour"
+                     Style="{StaticResource TimeInputBox}"
+                     VerticalContentAlignment="Center"
+                     KeyDown="ScorePerHourBox_KeyDown"/>
+            <TextBlock Grid.Column="1" Text="pts / hr"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       FontSize="13" Margin="10,0,0,0"/>
+        </Grid>
+
         <TextBlock x:Name="NoProjectHintText"
-                   Text="Choose ‘No project’ to keep this timer out of reports."
+                   Text="Choose 'No project' to keep this timer out of reports."
                    Foreground="{DynamicResource SecondaryTextBrush}"
                    TextWrapping="Wrap" Margin="2,12,0,0"/>
 

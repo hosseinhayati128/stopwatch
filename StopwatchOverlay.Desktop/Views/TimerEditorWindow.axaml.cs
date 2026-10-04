@@ -39,6 +39,7 @@ public partial class TimerEditorWindow : Window
     public TimeSpan Delta => NewTimeValue - _originalTotalElapsed;
     public string? NewProjectName { get; private set; }
     public string NewCategory { get; private set; } = "Work";
+    public double NewScorePerHour { get; private set; } = 1.0;
     public bool NewIsRunning { get; private set; }
 
     public TimerEditorWindow()
@@ -121,6 +122,10 @@ public partial class TimerEditorWindow : Window
         }
         CategorySelector.SelectedIndex = catSelectedIndex;
         NewCategory = currentCat;
+
+        double initialScore = timer.ScorePerHour > 0 ? timer.ScorePerHour : 1.0;
+        ScorePerHourBox.Value = (decimal)initialScore;
+        NewScorePerHour = initialScore;
 
         // Populate Segments List
         var segmentItems = new List<SegmentItem>();
@@ -596,6 +601,9 @@ public partial class TimerEditorWindow : Window
         {
             NewCategory = "Work";
         }
+
+        decimal boxScore = ScorePerHourBox.Value ?? 1.0m;
+        NewScorePerHour = (boxScore < 0) ? 1.0 : (double)boxScore;
 
         WasSaved = true;
         Close(true);

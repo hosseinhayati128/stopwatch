@@ -46,7 +46,7 @@ namespace StopwatchOverlay
         string? ProjectName,
         bool IsRunning);
 
-    public sealed record ProjectInfoView(string Key, string Name, string Category = "");
+    public sealed record ProjectInfoView(string Key, string Name, string Category = "", double ScorePerHour = 1.0);
 
     /// <summary>
     /// An immutable, UTC work interval suitable for dashboard queries.
@@ -132,14 +132,14 @@ namespace StopwatchOverlay
             }
         }
 
-        public string RegisterProject(string projectName, string? category = null)
+        public string RegisterProject(string projectName, string? category = null, double? scorePerHour = null)
         {
             string displayName = NormalizeProjectName(projectName);
             string key = CreateProjectKey(displayName);
 
             lock (_gate)
             {
-                return RegisterProjectCore(key, displayName, category).Name;
+                return RegisterProjectCore(key, displayName, category, scorePerHour).Name;
             }
         }
 
@@ -151,6 +151,38 @@ namespace StopwatchOverlay
             {
                 var match = _projects.FirstOrDefault(p => ProjectKeysEqual(p.Key, key));
                 return match?.Category ?? "";
+            }
+        }
+
+        public double GetProjectScorePerHour(string projectName)
+        {
+            if (string.IsNullOrWhiteSpace(projectName)) return 1.0;
+            string key = CreateProjectKey(projectName.Trim());
+            lock (_gate)
+            {
+                var match = _projects.FirstOrDefault(p => ProjectKeysEqual(p.Key, key));
+                return match != null ? match.ScorePerHour : 1.0;
+            }
+        }
+
+        public bool SetProjectScorePerHour(string projectName, double scorePerHour)
+        {
+            if (string.IsNullOrWhiteSpace(projectName)) return false;
+            string displayName = NormalizeProjectName(projectName);
+            string key = CreateProjectKey(displayName);
+            if (double.IsNaN(scorePerHour) || double.IsInfinity(scorePerHour) || scorePerHour < 0)
+                scorePerHour = 1.0;
+
+            lock (_gate)
+            {
+                var match = _projects.FirstOrDefault(p => ProjectKeysEqual(p.Key, key));
+                if (match != null)
+                {
+                    match.ScorePerHour = scorePerHour;
+                    return true;
+                }
+                RegisterProjectCore(key, displayName, null, scorePerHour);
+                return true;
             }
         }
 
@@ -952,7 +984,7 @@ namespace StopwatchOverlay
             {
                 return new ProjectHistoryView(
                     asOfUtc,
-                    _projects.Select(project => new ProjectInfoView(project.Key, project.Name, project.Category)),
+                    _projects.Select(project => new ProjectInfoView(project.Key, project.Name, project.Category, project.ScorePerHour)),
                     _intervals
                         .OrderBy(interval => interval.StartUtc)
                         .ThenBy(interval => interval.Id)
@@ -976,7 +1008,8 @@ namespace StopwatchOverlay
                     {
                         Key = project.Key,
                         Name = project.Name,
-                        Category = project.Category
+                        Category = project.Category,
+                        ScorePerHour = project.ScorePerHour
                     }).ToList(),
                     Intervals = _intervals.Select(interval => new WorkIntervalDocumentEntry
                     {
@@ -1011,7 +1044,8 @@ namespace StopwatchOverlay
                 result._projects.Add(new ProjectEntry(
                     project.Key,
                     project.Name,
-                    project.Category ?? ""));
+                    project.Category ?? "",
+                    project.ScorePerHour > 0 ? project.ScorePerHour : (project.ScorePerHour == 0 ? 0 : 1.0)));
             }
 
             foreach (WorkIntervalDocumentEntry interval in document.Intervals)
@@ -1106,7 +1140,7 @@ namespace StopwatchOverlay
         private static bool ProjectKeysEqual(string left, string right)
             => StringComparer.OrdinalIgnoreCase.Equals(left, right);
 
-        private ProjectEntry RegisterProjectCore(string key, string displayName, string? category = null)
+        private ProjectEntry RegisterProjectCore(string key, string displayName, string? category = null, double? scorePerHour = null)
         {
             ProjectEntry? existing = _projects.FirstOrDefault(
                 project => ProjectKeysEqual(project.Key, key));
@@ -1116,10 +1150,17 @@ namespace StopwatchOverlay
                 {
                     existing.Category = category.Trim();
                 }
+                if (scorePerHour.HasValue && !double.IsNaN(scorePerHour.Value) && !double.IsInfinity(scorePerHour.Value) && scorePerHour.Value >= 0)
+                {
+                    existing.ScorePerHour = scorePerHour.Value;
+                }
                 return existing;
             }
 
-            var project = new ProjectEntry(key, displayName, (category ?? "").Trim());
+            double score = (scorePerHour.HasValue && !double.IsNaN(scorePerHour.Value) && !double.IsInfinity(scorePerHour.Value) && scorePerHour.Value >= 0)
+                ? scorePerHour.Value
+                : 1.0;
+            var project = new ProjectEntry(key, displayName, (category ?? "").Trim(), score);
             _projects.Add(project);
             return project;
         }
@@ -1179,16 +1220,18 @@ namespace StopwatchOverlay
 
         private sealed class ProjectEntry
         {
-            public ProjectEntry(string key, string name, string category = "")
+            public ProjectEntry(string key, string name, string category = "", double scorePerHour = 1.0)
             {
                 Key = key;
                 Name = name;
                 Category = category;
+                ScorePerHour = (double.IsNaN(scorePerHour) || double.IsInfinity(scorePerHour) || scorePerHour < 0) ? 1.0 : scorePerHour;
             }
 
             public string Key { get; }
             public string Name { get; }
             public string Category { get; set; }
+            public double ScorePerHour { get; set; } = 1.0;
         }
 
         private sealed class WorkIntervalEntry

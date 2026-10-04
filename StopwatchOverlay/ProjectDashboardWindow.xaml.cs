@@ -90,6 +90,7 @@ public partial class ProjectDashboardWindow : Window
     private readonly Func<Guid, string, DateTime, DateTime, ProjectRecordMutationResult> _updateRecord;
     private readonly Func<Guid, ProjectRecordMutationResult> _deleteRecord;
     private readonly Func<string, ProjectDeletionResult> _deleteProject;
+    private readonly Func<string, double, bool>? _setProjectScore;
     private readonly Func<bool> _canMutateRecords;
     private readonly Func<string?> _recordsPersistenceWarning;
     private readonly AppSettings? _settings;
@@ -104,6 +105,7 @@ public partial class ProjectDashboardWindow : Window
     private bool _followToday = true;
     private string? _selectedProjectKey;
     private bool _updatingProjectFilter;
+    private bool _updatingProjectScore;
     private int _recordsPageIndex;
     private DateTime? _heatmapFirstDate;
     private DateTime? _heatmapRenderedToday;
@@ -141,7 +143,8 @@ public partial class ProjectDashboardWindow : Window
         Func<bool> canMutateRecords,
         Func<string?> recordsPersistenceWarning,
         AppSettings? settings = null,
-        Func<string, ProjectDeletionResult>? deleteProject = null)
+        Func<string, ProjectDeletionResult>? deleteProject = null,
+        Func<string, double, bool>? setProjectScore = null)
     {
         ArgumentNullException.ThrowIfNull(historyProvider);
         ArgumentNullException.ThrowIfNull(addRecord);
@@ -155,6 +158,7 @@ public partial class ProjectDashboardWindow : Window
         _updateRecord = updateRecord;
         _deleteRecord = deleteRecord;
         _deleteProject = deleteProject ?? (_ => new ProjectDeletionResult(ProjectDeletionStatus.NotFound, string.Empty, 0));
+        _setProjectScore = setProjectScore;
         _canMutateRecords = canMutateRecords;
         _recordsPersistenceWarning = recordsPersistenceWarning;
         _settings = settings;
@@ -228,8 +232,68 @@ public partial class ProjectDashboardWindow : Window
 
         _selectedProjectKey = option.Key;
         _recordsPageIndex = 0;
-        UpdateDeleteProjectButton(option);
+        UpdateProjectFilterUI(option);
         RefreshFromHistory();
+    }
+
+    private void UpdateProjectFilterUI(ProjectFilterOption? option)
+    {
+        UpdateDeleteProjectButton(option);
+        if (ProjectScorePanel == null) return;
+        if (option?.Key is not null && _history != null)
+        {
+            var proj = _history.Projects.FirstOrDefault(p => string.Equals(p.Key, option.Key, StringComparison.OrdinalIgnoreCase));
+            _updatingProjectScore = true;
+            try
+            {
+                ProjectScoreBox.Text = (proj?.ScorePerHour ?? 1.0).ToString("0.0", CultureInfo.InvariantCulture);
+                ProjectScoreBox.IsEnabled = _setProjectScore != null;
+                ProjectScorePanel.Visibility = Visibility.Visible;
+            }
+            finally
+            {
+                _updatingProjectScore = false;
+            }
+        }
+        else
+        {
+            ProjectScorePanel.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ProjectScoreBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        ApplyProjectScoreEdit();
+    }
+
+    private void ProjectScoreBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            ApplyProjectScoreEdit();
+        }
+    }
+
+    private void ApplyProjectScoreEdit()
+    {
+        if (_updatingProjectScore || _updatingProjectFilter || _history == null) return;
+        if (ProjectFilterSelector.SelectedItem is not ProjectFilterOption option || string.IsNullOrWhiteSpace(option.Key) || string.IsNullOrWhiteSpace(option.Name))
+            return;
+
+        if (double.TryParse(ProjectScoreBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double newScore) && newScore >= 0 && !double.IsNaN(newScore) && !double.IsInfinity(newScore))
+        {
+            if (_setProjectScore != null)
+            {
+                _setProjectScore(option.Name, newScore);
+                RefreshFromHistory();
+            }
+        }
+        else
+        {
+            var proj = _history.Projects.FirstOrDefault(p => string.Equals(p.Key, option.Key, StringComparison.OrdinalIgnoreCase));
+            ProjectScoreBox.Text = (proj?.ScorePerHour ?? 1.0).ToString("0.0", CultureInfo.InvariantCulture);
+        }
     }
 
     private void UpdateDeleteProjectButton(ProjectFilterOption? option)
@@ -238,7 +302,7 @@ public partial class ProjectDashboardWindow : Window
         if (option?.Key is not null)
         {
             DeleteProjectButton.Visibility = Visibility.Visible;
-            DeleteProjectButton.Content = $"🗑 Delete {option.Name}";
+            DeleteProjectButton.Content = $"Delete {option.Name}";
             DeleteProjectButton.ToolTip = $"Permanently delete project '{option.Name}' and all its recorded sessions";
         }
         else
@@ -476,7 +540,7 @@ public partial class ProjectDashboardWindow : Window
             // A dashboard refresh should never take down the controller. The next
             // automatic refresh will try the provider again.
             CrashLogger.LogRecoverable(exception, "ProjectDashboardHistoryProvider");
-            UpdatedText.Text = "Refresh failed — showing earlier data";
+            UpdatedText.Text = "Refresh failed â€” showing earlier data";
             UpdatedText.SetResourceReference(TextBlock.ForegroundProperty, "WarningBrush");
             ShowRecordsWarning("Project records could not be loaded. Your existing data has not been changed.");
             _refreshFailed = true;
@@ -506,6 +570,7 @@ public partial class ProjectDashboardWindow : Window
             TimeZoneInfo.Local);
 
         UpdateProjectFilter(history.Projects);
+        UpdateProjectFilterUI(ProjectFilterSelector.SelectedItem as ProjectFilterOption);
 
         List<DisplayInterval> intervals = history.Intervals
             .Select(item => CreateDisplayInterval(item, range, asOfUtc))
@@ -533,6 +598,15 @@ public partial class ProjectDashboardWindow : Window
             .Count();
 
         TotalTrackedText.Text = FormatCompactDuration(total);
+
+        double totalScore = 0;
+        foreach (var item in intervals)
+        {
+            double sph = history.Projects.FirstOrDefault(p => string.Equals(p.Key, item.ProjectKey, StringComparison.OrdinalIgnoreCase))?.ScorePerHour ?? 1.0;
+            totalScore += item.Duration.TotalHours * sph;
+        }
+        TotalScoreText.Text = $"{totalScore:0.0} pts";
+
         SessionCountText.Text = intervals.Count.ToString(CultureInfo.CurrentCulture);
         ProjectCountText.Text = projectCount.ToString(CultureInfo.CurrentCulture);
         ActiveCountText.Text = activeCount.ToString(CultureInfo.CurrentCulture);
@@ -585,11 +659,11 @@ public partial class ProjectDashboardWindow : Window
         string latestText = latest == null
             ? "No records in the selected period"
             : $"Most recent activity {latest.StartLocal.ToString("g", CultureInfo.CurrentCulture)}";
-        ProjectRecordsSummaryText.Text = $"{scope} · {count} · {latestText}";
+        ProjectRecordsSummaryText.Text = $"{scope} Â· {count} Â· {latestText}";
         ProjectRecordsSummaryText.ToolTip = ProjectRecordsSummaryText.Text;
         RecordsHeadingText.Text = selectedProject?.Key is null
-            ? $"All records · {GetRangeHeading(EnsureUtc(_history!.AsOfUtc).ToLocalTime())}"
-            : $"{selectedProject.Name} records · {GetRangeHeading(EnsureUtc(_history!.AsOfUtc).ToLocalTime())}";
+            ? $"All records Â· {GetRangeHeading(EnsureUtc(_history!.AsOfUtc).ToLocalTime())}"
+            : $"{selectedProject.Name} records Â· {GetRangeHeading(EnsureUtc(_history!.AsOfUtc).ToLocalTime())}";
 
         int pageCount = Math.Max(1, (recordCount + RecordsPerPage - 1) / RecordsPerPage);
         _recordsPageIndex = Math.Clamp(_recordsPageIndex, 0, pageCount - 1);
@@ -763,7 +837,7 @@ public partial class ProjectDashboardWindow : Window
         int last = Math.Min(_records.Count, (_recordsPageIndex + 1) * RecordsPerPage);
         RecordsPageStatusText.Text = _records.Count == 0
             ? "0 records"
-            : $"{first}–{last} of {_records.Count.ToString(CultureInfo.CurrentCulture)}";
+            : $"{first}â€“{last} of {_records.Count.ToString(CultureInfo.CurrentCulture)}";
         PreviousRecordsPageButton.IsEnabled = _recordsPageIndex > 0;
         NextRecordsPageButton.IsEnabled = _recordsPageIndex + 1 < pageCount;
 
@@ -867,7 +941,7 @@ public partial class ProjectDashboardWindow : Window
             : endLocal.Date == startLocal.Date
                 ? FormatLocalTime(endLocal, interval.EndUtc)
                 : $"{endLocal.ToString("MMM d", CultureInfo.CurrentCulture)}, {FormatLocalTime(endLocal, interval.EndUtc)}";
-        string timeLabel = $"{startTimeLabel} – {endLabel}";
+        string timeLabel = $"{startTimeLabel} â€“ {endLabel}";
         var times = CreateRecordsSecondaryCell(timeLabel);
         times.ToolTip = isClipped
             ? $"{timeLabel}. Showing only the part inside the selected period; Edit changes the full record."
@@ -1239,9 +1313,11 @@ public partial class ProjectDashboardWindow : Window
             DecoratePirateGauge(track, proportion);
             row.Children.Add(track);
 
+            double scorePerHour = _history?.Projects.FirstOrDefault(p => string.Equals(p.Key, project.Key, StringComparison.OrdinalIgnoreCase))?.ScorePerHour ?? 1.0;
+            double earnedPoints = project.Duration.TotalHours * scorePerHour;
             var duration = new TextBlock
             {
-                Text = FormatCompactDuration(project.Duration),
+                Text = $"{FormatCompactDuration(project.Duration)} ({earnedPoints:0.0} pts)",
                 Foreground = DashboardTextBrush("SecondaryTextBrush"),
                 FontSize = 12,
                 MinWidth = 62,
@@ -1366,7 +1442,7 @@ public partial class ProjectDashboardWindow : Window
         string scope = selectedProject?.Key is null
             ? "All projects"
             : selectedProject.Name;
-        HeatmapScopeText.Text = $"{scope} · last 12 months";
+        HeatmapScopeText.Text = $"{scope} Â· last 12 months";
         HeatmapScopeText.ToolTip = HeatmapScopeText.Text;
         HeatmapEmptyText.Text = maximumTicks == 0
             ? selectedProject?.Key is null
@@ -1641,7 +1717,7 @@ public partial class ProjectDashboardWindow : Window
         string records = value.RecordCount == 1
             ? "1 record"
             : $"{value.RecordCount.ToString(CultureInfo.CurrentCulture)} records";
-        return $"{date}\n{scope}\n{FormatCompactDuration(value.Duration)} · {records}";
+        return $"{date}\n{scope}\n{FormatCompactDuration(value.Duration)} Â· {records}";
     }
 
     private SolidColorBrush[] CreateHeatmapLevelBrushes()
@@ -1894,7 +1970,7 @@ public partial class ProjectDashboardWindow : Window
         string end = fragment.IsLive && fragment.EndsAtIntervalEnd
             ? "Now"
             : FormatLocalTime(fragment.EndLocal, fragment.EndUtc);
-        return $"{fragment.ProjectName}\n{FormatLocalTime(fragment.StartLocal, fragment.StartUtc)} – {end}\n{FormatDetailedDuration(fragment.Duration)}";
+        return $"{fragment.ProjectName}\n{FormatLocalTime(fragment.StartLocal, fragment.StartUtc)} â€“ {end}\n{FormatDetailedDuration(fragment.Duration)}";
     }
 
     private static List<TimelineItem> AssignTimelineLanes(IReadOnlyList<DayFragment> fragments)

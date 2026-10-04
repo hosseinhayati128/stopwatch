@@ -41,6 +41,7 @@ namespace StopwatchOverlay
         public int Number { get; set; }
         public string Name { get; set; } = "";
         public string Category { get; set; } = "Work";
+        public double ScorePerHour { get; set; } = 1.0;
         public bool IsRunning { get; set; }
         public bool IsSeparated { get; set; }
         public TimeSpan Elapsed { get; set; }
@@ -561,7 +562,7 @@ namespace StopwatchOverlay
         private static bool IsRetryableSharingViolation(IOException exception)
             => (exception.HResult & 0xFFFF) is 32 or 33;
 
-        private static TimerSessionSnapshot CaptureTimer(TimerSession timer)
+        internal static TimerSessionSnapshot CaptureTimer(TimerSession timer)
         {
             return new TimerSessionSnapshot
             {
@@ -569,6 +570,7 @@ namespace StopwatchOverlay
                 Number = timer.Number,
                 Name = timer.Name,
                 Category = string.IsNullOrWhiteSpace(timer.Category) ? "Work" : timer.Category.Trim(),
+                ScorePerHour = timer.ScorePerHour > 0 ? timer.ScorePerHour : 1.0,
                 IsRunning = timer.IsRunning,
                 IsSeparated = timer.IsSeparated,
                 Elapsed = timer.Elapsed,
@@ -606,7 +608,7 @@ namespace StopwatchOverlay
             };
         }
 
-        private static TimerSession RestoreTimer(
+        internal static TimerSession RestoreTimer(
             TimerSessionSnapshot saved,
             TimeSpan offlineTime,
             DateTime utcNow,
@@ -631,6 +633,7 @@ namespace StopwatchOverlay
             {
                 Name = saved.Name ?? "",
                 Category = string.IsNullOrWhiteSpace(saved.Category) ? "Work" : saved.Category.Trim(),
+                ScorePerHour = saved.ScorePerHour > 0 ? saved.ScorePerHour : 1.0,
                 IsRunning = saved.IsRunning,
                 IsSeparated = saved.IsSeparated,
                 Mode = saved.Mode,
