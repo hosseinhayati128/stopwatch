@@ -1013,10 +1013,149 @@ public class PeriodicReviewTests
         // Alpha should not be added again, Beta should be added as 2nd item
         Assert.Equal(2, selected.Count);
         Assert.Equal("Project Alpha", selected[0].ProjectName);
-        Assert.Equal(1, selected[0].SelectionOrder);
-
         Assert.Equal("Project Beta", selected[1].ProjectName);
-        Assert.Equal(2, selected[1].SelectionOrder);
+    }
+
+    [Fact]
+    public void BuildChronologicalAllocations_WhenStopwatchAtEndOfPeriod_PlacesManualAtBeginningAndStopwatchAsLast()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(60);
+
+        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta" };
+        var pAlpha = new ReviewProjectSelectionItem { ProjectName = "Project Alpha" };
+        var selected = new List<ReviewProjectSelectionItem> { pBeta, pAlpha };
+
+        // Stopwatch was only tracking Beta at the END of the period: 10:45 to 11:00
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            new()
+            {
+                IsTracked = false,
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(45)
+            },
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Beta",
+                StartUtc = startUtc.AddMinutes(45),
+                EndUtc = endUtc
+            }
+        };
+
+        var result = PeriodicReviewDataAggregator.BuildChronologicalAllocations(selected, slots, startUtc, endUtc);
+
+        Assert.Equal(2, result.Count);
+
+        // Alpha was manual, placed into the earlier gap (10:00 - 10:45) -> Sequence #1
+        Assert.Equal("Project Alpha", result[0].ProjectName);
+        Assert.Equal(1, result[0].SelectionOrder);
+        Assert.Equal(45, result[0].AllocatedMinutes);
+        Assert.Equal(startUtc, result[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(45), result[0].EndUtc);
+
+        // Beta was tracked at the end (10:45 - 11:00) -> Sequence #2 (last one)
+        Assert.Equal("Project Beta", result[1].ProjectName);
+        Assert.Equal(2, result[1].SelectionOrder);
+        Assert.Equal(15, result[1].AllocatedMinutes);
+        Assert.Equal(startUtc.AddMinutes(45), result[1].StartUtc);
+        Assert.Equal(endUtc, result[1].EndUtc);
+    }
+
+    [Fact]
+    public void BuildChronologicalAllocations_WhenProjectActiveAtBeginningAndEnd_CreatesTwoSeparateIntervals()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(60);
+
+        var pAlpha = new ReviewProjectSelectionItem { ProjectName = "Project Alpha" };
+        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta" };
+        var selected = new List<ReviewProjectSelectionItem> { pAlpha, pBeta };
+
+        // Alpha active at beginning (10:00-10:15) and end (10:45-11:00); gap in middle (10:15-10:45)
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Alpha",
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(15)
+            },
+            new()
+            {
+                IsTracked = false,
+                StartUtc = startUtc.AddMinutes(15),
+                EndUtc = startUtc.AddMinutes(45)
+            },
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Alpha",
+                StartUtc = startUtc.AddMinutes(45),
+                EndUtc = endUtc
+            }
+        };
+
+        var result = PeriodicReviewDataAggregator.BuildChronologicalAllocations(selected, slots, startUtc, endUtc);
+
+        // Expect 3 items: Alpha (10:00-10:15), Beta (10:15-10:45), Alpha (10:45-11:00)
+        Assert.Equal(3, result.Count);
+
+        Assert.Equal("Project Alpha", result[0].ProjectName);
+        Assert.Equal(1, result[0].SelectionOrder);
+        Assert.Equal(15, result[0].AllocatedMinutes);
+        Assert.Equal(startUtc, result[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(15), result[0].EndUtc);
+
+        Assert.Equal("Project Beta", result[1].ProjectName);
+        Assert.Equal(2, result[1].SelectionOrder);
+        Assert.Equal(30, result[1].AllocatedMinutes);
+        Assert.Equal(startUtc.AddMinutes(15), result[1].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(45), result[1].EndUtc);
+
+        Assert.Equal("Project Alpha", result[2].ProjectName);
+        Assert.Equal(3, result[2].SelectionOrder);
+        Assert.Equal(15, result[2].AllocatedMinutes);
+        Assert.Equal(startUtc.AddMinutes(45), result[2].StartUtc);
+        Assert.Equal(endUtc, result[2].EndUtc);
+    }
+
+    [Fact]
+    public void BuildChronologicalAllocations_WhenOnlyTrackedAtEnd_DoesNotShiftToStart()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(60);
+
+        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta" };
+        var selected = new List<ReviewProjectSelectionItem> { pBeta };
+
+        // Only Beta tracked at end: 10:45 to 11:00; no other project selected
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            new()
+            {
+                IsTracked = false,
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(45)
+            },
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Beta",
+                StartUtc = startUtc.AddMinutes(45),
+                EndUtc = endUtc
+            }
+        };
+
+        var result = PeriodicReviewDataAggregator.BuildChronologicalAllocations(selected, slots, startUtc, endUtc);
+
+        Assert.Single(result);
+        Assert.Equal("Project Beta", result[0].ProjectName);
+        Assert.Equal(15, result[0].AllocatedMinutes);
+        Assert.Equal(startUtc.AddMinutes(45), result[0].StartUtc);
+        Assert.Equal(endUtc, result[0].EndUtc);
     }
 
     [Fact]
@@ -1025,14 +1164,14 @@ public class PeriodicReviewTests
         DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
         DateTime endUtc = startUtc.AddMinutes(60);
 
-        var pAlpha = new ReviewProjectSelectionItem { ProjectName = "Project Alpha", SelectionOrder = 1 };
-        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta", SelectionOrder = 2 };
-        var pManual = new ReviewProjectSelectionItem { ProjectName = "Manual Project", SelectionOrder = 3 };
+        var pAlpha = new ReviewProjectSelectionItem { ProjectName = "Project Alpha" };
+        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta" };
+        var pManual = new ReviewProjectSelectionItem { ProjectName = "Manual Project" };
         var selected = new List<ReviewProjectSelectionItem> { pAlpha, pBeta, pManual };
 
         var slots = new List<PeriodicReviewStopwatchSlot>
         {
-            // Alpha: 20 minutes
+            // Alpha: 20 minutes (10:00 - 10:20)
             new()
             {
                 IsTracked = true,
@@ -1040,32 +1179,40 @@ public class PeriodicReviewTests
                 StartUtc = startUtc,
                 EndUtc = startUtc.AddMinutes(20)
             },
-            // Beta: 15 minutes
+            // Beta: 15 minutes (10:20 - 10:35)
             new()
             {
                 IsTracked = true,
                 SelectedProjectName = "Project Beta",
                 StartUtc = startUtc.AddMinutes(20),
                 EndUtc = startUtc.AddMinutes(35)
+            },
+            // Untracked gap: 25 minutes (10:35 - 11:00)
+            new()
+            {
+                IsTracked = false,
+                StartUtc = startUtc.AddMinutes(35),
+                EndUtc = endUtc
             }
         };
 
         PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations(selected, slots, startUtc, endUtc);
 
         // Alpha: 20m, Beta: 15m, Remaining 25m goes to Manual Project
-        Assert.Equal(20, pAlpha.AllocatedMinutes);
-        Assert.Equal(15, pBeta.AllocatedMinutes);
-        Assert.Equal(25, pManual.AllocatedMinutes);
+        Assert.Equal(3, selected.Count);
+        Assert.Equal(20, selected[0].AllocatedMinutes);
+        Assert.Equal(15, selected[1].AllocatedMinutes);
+        Assert.Equal(25, selected[2].AllocatedMinutes);
 
         // Intervals must be contiguous and packed within period
-        Assert.Equal(startUtc, pAlpha.StartUtc);
-        Assert.Equal(startUtc.AddMinutes(20), pAlpha.EndUtc);
+        Assert.Equal(startUtc, selected[0].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(20), selected[0].EndUtc);
 
-        Assert.Equal(startUtc.AddMinutes(20), pBeta.StartUtc);
-        Assert.Equal(startUtc.AddMinutes(35), pBeta.EndUtc);
+        Assert.Equal(startUtc.AddMinutes(20), selected[1].StartUtc);
+        Assert.Equal(startUtc.AddMinutes(35), selected[1].EndUtc);
 
-        Assert.Equal(startUtc.AddMinutes(35), pManual.StartUtc);
-        Assert.Equal(endUtc, pManual.EndUtc);
+        Assert.Equal(startUtc.AddMinutes(35), selected[2].StartUtc);
+        Assert.Equal(endUtc, selected[2].EndUtc);
     }
 
     [Fact]
@@ -1078,5 +1225,7 @@ public class PeriodicReviewTests
         PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations(null!, null, startUtc, endUtc);
         PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations([], [], startUtc, endUtc);
         PeriodicReviewDataAggregator.AutoSelectStopwatchProjects(null!, null!, null);
+        var emptyRes = PeriodicReviewDataAggregator.BuildChronologicalAllocations([], null, startUtc, endUtc);
+        Assert.Empty(emptyRes);
     }
 }

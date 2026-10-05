@@ -119,6 +119,7 @@ public sealed class ReviewProjectSelectionItem
     public string ProjectName { get; set; } = "";
     public bool IsBreak { get; set; }
     public int SelectionOrder { get; set; } // 1, 2, 3... 0 if unselected
+    public string? SelectionBadgeText { get; set; }
     public bool IsSelected => SelectionOrder > 0;
     public double AllocatedMinutes { get; set; }
     public DateTime? StartUtc { get; set; }
@@ -603,7 +604,7 @@ public static class PeriodicReviewDataAggregator
 
     /// <summary>
     /// Auto-selects projects from availableProjects that have tracked intervals in stopwatchSlots,
-    /// adding them to selectedItems with proper selection order if not already selected.
+    /// adding them to selectedItems if not already selected.
     /// </summary>
     public static void AutoSelectStopwatchProjects(
         IReadOnlyList<ReviewProjectSelectionItem> availableProjects,
@@ -612,10 +613,12 @@ public static class PeriodicReviewDataAggregator
     {
         if (stopwatchSlots == null || availableProjects == null || selectedItems == null) return;
 
+        // Collect distinct tracked project names from stopwatch slots in chronological order
         var trackedNames = stopwatchSlots
             .Where(s => s.IsTracked &&
                         !string.IsNullOrWhiteSpace(s.SelectedProjectName) &&
                         !string.Equals(s.SelectedProjectName, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(s => s.StartUtc)
             .Select(s => s.SelectedProjectName!.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -627,7 +630,8 @@ public static class PeriodicReviewDataAggregator
             var item = availableProjects.FirstOrDefault(p =>
                 string.Equals(p.ProjectName, name, StringComparison.OrdinalIgnoreCase));
 
-            if (item == null || item.IsSelected) continue;
+            if (item == null || selectedItems.Any(si => string.Equals(si.ProjectName, item.ProjectName, StringComparison.OrdinalIgnoreCase)))
+                continue;
 
             selectedItems.Add(item);
             item.SelectionOrder = selectedItems.Count;
@@ -635,70 +639,181 @@ public static class PeriodicReviewDataAggregator
     }
 
     /// <summary>
-    /// Pre-populates time allocations for selectedItems using actual tracked stopwatch interval durations and times.
-    /// Items with tracked data receive their measured durations (clamped to period bounds).
-    /// Any remaining time is split equally among selected items without tracked intervals.
+    /// Computes the chronological sequence of project intervals for the review period.
+    /// Tracked stopwatch intervals retain their exact recorded start and end times.
+    /// Any manually selected projects (not from stopwatch intervals) are placed into the
+    /// untracked gaps in chronological order.
+    /// If a project was active in multiple intervals (e.g. beginning and end), separate
+    /// items are created for each interval so they remain in their exact space.
     /// </summary>
-    public static void PrePopulateStopwatchAllocations(
-        IReadOnlyList<ReviewProjectSelectionItem> selectedItems,
+    public static List<ReviewProjectSelectionItem> BuildChronologicalAllocations(
+        IReadOnlyList<ReviewProjectSelectionItem> selectedProjects,
         IEnumerable<PeriodicReviewStopwatchSlot>? stopwatchSlots,
         DateTime startUtc,
         DateTime endUtc)
     {
-        if (selectedItems == null || selectedItems.Count == 0 || stopwatchSlots == null) return;
+        if (selectedProjects == null || selectedProjects.Count == 0) return [];
+
+        startUtc = TruncateToMinute(startUtc);
+        endUtc = TruncateToMinute(endUtc);
+        if (endUtc <= startUtc) endUtc = startUtc.AddMinutes(1);
 
         int totalMin = Math.Max(1, (int)Math.Round((endUtc - startUtc).TotalMinutes));
+        var slotsList = stopwatchSlots?.ToList() ?? [];
 
-        var trackedMinutesByProject = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        var trackedSlotsByProject = new Dictionary<string, List<PeriodicReviewStopwatchSlot>>(StringComparer.OrdinalIgnoreCase);
+        // 1. Tracked slots matching selected projects
+        var selectedTrackedSlots = slotsList
+            .Where(s => s.IsTracked &&
+                        !string.IsNullOrWhiteSpace(s.SelectedProjectName) &&
+                        !string.Equals(s.SelectedProjectName, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase) &&
+                        selectedProjects.Any(p => string.Equals(p.ProjectName, s.SelectedProjectName, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(s => s.StartUtc)
+            .ToList();
 
-        foreach (var slot in stopwatchSlots)
+        // 2. Manual (untracked) projects
+        var manualProjects = selectedProjects
+            .Where(p => !selectedTrackedSlots.Any(s => string.Equals(s.SelectedProjectName, p.ProjectName, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        // Fallback: If no tracked slots match, distribute across full period
+        if (selectedTrackedSlots.Count == 0)
         {
-            if (!slot.IsTracked || string.IsNullOrWhiteSpace(slot.SelectedProjectName)) continue;
+            var fallback = new List<ReviewProjectSelectionItem>();
+            int baseMin = totalMin / selectedProjects.Count;
+            int rem = totalMin % selectedProjects.Count;
+            DateTime cursor = startUtc;
 
-            string key = slot.SelectedProjectName.Trim();
-            if (!trackedMinutesByProject.ContainsKey(key))
+            for (int i = 0; i < selectedProjects.Count; i++)
             {
-                trackedMinutesByProject[key] = 0;
-                trackedSlotsByProject[key] = [];
+                int min = baseMin + (i == selectedProjects.Count - 1 ? rem : 0);
+                fallback.Add(new ReviewProjectSelectionItem
+                {
+                    ProjectName = selectedProjects[i].ProjectName,
+                    IsBreak = selectedProjects[i].IsBreak,
+                    AllocatedMinutes = min,
+                    StartUtc = cursor,
+                    EndUtc = cursor.AddMinutes(min),
+                    SelectionOrder = i + 1,
+                    SelectionBadgeText = (i + 1).ToString()
+                });
+                cursor = cursor.AddMinutes(min);
             }
-            trackedMinutesByProject[key] += slot.Duration.TotalMinutes;
-            trackedSlotsByProject[key].Add(slot);
+            return fallback;
         }
 
-        double trackedTotal = 0;
-        var untrackedItems = new List<ReviewProjectSelectionItem>();
-
-        foreach (var item in selectedItems)
+        // 3. Build items for tracked slots (preserving exact times)
+        var allocated = new List<ReviewProjectSelectionItem>();
+        foreach (var slot in selectedTrackedSlots)
         {
-            if (trackedMinutesByProject.TryGetValue(item.ProjectName, out double mins) && mins > 0)
+            DateTime slotStart = slot.StartUtc < startUtc ? startUtc : slot.StartUtc;
+            DateTime slotEnd = slot.EndUtc > endUtc ? endUtc : slot.EndUtc;
+            double dur = Math.Max(0, Math.Round((slotEnd - slotStart).TotalMinutes, 1));
+
+            allocated.Add(new ReviewProjectSelectionItem
             {
-                double clamped = Math.Min(mins, totalMin);
-                item.AllocatedMinutes = Math.Round(clamped, 1);
+                ProjectName = slot.SelectedProjectName!.Trim(),
+                IsBreak = false,
+                AllocatedMinutes = dur,
+                StartUtc = slotStart,
+                EndUtc = slotEnd
+            });
+        }
 
-                var slots = trackedSlotsByProject[item.ProjectName];
-                item.StartUtc = slots.Min(s => s.StartUtc < startUtc ? startUtc : s.StartUtc);
-                item.EndUtc = slots.Max(s => s.EndUtc > endUtc ? endUtc : s.EndUtc);
+        // 4. If there are manual projects, find untracked gaps and allocate manual projects into them
+        if (manualProjects.Count > 0)
+        {
+            var gaps = new List<(DateTime Start, DateTime End)>();
+            DateTime gapCursor = startUtc;
 
-                trackedTotal += item.AllocatedMinutes;
+            foreach (var item in allocated.OrderBy(it => it.StartUtc))
+            {
+                if (item.StartUtc.HasValue && item.StartUtc.Value > gapCursor)
+                {
+                    gaps.Add((gapCursor, item.StartUtc.Value));
+                }
+                if (item.EndUtc.HasValue && item.EndUtc.Value > gapCursor)
+                {
+                    gapCursor = item.EndUtc.Value;
+                }
             }
-            else
+
+            if (gapCursor < endUtc)
             {
-                untrackedItems.Add(item);
+                gaps.Add((gapCursor, endUtc));
+            }
+
+            if (gaps.Count > 0)
+            {
+                int manualIdx = 0;
+                for (int gIdx = 0; gIdx < gaps.Count && manualIdx < manualProjects.Count; gIdx++)
+                {
+                    var (gStart, gEnd) = gaps[gIdx];
+                    double gapDuration = (gEnd - gStart).TotalMinutes;
+                    if (gapDuration <= 0) continue;
+
+                    int remainingGaps = gaps.Count - gIdx;
+                    int remainingManual = manualProjects.Count - manualIdx;
+                    int countForGap = (remainingGaps == 1)
+                        ? remainingManual
+                        : Math.Max(1, (int)Math.Round((double)remainingManual / remainingGaps));
+
+                    double perProjMin = gapDuration / countForGap;
+                    DateTime mCursor = gStart;
+
+                    for (int m = 0; m < countForGap && manualIdx < manualProjects.Count; m++)
+                    {
+                        var manualProj = manualProjects[manualIdx++];
+                        DateTime pEnd = (m == countForGap - 1) ? gEnd : mCursor.AddMinutes(perProjMin);
+
+                        allocated.Add(new ReviewProjectSelectionItem
+                        {
+                            ProjectName = manualProj.ProjectName,
+                            IsBreak = manualProj.IsBreak,
+                            AllocatedMinutes = Math.Round((pEnd - mCursor).TotalMinutes, 1),
+                            StartUtc = mCursor,
+                            EndUtc = pEnd
+                        });
+
+                        mCursor = pEnd;
+                    }
+                }
             }
         }
 
-        double remainingMin = Math.Max(0, totalMin - trackedTotal);
-        if (untrackedItems.Count > 0 && remainingMin > 0)
+        // 5. Sort chronologically
+        var sorted = allocated
+            .OrderBy(it => it.StartUtc ?? startUtc)
+            .ThenBy(it => it.EndUtc ?? endUtc)
+            .ToList();
+
+        // 6. Assign sequential selection order
+        for (int i = 0; i < sorted.Count; i++)
         {
-            double perItem = remainingMin / untrackedItems.Count;
-            foreach (var item in untrackedItems)
-            {
-                item.AllocatedMinutes = Math.Round(perItem, 1);
-            }
+            sorted[i].SelectionOrder = i + 1;
+            sorted[i].SelectionBadgeText = (i + 1).ToString();
         }
 
-        RepackTimelineIntervals(selectedItems, startUtc, endUtc);
+        return sorted;
+    }
+
+    /// <summary>
+    /// Pre-populates time allocations for selectedItems using actual tracked stopwatch interval durations and times.
+    /// Replaces selectedItems with the exact chronological intervals.
+    /// </summary>
+    public static void PrePopulateStopwatchAllocations(
+        IList<ReviewProjectSelectionItem> selectedItems,
+        IEnumerable<PeriodicReviewStopwatchSlot>? stopwatchSlots,
+        DateTime startUtc,
+        DateTime endUtc)
+    {
+        if (selectedItems == null || selectedItems.Count == 0) return;
+
+        var chronological = BuildChronologicalAllocations(selectedItems.ToList(), stopwatchSlots, startUtc, endUtc);
+        selectedItems.Clear();
+        foreach (var item in chronological)
+        {
+            selectedItems.Add(item);
+        }
     }
 
     /// <summary>

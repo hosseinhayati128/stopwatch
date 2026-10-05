@@ -194,8 +194,8 @@ public partial class PeriodicReviewWindow : Window
 
             SyncKnownProjects();
             AutoSelectStopwatchProjects();
-            RenderProjectCards();
             UpdateStep1SequenceSummary();
+            RenderProjectCards();
             RenderActivitySummaries();
         }
         catch (Exception ex)
@@ -340,7 +340,7 @@ public partial class PeriodicReviewWindow : Window
             };
             var badgeText = new TextBlock
             {
-                Text = item.SelectionOrder.ToString(),
+                Text = !string.IsNullOrWhiteSpace(item.SelectionBadgeText) ? item.SelectionBadgeText : item.SelectionOrder.ToString(),
                 Foreground = Brushes.White,
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
@@ -395,25 +395,21 @@ public partial class PeriodicReviewWindow : Window
 
     private void ToggleProjectSelection(ReviewProjectSelectionItem item)
     {
-        if (item.IsSelected)
+        if (_selectedItems.Any(si => string.Equals(si.ProjectName, item.ProjectName, StringComparison.OrdinalIgnoreCase)))
         {
-            // Deselect: remove from sequence and re-index
-            _selectedItems.Remove(item);
+            // Deselect: remove all matching instances
+            _selectedItems.RemoveAll(si => string.Equals(si.ProjectName, item.ProjectName, StringComparison.OrdinalIgnoreCase));
             item.SelectionOrder = 0;
-            for (int i = 0; i < _selectedItems.Count; i++)
-            {
-                _selectedItems[i].SelectionOrder = i + 1;
-            }
+            item.SelectionBadgeText = null;
         }
         else
         {
-            // Select: assign next order index
+            // Select: add to selection
             _selectedItems.Add(item);
-            item.SelectionOrder = _selectedItems.Count;
         }
 
-        RenderProjectCards();
         UpdateStep1SequenceSummary();
+        RenderProjectCards();
     }
 
     private void UpdateStep1SequenceSummary()
@@ -423,14 +419,54 @@ public partial class PeriodicReviewWindow : Window
             SelectedSequenceText.Text = "None selected (click cards above in sequence)";
             SelectedSequenceText.Foreground = (Brush)FindResource("SecondaryTextBrush");
             ContinueToStep2Button.IsEnabled = false;
+
+            foreach (var card in _availableProjects)
+            {
+                card.SelectionOrder = 0;
+                card.SelectionBadgeText = null;
+            }
+            return;
         }
-        else
+
+        // Build chronological allocations to determine the exact sequence numbers and badges
+        var chronological = PeriodicReviewDataAggregator.BuildChronologicalAllocations(
+            _selectedItems,
+            _model?.StopwatchSlots,
+            _startUtc,
+            _endUtc);
+
+        // Update card badges in _availableProjects
+        foreach (var card in _availableProjects)
         {
-            var parts = _selectedItems.Select((it, idx) => $"{idx + 1}. {it.DisplayName}");
-            SelectedSequenceText.Text = string.Join("  ➔  ", parts);
-            SelectedSequenceText.Foreground = (Brush)FindResource("AccentBrush");
-            ContinueToStep2Button.IsEnabled = true;
+            var matchingOrders = chronological
+                .Where(it => string.Equals(it.ProjectName, card.ProjectName, StringComparison.OrdinalIgnoreCase))
+                .Select(it => it.SelectionOrder)
+                .ToList();
+
+            if (matchingOrders.Count > 0)
+            {
+                card.SelectionOrder = matchingOrders[0];
+                card.SelectionBadgeText = matchingOrders.Count > 1
+                    ? string.Join(", ", matchingOrders)
+                    : matchingOrders[0].ToString();
+            }
+            else
+            {
+                card.SelectionOrder = 0;
+                card.SelectionBadgeText = null;
+            }
         }
+
+        var parts = chronological.Select(it =>
+        {
+            DateTime sLocal = it.CalculatedStartUtc.ToLocalTime();
+            DateTime eLocal = it.CalculatedEndUtc.ToLocalTime();
+            return $"{it.SelectionOrder}. {it.DisplayName} ({sLocal:HH:mm}–{eLocal:HH:mm})";
+        });
+
+        SelectedSequenceText.Text = string.Join("  ➔  ", parts);
+        SelectedSequenceText.Foreground = (Brush)FindResource("AccentBrush");
+        ContinueToStep2Button.IsEnabled = true;
     }
 
     private void AddNewProjectButton_Click(object sender, RoutedEventArgs e)
@@ -468,15 +504,14 @@ public partial class PeriodicReviewWindow : Window
             _availableProjects.Add(existing);
         }
 
-        if (!existing.IsSelected)
+        if (!_selectedItems.Any(si => string.Equals(si.ProjectName, existing.ProjectName, StringComparison.OrdinalIgnoreCase)))
         {
             _selectedItems.Add(existing);
-            existing.SelectionOrder = _selectedItems.Count;
         }
 
         NewProjectTextBox.Text = "";
-        RenderProjectCards();
         UpdateStep1SequenceSummary();
+        RenderProjectCards();
     }
 
     private void DecreaseThresholdButton_Click(object sender, RoutedEventArgs e)
@@ -769,41 +804,8 @@ public partial class PeriodicReviewWindow : Window
     {
         if (_selectedItems.Count == 0) return;
 
-        int totalMin = TotalPeriodMinutes;
-        double currentAllocated = _selectedItems.Sum(it => it.AllocatedMinutes);
-
-        // Smart initial allocation if unassigned
-        if (currentAllocated <= 0)
-        {
-            // Check if we have tracked stopwatch data to pre-populate from
-            bool hasTrackedData = _model?.StopwatchSlots?.Any(s =>
-                s.IsTracked && !string.IsNullOrWhiteSpace(s.SelectedProjectName)) == true;
-
-            if (hasTrackedData)
-            {
-                PrePopulateStopwatchAllocations();
-            }
-            else
-            {
-                int baseMinutes = totalMin / _selectedItems.Count;
-                int remainder = totalMin % _selectedItems.Count;
-
-                DateTime cursor = _startUtc;
-                for (int i = 0; i < _selectedItems.Count; i++)
-                {
-                    int min = baseMinutes + (i == _selectedItems.Count - 1 ? remainder : 0);
-                    _selectedItems[i].AllocatedMinutes = min;
-                    _selectedItems[i].StartUtc = cursor;
-                    _selectedItems[i].EndUtc = cursor.AddMinutes(min);
-                    cursor = cursor.AddMinutes(min);
-                }
-            }
-        }
-        else
-        {
-            // Ensure StartUtc and EndUtc exist and are properly packed
-            PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc);
-        }
+        // Build exact chronological allocations from stopwatch slots and manual selections
+        PrePopulateStopwatchAllocations();
 
         _currentStep = 2;
         Step1Container.Visibility = Visibility.Collapsed;
@@ -857,6 +859,15 @@ public partial class PeriodicReviewWindow : Window
         Step3BackButton.Visibility = Visibility.Collapsed;
         Step3SkipButton.Visibility = Visibility.Collapsed;
         Step3SaveButton.Visibility = Visibility.Collapsed;
+
+        // Restore _selectedItems to distinct project cards from _availableProjects
+        var distinctProjects = _selectedItems
+            .Select(it => _availableProjects.FirstOrDefault(ap => string.Equals(ap.ProjectName, it.ProjectName, StringComparison.OrdinalIgnoreCase)))
+            .Where(ap => ap != null)
+            .Distinct()
+            .ToList();
+        _selectedItems.Clear();
+        _selectedItems.AddRange(distinctProjects!);
 
         RenderStep1();
     }
