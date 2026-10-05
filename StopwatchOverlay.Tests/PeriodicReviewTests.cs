@@ -924,4 +924,159 @@ public class PeriodicReviewTests
         Assert.True(fullTimeline[2].IsUnallocated);
         Assert.Equal(30, fullTimeline[2].DurationMinutes);
     }
+
+    [Fact]
+    public void AutoSelectStopwatchProjects_SelectsTrackedProjectsInOrder()
+    {
+        var available = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Break / Empty", IsBreak = true },
+            new() { ProjectName = "Project Alpha" },
+            new() { ProjectName = "Project Beta" },
+            new() { ProjectName = "Project Gamma" }
+        };
+        var selected = new List<ReviewProjectSelectionItem>();
+
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Beta",
+                StartUtc = DateTime.UtcNow.AddMinutes(-30),
+                EndUtc = DateTime.UtcNow.AddMinutes(-15)
+            },
+            new()
+            {
+                IsTracked = false,
+                SelectedProjectName = "(Untracked / Off)",
+                StartUtc = DateTime.UtcNow.AddMinutes(-15),
+                EndUtc = DateTime.UtcNow.AddMinutes(-10)
+            },
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Alpha",
+                StartUtc = DateTime.UtcNow.AddMinutes(-10),
+                EndUtc = DateTime.UtcNow
+            }
+        };
+
+        PeriodicReviewDataAggregator.AutoSelectStopwatchProjects(available, selected, slots);
+
+        Assert.Equal(2, selected.Count);
+        Assert.Equal("Project Beta", selected[0].ProjectName);
+        Assert.Equal(1, selected[0].SelectionOrder);
+        Assert.True(selected[0].IsSelected);
+
+        Assert.Equal("Project Alpha", selected[1].ProjectName);
+        Assert.Equal(2, selected[1].SelectionOrder);
+        Assert.True(selected[1].IsSelected);
+
+        // Gamma was not tracked, should remain unselected
+        var gamma = available.First(p => p.ProjectName == "Project Gamma");
+        Assert.False(gamma.IsSelected);
+        Assert.Equal(0, gamma.SelectionOrder);
+    }
+
+    [Fact]
+    public void AutoSelectStopwatchProjects_DoesNotDuplicateAlreadySelectedProjects()
+    {
+        var alreadySelected = new ReviewProjectSelectionItem { ProjectName = "Project Alpha", SelectionOrder = 1 };
+        var available = new List<ReviewProjectSelectionItem>
+        {
+            alreadySelected,
+            new() { ProjectName = "Project Beta" }
+        };
+        var selected = new List<ReviewProjectSelectionItem> { alreadySelected };
+
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Alpha",
+                StartUtc = DateTime.UtcNow.AddMinutes(-30),
+                EndUtc = DateTime.UtcNow.AddMinutes(-20)
+            },
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Beta",
+                StartUtc = DateTime.UtcNow.AddMinutes(-20),
+                EndUtc = DateTime.UtcNow
+            }
+        };
+
+        PeriodicReviewDataAggregator.AutoSelectStopwatchProjects(available, selected, slots);
+
+        // Alpha should not be added again, Beta should be added as 2nd item
+        Assert.Equal(2, selected.Count);
+        Assert.Equal("Project Alpha", selected[0].ProjectName);
+        Assert.Equal(1, selected[0].SelectionOrder);
+
+        Assert.Equal("Project Beta", selected[1].ProjectName);
+        Assert.Equal(2, selected[1].SelectionOrder);
+    }
+
+    [Fact]
+    public void PrePopulateStopwatchAllocations_AssignsTrackedDurationsAndSplitsRemainder()
+    {
+        DateTime startUtc = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+        DateTime endUtc = startUtc.AddMinutes(60);
+
+        var pAlpha = new ReviewProjectSelectionItem { ProjectName = "Project Alpha", SelectionOrder = 1 };
+        var pBeta = new ReviewProjectSelectionItem { ProjectName = "Project Beta", SelectionOrder = 2 };
+        var pManual = new ReviewProjectSelectionItem { ProjectName = "Manual Project", SelectionOrder = 3 };
+        var selected = new List<ReviewProjectSelectionItem> { pAlpha, pBeta, pManual };
+
+        var slots = new List<PeriodicReviewStopwatchSlot>
+        {
+            // Alpha: 20 minutes
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Alpha",
+                StartUtc = startUtc,
+                EndUtc = startUtc.AddMinutes(20)
+            },
+            // Beta: 15 minutes
+            new()
+            {
+                IsTracked = true,
+                SelectedProjectName = "Project Beta",
+                StartUtc = startUtc.AddMinutes(20),
+                EndUtc = startUtc.AddMinutes(35)
+            }
+        };
+
+        PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations(selected, slots, startUtc, endUtc);
+
+        // Alpha: 20m, Beta: 15m, Remaining 25m goes to Manual Project
+        Assert.Equal(20, pAlpha.AllocatedMinutes);
+        Assert.Equal(15, pBeta.AllocatedMinutes);
+        Assert.Equal(25, pManual.AllocatedMinutes);
+
+        // Intervals must be contiguous and packed within period
+        Assert.Equal(startUtc, pAlpha.StartUtc);
+        Assert.Equal(startUtc.AddMinutes(20), pAlpha.EndUtc);
+
+        Assert.Equal(startUtc.AddMinutes(20), pBeta.StartUtc);
+        Assert.Equal(startUtc.AddMinutes(35), pBeta.EndUtc);
+
+        Assert.Equal(startUtc.AddMinutes(35), pManual.StartUtc);
+        Assert.Equal(endUtc, pManual.EndUtc);
+    }
+
+    [Fact]
+    public void PrePopulateStopwatchAllocations_HandlesNullAndEmptySafely()
+    {
+        DateTime startUtc = DateTime.UtcNow;
+        DateTime endUtc = startUtc.AddMinutes(30);
+
+        // Should not throw on nulls or empty collections
+        PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations(null!, null, startUtc, endUtc);
+        PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations([], [], startUtc, endUtc);
+        PeriodicReviewDataAggregator.AutoSelectStopwatchProjects(null!, null!, null);
+    }
 }

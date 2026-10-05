@@ -231,7 +231,9 @@ public partial class PeriodicReviewWindow : Window
                 _runningSessions);
 
             SyncKnownProjects();
+            AutoSelectStopwatchProjects();
             RenderProjectCards();
+            UpdateStep1SequenceSummary();
             RenderActivitySummaries();
         }
         catch (Exception ex)
@@ -300,6 +302,23 @@ public partial class PeriodicReviewWindow : Window
         {
             RenderProjectCards();
         }
+    }
+
+    private void AutoSelectStopwatchProjects()
+    {
+        PeriodicReviewDataAggregator.AutoSelectStopwatchProjects(
+            _availableProjects,
+            _selectedItems,
+            _model?.StopwatchSlots);
+    }
+
+    private void PrePopulateStopwatchAllocations()
+    {
+        PeriodicReviewDataAggregator.PrePopulateStopwatchAllocations(
+            _selectedItems,
+            _model?.StopwatchSlots,
+            _startUtc,
+            _endUtc);
     }
 
     // ==========================================
@@ -824,17 +843,28 @@ public partial class PeriodicReviewWindow : Window
 
         if (currentAllocated <= 0)
         {
-            int baseMinutes = totalMin / _selectedItems.Count;
-            int remainder = totalMin % _selectedItems.Count;
+            // Check if we have tracked stopwatch data to pre-populate from
+            bool hasTrackedData = _model?.StopwatchSlots?.Any(s =>
+                s.IsTracked && !string.IsNullOrWhiteSpace(s.SelectedProjectName)) == true;
 
-            DateTime cursor = _startUtc;
-            for (int i = 0; i < _selectedItems.Count; i++)
+            if (hasTrackedData)
             {
-                int min = baseMinutes + (i == _selectedItems.Count - 1 ? remainder : 0);
-                _selectedItems[i].AllocatedMinutes = min;
-                _selectedItems[i].StartUtc = cursor;
-                _selectedItems[i].EndUtc = cursor.AddMinutes(min);
-                cursor = cursor.AddMinutes(min);
+                PrePopulateStopwatchAllocations();
+            }
+            else
+            {
+                int baseMinutes = totalMin / _selectedItems.Count;
+                int remainder = totalMin % _selectedItems.Count;
+
+                DateTime cursor = _startUtc;
+                for (int i = 0; i < _selectedItems.Count; i++)
+                {
+                    int min = baseMinutes + (i == _selectedItems.Count - 1 ? remainder : 0);
+                    _selectedItems[i].AllocatedMinutes = min;
+                    _selectedItems[i].StartUtc = cursor;
+                    _selectedItems[i].EndUtc = cursor.AddMinutes(min);
+                    cursor = cursor.AddMinutes(min);
+                }
             }
         }
         else

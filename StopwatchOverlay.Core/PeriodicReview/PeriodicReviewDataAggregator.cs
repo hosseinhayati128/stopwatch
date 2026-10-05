@@ -602,6 +602,106 @@ public static class PeriodicReviewDataAggregator
     }
 
     /// <summary>
+    /// Auto-selects projects from availableProjects that have tracked intervals in stopwatchSlots,
+    /// adding them to selectedItems with proper selection order if not already selected.
+    /// </summary>
+    public static void AutoSelectStopwatchProjects(
+        IReadOnlyList<ReviewProjectSelectionItem> availableProjects,
+        IList<ReviewProjectSelectionItem> selectedItems,
+        IEnumerable<PeriodicReviewStopwatchSlot>? stopwatchSlots)
+    {
+        if (stopwatchSlots == null || availableProjects == null || selectedItems == null) return;
+
+        var trackedNames = stopwatchSlots
+            .Where(s => s.IsTracked &&
+                        !string.IsNullOrWhiteSpace(s.SelectedProjectName) &&
+                        !string.Equals(s.SelectedProjectName, "(Untracked / Off)", StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.SelectedProjectName!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (trackedNames.Count == 0) return;
+
+        foreach (var name in trackedNames)
+        {
+            var item = availableProjects.FirstOrDefault(p =>
+                string.Equals(p.ProjectName, name, StringComparison.OrdinalIgnoreCase));
+
+            if (item == null || item.IsSelected) continue;
+
+            selectedItems.Add(item);
+            item.SelectionOrder = selectedItems.Count;
+        }
+    }
+
+    /// <summary>
+    /// Pre-populates time allocations for selectedItems using actual tracked stopwatch interval durations and times.
+    /// Items with tracked data receive their measured durations (clamped to period bounds).
+    /// Any remaining time is split equally among selected items without tracked intervals.
+    /// </summary>
+    public static void PrePopulateStopwatchAllocations(
+        IReadOnlyList<ReviewProjectSelectionItem> selectedItems,
+        IEnumerable<PeriodicReviewStopwatchSlot>? stopwatchSlots,
+        DateTime startUtc,
+        DateTime endUtc)
+    {
+        if (selectedItems == null || selectedItems.Count == 0 || stopwatchSlots == null) return;
+
+        int totalMin = Math.Max(1, (int)Math.Round((endUtc - startUtc).TotalMinutes));
+
+        var trackedMinutesByProject = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var trackedSlotsByProject = new Dictionary<string, List<PeriodicReviewStopwatchSlot>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var slot in stopwatchSlots)
+        {
+            if (!slot.IsTracked || string.IsNullOrWhiteSpace(slot.SelectedProjectName)) continue;
+
+            string key = slot.SelectedProjectName.Trim();
+            if (!trackedMinutesByProject.ContainsKey(key))
+            {
+                trackedMinutesByProject[key] = 0;
+                trackedSlotsByProject[key] = [];
+            }
+            trackedMinutesByProject[key] += slot.Duration.TotalMinutes;
+            trackedSlotsByProject[key].Add(slot);
+        }
+
+        double trackedTotal = 0;
+        var untrackedItems = new List<ReviewProjectSelectionItem>();
+
+        foreach (var item in selectedItems)
+        {
+            if (trackedMinutesByProject.TryGetValue(item.ProjectName, out double mins) && mins > 0)
+            {
+                double clamped = Math.Min(mins, totalMin);
+                item.AllocatedMinutes = Math.Round(clamped, 1);
+
+                var slots = trackedSlotsByProject[item.ProjectName];
+                item.StartUtc = slots.Min(s => s.StartUtc < startUtc ? startUtc : s.StartUtc);
+                item.EndUtc = slots.Max(s => s.EndUtc > endUtc ? endUtc : s.EndUtc);
+
+                trackedTotal += item.AllocatedMinutes;
+            }
+            else
+            {
+                untrackedItems.Add(item);
+            }
+        }
+
+        double remainingMin = Math.Max(0, totalMin - trackedTotal);
+        if (untrackedItems.Count > 0 && remainingMin > 0)
+        {
+            double perItem = remainingMin / untrackedItems.Count;
+            foreach (var item in untrackedItems)
+            {
+                item.AllocatedMinutes = Math.Round(perItem, 1);
+            }
+        }
+
+        RepackTimelineIntervals(selectedItems, startUtc, endUtc);
+    }
+
+    /// <summary>
     /// Builds a full, contiguous timeline covering [periodStartUtc, periodEndUtc].
     /// Project intervals (including 0-minute selected items) and intermediate/trailing unallocated gaps
     /// are represented as TimelineSlots.
