@@ -1228,4 +1228,256 @@ public class PeriodicReviewTests
         var emptyRes = PeriodicReviewDataAggregator.BuildChronologicalAllocations([], null, startUtc, endUtc);
         Assert.Empty(emptyRes);
     }
+
+    [Fact]
+    public void PeriodicReviewStopwatchSlot_HasChanged_RecognizesDeletionEvenWhenOriginalProjectNameIsNull()
+    {
+        var deletionSlot = new PeriodicReviewStopwatchSlot
+        {
+            ExistingIntervalId = Guid.NewGuid(),
+            OriginalProjectName = null,
+            SelectedProjectName = null
+        };
+
+        Assert.True(deletionSlot.HasChanged);
+    }
+
+    [Fact]
+    public void PeriodicReviewStopwatchSlot_HasChanged_RecognizesDeletionWhenOriginalProjectNameIsSet()
+    {
+        var deletionSlot = new PeriodicReviewStopwatchSlot
+        {
+            ExistingIntervalId = Guid.NewGuid(),
+            OriginalProjectName = "Original Project",
+            SelectedProjectName = null
+        };
+
+        Assert.True(deletionSlot.HasChanged);
+    }
+
+    [Fact]
+    public void PeriodicReviewStopwatchSlot_HasChanged_ReturnsFalseWhenProjectNameUnchanged()
+    {
+        var unchangedSlot = new PeriodicReviewStopwatchSlot
+        {
+            ExistingIntervalId = Guid.NewGuid(),
+            OriginalProjectName = "Original Project",
+            SelectedProjectName = "Original Project"
+        };
+
+        Assert.False(unchangedSlot.HasChanged);
+    }
+
+    [Fact]
+    public void PeriodicReviewStopwatchSlot_HasChanged_ReturnsTrueWhenProjectNameChanged()
+    {
+        var renamedSlot = new PeriodicReviewStopwatchSlot
+        {
+            ExistingIntervalId = Guid.NewGuid(),
+            OriginalProjectName = "Original Project",
+            SelectedProjectName = "New Project"
+        };
+
+        Assert.True(renamedSlot.HasChanged);
+    }
+
+    [Fact]
+    public void RepackTimelineIntervals_PreservesFixedStopwatchRecord()
+    {
+        var startUtc = new DateTime(2026, 10, 9, 10, 0, 0, DateTimeKind.Utc);
+        var endUtc = new DateTime(2026, 10, 9, 11, 0, 0, DateTimeKind.Utc);
+
+        var fixedSlotStart = new DateTime(2026, 10, 9, 10, 20, 0, DateTimeKind.Utc);
+        var fixedSlotEnd = new DateTime(2026, 10, 9, 10, 40, 0, DateTimeKind.Utc);
+
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Manual A", AllocatedMinutes = 10, IsFixedTracked = false },
+            new()
+            {
+                ProjectName = "Fixed Stopwatch",
+                AllocatedMinutes = 20,
+                StartUtc = fixedSlotStart,
+                EndUtc = fixedSlotEnd,
+                IsFixedTracked = true,
+                StopwatchIntervalId = Guid.NewGuid()
+            },
+            new() { ProjectName = "Manual B", AllocatedMinutes = 15, IsFixedTracked = false }
+        };
+
+        PeriodicReviewDataAggregator.RepackTimelineIntervals(items, startUtc, endUtc);
+
+        // Fixed item must remain unchanged
+        var fixedItem = items.First(it => it.IsFixedTracked);
+        Assert.Equal(fixedSlotStart, fixedItem.StartUtc);
+        Assert.Equal(fixedSlotEnd, fixedItem.EndUtc);
+
+        // Manual A should start at 10:00 and end at 10:10
+        var manualA = items.First(it => it.ProjectName == "Manual A");
+        Assert.Equal(startUtc, manualA.StartUtc);
+        Assert.Equal(startUtc.AddMinutes(10), manualA.EndUtc);
+
+        // Manual B should start after fixed record (10:40) and end at 10:55
+        var manualB = items.First(it => it.ProjectName == "Manual B");
+        Assert.Equal(fixedSlotEnd, manualB.StartUtc);
+        Assert.Equal(fixedSlotEnd.AddMinutes(15), manualB.EndUtc);
+    }
+
+    [Fact]
+    public void RepackTimelineIntervals_CutAndContinue_SplitsManualTimerAcrossFixedSlot()
+    {
+        var startUtc = new DateTime(2026, 10, 9, 10, 0, 0, DateTimeKind.Utc);
+        var endUtc = new DateTime(2026, 10, 9, 11, 0, 0, DateTimeKind.Utc);
+
+        // Fixed slot from 10:15 to 10:35
+        var fixedSlotStart = new DateTime(2026, 10, 9, 10, 15, 0, DateTimeKind.Utc);
+        var fixedSlotEnd = new DateTime(2026, 10, 9, 10, 35, 0, DateTimeKind.Utc);
+
+        // Manual item allocated 25m before fixed item (which only has 15m available)
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Long Project", AllocatedMinutes = 25, IsFixedTracked = false },
+            new()
+            {
+                ProjectName = "Fixed Meeting",
+                AllocatedMinutes = 20,
+                StartUtc = fixedSlotStart,
+                EndUtc = fixedSlotEnd,
+                IsFixedTracked = true
+            }
+        };
+
+        PeriodicReviewDataAggregator.RepackTimelineIntervals(items, startUtc, endUtc, "CutAndContinue");
+
+        // The items should now contain 3 elements: Long Project (15m), Fixed Meeting (20m), Long Project (continuation, 10m)
+        Assert.Equal(3, items.Count);
+
+        var firstPart = items[0];
+        Assert.Equal("Long Project", firstPart.ProjectName);
+        Assert.Equal(15, firstPart.AllocatedMinutes);
+        Assert.Equal(startUtc, firstPart.StartUtc);
+        Assert.Equal(fixedSlotStart, firstPart.EndUtc);
+        Assert.NotNull(firstPart.CollisionWarning);
+        Assert.Contains("Cut by fixed record", firstPart.CollisionWarning);
+
+        var fixedMeeting = items[1];
+        Assert.Equal("Fixed Meeting", fixedMeeting.ProjectName);
+        Assert.Equal(fixedSlotStart, fixedMeeting.StartUtc);
+        Assert.Equal(fixedSlotEnd, fixedMeeting.EndUtc);
+
+        var secondPart = items[2];
+        Assert.Equal("Long Project", secondPart.ProjectName);
+        Assert.True(secondPart.IsAutoContinuation);
+        Assert.Equal(10, secondPart.AllocatedMinutes);
+        Assert.Equal(fixedSlotEnd, secondPart.StartUtc);
+        Assert.Equal(fixedSlotEnd.AddMinutes(10), secondPart.EndUtc);
+        Assert.NotNull(secondPart.CollisionWarning);
+        Assert.Contains("Continued from before", secondPart.CollisionWarning);
+    }
+
+    [Fact]
+    public void RepackTimelineIntervals_StopAtFixed_CapsManualTimerAtFixedSlot()
+    {
+        var startUtc = new DateTime(2026, 10, 9, 10, 0, 0, DateTimeKind.Utc);
+        var endUtc = new DateTime(2026, 10, 9, 11, 0, 0, DateTimeKind.Utc);
+
+        var fixedSlotStart = new DateTime(2026, 10, 9, 10, 15, 0, DateTimeKind.Utc);
+        var fixedSlotEnd = new DateTime(2026, 10, 9, 10, 35, 0, DateTimeKind.Utc);
+
+        var items = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Long Project", AllocatedMinutes = 30, IsFixedTracked = false },
+            new()
+            {
+                ProjectName = "Fixed Meeting",
+                AllocatedMinutes = 20,
+                StartUtc = fixedSlotStart,
+                EndUtc = fixedSlotEnd,
+                IsFixedTracked = true
+            }
+        };
+
+        PeriodicReviewDataAggregator.RepackTimelineIntervals(items, startUtc, endUtc, "StopAtFixed");
+
+        // Should not create continuation segment under StopAtFixed
+        Assert.Equal(2, items.Count);
+
+        var firstPart = items[0];
+        Assert.Equal("Long Project", firstPart.ProjectName);
+        Assert.Equal(15, firstPart.AllocatedMinutes); // Capped to 15m gap
+        Assert.Equal(startUtc, firstPart.StartUtc);
+        Assert.Equal(fixedSlotStart, firstPart.EndUtc);
+        Assert.NotNull(firstPart.CollisionWarning);
+        Assert.Contains("Stopped at", firstPart.CollisionWarning);
+
+        var fixedMeeting = items[1];
+        Assert.Equal("Fixed Meeting", fixedMeeting.ProjectName);
+        Assert.Equal(fixedSlotStart, fixedMeeting.StartUtc);
+        Assert.Equal(fixedSlotEnd, fixedMeeting.EndUtc);
+    }
+
+    [Fact]
+    public void RebalanceAllocatedMinutes_ProtectsFixedStopwatchRecordsFromBeingDonors()
+    {
+        var fixedItem = new ReviewProjectSelectionItem
+        {
+            ProjectName = "Fixed Stopwatch",
+            AllocatedMinutes = 30,
+            IsFixedTracked = true
+        };
+        var manualA = new ReviewProjectSelectionItem
+        {
+            ProjectName = "Manual A",
+            AllocatedMinutes = 10,
+            IsFixedTracked = false
+        };
+        var manualB = new ReviewProjectSelectionItem
+        {
+            ProjectName = "Manual B",
+            AllocatedMinutes = 20,
+            IsFixedTracked = false
+        };
+
+        var items = new List<ReviewProjectSelectionItem> { fixedItem, manualA, manualB };
+
+        // Attempt to increase Manual A from 10 to 25 minutes (total period 60m: 30 + 10 + 20 = 60)
+        // Excess is 15 minutes. The only non-fixed donor is Manual B (20m).
+        // Fixed Stopwatch (30m) must NOT be touched.
+        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(items, manualA, 25, 60);
+
+        Assert.Equal(30, fixedItem.AllocatedMinutes); // Intact!
+        Assert.Equal(25, manualA.AllocatedMinutes);
+        Assert.Equal(5, manualB.AllocatedMinutes); // 20 - 15 = 5
+    }
+
+    [Fact]
+    public void BuildChronologicalAllocations_SupportsMultipleInstancesOfSameProject()
+    {
+        var startUtc = new DateTime(2026, 10, 9, 10, 0, 0, DateTimeKind.Utc);
+        var endUtc = new DateTime(2026, 10, 9, 11, 0, 0, DateTimeKind.Utc);
+
+        var selections = new List<ReviewProjectSelectionItem>
+        {
+            new() { ProjectName = "Project Alpha" },
+            new() { ProjectName = "Family / Break", IsBreak = true },
+            new() { ProjectName = "Project Alpha" }
+        };
+
+        var result = PeriodicReviewDataAggregator.BuildChronologicalAllocations(selections, null, startUtc, endUtc);
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Project Alpha", result[0].ProjectName);
+        Assert.Equal(1, result[0].PartIndex);
+        Assert.Equal(2, result[0].TotalParts);
+        Assert.Contains("Part 1/2", result[0].PartDisplayName);
+
+        Assert.Equal("Family / Break", result[1].ProjectName);
+        Assert.Equal(1, result[1].PartIndex);
+        Assert.Equal(1, result[1].TotalParts);
+
+        Assert.Equal("Project Alpha", result[2].ProjectName);
+        Assert.Equal(2, result[2].PartIndex);
+        Assert.Equal(2, result[2].TotalParts);
+        Assert.Contains("Part 2/2", result[2].PartDisplayName);
+    }
 }

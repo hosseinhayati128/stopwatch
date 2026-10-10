@@ -6,13 +6,6 @@ using System.Windows.Threading;
 
 namespace StopwatchOverlay;
 
-public enum NoteCommandAction
-{
-    AddTodo = 1,
-    AddNote = 2,
-    AddReminder = 3,
-    ViewNotes = 4
-}
 
 /// <summary>
 /// Manages the temporary keyboard command mode activated by the note leader shortcut (default Win+F3).
@@ -103,6 +96,8 @@ public sealed class NoteCommandMode : IDisposable
         [VK_KEY_O] = NoteCommandAction.ViewNotes,
     };
 
+    private readonly Dictionary<uint, NoteCommandAction> _actionMap = new(ActionMap);
+
     public static readonly TimeSpan InitialTimeout = TimeSpan.FromSeconds(5);
 
     private readonly Dispatcher _dispatcher;
@@ -136,6 +131,23 @@ public sealed class NoteCommandMode : IDisposable
         _timeoutTimer.Tick += OnTimeoutTick;
     }
 
+    public void SetKeyMap(IReadOnlyDictionary<NoteCommandAction, uint>? keyMap)
+    {
+        if (keyMap == null) return;
+        _actionMap.Clear();
+        foreach (var (action, vk) in keyMap)
+        {
+            if (vk != 0)
+            {
+                _actionMap[vk] = action;
+                if (vk >= 0x30 && vk <= 0x39)
+                {
+                    _actionMap[vk - 0x30 + 0x60] = action; // Numpad equivalent
+                }
+            }
+        }
+    }
+
     public void SetLeaderVirtualKey(uint leaderVk)
     {
         _leaderVk = leaderVk;
@@ -144,6 +156,11 @@ public sealed class NoteCommandMode : IDisposable
     public static bool TryGetAction(uint virtualKey, out NoteCommandAction action)
     {
         return ActionMap.TryGetValue(virtualKey, out action);
+    }
+
+    public bool TryGetActionInstance(uint virtualKey, out NoteCommandAction action)
+    {
+        return _actionMap.TryGetValue(virtualKey, out action);
     }
 
     public static bool TryGetAction(char keyChar, out NoteCommandAction action)
@@ -282,7 +299,7 @@ public sealed class NoteCommandMode : IDisposable
                 return (IntPtr)1;
             }
 
-            if (TryGetAction(vk, out var action))
+            if (TryGetActionInstance(vk, out var action))
             {
                 _suppressedKeyUpVk = vk;
                 _dispatcher.BeginInvoke(new Action(() =>

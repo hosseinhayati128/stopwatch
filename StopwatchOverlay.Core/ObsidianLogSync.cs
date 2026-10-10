@@ -248,7 +248,7 @@ public static class ObsidianLogSync
             string dateStr = startLocal.ToString("yyyy-MM-dd");
             string startStr = startLocal.ToString("HH:mm");
             string endStr = endLocal.ToString("HH:mm");
-            int durationMin = (int)Math.Max(1, Math.Round(duration.TotalMinutes));
+            int durationMin = (int)Math.Max(0, Math.Round(duration.TotalMinutes));
             string durationFormatted = FormatDuration(duration);
 
             string key = BuildRecordKey(dateStr, interval.ProjectName, startStr, endStr);
@@ -331,7 +331,7 @@ public static class ObsidianLogSync
                 string startStr = startLocal.ToString("HH:mm:ss");
                 string resumeStr = resumeLocal.ToString("HH:mm:ss");
                 double totalMin = pause.Duration.TotalMinutes;
-                int durationMin = (int)Math.Max(1, Math.Round(totalMin));
+                int durationMin = (int)Math.Max(0, Math.Round(totalMin));
                 string durationFormatted = FormatDuration(pause.Duration);
                 string category = $"{pause.ReasonIcon} {pause.ReasonDisplayName}";
 

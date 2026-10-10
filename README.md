@@ -227,11 +227,20 @@ Stopwatch Overlay uses a command-mode leader shortcut (default: **Win+F2**). Pre
 | **Win+F2 → C** | Switch the active timer between its current mode and Clock |
 | **Win+F2 → N** | Create a new timer and make it active |
 | **Win+F2 → T** | Select the next active timer |
+| **Win+F2 → K** | Show all clocks picker to choose directly (with 1–9 digit quick selection) |
+| **Win+F2 → H** | Show running clocks bar under overlay with pause controls |
 | **Win+F2 → X** | Close the active timer |
 | **Win+F2 → P** | Choose, create, change, or clear the active timer's project |
 | **Win+F2 → D** | Open the project time dashboard |
 | **Win+F2 → W** | Open / restore and focus the stopwatch controller |
 | **Win+F2 → E** | Edit active timer (adjust time value, start time, pause state, or discard from records) |
+| **Win+F2 → U** | Undo timer edit |
+| **Win+F2 → A** | Add a new completed project record |
+| **Win+F2 → S** | Sync ActivityWatch log to Obsidian now |
+| **Win+F2 → V** | Open periodic activity & time review window |
+| **Win+F2 → B** | Separate active timer to dedicated floating overlay |
+| **Win+F2 → M** | Merge separated overlay back into shared herd |
+| **Win+F2 → J** | Switch focus between separated overlays and herd |
 | **Escape** | Cancel command mode without action |
 
 

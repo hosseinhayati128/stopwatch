@@ -13,8 +13,8 @@ namespace StopwatchOverlay
     public sealed class ShortcutCommandMode : IDisposable
     {
         public const string GuidanceLine1 = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller";
-        public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync · B Separate · M Merge · Tab Switch";
-        public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · U Undo · A Record · S Sync · B Separate · M Merge · Tab Switch";
+        public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync · B Separate · M Merge · J Switch · K Clocks · H Active";
+        public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · U Undo · A Record · S Sync · B Separate · M Merge · J Switch · K Clocks · H Active";
 
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
@@ -44,6 +44,8 @@ namespace StopwatchOverlay
         public const uint VK_KEY_B = 0x42;
         public const uint VK_KEY_M = 0x4D;
         public const uint VK_KEY_J = 0x4A;
+        public const uint VK_KEY_K = 0x4B;
+        public const uint VK_KEY_H = 0x48;
 
         // Modifier virtual keys
         public const uint VK_SHIFT = 0x10;
@@ -104,9 +106,12 @@ namespace StopwatchOverlay
             [VK_KEY_V] = ShortcutAction.PeriodicReview,
             [VK_KEY_B] = ShortcutAction.SeparateOverlay,
             [VK_KEY_M] = ShortcutAction.MergeOverlay,
-            [VK_TAB] = ShortcutAction.NextSeparatedOverlay,
             [VK_KEY_J] = ShortcutAction.NextSeparatedOverlay,
+            [VK_KEY_K] = ShortcutAction.ShowAllClocks,
+            [VK_KEY_H] = ShortcutAction.ToggleActiveClocks,
         };
+
+        private readonly Dictionary<uint, ShortcutAction> _actionMap = new(ActionMap);
 
         public static readonly TimeSpan InitialTimeout = TimeSpan.FromSeconds(2);
         public static readonly TimeSpan DefaultContinuationTimeout = TimeSpan.FromMilliseconds(500);
@@ -157,6 +162,23 @@ namespace StopwatchOverlay
             _cleanupSafetyTimer.Tick += OnCleanupSafetyTick;
         }
 
+        public void SetKeyMap(IReadOnlyDictionary<ShortcutAction, uint>? keyMap)
+        {
+            if (keyMap == null) return;
+            _actionMap.Clear();
+            foreach (var (action, vk) in keyMap)
+            {
+                if (vk != 0)
+                {
+                    _actionMap[vk] = action;
+                    if (vk >= 0x30 && vk <= 0x39)
+                    {
+                        _actionMap[vk - 0x30 + 0x60] = action; // Numpad equivalent
+                    }
+                }
+            }
+        }
+
         public void SetContinuationTimeout(TimeSpan timeout)
         {
             ContinuationTimeout = timeout;
@@ -178,11 +200,6 @@ namespace StopwatchOverlay
 
         public static bool TryGetAction(char keyChar, out ShortcutAction action)
         {
-            if (keyChar == '\t')
-            {
-                action = ShortcutAction.NextSeparatedOverlay;
-                return true;
-            }
             char upper = char.ToUpperInvariant(keyChar);
             if (upper == ' ')
             {
@@ -190,6 +207,21 @@ namespace StopwatchOverlay
                 return true;
             }
             return ActionMap.TryGetValue((uint)upper, out action);
+        }
+
+        public bool TryGetActionInstance(uint virtualKey, out ShortcutAction action)
+        {
+            return _actionMap.TryGetValue(virtualKey, out action);
+        }
+
+        public bool TryGetActionInstance(char keyChar, out ShortcutAction action)
+        {
+            char upper = char.ToUpperInvariant(keyChar);
+            if (upper == ' ')
+            {
+                return _actionMap.TryGetValue(VK_SPACE, out action);
+            }
+            return _actionMap.TryGetValue((uint)upper, out action);
         }
 
         public static bool TryGetAction(Key key, out ShortcutAction action)
@@ -420,7 +452,7 @@ namespace StopwatchOverlay
             }
 
             // Check if key maps to a recognized action
-            if (TryGetAction(vk, out ShortcutAction action))
+            if (TryGetActionInstance(vk, out ShortcutAction action))
             {
                 _actionCount++;
                 _suppressedKeyUpVk = vk;

@@ -121,6 +121,9 @@ namespace StopwatchOverlay
         private readonly List<LightRingWindow> _lightRingWindows = new();
         private ProjectDashboardWindow? _projectDashboardWindow;
         private SettingsWindow? _settingsWindow;
+        private ActiveClocksShelfWindow? _activeClocksShelfWindow;
+        private BackgroundTimerReminderPopup? _backgroundTimerReminderPopup;
+        private readonly BackgroundTimerReminderService _backgroundTimerReminderService = new();
         private bool _projectWindowsRefreshPending;
         private bool _updatingTimerRail;
         private Screen? _selectedScreen;
@@ -554,6 +557,7 @@ namespace StopwatchOverlay
 
             if (anyChanges)
             {
+                _projectHistory.DeduplicateIntervals();
                 _projectHistoryDirty = true;
                 _projectTimeStore.Save(_projectHistory);
                 var view = _projectHistory.CreateView(DateTime.UtcNow);
@@ -590,6 +594,14 @@ namespace StopwatchOverlay
                     _projectHistoryWarning =
                         "Project history was recovered from backup and will be repaired";
                 }
+
+                if (_projectHistory.LastDeduplicationPrunedCount > 0)
+                {
+                    _projectHistoryDirty = true;
+                    _stateDirty = true;
+                    _projectTimeStore.Save(_projectHistory);
+                    ObsidianLogSync.SyncHistory(_projectHistory.CreateView(DateTime.UtcNow), _settings);
+                }
             }
             else
             {
@@ -621,6 +633,8 @@ namespace StopwatchOverlay
                     _projectHistoryRequiresCreateOnlySave = true;
                 }
             }
+
+            _projectHistory.MinimumIntervalSeconds = _settings.MinimumIntervalSeconds;
 
             if (_workspacePersistenceDisabled)
             {
@@ -1210,6 +1224,12 @@ namespace StopwatchOverlay
                 _projectHistoryRecoveredFromBackup = true;
                 changed = true;
             }
+            if (loaded.LastDeduplicationPrunedCount > 0)
+            {
+                changed = true;
+                _projectTimeStore.Save(_projectHistory);
+                ObsidianLogSync.SyncHistory(_projectHistory.CreateView(DateTime.UtcNow), _settings);
+            }
             if (changed)
                 MarkProjectHistoryDirty();
 
@@ -1353,6 +1373,11 @@ namespace StopwatchOverlay
                 ? _combinedOverlayInstances.Select(instance => instance.Window)
                 : ActiveOverlayInstances().Select(instance => instance.Window);
 
+        private Window? GetPrimaryOverlayWindow()
+            => _combinedOverlayMode
+                ? _combinedOverlayInstances.Select(instance => (Window)instance.Window).FirstOrDefault(w => w.IsVisible)
+                : ActiveOverlayInstances().Select(instance => (Window)instance.Window).FirstOrDefault(w => w.IsVisible);
+
         private bool ActiveOverlayIsVisible()
             => _activeTimer != null && ActiveOverlayWindows().Any();
 
@@ -1426,6 +1451,11 @@ namespace StopwatchOverlay
                 SaveActiveTimerEditorState();
 
             if (!_timerManager.Activate(timer)) return;
+            _backgroundTimerReminderService.RecordTimerDeactivatedOrStopped(timer.Id);
+            if (_backgroundTimerReminderPopup != null && _backgroundTimerReminderPopup.TimerSessionId == timer.Id)
+            {
+                _backgroundTimerReminderPopup.Hide();
+            }
             RestoreActiveTimerEditorState();
             RefreshOverlayActiveStates();
             UpdateButtonStates();
@@ -1804,8 +1834,184 @@ namespace StopwatchOverlay
 
         private void NewTimerMenuItem_Click(object sender, RoutedEventArgs e) => CreateNewTimer();
         private void NextTimerMenuItem_Click(object sender, RoutedEventArgs e) => CycleActiveTimer();
+        private void ShowAllClocksMenuItem_Click(object sender, RoutedEventArgs e) => ShowTimerPicker();
+        private void ToggleActiveClocksMenuItem_Click(object sender, RoutedEventArgs e) => ToggleActiveClocksShelf();
         private void CloseTimerMenuItem_Click(object sender, RoutedEventArgs e) => CloseActiveTimer();
         private void EditTimerMenuItem_Click(object sender, RoutedEventArgs e) => EditActiveTimer();
+
+        private void ShowTimerPicker()
+        {
+            if (_timers.Count == 0)
+            {
+                UpdateStatus("No timers available", Brushes.Gray);
+                return;
+            }
+
+            var picker = new TimerPickerWindow(_timers, _activeTimer)
+            {
+                Owner = this
+            };
+
+            if (picker.ShowDialog() == true && picker.SelectedTimer != null)
+            {
+                ActivateTimer(picker.SelectedTimer);
+            }
+        }
+
+        private void ToggleActiveClocksShelf()
+        {
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                _activeClocksShelfWindow.Hide();
+                return;
+            }
+
+            ShowActiveClocksShelf();
+        }
+
+        private void ShowActiveClocksShelf()
+        {
+            if (_activeClocksShelfWindow == null)
+            {
+                _activeClocksShelfWindow = new ActiveClocksShelfWindow();
+                _activeClocksShelfWindow.SwitchToTimerRequested += timer =>
+                {
+                    ActivateTimer(timer);
+                };
+                _activeClocksShelfWindow.PauseTimerRequested += timer =>
+                {
+                    if (timer.IsRunning)
+                    {
+                        PauseSpecificTimer(timer, DateTime.UtcNow, "Paused via running clocks shelf");
+                    }
+                };
+            }
+
+            _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
+            var primaryOverlay = GetPrimaryOverlayWindow();
+            if (primaryOverlay != null)
+            {
+                _activeClocksShelfWindow.RepositionUnder(primaryOverlay);
+            }
+            _activeClocksShelfWindow.Show();
+        }
+
+        private void PauseSpecificTimer(TimerSession timer, DateTime transitionUtc, string reason)
+        {
+            timer.Stopwatch.Stop();
+            timer.IsRunning = false;
+            timer.LastCountdownUpdateUtc = default;
+            timer.LastPauseUtc = transitionUtc;
+
+            SynchronizeProjectTracking(timer, transitionUtc);
+
+            timer.RecBlinkVisible = false;
+            foreach (var overlay in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+            {
+                overlay.Window.SetRecIndicatorVisible(false);
+                overlay.Window.SetRunning(false);
+            }
+            if (ReferenceEquals(timer, _activeTimer))
+            {
+                UpdateButtonStates();
+                UpdateShortcutLabels();
+            }
+            TimerRailList?.Items.Refresh();
+            RefreshCombinedOverlayState();
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
+            }
+        }
+
+        private void CheckBackgroundRunningTimers(DateTime utcNow)
+        {
+            if (!_settings.BackgroundTimerReminderEnabled) return;
+
+            _backgroundTimerReminderService.IsEnabled = _settings.BackgroundTimerReminderEnabled;
+            _backgroundTimerReminderService.Interval = TimeSpan.FromMinutes(_settings.BackgroundTimerReminderIntervalMinutes);
+            _backgroundTimerReminderService.PopupDuration = TimeSpan.FromSeconds(_settings.BackgroundTimerReminderDurationSeconds);
+            _backgroundTimerReminderService.MaxRemindersBeforeStop = _settings.BackgroundTimerMaxRemindersBeforeStop;
+
+            var backgroundTimers = _timers.Where(t => t.IsRunning && !ReferenceEquals(t, _activeTimer)).ToList();
+            foreach (var timer in backgroundTimers)
+            {
+                if (_backgroundTimerReminderService.ShouldShowReminder(timer, _activeTimer?.Id, utcNow, out var alert) && alert != null)
+                {
+                    ShowBackgroundTimerReminderPopup(alert);
+                    break;
+                }
+            }
+
+            if (_backgroundTimerReminderPopup != null && _backgroundTimerReminderPopup.IsVisible)
+            {
+                var targetTimer = _timers.FirstOrDefault(t => t.Id == _backgroundTimerReminderPopup.TimerSessionId);
+                if (targetTimer != null)
+                {
+                    _backgroundTimerReminderPopup.UpdateElapsed(targetTimer.Elapsed);
+                    var primaryOverlay = GetPrimaryOverlayWindow();
+                    _backgroundTimerReminderPopup.Reposition(primaryOverlay);
+                }
+            }
+        }
+
+        private void ShowBackgroundTimerReminderPopup(BackgroundTimerAlert alert)
+        {
+            if (_backgroundTimerReminderPopup == null)
+            {
+                _backgroundTimerReminderPopup = new BackgroundTimerReminderPopup();
+                _backgroundTimerReminderPopup.KeepRunningRequested += timerId =>
+                {
+                    _backgroundTimerReminderService.RecordUserAcknowledged(timerId, DateTime.UtcNow);
+                    var t = _timers.FirstOrDefault(x => x.Id == timerId);
+                    if (t != null)
+                    {
+                        UpdateStatus($"Clock '{t.DisplayName}' acknowledged (running in background)", Brushes.DeepSkyBlue);
+                    }
+                };
+                _backgroundTimerReminderPopup.SwitchRequested += timerId =>
+                {
+                    _backgroundTimerReminderService.RecordTimerDeactivatedOrStopped(timerId);
+                    var t = _timers.FirstOrDefault(x => x.Id == timerId);
+                    if (t != null)
+                    {
+                        ActivateTimer(t);
+                    }
+                };
+                _backgroundTimerReminderPopup.StopRequested += timerId =>
+                {
+                    _backgroundTimerReminderService.RecordTimerDeactivatedOrStopped(timerId);
+                    var t = _timers.FirstOrDefault(x => x.Id == timerId);
+                    if (t != null)
+                    {
+                        PauseSpecificTimer(t, DateTime.UtcNow, "User stopped via background reminder");
+                        UpdateStatus($"Stopped background timer '{t.DisplayName}'", Brushes.Orange);
+                    }
+                };
+                _backgroundTimerReminderPopup.TimedOut += timerId =>
+                {
+                    bool timedOut = _backgroundTimerReminderService.RecordPopupTimedOut(timerId, out int unackCount, out bool shouldAutoStop);
+                    var t = _timers.FirstOrDefault(x => x.Id == timerId);
+                    if (t != null)
+                    {
+                        if (shouldAutoStop)
+                        {
+                            PauseSpecificTimer(t, DateTime.UtcNow, "Auto-stopped after 3 unacknowledged reminders");
+                            string warningMsg = $"⚠️ Timer '{t.DisplayName}' was stopped automatically after {_settings.BackgroundTimerMaxRemindersBeforeStop} unacknowledged reminders.";
+                            UpdateStatus(warningMsg, Brushes.OrangeRed);
+                            CrashLogger.RecordUiAction(warningMsg, "BackgroundTimerAutoStop");
+                        }
+                        else
+                        {
+                            UpdateStatus($"Background reminder for '{t.DisplayName}' unacknowledged ({unackCount}/{_settings.BackgroundTimerMaxRemindersBeforeStop})", Brushes.Orange);
+                        }
+                    }
+                };
+            }
+
+            var primaryOverlay = GetPrimaryOverlayWindow();
+            _backgroundTimerReminderPopup.ShowAlert(alert, primaryOverlay);
+        }
 
         private void EditActiveTimer()
         {
@@ -2389,6 +2595,7 @@ namespace StopwatchOverlay
                 Dispatcher,
                 _leaderShortcut.VirtualKey,
                 TimeSpan.FromSeconds(_settings.CommandChainingTimeoutSeconds));
+            _commandMode.SetKeyMap(_settings.CommandModeKeys);
             _commandMode.ActionTriggered += OnCommandModeActionTriggered;
             _commandMode.Cancelled += OnCommandModeCancelled;
             _commandMode.TimedOut += OnCommandModeTimedOut;
@@ -2479,6 +2686,7 @@ namespace StopwatchOverlay
         private void InitializeNoteCommandMode()
         {
             _noteCommandMode = new NoteCommandMode(Dispatcher, _noteLeaderShortcut.VirtualKey);
+            _noteCommandMode.SetKeyMap(_settings.NoteCommandModeKeys);
             _noteCommandMode.ActionTriggered += OnNoteCommandModeActionTriggered;
             _noteCommandMode.Cancelled += OnNoteCommandModeCancelled;
             _noteCommandMode.TimedOut += OnNoteCommandModeTimedOut;
@@ -2800,6 +3008,12 @@ namespace StopwatchOverlay
                 case ShortcutAction.NextSeparatedOverlay:
                     CycleSeparatedOrHerdTimer();
                     break;
+                case ShortcutAction.ShowAllClocks:
+                    Dispatcher.BeginInvoke(new Action(ShowTimerPicker), DispatcherPriority.Input);
+                    break;
+                case ShortcutAction.ToggleActiveClocks:
+                    Dispatcher.BeginInvoke(new Action(ToggleActiveClocksShelf), DispatcherPriority.Input);
+                    break;
             }
         }
 
@@ -2828,6 +3042,16 @@ namespace StopwatchOverlay
 
             AdvanceRunningCountdowns(utcNow, localNow, announceExpiry: true);
             CheckIdleTimers();
+            CheckBackgroundRunningTimers(utcNow);
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
+                var primary = GetPrimaryOverlayWindow();
+                if (primary != null)
+                {
+                    _activeClocksShelfWindow.RepositionUnder(primary);
+                }
+            }
             UpdateTimeDisplay();
             if (++_timerRailRefreshTick >= 10)
             {
@@ -2847,12 +3071,21 @@ namespace StopwatchOverlay
             if (runningTimers.Count == 0) return;
 
             TimeSpan idleDuration = UserIdleDetector.GetIdleTime();
+            double runawayMaxHours = _settings.MaxContinuousTimerHours > 0 ? _settings.MaxContinuousTimerHours : 8.0;
 
             foreach (var timer in runningTimers)
             {
                 int mode = timer.Mode == 1 ? timer.LastNonClockMode : timer.Mode;
                 if (mode != 0) continue; // Only apply to Stopwatch mode
 
+                // 1. Global maximum runaway ceiling check
+                if (RunawayTimerGuard.ShouldPauseRunaway(timer.Elapsed, idleDuration, runawayMaxHours))
+                {
+                    PauseTimerDueToRunawayCeiling(timer, TimeSpan.FromHours(runawayMaxHours));
+                    continue;
+                }
+
+                // 2. Project-specific idle stop rule
                 bool isActive = _settings.IsIdleStopActiveForProject(timer.Name, out int timeoutMinutes, out bool subtractDuration);
                 if (!isActive || timeoutMinutes <= 0) continue;
 
@@ -2861,6 +3094,69 @@ namespace StopwatchOverlay
                 {
                     StopTimerDueToIdle(timer, idleDuration, timeoutMinutes, subtractDuration);
                 }
+            }
+        }
+
+        private void PauseTimerDueToRunawayCeiling(TimerSession timer, TimeSpan runawayThreshold)
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            TimeSpan currentElapsed = timer.Stopwatch.Elapsed;
+            TimeSpan excess = currentElapsed > runawayThreshold ? currentElapsed - runawayThreshold : TimeSpan.Zero;
+            DateTime transitionUtc = utcNow - excess;
+
+            timer.Stopwatch.Stop();
+            timer.IsRunning = false;
+            timer.LastCountdownUpdateUtc = default;
+            timer.LastPauseUtc = transitionUtc;
+
+            timer.Stopwatch.Restore(runawayThreshold, start: false);
+
+            SynchronizeProjectTracking(timer, transitionUtc);
+
+            timer.RecBlinkVisible = false;
+            if (ReferenceEquals(timer, _activeTimer))
+            {
+                RecIndicator.Visibility = Visibility.Collapsed;
+                UpdateButtonStates();
+                UpdateShortcutLabels();
+            }
+
+            foreach (var instance in _overlayInstances.Where(i => ReferenceEquals(i.Session, timer)))
+            {
+                instance.Window.SetRecIndicatorVisible(false);
+                instance.Window.SetRunning(false);
+            }
+            RefreshCombinedOverlayState();
+
+            string message = $"Timer '{timer.DisplayName}' paused automatically after reaching maximum continuous limit ({_settings.MaxContinuousTimerHours:0.#}h).";
+            UpdateStatus(message, Brushes.OrangeRed);
+            CrashLogger.RecordUiAction(message, "RunawayTimerCeiling");
+        }
+
+        private void PauseOtherRunningTimers(TimerSession startingTimer, DateTime transitionUtc)
+        {
+            var otherRunning = _timers.Where(t => t.IsRunning && !ReferenceEquals(t, startingTimer)).ToList();
+            foreach (var other in otherRunning)
+            {
+                other.Stopwatch.Stop();
+                other.IsRunning = false;
+                other.LastCountdownUpdateUtc = default;
+                other.LastPauseUtc = transitionUtc;
+
+                SynchronizeProjectTracking(other, transitionUtc);
+
+                other.RecBlinkVisible = false;
+                foreach (var overlay in _overlayInstances.Where(i => ReferenceEquals(i.Session, other)))
+                {
+                    overlay.Window.SetRecIndicatorVisible(false);
+                    overlay.Window.SetRunning(false);
+                }
+            }
+
+            if (otherRunning.Count > 0)
+            {
+                TimerRailList?.Items.Refresh();
+                RefreshCombinedOverlayState();
             }
         }
 
@@ -2986,9 +3282,15 @@ namespace StopwatchOverlay
                 out string? otherProjectName,
                 out TimeSpan otherProjectDuration);
 
+            int maxPauseMin = _settings.MaxTrackedPauseMinutes > 0 ? _settings.MaxTrackedPauseMinutes : 120;
+            TimeSpan maxPause = TimeSpan.FromMinutes(maxPauseMin);
+            bool isExtendedBreak = pauseDuration > maxPause;
+            TimeSpan dialogDuration = isExtendedBreak ? maxPause : pauseDuration;
+            DateTime effectiveResumeUtc = isExtendedBreak ? pauseStartUtc + maxPause : resumeUtc;
+
             var dialog = new FocusInterruptionDialogWindow(
                 projectName,
-                pauseDuration,
+                dialogDuration,
                 _settings.FocusDistractionThresholdMinutes,
                 _settings.FocusPromptTimeoutSeconds,
                 reason =>
@@ -2999,13 +3301,21 @@ namespace StopwatchOverlay
                             ? $"Switched to {otherProjectName} ({ObsidianLogSync.FormatDuration(otherProjectDuration)})"
                             : null;
 
+                        if (isExtendedBreak)
+                        {
+                            note = string.IsNullOrWhiteSpace(note)
+                                ? "Extended break / inactive"
+                                : $"{note} (Extended break / inactive)";
+                        }
+
                         var record = _projectHistory.RecordFocusPause(
                             timer.Id,
                             projectName,
                             pauseStartUtc,
-                            resumeUtc,
+                            effectiveResumeUtc,
                             reason,
-                            note);
+                            note,
+                            maxPauseMin);
 
                         MarkProjectHistoryDirty();
 
@@ -4283,6 +4593,43 @@ namespace StopwatchOverlay
                 transitionUtc = DateTime.UtcNow;
                 AdvanceRunningCountdowns(
                     transitionUtc, transitionUtc.ToLocalTime(), announceExpiry: false);
+
+                // Runaway validation on stop: if timer ran across midnight or exceeded runaway threshold
+                var openInterval = _projectHistory.GetOpenInterval(timer.Id);
+                bool crossedMidnight = openInterval != null && RunawayTimerGuard.CrossedMidnight(openInterval.StartUtc, transitionUtc);
+                double maxContinuousHours = _settings.MaxContinuousTimerHours > 0 ? _settings.MaxContinuousTimerHours : 8.0;
+                if ((crossedMidnight || timer.Elapsed >= TimeSpan.FromHours(maxContinuousHours)) && timer.Elapsed >= TimeSpan.FromHours(6))
+                {
+                    bool keepFull = true;
+                    if (RunawayTimerGuard.CustomRunawayPromptHandler != null)
+                    {
+                        keepFull = RunawayTimerGuard.CustomRunawayPromptHandler(timer);
+                    }
+                    else if (IsVisible)
+                    {
+                        var confirmation = new ConfirmationDialogWindow(
+                            "Runaway Timer Validation",
+                            "Extended Session Detected",
+                            $"This timer ran for {timer.Elapsed.TotalHours:0.#} hours{(crossedMidnight ? " across midnight" : "")}.\n\nWould you like to keep the full recorded duration, or cap it at {maxContinuousHours:0.#} hours?",
+                            "Keep Full Duration")
+                        {
+                            Owner = this
+                        };
+                        keepFull = confirmation.ShowDialog() == true;
+                    }
+
+                    if (!keepFull)
+                    {
+                        TimeSpan cap = TimeSpan.FromHours(maxContinuousHours);
+                        if (timer.Elapsed > cap)
+                        {
+                            TimeSpan excess = timer.Elapsed - cap;
+                            transitionUtc = transitionUtc - excess;
+                            timer.Stopwatch.Restore(cap, start: false);
+                        }
+                    }
+                }
+
                 timer.Stopwatch.Stop();
                 timer.IsRunning = false;
                 timer.LastCountdownUpdateUtc = default;
@@ -4312,7 +4659,25 @@ namespace StopwatchOverlay
 
                 timer.Stopwatch.Start();
                 timer.IsRunning = true;
-                UpdateStatus("Running", Brushes.LimeGreen);
+
+                if (_settings.ExclusiveTimerMode)
+                {
+                    PauseOtherRunningTimers(timer, transitionUtc);
+                    UpdateStatus("Running (Exclusive)", Brushes.LimeGreen);
+                }
+                else
+                {
+                    var otherRunning = _timers.Where(t => t.IsRunning && !ReferenceEquals(t, timer)).ToList();
+                    if (otherRunning.Count > 0)
+                    {
+                        string names = string.Join(", ", otherRunning.Select(t => t.DisplayName));
+                        UpdateStatus($"Running (Concurrent with {names})", Brushes.LimeGreen);
+                    }
+                    else
+                    {
+                        UpdateStatus("Running", Brushes.LimeGreen);
+                    }
+                }
 
                 if (pauseStart.HasValue && _settings.FocusTrackingEnabled)
                 {
@@ -5304,6 +5669,8 @@ namespace StopwatchOverlay
             CountdownModeRadio.IsEnabled = workspaceMutable && hasTimer;
             TimecodeModeRadio.IsEnabled = workspaceMutable && hasTimer;
             NextTimerMenuItem.IsEnabled = workspaceMutable && _timers.Count > 1;
+            ShowAllClocksMenuItem.IsEnabled = workspaceMutable && _timers.Count > 0;
+            ToggleActiveClocksMenuItem.IsEnabled = workspaceMutable && _timers.Count > 0;
             CloseTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
             RenameTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
             EditTimerMenuItem.IsEnabled = workspaceMutable && hasTimer;
@@ -5402,6 +5769,8 @@ namespace StopwatchOverlay
 
             NewTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}N";
             NextTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}T";
+            ShowAllClocksMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}K";
+            ToggleActiveClocksMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}H";
             CloseTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}X";
             RenameTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}P";
             EditTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}E";
@@ -5560,11 +5929,22 @@ namespace StopwatchOverlay
         // Opens the modal shortcut editor; commits the result if the user saves.
         private void OpenShortcuts_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new ShortcutsWindow(_leaderShortcut, _noteLeaderShortcut, _showActiveOverlayShortcut, _openControllerShortcut, _settings.CommandChainingTimeoutSeconds) { Owner = this };
+            var dlg = new ShortcutsWindow(
+                _leaderShortcut,
+                _noteLeaderShortcut,
+                _showActiveOverlayShortcut,
+                _openControllerShortcut,
+                _settings.CommandChainingTimeoutSeconds,
+                _settings.CommandModeKeys,
+                _settings.NoteCommandModeKeys) { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 _settings.CommandChainingTimeoutSeconds = dlg.ResultChainingTimeoutSeconds;
                 _commandMode?.SetContinuationTimeout(TimeSpan.FromSeconds(dlg.ResultChainingTimeoutSeconds));
+                _settings.CommandModeKeys = dlg.ResultCommandModeKeys;
+                _settings.NoteCommandModeKeys = dlg.ResultNoteCommandModeKeys;
+                _commandMode?.SetKeyMap(_settings.CommandModeKeys);
+                _noteCommandMode?.SetKeyMap(_settings.NoteCommandModeKeys);
                 CommitPendingShortcuts(dlg.ResultLeader, dlg.ResultNoteLeader, dlg.ResultShowActiveOverlay, dlg.ResultOpenController);
             }
         }

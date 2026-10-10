@@ -356,7 +356,27 @@
                             <CheckBox x:Name="AutoStartCheck" Content="Auto-start when the overlay is shown" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
                             <CheckBox x:Name="RecCheck" Content="Show REC indicator" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
                             <CheckBox x:Name="BlinkCheck" Content="Blink timer colon" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
-                            <CheckBox x:Name="SmartInputCheck" Content="Use smart countdown input" Margin="0,0,0,16" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="SmartInputCheck" Content="Use smart countdown input" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="ExclusiveTimerModeCheck" Content="Exclusive timer mode (starting a timer pauses all others)" Margin="0,0,0,14" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <CheckBox x:Name="BackgroundTimerReminderCheck" Content="Remind about background running clocks" Margin="0,0,0,12" Style="{StaticResource PirateSettingsSwitch}"/>
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="Background reminder interval" Style="{StaticResource SectionHeaderText}"/>
+                                <TextBlock x:Name="BackgroundReminderIntervalValueText" HorizontalAlignment="Right" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </Grid>
+                            <Slider x:Name="BackgroundReminderIntervalSlider" Minimum="1" Maximum="30" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,8" Style="{StaticResource PirateSettingsSlider}"/>
+
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="Popup display duration" Style="{StaticResource SectionHeaderText}"/>
+                                <TextBlock x:Name="BackgroundReminderDurationValueText" HorizontalAlignment="Right" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </Grid>
+                            <Slider x:Name="BackgroundReminderDurationSlider" Minimum="10" Maximum="120" SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,4,0,8" Style="{StaticResource PirateSettingsSlider}"/>
+
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="Auto-stop after unacknowledged reminders" Style="{StaticResource SectionHeaderText}"/>
+                                <TextBlock x:Name="BackgroundReminderMaxUnackValueText" HorizontalAlignment="Right" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </Grid>
+                            <Slider x:Name="BackgroundReminderMaxUnackSlider" Minimum="1" Maximum="10" SmallChange="1" LargeChange="1" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,14" Style="{StaticResource PirateSettingsSlider}"/>
+
                             <Grid Margin="0,6,0,0">
                                 <TextBlock Text="Command chaining timeout" Style="{StaticResource SectionHeaderText}"/>
                                 <TextBlock x:Name="CommandChainingTimeoutValueText" HorizontalAlignment="Right"

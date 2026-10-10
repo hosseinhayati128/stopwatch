@@ -190,8 +190,9 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="Selected Sequence:" FontSize="10.5" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <WrapPanel x:Name="SelectedSequenceChipsContainer" Margin="0,3,0,0"/>
                                         <TextBlock x:Name="SelectedSequenceText" Text="None selected (click cards above)" FontSize="11.5" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource AccentBrush}" TextTrimming="CharacterEllipsis"/>
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
                                     <Button x:Name="ContinueToStep2Button" Grid.Column="1" Content="Continue ➔" Height="30" Padding="14,0"
                                             Style="{StaticResource ActionButton}" Click="ContinueToStep2Button_Click"/>
@@ -278,11 +279,18 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="Step2AllocationSummaryText" Text="Allocated: 0m / 30m · Remaining: 30m (Unallocated)"
                                            FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="💡 Hover over any card for details (hours, %, interval)" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
-                                           Grid.Column="1" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                    <TextBlock Text="Collision:" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <Button x:Name="CollisionModeButton" Content="✂️ Cut &amp; Continue" Height="24" Padding="6,0" FontSize="10.5"
+                                            Style="{StaticResource SecondaryButton}" ToolTip="How manual timers behave when exceeding a fixed stopwatch slot. Click to toggle between Cut &amp; Continue and Stop at Fixed."
+                                            Click="CollisionModeButton_Click"/>
+                                </StackPanel>
+                                <TextBlock Text="💡 Hover over any card for details" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Grid.Column="2" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Visual Stacked Distribution Bar (Interactive Timeline Track) -->
@@ -317,10 +325,18 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                                    <TextBlock Text="⏱️ Allocate Time for Each Item" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                                    <TextBlock Text="Set durations using the sliders or +/- buttons. Order can be moved with ▲ ▼." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
-                                </StackPanel>
+                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="⏱️ Allocate Time for Each Item" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock Text="Set durations using sliders or +/-. Stopwatch records are fixed." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <Button x:Name="Step2AddSessionButton" Grid.Column="1" Content="＋ Add Session" Height="26" Padding="8,0" FontSize="11"
+                                            Style="{StaticResource SecondaryButton}" Click="Step2AddSessionButton_Click" ToolTip="Add another session of any project"/>
+                                </Grid>
 
                                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                     <StackPanel x:Name="AllocatedProjectsContainer">
@@ -395,7 +411,7 @@
 
                                     <!-- Score Number Display -->
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                                        <TextBlock x:Name="MoodScoreBigText" Text="7.0" FontSize="38" FontWeight="Bold"
+                                        <TextBlock x:Name="MoodScoreBigText" Text="5.0" FontSize="38" FontWeight="Bold"
                                                    Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                                         <TextBlock Text="/10" FontSize="14" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
@@ -406,10 +422,10 @@
                                         <Border x:Name="MoodEmojiBadge" Background="{DynamicResource DialogSurfaceBrush}"
                                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                                 CornerRadius="14" Padding="10,4" HorizontalAlignment="Left">
-                                            <TextBlock x:Name="MoodDescriptorText" Text="😊 Good / Content" FontSize="12.5" FontWeight="SemiBold"
+                                            <TextBlock x:Name="MoodDescriptorText" Text="😐 Neutral / Okay" FontSize="12.5" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource AccentBrush}"/>
                                         </Border>
-                                        <TextBlock x:Name="MoodSubtext" Text="Positive &amp; productive mindset" FontSize="11"
+                                        <TextBlock x:Name="MoodSubtext" Text="Balanced, stable, getting things done" FontSize="11"
                                                    Foreground="{DynamicResource SecondaryTextBrush}" Margin="2,4,0,0"/>
                                     </StackPanel>
                                 </Grid>
@@ -430,7 +446,7 @@
 
                                 <!-- Scroll bar / Slider (1.0 to 10.0, 0.1 precision) -->
                                 <Slider x:Name="MoodSlider" Grid.Column="1" Margin="10,0"
-                                        Minimum="1.0" Maximum="10.0" Value="7.0"
+                                        Minimum="1.0" Maximum="10.0" Value="5.0"
                                         SmallChange="0.1" LargeChange="0.5"
                                         IsSnapToTickEnabled="False"
                                         VerticalAlignment="Center"

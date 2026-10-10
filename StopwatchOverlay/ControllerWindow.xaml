@@ -65,6 +65,8 @@
         <MenuItem Header="_Timers" Style="{StaticResource ControllerMenuItem}">
             <MenuItem x:Name="NewTimerMenuItem" Header="_New timer" Click="NewTimerMenuItem_Click"/>
             <MenuItem x:Name="NextTimerMenuItem" Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
+            <MenuItem x:Name="ShowAllClocksMenuItem" Header="_Choose clock..." Click="ShowAllClocksMenuItem_Click"/>
+            <MenuItem x:Name="ToggleActiveClocksMenuItem" Header="Show _running clocks bar" Click="ToggleActiveClocksMenuItem_Click"/>
             <MenuItem x:Name="ToggleCombinedOverlayMenuItem" Header="_Combine overlays" Click="ToggleCombinedOverlayMenuItem_Click"/>
             <Separator/>
             <MenuItem x:Name="EditTimerMenuItem" Header="_Edit active timer..." Click="EditTimerMenuItem_Click"/>

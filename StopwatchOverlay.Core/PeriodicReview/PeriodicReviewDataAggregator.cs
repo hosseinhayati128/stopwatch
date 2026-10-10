@@ -81,8 +81,10 @@ public sealed class PeriodicReviewStopwatchSlot
         ? (IsOpenTimer ? "⏱️ Running" : "⏱️ Tracked")
         : "⚪ Untracked / Off";
 
-    public bool HasChanged => !string.Equals(OriginalProjectName?.Trim() ?? "", SelectedProjectName?.Trim() ?? "", StringComparison.OrdinalIgnoreCase)
-                              || (IsManuallyAdded && !string.IsNullOrWhiteSpace(SelectedProjectName));
+    public bool HasChanged =>
+        (ExistingIntervalId.HasValue && string.IsNullOrWhiteSpace(SelectedProjectName))
+        || !string.Equals(OriginalProjectName?.Trim() ?? "", SelectedProjectName?.Trim() ?? "", StringComparison.OrdinalIgnoreCase)
+        || (IsManuallyAdded && !string.IsNullOrWhiteSpace(SelectedProjectName));
 }
 
 public sealed class ActivitySummaryGroup
@@ -117,6 +119,7 @@ public sealed class ReviewProjectSelectionItem
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public string ProjectName { get; set; } = "";
+    public string? OriginalProjectName { get; set; }
     public bool IsBreak { get; set; }
     public int SelectionOrder { get; set; } // 1, 2, 3... 0 if unselected
     public string? SelectionBadgeText { get; set; }
@@ -125,6 +128,13 @@ public sealed class ReviewProjectSelectionItem
     public DateTime? StartUtc { get; set; }
     public DateTime? EndUtc { get; set; }
     public bool IsExpanded { get; set; }
+
+    public bool IsFixedTracked { get; set; }
+    public Guid? StopwatchIntervalId { get; set; }
+    public string? CollisionWarning { get; set; }
+    public int PartIndex { get; set; } = 1;
+    public int TotalParts { get; set; } = 1;
+    public bool IsAutoContinuation { get; set; }
 
     public DateTime CalculatedStartUtc
     {
@@ -139,6 +149,8 @@ public sealed class ReviewProjectSelectionItem
     }
 
     public string DisplayName => IsBreak ? "☕ Break / Empty" : ProjectName;
+
+    public string PartDisplayName => TotalParts > 1 ? $"{DisplayName} (Part {PartIndex}/{TotalParts})" : DisplayName;
 }
 
 public sealed class TimelineSlot
@@ -148,7 +160,8 @@ public sealed class TimelineSlot
     public ReviewProjectSelectionItem? Item { get; set; }
     public bool IsUnallocated => Item == null;
     public bool IsBreak => Item?.IsBreak == true;
-    public string DisplayName => Item != null ? Item.DisplayName : "⚪ Unallocated (No project)";
+    public bool IsFixedTracked => Item?.IsFixedTracked == true;
+    public string DisplayName => Item != null ? Item.PartDisplayName : "⚪ Unallocated (No project)";
     public TimeSpan Duration => EndUtc > StartUtc ? EndUtc - StartUtc : TimeSpan.Zero;
     public double DurationMinutes => Duration.TotalMinutes;
 
@@ -514,6 +527,7 @@ public static class PeriodicReviewDataAggregator
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(changedItem);
         if (totalPeriodMinutes <= 0 || items.Count == 0) return;
+        if (changedItem.IsFixedTracked) return; // Fixed stopwatch records cannot be rebalanced
 
         double target = Math.Clamp(Math.Round(targetMinutes), 0, totalPeriodMinutes);
         double current = Math.Round(changedItem.AllocatedMinutes);
@@ -537,8 +551,9 @@ public static class PeriodicReviewDataAggregator
 
                 while (excess > 0.001)
                 {
+                    // Fixed stopwatch records must NEVER be donors!
                     var donor = items
-                        .Where(it => it != changedItem && it.AllocatedMinutes > 0)
+                        .Where(it => it != changedItem && !it.IsFixedTracked && it.AllocatedMinutes > 0)
                         .OrderByDescending(it => it.AllocatedMinutes)
                         .FirstOrDefault();
 
@@ -564,32 +579,130 @@ public static class PeriodicReviewDataAggregator
     }
 
     /// <summary>
-    /// Repacks start and end times contiguously across items within [startUtc, endUtc],
-    /// respecting existing offsets, available gaps, and item durations.
+    /// Repacks start and end times across items within [startUtc, endUtc].
+    /// Fixed stopwatch records (IsFixedTracked == true) NEVER move or change.
+    /// If a manual timer exceeds the available slot before a fixed stopwatch record:
+    /// - If collisionBehavior is "CutAndContinue" (default): it cuts before the fixed record, and continues
+    ///   after the fixed record as a continuation segment with a warning.
+    /// - If collisionBehavior is "StopAtFixed": it stops before the fixed record (capped to the available gap) with a warning.
     /// </summary>
     public static void RepackTimelineIntervals(
-        IReadOnlyList<ReviewProjectSelectionItem> items,
+        IList<ReviewProjectSelectionItem> items,
         DateTime startUtc,
-        DateTime endUtc)
+        DateTime endUtc,
+        string collisionBehavior = "CutAndContinue")
     {
         ArgumentNullException.ThrowIfNull(items);
-        DateTime cursor = startUtc;
+        startUtc = TruncateToMinute(startUtc);
+        endUtc = TruncateToMinute(endUtc);
+        if (endUtc <= startUtc) endUtc = startUtc.AddMinutes(1);
+        if (items.Count == 0) return;
 
-        for (int i = 0; i < items.Count; i++)
+        bool isStopAtFixed = string.Equals(collisionBehavior, "StopAtFixed", StringComparison.OrdinalIgnoreCase);
+
+        // Clean up previous auto-continuations so we can re-evaluate fresh
+        for (int i = items.Count - 1; i >= 0; i--)
         {
-            var it = items[i];
+            if (items[i].IsAutoContinuation)
+            {
+                var prev = items.Take(i).LastOrDefault(it => string.Equals(it.ProjectName, items[i].ProjectName, StringComparison.OrdinalIgnoreCase));
+                if (prev != null)
+                {
+                    prev.AllocatedMinutes += items[i].AllocatedMinutes;
+                }
+                items.RemoveAt(i);
+            }
+        }
+
+        // Collect all fixed items in chronological order
+        var fixedItems = items
+            .Where(it => it.IsFixedTracked && it.StartUtc.HasValue && it.EndUtc.HasValue)
+            .OrderBy(it => it.StartUtc!.Value)
+            .ToList();
+
+        DateTime cursor = startUtc;
+        int idx = 0;
+
+        while (idx < items.Count)
+        {
+            var it = items[idx];
+
+            if (it.IsFixedTracked)
+            {
+                it.CollisionWarning = null;
+                if (it.StartUtc.HasValue && it.EndUtc.HasValue)
+                {
+                    cursor = cursor > it.EndUtc.Value ? cursor : it.EndUtc.Value;
+                }
+                idx++;
+                continue;
+            }
+
+            if (!it.IsAutoContinuation)
+            {
+                it.CollisionWarning = null;
+            }
             TimeSpan dur = TimeSpan.FromMinutes(Math.Max(0, Math.Round(it.AllocatedMinutes)));
 
             DateTime start = it.StartUtc.HasValue && it.StartUtc.Value >= cursor
-                ? it.StartUtc.Value
+                ? TruncateToMinute(it.StartUtc.Value)
                 : cursor;
 
+            if (start < cursor) start = cursor;
             if (start > endUtc) start = endUtc;
 
-            if (start + dur > endUtc)
+            // Check if there is a fixed item ahead of start
+            var nextFixed = fixedItems.FirstOrDefault(f => f.StartUtc!.Value > start);
+
+            if (nextFixed != null)
             {
-                start = endUtc - dur;
-                if (start < cursor) start = cursor;
+                TimeSpan availBeforeFixed = nextFixed.StartUtc!.Value - start;
+                if (dur > availBeforeFixed)
+                {
+                    double availMin = Math.Max(0, Math.Round(availBeforeFixed.TotalMinutes));
+
+                    if (isStopAtFixed)
+                    {
+                        it.StartUtc = start;
+                        it.EndUtc = nextFixed.StartUtc!.Value;
+                        it.AllocatedMinutes = availMin;
+                        it.CollisionWarning = $"⚠️ Stopped at {nextFixed.StartUtc!.Value.ToLocalTime():HH:mm} before fixed stopwatch record";
+                        cursor = nextFixed.EndUtc!.Value;
+                        idx++;
+                        continue;
+                    }
+                    else
+                    {
+                        it.StartUtc = start;
+                        it.EndUtc = nextFixed.StartUtc!.Value;
+                        it.AllocatedMinutes = availMin;
+                        it.CollisionWarning = $"⚠️ Cut by fixed record at {nextFixed.StartUtc!.Value.ToLocalTime():HH:mm}; continues after {nextFixed.EndUtc!.Value.ToLocalTime():HH:mm}";
+
+                        double remainingMin = dur.TotalMinutes - availMin;
+                        if (remainingMin > 0)
+                        {
+                            var contItem = new ReviewProjectSelectionItem
+                            {
+                                ProjectName = it.ProjectName,
+                                IsBreak = it.IsBreak,
+                                AllocatedMinutes = remainingMin,
+                                StartUtc = nextFixed.EndUtc!.Value,
+                                EndUtc = nextFixed.EndUtc!.Value.AddMinutes(remainingMin),
+                                IsFixedTracked = false,
+                                IsAutoContinuation = true,
+                                CollisionWarning = $"⚠️ Continued from before {nextFixed.StartUtc!.Value.ToLocalTime():HH:mm}"
+                            };
+
+                            int insertAt = items.IndexOf(nextFixed) + 1;
+                            if (insertAt <= 0 || insertAt > items.Count) insertAt = idx + 1;
+                            items.Insert(insertAt, contItem);
+                        }
+
+                        cursor = nextFixed.EndUtc!.Value;
+                        idx++;
+                        continue;
+                    }
+                }
             }
 
             DateTime end = start + dur;
@@ -597,8 +710,16 @@ public static class PeriodicReviewDataAggregator
 
             it.StartUtc = start;
             it.EndUtc = end;
-
             cursor = end;
+            idx++;
+        }
+
+        UpdatePartIndices(items);
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            items[i].SelectionOrder = i + 1;
+            items[i].SelectionBadgeText = (i + 1).ToString();
         }
     }
 
@@ -613,7 +734,6 @@ public static class PeriodicReviewDataAggregator
     {
         if (stopwatchSlots == null || availableProjects == null || selectedItems == null) return;
 
-        // Collect distinct tracked project names from stopwatch slots in chronological order
         var trackedNames = stopwatchSlots
             .Where(s => s.IsTracked &&
                         !string.IsNullOrWhiteSpace(s.SelectedProjectName) &&
@@ -640,11 +760,9 @@ public static class PeriodicReviewDataAggregator
 
     /// <summary>
     /// Computes the chronological sequence of project intervals for the review period.
-    /// Tracked stopwatch intervals retain their exact recorded start and end times.
-    /// Any manually selected projects (not from stopwatch intervals) are placed into the
-    /// untracked gaps in chronological order.
-    /// If a project was active in multiple intervals (e.g. beginning and end), separate
-    /// items are created for each interval so they remain in their exact space.
+    /// Tracked stopwatch intervals retain their exact recorded start and end times (IsFixedTracked = true).
+    /// Any manually selected projects are placed into the untracked gaps in chronological order.
+    /// Supports multiple records of the same project.
     /// </summary>
     public static List<ReviewProjectSelectionItem> BuildChronologicalAllocations(
         IReadOnlyList<ReviewProjectSelectionItem> selectedProjects,
@@ -670,10 +788,31 @@ public static class PeriodicReviewDataAggregator
             .OrderBy(s => s.StartUtc)
             .ToList();
 
-        // 2. Manual (untracked) projects
-        var manualProjects = selectedProjects
-            .Where(p => !selectedTrackedSlots.Any(s => string.Equals(s.SelectedProjectName, p.ProjectName, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
+        // 2. Track remaining count of tracked slots for each project to match with selectedProjects
+        var remainingTrackedCounts = selectedTrackedSlots
+            .GroupBy(s => s.SelectedProjectName!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
+        var manualProjects = new List<ReviewProjectSelectionItem>();
+        foreach (var p in selectedProjects)
+        {
+            string name = p.ProjectName.Trim();
+            if (remainingTrackedCounts.TryGetValue(name, out int count) && count > 0)
+            {
+                // Consumes one tracked slot
+                remainingTrackedCounts[name] = count - 1;
+            }
+            else
+            {
+                // Additional instance or manual untracked project
+                manualProjects.Add(new ReviewProjectSelectionItem
+                {
+                    ProjectName = p.ProjectName,
+                    IsBreak = p.IsBreak,
+                    AllocatedMinutes = p.AllocatedMinutes
+                });
+            }
+        }
 
         // Fallback: If no tracked slots match, distribute across full period
         if (selectedTrackedSlots.Count == 0)
@@ -698,10 +837,12 @@ public static class PeriodicReviewDataAggregator
                 });
                 cursor = cursor.AddMinutes(min);
             }
+
+            UpdatePartIndices(fallback);
             return fallback;
         }
 
-        // 3. Build items for tracked slots (preserving exact times)
+        // 3. Build items for tracked slots (preserving exact times and marking fixed)
         var allocated = new List<ReviewProjectSelectionItem>();
         foreach (var slot in selectedTrackedSlots)
         {
@@ -715,7 +856,10 @@ public static class PeriodicReviewDataAggregator
                 IsBreak = false,
                 AllocatedMinutes = dur,
                 StartUtc = slotStart,
-                EndUtc = slotEnd
+                EndUtc = slotEnd,
+                IsFixedTracked = true,
+                StopwatchIntervalId = slot.ExistingIntervalId,
+                OriginalProjectName = slot.OriginalProjectName ?? slot.SelectedProjectName
             });
         }
 
@@ -771,7 +915,8 @@ public static class PeriodicReviewDataAggregator
                             IsBreak = manualProj.IsBreak,
                             AllocatedMinutes = Math.Round((pEnd - mCursor).TotalMinutes, 1),
                             StartUtc = mCursor,
-                            EndUtc = pEnd
+                            EndUtc = pEnd,
+                            IsFixedTracked = false
                         });
 
                         mCursor = pEnd;
@@ -793,7 +938,26 @@ public static class PeriodicReviewDataAggregator
             sorted[i].SelectionBadgeText = (i + 1).ToString();
         }
 
+        UpdatePartIndices(sorted);
         return sorted;
+    }
+
+    private static void UpdatePartIndices(IList<ReviewProjectSelectionItem> items)
+    {
+        var groupedByName = items
+            .GroupBy(it => it.ProjectName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var group in groupedByName)
+        {
+            var list = group.ToList();
+            int total = list.Count;
+            for (int pIdx = 0; pIdx < total; pIdx++)
+            {
+                list[pIdx].PartIndex = pIdx + 1;
+                list[pIdx].TotalParts = total;
+            }
+        }
     }
 
     /// <summary>

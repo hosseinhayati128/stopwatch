@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Keyboard Shortcuts"
-        Width="520" Height="670" MinWidth="460" MinHeight="520"
+        Width="560" Height="730" MinWidth="480" MinHeight="560"
         ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
@@ -12,12 +12,50 @@
                 <ResourceDictionary Source="Themes/PirateDialogStyles.xaml"/>
                 <ResourceDictionary Source="Themes/PirateSettingsStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="TabControl">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>
+
+            <Style TargetType="TabItem">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="Padding" Value="14,7"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TabItem">
+                            <Border x:Name="TabBorder"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderBrush="{DynamicResource BorderSoftBrush}"
+                                    BorderThickness="1,1,1,0"
+                                    CornerRadius="6,6,0,0"
+                                    Margin="0,0,4,0"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+                                    <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="TabBorder" Property="Opacity" Value="0.85"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
     <ScrollViewer Style="{StaticResource PirateDialogScroll}">
 
-    <Border MinWidth="420" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" LayoutTransform="{DynamicResource ApplicationScaleTransform}" Style="{StaticResource PirateDialogSurface}" Margin="16">
-    <Grid Margin="20">
+    <Border MinWidth="440" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}}" LayoutTransform="{DynamicResource ApplicationScaleTransform}" Style="{StaticResource PirateDialogSurface}" Margin="16">
+    <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -29,179 +67,141 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <Rectangle Style="{StaticResource PirateDialogSkull}"/>
-        <Path Width="24" Height="24" HorizontalAlignment="Center" Margin="0,0,0,6"
+            <Path Width="24" Height="24" HorizontalAlignment="Center" Margin="0,0,0,4"
                   Data="{StaticResource AcanthusCrestGeometry}" Fill="{DynamicResource OrnamentAccentBrush}"
                   Stretch="Uniform" Visibility="{DynamicResource OrnamentVisibility}"/>
             <TextBlock Text="Keyboard shortcuts" Style="{StaticResource DisplayHeadingText}"
-                       FontSize="23" HorizontalAlignment="Center"/>
-            <TextBlock Text="Click a shortcut box and press a key combination. Pressing the leader enters command mode (2-second initial window, extended after each command to allow chaining)."
-                       TextWrapping="Wrap" Opacity="0.7" Margin="0,4,0,0" HorizontalAlignment="Center" TextAlignment="Center"/>
+                       FontSize="22" HorizontalAlignment="Center"/>
+            <TextBlock Text="Configure global leader shortcuts and custom command mode keys."
+                       TextWrapping="Wrap" Opacity="0.75" Margin="0,3,0,0" HorizontalAlignment="Center" TextAlignment="Center"/>
         </StackPanel>
 
         <!-- Leader shortcut row -->
-        <Grid Grid.Row="1" Margin="0,4,0,10">
+        <Grid Grid.Row="1" Margin="0,2,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Timer leader shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Timer leader shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox Grid.Column="1" x:Name="LeaderShortcutBox" Tag="CommandLeader" IsReadOnly="True" Margin="0,0,8,0"
                      GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
             <Button Grid.Column="2" Content="Clear" Tag="CommandLeader" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
         </Grid>
 
         <!-- Note menu shortcut row -->
-        <Grid Grid.Row="2" Margin="0,0,0,10">
+        <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Note menu shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Note menu shortcut:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox Grid.Column="1" x:Name="NoteLeaderShortcutBox" Tag="NoteLeader" IsReadOnly="True" Margin="0,0,8,0"
                      GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
             <Button Grid.Column="2" Content="Clear" Tag="NoteLeader" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
         </Grid>
 
         <!-- Show active overlay shortcut row -->
-        <Grid Grid.Row="3" Margin="0,0,0,10">
+        <Grid Grid.Row="3" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Show active overlay:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Show active overlay:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox Grid.Column="1" x:Name="ShowActiveOverlayShortcutBox" Tag="ShowActiveOverlay" IsReadOnly="True" Margin="0,0,8,0"
                      GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
             <Button Grid.Column="2" Content="Clear" Tag="ShowActiveOverlay" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
         </Grid>
 
         <!-- Open controller shortcut row -->
-        <Grid Grid.Row="4" Margin="0,0,0,10">
+        <Grid Grid.Row="4" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Open controller:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Open controller:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox Grid.Column="1" x:Name="OpenControllerShortcutBox" Tag="OpenController" IsReadOnly="True" Margin="0,0,8,0"
                      GotFocus="ShortcutBox_GotFocus" LostFocus="ShortcutBox_LostFocus" PreviewKeyDown="ShortcutBox_PreviewKeyDown"/>
             <Button Grid.Column="2" Content="Clear" Tag="OpenController" Click="ClearShortcut_Click" Style="{StaticResource ModernButton}"/>
         </Grid>
 
         <!-- Chaining timeout row -->
-        <Grid Grid.Row="5" Margin="0,0,0,14">
+        <Grid Grid.Row="5" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="50"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Chaining timeout:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBlock Grid.Column="0" Text="Chaining timeout:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <Slider Grid.Column="1" x:Name="ChainingTimeoutSlider" Minimum="0.2" Maximum="2.0" TickFrequency="0.1" Style="{StaticResource PirateSettingsSlider}"
                      IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
                      ValueChanged="ChainingTimeoutSlider_ValueChanged"/>
             <TextBlock Grid.Column="2" x:Name="ChainingTimeoutText" Text="0.5 s" VerticalAlignment="Center" TextAlignment="Right"/>
         </Grid>
 
-        <!-- Read-only command mode mapping -->
-        <Border Grid.Row="6" Background="{DynamicResource SurfaceBrush}"
-                BorderBrush="{DynamicResource BorderSoftBrush}" BorderThickness="1"
-                CornerRadius="{DynamicResource ThemeCardCornerRadius}" Padding="14,10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="Command mode keys (fixed):" FontWeight="SemiBold"
-                           Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,8"/>
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <!-- Command mode keys TabControl (Win+F2 and Win+F3) -->
+        <TabControl Grid.Row="6" x:Name="CommandsTabControl" Margin="0,4,0,0">
+            <!-- Win + F2 Commands Tab -->
+            <TabItem x:Name="TabWinF2" Header="Win + F2 Commands">
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderSoftBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource ThemeCardCornerRadius}" Padding="12,10" Margin="0,4,0,0">
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Space" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Start or stop the active timer" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="R" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Reset the active timer" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="O" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Show or hide the active timer overlay" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="L" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Record a lap" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="C" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="Toggle between current mode and Clock" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="5" Grid.Column="0" Text="N" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="Create a new timer and make it active" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="T" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="Select the next active timer" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="X" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="Close the active timer" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="8" Grid.Column="0" Text="P" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1" Text="Select, create, change, or clear project" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="9" Grid.Column="0" Text="D" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="9" Grid.Column="1" Text="Open project time dashboard" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="10" Grid.Column="0" Text="W" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="10" Grid.Column="1" Text="Open stopwatch controller" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="11" Grid.Column="0" Text="E" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="11" Grid.Column="1" Text="Edit active timer (adjust value, start time, discard records)" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="12" Grid.Column="0" Text="A" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="12" Grid.Column="1" Text="Add a new completed project record" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="13" Grid.Column="0" Text="S" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="13" Grid.Column="1" Text="Sync ActivityWatch log to Obsidian now" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="14" Grid.Column="0" Text="B" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="14" Grid.Column="1" Text="Break out / Separate active timer to its own dedicated clock overlay" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="15" Grid.Column="0" Text="M" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="15" Grid.Column="1" Text="Merge active separated clock overlay back into herd overlay" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="16" Grid.Column="0" Text="Tab / J" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="16" Grid.Column="1" Text="Switch focus between separated clock overlays and herd" Margin="0,3,0,3"/>
-
-                        <TextBlock Grid.Row="17" Grid.Column="0" Text="Escape" FontWeight="Bold" Margin="0,3,8,3"/>
-                        <TextBlock Grid.Row="17" Grid.Column="1" Text="Cancel command mode without action" Margin="0,3,0,3"/>
+                        <TextBlock Grid.Row="0" Text="Timer command mode keys (click box and press a key to rebind):" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,6"/>
+                        <Border Grid.Row="1" x:Name="WinF2ValidationWarningBorder" Background="#26FF453A" BorderBrush="#FF453A"
+                                BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,6" Visibility="Collapsed">
+                            <TextBlock x:Name="WinF2ValidationWarning" Foreground="#FF453A" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        </Border>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="230">
+                            <StackPanel x:Name="WinF2CommandsPanel" Margin="0,2,4,2"/>
+                        </ScrollViewer>
+                        <TextBlock Grid.Row="3" Text="Escape: Cancel command mode (fixed)"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,6,0,0"/>
                     </Grid>
-                </ScrollViewer>
-            </Grid>
-        </Border>
+                </Border>
+            </TabItem>
 
+            <!-- Win + F3 Commands Tab -->
+            <TabItem x:Name="TabWinF3" Header="Win + F3 Commands">
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderSoftBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource ThemeCardCornerRadius}" Padding="12,10" Margin="0,4,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Note command mode keys (click box and press a key to rebind):" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,6"/>
+                        <Border Grid.Row="1" x:Name="WinF3ValidationWarningBorder" Background="#26FF453A" BorderBrush="#FF453A"
+                                BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,6" Visibility="Collapsed">
+                            <TextBlock x:Name="WinF3ValidationWarning" Foreground="#FF453A" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        </Border>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="230">
+                            <StackPanel x:Name="WinF3CommandsPanel" Margin="0,2,4,2"/>
+                        </ScrollViewer>
+                        <TextBlock Grid.Row="3" Text="Escape: Cancel command mode (fixed)"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,6,0,0"/>
+                    </Grid>
+                </Border>
+            </TabItem>
+        </TabControl>
+
+        <!-- Action Buttons -->
         <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Content="Reset to defaults" Click="ResetDefaults_Click" Style="{StaticResource ModernButton}" Margin="0,0,8,0"/>
             <Button Content="Cancel" Click="Cancel_Click" Style="{StaticResource ModernButton}" Margin="0,0,8,0" MinWidth="80"/>

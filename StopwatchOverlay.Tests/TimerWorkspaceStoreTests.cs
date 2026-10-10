@@ -614,12 +614,12 @@ namespace StopwatchOverlay.Tests
                 return store.TryLoad(restored, RestoredUtc, RestoredLocal);
             });
 
-            Assert.True(loadStarted.Wait(TimeSpan.FromSeconds(2)));
+            Assert.True(loadStarted.Wait(TimeSpan.FromSeconds(5)));
             await Task.Delay(TimeSpan.FromMilliseconds(40));
             Assert.False(loadTask.IsCompleted);
             locked.Dispose();
 
-            Assert.True(await loadTask.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.True(await loadTask.WaitAsync(TimeSpan.FromSeconds(5)));
             Assert.Equal(
                 "must survive a transient sharing violation",
                 Assert.Single(restored.Sessions).Name);

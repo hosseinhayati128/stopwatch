@@ -42,7 +42,6 @@ namespace StopwatchOverlay.Tests
         [InlineData('b', ShortcutAction.SeparateOverlay)]
         [InlineData('M', ShortcutAction.MergeOverlay)]
         [InlineData('m', ShortcutAction.MergeOverlay)]
-        [InlineData('\t', ShortcutAction.NextSeparatedOverlay)]
         [InlineData('J', ShortcutAction.NextSeparatedOverlay)]
         [InlineData('j', ShortcutAction.NextSeparatedOverlay)]
         public void TryGetAction_FromChar_MapsToExpectedAction(char keyChar, ShortcutAction expectedAction)
@@ -50,6 +49,20 @@ namespace StopwatchOverlay.Tests
             bool mapped = ShortcutCommandMode.TryGetAction(keyChar, out ShortcutAction action);
             Assert.True(mapped);
             Assert.Equal(expectedAction, action);
+        }
+
+        [Fact]
+        public void TryGetAction_FromTabChar_DoesNotMap()
+        {
+            bool mapped = ShortcutCommandMode.TryGetAction('\t', out _);
+            Assert.False(mapped);
+        }
+
+        [Fact]
+        public void TryGetAction_FromVkTab_DoesNotMap()
+        {
+            bool mapped = ShortcutCommandMode.TryGetAction(ShortcutCommandMode.VK_TAB, out _);
+            Assert.False(mapped);
         }
 
         [Theory]
@@ -70,8 +83,9 @@ namespace StopwatchOverlay.Tests
         [InlineData(ShortcutCommandMode.VK_KEY_S, ShortcutAction.SyncActivityWatch)]
         [InlineData(ShortcutCommandMode.VK_KEY_B, ShortcutAction.SeparateOverlay)]
         [InlineData(ShortcutCommandMode.VK_KEY_M, ShortcutAction.MergeOverlay)]
-        [InlineData(ShortcutCommandMode.VK_TAB, ShortcutAction.NextSeparatedOverlay)]
         [InlineData(ShortcutCommandMode.VK_KEY_J, ShortcutAction.NextSeparatedOverlay)]
+        [InlineData(ShortcutCommandMode.VK_KEY_K, ShortcutAction.ShowAllClocks)]
+        [InlineData(ShortcutCommandMode.VK_KEY_H, ShortcutAction.ToggleActiveClocks)]
         public void TryGetAction_FromVirtualKey_MapsToExpectedAction(uint vk, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(vk, out ShortcutAction action);
@@ -95,6 +109,11 @@ namespace StopwatchOverlay.Tests
         [InlineData(Key.U, ShortcutAction.UndoTimerEdit)]
         [InlineData(Key.A, ShortcutAction.AddRecord)]
         [InlineData(Key.S, ShortcutAction.SyncActivityWatch)]
+        [InlineData(Key.B, ShortcutAction.SeparateOverlay)]
+        [InlineData(Key.M, ShortcutAction.MergeOverlay)]
+        [InlineData(Key.J, ShortcutAction.NextSeparatedOverlay)]
+        [InlineData(Key.K, ShortcutAction.ShowAllClocks)]
+        [InlineData(Key.H, ShortcutAction.ToggleActiveClocks)]
         public void TryGetAction_FromWpfKey_MapsToExpectedAction(Key key, ShortcutAction expectedAction)
         {
             bool mapped = ShortcutCommandMode.TryGetAction(key, out ShortcutAction action);
@@ -104,7 +123,7 @@ namespace StopwatchOverlay.Tests
 
         [Theory]
         [InlineData('q')]
-        [InlineData('k')]
+        [InlineData('g')]
         [InlineData('f')]
         [InlineData('z')]
         [InlineData('1')]

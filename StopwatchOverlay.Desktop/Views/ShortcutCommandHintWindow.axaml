@@ -35,7 +35,7 @@
                        FontWeight="Medium"
                        HorizontalAlignment="Center"
                        Margin="0,3,0,0"/>
-            <TextBlock Text="B Separate · M Merge · Tab Switch Overlays"
+            <TextBlock Text="B Separate · M Merge · J Switch · K Clocks · H Active"
                        Foreground="{DynamicResource AccentBrush}"
                        FontSize="12"
                        FontWeight="SemiBold"

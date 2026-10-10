@@ -109,6 +109,9 @@ namespace StopwatchOverlay
         private readonly List<WorkIntervalEntry> _intervals = new();
         private readonly List<FocusPauseRecord> _focusPauses = new();
 
+        public int MinimumIntervalSeconds { get; set; } = 0;
+        public int MaxTrackedPauseMinutes { get; set; } = 120;
+
         public IReadOnlyList<FocusPauseRecord> FocusPauses
         {
             get
@@ -350,6 +353,83 @@ namespace StopwatchOverlay
             }
         }
 
+        public int LastDeduplicationPrunedCount { get; private set; }
+
+        /// <summary>
+        /// Deduplicates closed intervals belonging to the same project where one interval is an
+        /// exact duplicate, or near-identical (within 65 seconds) duplicate between an authentic
+        /// sub-second tracked timer and a rounded-minute manual review entry, and removes
+        /// micro-intervals (< 3 seconds).
+        /// </summary>
+        public int DeduplicateIntervals()
+        {
+            lock (_gate)
+            {
+                var toRemove = new HashSet<Guid>();
+
+                // 1. Remove micro-intervals (< 3 seconds)
+                for (int i = 0; i < _intervals.Count; i++)
+                {
+                    var interval = _intervals[i];
+                    if (interval.EndUtc.HasValue && (interval.EndUtc.Value - interval.StartUtc).TotalSeconds < 3)
+                    {
+                        toRemove.Add(interval.Id);
+                    }
+                }
+
+                // 2. Near-duplicate and exact-duplicate removal
+                for (int i = 0; i < _intervals.Count; i++)
+                {
+                    var a = _intervals[i];
+                    if (!a.EndUtc.HasValue || toRemove.Contains(a.Id)) continue;
+
+                    for (int j = i + 1; j < _intervals.Count; j++)
+                    {
+                        var b = _intervals[j];
+                        if (!b.EndUtc.HasValue || toRemove.Contains(b.Id)) continue;
+
+                        if (!string.Equals(a.ProjectKey, b.ProjectKey, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        double startDiffSec = Math.Abs((a.StartUtc - b.StartUtc).TotalSeconds);
+                        double endDiffSec = Math.Abs((a.EndUtc.Value - b.EndUtc.Value).TotalSeconds);
+
+                        if (a.StartUtc == b.StartUtc && a.EndUtc == b.EndUtc)
+                        {
+                            toRemove.Add(b.Id);
+                        }
+                        else if (startDiffSec <= 120 && endDiffSec <= 120)
+                        {
+                            bool aIsRounded = IsMinuteRoundedUtc(a.StartUtc) && IsMinuteRoundedUtc(a.EndUtc.Value);
+                            bool bIsRounded = IsMinuteRoundedUtc(b.StartUtc) && IsMinuteRoundedUtc(b.EndUtc.Value);
+
+                            if (aIsRounded && !bIsRounded)
+                            {
+                                toRemove.Add(a.Id);
+                                break;
+                            }
+                            else if (!aIsRounded && bIsRounded)
+                            {
+                                toRemove.Add(b.Id);
+                            }
+                        }
+                    }
+                }
+
+                if (toRemove.Count > 0)
+                {
+                    _intervals.RemoveAll(interval => toRemove.Contains(interval.Id));
+                }
+
+                LastDeduplicationPrunedCount = toRemove.Count;
+                return toRemove.Count;
+            }
+        }
+
+        private static bool IsMinuteRoundedUtc(DateTime dt)
+        {
+            return dt.Ticks % TimeSpan.TicksPerMinute == 0;
+        }
+
         /// <summary>
         /// Permanently deletes an entire project and all of its recorded intervals.
         /// If an active (open) interval is currently tracking this project, deletion is
@@ -397,12 +477,14 @@ namespace StopwatchOverlay
         public ProjectTrackingChange StartTracking(
             Guid timerSessionId,
             string projectName,
-            DateTime utcNow)
+            DateTime utcNow,
+            int? minimumDurationSeconds = null)
         {
             ValidateTimerId(timerSessionId);
             string displayName = NormalizeProjectName(projectName);
             string key = CreateProjectKey(displayName);
             utcNow = NormalizeUtc(utcNow);
+            int minSec = minimumDurationSeconds ?? MinimumIntervalSeconds;
 
             lock (_gate)
             {
@@ -414,7 +496,15 @@ namespace StopwatchOverlay
                 DateTime transitionUtc;
                 if (current != null)
                 {
-                    transitionUtc = CloseIntervalCore(current, utcNow);
+                    if (minSec > 0 && (utcNow - current.StartUtc).TotalSeconds < minSec)
+                    {
+                        transitionUtc = current.StartUtc;
+                        _intervals.Remove(current);
+                    }
+                    else
+                    {
+                        transitionUtc = CloseIntervalCore(current, utcNow);
+                    }
                 }
                 else
                 {
@@ -435,16 +525,23 @@ namespace StopwatchOverlay
             }
         }
 
-        public bool StopTracking(Guid timerSessionId, DateTime utcNow)
+        public bool StopTracking(Guid timerSessionId, DateTime utcNow, int? minimumDurationSeconds = null)
         {
             ValidateTimerId(timerSessionId);
             utcNow = NormalizeUtc(utcNow);
+            int minSec = minimumDurationSeconds ?? MinimumIntervalSeconds;
 
             lock (_gate)
             {
                 WorkIntervalEntry? current = FindOpenIntervalCore(timerSessionId);
                 if (current == null)
                     return false;
+
+                if (minSec > 0 && (utcNow - current.StartUtc).TotalSeconds < minSec)
+                {
+                    _intervals.Remove(current);
+                    return true;
+                }
 
                 CloseIntervalCore(current, utcNow);
                 return true;
@@ -954,12 +1051,23 @@ namespace StopwatchOverlay
             DateTime pauseStartUtc,
             DateTime resumeUtc,
             FocusPauseReason reason,
-            string? note = null)
+            string? note = null,
+            int? maxTrackedPauseMinutes = null)
         {
             ValidateTimerId(timerSessionId);
             string displayName = NormalizeProjectName(projectName);
             pauseStartUtc = NormalizeUtc(pauseStartUtc);
             resumeUtc = NormalizeUtc(resumeUtc);
+
+            int maxMin = maxTrackedPauseMinutes ?? MaxTrackedPauseMinutes;
+            if (maxMin > 0 && (resumeUtc - pauseStartUtc) > TimeSpan.FromMinutes(maxMin))
+            {
+                resumeUtc = pauseStartUtc + TimeSpan.FromMinutes(maxMin);
+                string suffix = "Extended break / inactive";
+                note = string.IsNullOrWhiteSpace(note)
+                    ? suffix
+                    : (note.Contains(suffix, StringComparison.OrdinalIgnoreCase) ? note : $"{note} ({suffix})");
+            }
 
             var record = new FocusPauseRecord(
                 Guid.NewGuid(),
@@ -1081,6 +1189,7 @@ namespace StopwatchOverlay
                 }
             }
 
+            result.DeduplicateIntervals();
             return result;
         }
 

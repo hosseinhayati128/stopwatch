@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json;
 using Xunit;
 
@@ -333,6 +334,115 @@ namespace StopwatchOverlay.Tests
             restored.NormalizeForRuntime();
 
             Assert.Equal(0.5, restored.CommandChainingTimeoutSeconds);
+        }
+
+        [Fact]
+        public void DefaultCommandModeKeys_HasNextSeparatedOverlayMappedToJ_NotTab()
+        {
+            var def = AppSettings.DefaultCommandModeKeys();
+            Assert.True(def.ContainsKey(ShortcutAction.NextSeparatedOverlay));
+            Assert.Equal(ShortcutCommandMap.VK_KEY_J, def[ShortcutAction.NextSeparatedOverlay]);
+            Assert.DoesNotContain(ShortcutCommandMap.VK_TAB, def.Values);
+        }
+
+        [Fact]
+        public void EnsureCommandModeKeys_MigratesLegacyTabToJ()
+        {
+            var settings = new AppSettings
+            {
+                CommandModeKeys = new Dictionary<ShortcutAction, uint>
+                {
+                    [ShortcutAction.NextSeparatedOverlay] = ShortcutCommandMap.VK_TAB
+                }
+            };
+            settings.EnsureCommandModeKeys();
+            Assert.Equal(ShortcutCommandMap.VK_KEY_J, settings.CommandModeKeys[ShortcutAction.NextSeparatedOverlay]);
+        }
+
+        [Fact]
+        public void ValidateCommandModeKeys_UniqueKeys_ReturnsTrue()
+        {
+            var keys = AppSettings.DefaultCommandModeKeys();
+            bool valid = AppSettings.ValidateCommandModeKeys(keys, out var error);
+            Assert.True(valid);
+            Assert.Null(error);
+        }
+
+        [Fact]
+        public void ValidateCommandModeKeys_DuplicateKeys_ReturnsFalse()
+        {
+            var keys = new Dictionary<ShortcutAction, uint>(AppSettings.DefaultCommandModeKeys())
+            {
+                [ShortcutAction.Reset] = ShortcutCommandMap.VK_KEY_R,
+                [ShortcutAction.RenameTimer] = ShortcutCommandMap.VK_KEY_R // Duplicate!
+            };
+            bool valid = AppSettings.ValidateCommandModeKeys(keys, out var error);
+            Assert.False(valid);
+            Assert.NotNull(error);
+            Assert.Contains("Duplicate", error);
+            Assert.Contains("R", error);
+        }
+
+        [Fact]
+        public void ValidateCommandModeKeys_EscapeKey_ReturnsFalse()
+        {
+            var keys = new Dictionary<ShortcutAction, uint>(AppSettings.DefaultCommandModeKeys())
+            {
+                [ShortcutAction.Reset] = ShortcutCommandMap.VK_ESCAPE
+            };
+            bool valid = AppSettings.ValidateCommandModeKeys(keys, out var error);
+            Assert.False(valid);
+            Assert.NotNull(error);
+            Assert.Contains("Escape", error);
+        }
+
+        [Fact]
+        public void ValidateNoteCommandModeKeys_UniqueKeys_ReturnsTrue()
+        {
+            var keys = AppSettings.DefaultNoteCommandModeKeys();
+            bool valid = AppSettings.ValidateNoteCommandModeKeys(keys, out var error);
+            Assert.True(valid);
+            Assert.Null(error);
+        }
+
+        [Fact]
+        public void ValidateNoteCommandModeKeys_DuplicateKeys_ReturnsFalse()
+        {
+            var keys = new Dictionary<NoteCommandAction, uint>(AppSettings.DefaultNoteCommandModeKeys())
+            {
+                [NoteCommandAction.AddNote] = 0x31 // Duplicate '1' (same as AddTodo)
+            };
+            bool valid = AppSettings.ValidateNoteCommandModeKeys(keys, out var error);
+            Assert.False(valid);
+            Assert.NotNull(error);
+            Assert.Contains("Duplicate", error);
+        }
+
+        [Fact]
+        public void ShortcutCommandMap_GuidanceTexts_ContainJSwitch_NotTab()
+        {
+            Assert.Contains("J Switch", ShortcutCommandMap.GuidanceLine2);
+            Assert.DoesNotContain("Tab Switch", ShortcutCommandMap.GuidanceLine2);
+            Assert.Contains("J Switch", ShortcutCommandMap.GuidanceStatusText);
+            Assert.DoesNotContain("Tab Switch", ShortcutCommandMap.GuidanceStatusText);
+        }
+
+        [Fact]
+        public void ShortcutCommandMap_TryGetAction_WithCustomKeys_ResolvesCustomKey()
+        {
+            var customKeys = new Dictionary<ShortcutAction, uint>(AppSettings.DefaultCommandModeKeys())
+            {
+                [ShortcutAction.NextSeparatedOverlay] = 0x4B // 'K'
+            };
+
+            // Custom 'K' (0x4B) maps to NextSeparatedOverlay
+            bool mapped = ShortcutCommandMap.TryGetAction(0x4B, customKeys, out var action);
+            Assert.True(mapped);
+            Assert.Equal(ShortcutAction.NextSeparatedOverlay, action);
+
+            // Default 'J' (0x4A) does not map to NextSeparatedOverlay when overridden
+            mapped = ShortcutCommandMap.TryGetAction(ShortcutCommandMap.VK_KEY_J, customKeys, out var oldAction);
+            Assert.False(mapped);
         }
     }
 }

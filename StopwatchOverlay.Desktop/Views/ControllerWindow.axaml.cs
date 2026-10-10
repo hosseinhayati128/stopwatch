@@ -62,11 +62,18 @@ public partial class ControllerWindow : Window
         if (_projectTimeStore.TryLoad(out var loadedHistory) && loadedHistory != null)
         {
             _projectHistory = loadedHistory;
+            if (_projectHistory.LastDeduplicationPrunedCount > 0)
+            {
+                _projectTimeStore.Save(_projectHistory);
+                ObsidianLogSync.SyncHistory(_projectHistory.CreateView(DateTime.UtcNow), _settings);
+            }
         }
         else
         {
             _projectHistory = new ProjectTimeHistory();
         }
+
+        _projectHistory.MinimumIntervalSeconds = _settings.MinimumIntervalSeconds;
 
         DateTime now = DateTime.UtcNow;
         bool loaded = _workspaceStore.TryLoad(_timerManager, now, now.ToLocalTime());
@@ -206,7 +213,7 @@ public partial class ControllerWindow : Window
                 return;
             }
 
-            if (ShortcutCommandMap.TryGetAction(vk, out var action))
+            if (ShortcutCommandMap.TryGetAction(vk, _settings.CommandModeKeys, out var action))
             {
                 if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord)
                 {
@@ -276,6 +283,11 @@ public partial class ControllerWindow : Window
                 break;
             case ShortcutAction.NextSeparatedOverlay:
                 SwitchSeparatedOverlay();
+                break;
+            case ShortcutAction.ShowAllClocks:
+                SelectNextTimer();
+                break;
+            case ShortcutAction.ToggleActiveClocks:
                 break;
         }
     }
@@ -1065,7 +1077,11 @@ public partial class ControllerWindow : Window
     {
         if (_shortcutsWindow == null || !_shortcutsWindow.IsVisible)
         {
-            _shortcutsWindow = new ShortcutsWindow(_settings.Shortcuts);
+            _shortcutsWindow = new ShortcutsWindow(
+                _settings.Shortcuts,
+                _settings.CommandChainingTimeoutSeconds,
+                _settings.CommandModeKeys,
+                _settings.NoteCommandModeKeys);
             await _shortcutsWindow.ShowDialog(this);
             if (_shortcutsWindow.DialogResult == true)
             {
@@ -1074,6 +1090,8 @@ public partial class ControllerWindow : Window
                 _settings.Shortcuts[ShortcutAction.ShowActiveOverlay] = _shortcutsWindow.ResultShowActiveOverlay;
                 _settings.Shortcuts[ShortcutAction.OpenController] = _shortcutsWindow.ResultOpenController;
                 _settings.CommandChainingTimeoutSeconds = _shortcutsWindow.ResultChainingTimeoutSeconds;
+                _settings.CommandModeKeys = _shortcutsWindow.ResultCommandModeKeys;
+                _settings.NoteCommandModeKeys = _shortcutsWindow.ResultNoteCommandModeKeys;
                 SettingsStore.Save(_settings);
                 InitializePlatformServices();
             }

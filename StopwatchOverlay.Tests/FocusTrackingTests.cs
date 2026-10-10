@@ -221,4 +221,25 @@ public class FocusTrackingTests
             }
         }
     }
+
+    [Fact]
+    public void ProjectTimeHistory_RecordFocusPause_MultiHourExtendedBreak_IsCappedAtThreshold()
+    {
+        var history = new ProjectTimeHistory { MaxTrackedPauseMinutes = 120 };
+        var start = new DateTime(2026, 9, 27, 10, 0, 0, DateTimeKind.Utc);
+        var resume = start.AddHours(6); // 6 hours (360 minutes)
+        var sessionId = Guid.NewGuid();
+
+        var record = history.RecordFocusPause(
+            sessionId,
+            "Coding",
+            start,
+            resume,
+            FocusPauseReason.Distraction,
+            "Went away");
+
+        Assert.Equal(TimeSpan.FromMinutes(120), record.Duration);
+        Assert.Equal(start.AddMinutes(120), record.ResumeUtc);
+        Assert.Contains("Extended break / inactive", record.Note);
+    }
 }

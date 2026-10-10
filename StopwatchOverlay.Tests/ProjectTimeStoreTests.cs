@@ -1078,6 +1078,222 @@ namespace StopwatchOverlay.Tests
                 EndUtc = value.EndUtc
             };
 
+        [Fact]
+        public void DeduplicateIntervals_PrunesRoundedManualIntervalWhenSubsecondTimerExists()
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Coding");
+
+            DateTime subsecondStart = new DateTime(2026, 10, 6, 7, 38, 36, 86, DateTimeKind.Utc);
+            DateTime subsecondEnd = subsecondStart.AddMinutes(30);
+
+            DateTime roundedStart = new DateTime(2026, 10, 6, 7, 38, 0, 0, DateTimeKind.Utc);
+            DateTime roundedEnd = roundedStart.AddMinutes(30);
+
+            var timerInterval = history.AddManualInterval("Coding", subsecondStart, subsecondEnd);
+            var duplicateManual = history.AddManualInterval("Coding", roundedStart, roundedEnd);
+
+            Assert.Equal(2, history.CreateView(DateTime.UtcNow).Intervals.Count);
+
+            int pruned = history.DeduplicateIntervals();
+
+            Assert.Equal(1, pruned);
+            Assert.Equal(1, history.LastDeduplicationPrunedCount);
+            var remaining = history.CreateView(DateTime.UtcNow).Intervals;
+            Assert.Single(remaining);
+            Assert.Equal(timerInterval.Id, remaining[0].Id);
+        }
+
+        [Fact]
+        public void DeduplicateIntervals_PrunesExactDuplicates()
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Coding");
+
+            DateTime start = new DateTime(2026, 10, 6, 7, 38, 0, 0, DateTimeKind.Utc);
+            DateTime end = start.AddMinutes(30);
+
+            var first = history.AddManualInterval("Coding", start, end);
+            var second = history.AddManualInterval("Coding", start, end);
+
+            Assert.Equal(2, history.CreateView(DateTime.UtcNow).Intervals.Count);
+
+            int pruned = history.DeduplicateIntervals();
+
+            Assert.Equal(1, pruned);
+            var remaining = history.CreateView(DateTime.UtcNow).Intervals;
+            Assert.Single(remaining);
+            Assert.Equal(first.Id, remaining[0].Id);
+        }
+
+        [Fact]
+        public void DeduplicateIntervals_PreservesDistinctSubsecondIntervals()
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Coding");
+
+            DateTime firstStart = new DateTime(2026, 10, 6, 7, 38, 10, 123, DateTimeKind.Utc);
+            DateTime firstEnd = firstStart.AddSeconds(15);
+
+            DateTime secondStart = firstEnd.AddSeconds(5);
+            DateTime secondEnd = secondStart.AddSeconds(15);
+
+            history.AddManualInterval("Coding", firstStart, firstEnd);
+            history.AddManualInterval("Coding", secondStart, secondEnd);
+
+            int pruned = history.DeduplicateIntervals();
+
+            Assert.Equal(0, pruned);
+            Assert.Equal(2, history.CreateView(DateTime.UtcNow).Intervals.Count);
+        }
+
+        [Fact]
+        public void DeduplicateIntervals_PreservesManualIntervalsWithoutOverlap()
+        {
+            var history = new ProjectTimeHistory();
+            history.RegisterProject("Routine");
+
+            DateTime start = new DateTime(2026, 10, 6, 8, 0, 0, 0, DateTimeKind.Utc);
+            DateTime end = start.AddMinutes(30);
+
+            history.AddManualInterval("Routine", start, end);
+
+            int pruned = history.DeduplicateIntervals();
+
+            Assert.Equal(0, pruned);
+            Assert.Single(history.CreateView(DateTime.UtcNow).Intervals);
+        }
+
+        [Fact]
+        public void FromDocument_AutomaticallyDeduplicatesIntervalsOnLoad()
+        {
+            DateTime subsecondStart = new DateTime(2026, 10, 6, 7, 38, 36, 86, DateTimeKind.Utc);
+            DateTime subsecondEnd = subsecondStart.AddMinutes(30);
+            DateTime roundedStart = new DateTime(2026, 10, 6, 7, 38, 0, 0, DateTimeKind.Utc);
+            DateTime roundedEnd = roundedStart.AddMinutes(30);
+
+            var doc = new ProjectHistoryDocument
+            {
+                Version = ProjectTimeStore.CurrentVersion,
+                SavedAtUtc = DateTime.UtcNow,
+                Projects = new List<ProjectDocumentEntry>
+                {
+                    new() { Key = "CODING", Name = "Coding" }
+                },
+                Intervals = new List<WorkIntervalDocumentEntry>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TimerSessionId = Guid.NewGuid(),
+                        ProjectKey = "CODING",
+                        ProjectName = "Coding",
+                        StartUtc = subsecondStart,
+                        EndUtc = subsecondEnd
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TimerSessionId = Guid.NewGuid(),
+                        ProjectKey = "CODING",
+                        ProjectName = "Coding",
+                        StartUtc = roundedStart,
+                        EndUtc = roundedEnd
+                    }
+                }
+            };
+
+            var history = ProjectTimeHistory.FromDocument(doc);
+
+            Assert.Equal(1, history.LastDeduplicationPrunedCount);
+            Assert.Single(history.CreateView(DateTime.UtcNow).Intervals);
+        }
+
+        [Fact]
+        public void DeduplicateIntervals_PrunesMicroIntervalsUnderThreeSeconds()
+        {
+            var doc = new ProjectHistoryDocument
+            {
+                SavedAtUtc = DateTime.UtcNow,
+                Projects = new List<ProjectDocumentEntry>
+                {
+                    new() { Key = "NAVID", Name = "Navid" }
+                },
+                Intervals = new List<WorkIntervalDocumentEntry>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TimerSessionId = Guid.NewGuid(),
+                        ProjectKey = "NAVID",
+                        ProjectName = "Navid",
+                        StartUtc = StartUtc,
+                        EndUtc = StartUtc.AddSeconds(2)
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        TimerSessionId = Guid.NewGuid(),
+                        ProjectKey = "NAVID",
+                        ProjectName = "Navid",
+                        StartUtc = StartUtc.AddMinutes(5),
+                        EndUtc = StartUtc.AddMinutes(25)
+                    }
+                }
+            };
+
+            var history = ProjectTimeHistory.FromDocument(doc);
+            Assert.Equal(1, history.LastDeduplicationPrunedCount);
+            var intervals = history.CreateView(DateTime.UtcNow).Intervals;
+            Assert.Single(intervals);
+            Assert.Equal(StartUtc.AddMinutes(5), intervals[0].StartUtc);
+        }
+
+        [Fact]
+        public void StopTracking_IntervalShorterThanMinimumSeconds_IsDiscarded()
+        {
+            var history = new ProjectTimeHistory { MinimumIntervalSeconds = 5 };
+            Guid timerId = Guid.NewGuid();
+            history.StartTracking(timerId, "Navid", StartUtc);
+
+            bool stopped = history.StopTracking(timerId, StartUtc.AddSeconds(2));
+
+            Assert.True(stopped);
+            Assert.Empty(history.CreateView(StartUtc.AddMinutes(1)).Intervals);
+        }
+
+        [Fact]
+        public void StopTracking_IntervalLongerThanMinimumSeconds_IsKept()
+        {
+            var history = new ProjectTimeHistory { MinimumIntervalSeconds = 5 };
+            Guid timerId = Guid.NewGuid();
+            history.StartTracking(timerId, "Navid", StartUtc);
+
+            bool stopped = history.StopTracking(timerId, StartUtc.AddSeconds(10));
+
+            Assert.True(stopped);
+            var intervals = history.CreateView(StartUtc.AddMinutes(1)).Intervals;
+            Assert.Single(intervals);
+            Assert.Equal("Navid", intervals[0].ProjectName);
+        }
+
+        [Fact]
+        public void StartTracking_SwitchProjectShorterThanMinimumSeconds_DiscardsPreviousMicroInterval()
+        {
+            var history = new ProjectTimeHistory { MinimumIntervalSeconds = 5 };
+            Guid timerId = Guid.NewGuid();
+            history.StartTracking(timerId, "AccidentalClick", StartUtc);
+
+            var switchChange = history.StartTracking(timerId, "RealProject", StartUtc.AddSeconds(2));
+            Assert.Equal(ProjectTrackingChange.Switched, switchChange);
+
+            history.StopTracking(timerId, StartUtc.AddMinutes(10));
+
+            var intervals = history.CreateView(StartUtc.AddMinutes(15)).Intervals;
+            Assert.Single(intervals);
+            Assert.Equal("RealProject", intervals[0].ProjectName);
+        }
+
         private sealed class TemporaryDirectory : IDisposable
         {
             public TemporaryDirectory()

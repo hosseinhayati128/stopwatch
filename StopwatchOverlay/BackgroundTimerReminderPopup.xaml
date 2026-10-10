@@ -1,0 +1,169 @@
+<Window x:Class="StopwatchOverlay.BackgroundTimerReminderPopup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Background Timer Alert"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Focusable="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Overlay/OverlayStyles.xaml"/>
+                <ResourceDictionary Source="Themes/PirateDialogStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="ActionButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Padding" Value="10,5"/>
+                <Setter Property="Margin" Value="0,0,6,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Border" Property="Opacity" Value="0.8"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="PrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+                <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <Style x:Key="StopActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+                <Setter Property="BorderBrush" Value="#FF453A"/>
+                <Setter Property="Foreground" Value="#FF453A"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
+            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
+            Padding="14,10"
+            Margin="6"
+            MinWidth="310"
+            MaxWidth="390">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="3" Opacity="0.5"/>
+        </Border.Effect>
+
+        <StackPanel>
+            <!-- Header bar -->
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="⏳ " Foreground="{DynamicResource AccentBrush}" FontSize="12" FontWeight="Bold"/>
+                    <TextBlock Text="Clock running in background"
+                               Foreground="{DynamicResource AccentBrush}"
+                               FontSize="11"
+                               FontFamily="{DynamicResource AppFontFamily}"
+                               FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <!-- Reminder badge: e.g. "Reminder 1 of 3" -->
+                <Border Grid.Column="1" x:Name="ReminderBadgeBorder"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderSoftBrush}"
+                        BorderThickness="1"
+                        CornerRadius="3"
+                        Padding="5,1">
+                    <TextBlock x:Name="ReminderBadgeText"
+                               Text="Reminder 1 of 3"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="10"
+                               FontWeight="SemiBold"/>
+                </Border>
+            </Grid>
+
+            <!-- Timer info -->
+            <Grid Margin="0,2,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="TimerNameText"
+                               Text="Timer 1"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               FontSize="13"
+                               FontWeight="Bold"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="TimeoutCountdownText"
+                               Text="Closes in 30s"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontSize="10"
+                               Margin="0,1,0,0"/>
+                </StackPanel>
+
+                <!-- Live elapsed time -->
+                <TextBlock Grid.Column="1" x:Name="TimerElapsedText"
+                           Text="00:00:00"
+                           FontFamily="{DynamicResource ThemeTimerFontFamily}"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Action buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,2,0,0">
+                <Button x:Name="KeepRunningButton"
+                        Content="✓ Keep Running"
+                        Style="{StaticResource PrimaryActionButtonStyle}"
+                        ToolTip="Acknowledge and keep this clock running in background"
+                        Click="KeepRunningButton_Click"/>
+
+                <Button x:Name="SwitchButton"
+                        Content="➜ Switch"
+                        Style="{StaticResource ActionButtonStyle}"
+                        ToolTip="Switch active overlay to this clock"
+                        Click="SwitchButton_Click"/>
+
+                <Button x:Name="StopButton"
+                        Content="⏹ Stop"
+                        Style="{StaticResource StopActionButtonStyle}"
+                        Margin="0,0,0,0"
+                        ToolTip="Stop this clock now"
+                        Click="StopButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

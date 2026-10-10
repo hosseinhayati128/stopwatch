@@ -183,4 +183,28 @@ public sealed class ObsidianLogSyncTests : IDisposable
         Assert.False(synced);
         Assert.False(File.Exists(Path.Combine(_testDirectory, "Stopwatch Log.md")));
     }
+
+    [Fact]
+    public void SyncHistory_SmallDurationInterval_OutputsZeroMinutes()
+    {
+        var history = new ProjectTimeHistory();
+        DateTime baseUtc = new(2026, 9, 19, 10, 0, 0, DateTimeKind.Utc);
+        history.AddManualInterval("Quick Misclick", baseUtc, baseUtc.AddSeconds(20));
+
+        var settings = new AppSettings
+        {
+            ObsidianVaultFolder = _testDirectory,
+            ObsidianExportFileName = "Stopwatch Log.md"
+        };
+
+        var result = ObsidianLogSync.SyncHistory(history.CreateView(baseUtc.AddHours(1)), settings);
+        Assert.True(result.Success);
+
+        string expectedFilePath = Path.Combine(_testDirectory, "Stopwatch Log.md");
+        string content = File.ReadAllText(expectedFilePath);
+        DateTime startLocal = baseUtc.ToLocalTime();
+        DateTime endLocal = baseUtc.AddSeconds(20).ToLocalTime();
+        string expectedRow = $"| {startLocal:yyyy-MM-dd} | Quick Misclick | {startLocal:HH:mm} | {endLocal:HH:mm} | 0 | < 1m |  |";
+        Assert.Contains(expectedRow, content);
+    }
 }

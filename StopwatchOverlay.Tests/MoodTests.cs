@@ -17,7 +17,7 @@ public class MoodTests
 
         Assert.True(settings.PeriodicReviewFeelingsEnabled);
         Assert.Equal("Mood Log.md", settings.MoodLogFileName);
-        Assert.Equal(7.0, settings.DefaultMoodScore);
+        Assert.Equal(5.0, settings.DefaultMoodScore);
         Assert.NotNull(settings.MoodPresetKeywords);
 
         // Check required feelings keywords from user request

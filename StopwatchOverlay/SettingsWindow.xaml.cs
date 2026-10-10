@@ -119,6 +119,11 @@ public partial class SettingsWindow : Window
             RecCheck.IsChecked = _settings.ShowRecIndicator;
             BlinkCheck.IsChecked = _settings.BlinkColon;
             SmartInputCheck.IsChecked = _settings.UseSmartCountdownInput;
+            ExclusiveTimerModeCheck.IsChecked = _settings.ExclusiveTimerMode;
+            BackgroundTimerReminderCheck.IsChecked = _settings.BackgroundTimerReminderEnabled;
+            BackgroundReminderIntervalSlider.Value = _settings.BackgroundTimerReminderIntervalMinutes;
+            BackgroundReminderDurationSlider.Value = _settings.BackgroundTimerReminderDurationSeconds;
+            BackgroundReminderMaxUnackSlider.Value = _settings.BackgroundTimerMaxRemindersBeforeStop;
             CommandChainingTimeoutSlider.Value = _settings.CommandChainingTimeoutSeconds;
             StartWithWindowsCheck.IsChecked = _settings.StartWithWindows;
             CloseActionCombo.SelectedIndex = CloseActionChoice.Normalize(_settings.CloseAction) switch
@@ -217,6 +222,11 @@ public partial class SettingsWindow : Window
         WireCheckBox(RecCheck, SettingsChangeKind.Behavior);
         WireCheckBox(BlinkCheck, SettingsChangeKind.Behavior);
         WireCheckBox(SmartInputCheck, SettingsChangeKind.Behavior);
+        WireCheckBox(ExclusiveTimerModeCheck, SettingsChangeKind.Behavior);
+        WireCheckBox(BackgroundTimerReminderCheck, SettingsChangeKind.Behavior);
+        WireSlider(BackgroundReminderIntervalSlider, SettingsChangeKind.Behavior);
+        WireSlider(BackgroundReminderDurationSlider, SettingsChangeKind.Behavior);
+        WireSlider(BackgroundReminderMaxUnackSlider, SettingsChangeKind.Behavior);
         WireCheckBox(StartWithWindowsCheck, SettingsChangeKind.Startup);
         CloseActionCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Behavior);
         WireCheckBox(ObsidianAutoSyncCheck, SettingsChangeKind.ObsidianExport);
@@ -421,6 +431,11 @@ public partial class SettingsWindow : Window
                 _settings.ShowRecIndicator = RecCheck.IsChecked == true;
                 _settings.BlinkColon = BlinkCheck.IsChecked == true;
                 _settings.UseSmartCountdownInput = SmartInputCheck.IsChecked == true;
+                _settings.ExclusiveTimerMode = ExclusiveTimerModeCheck.IsChecked == true;
+                _settings.BackgroundTimerReminderEnabled = BackgroundTimerReminderCheck.IsChecked == true;
+                _settings.BackgroundTimerReminderIntervalMinutes = BackgroundReminderIntervalSlider.Value;
+                _settings.BackgroundTimerReminderDurationSeconds = BackgroundReminderDurationSlider.Value;
+                _settings.BackgroundTimerMaxRemindersBeforeStop = (int)Math.Round(BackgroundReminderMaxUnackSlider.Value);
                 _settings.CommandChainingTimeoutSeconds = Math.Round(CommandChainingTimeoutSlider.Value, 1);
                 _settings.CloseAction = CloseActionCombo.SelectedIndex switch
                 {
@@ -541,6 +556,9 @@ public partial class SettingsWindow : Window
         BackgroundStrengthValueText.Text = $"{Math.Round(BackgroundStrengthSlider.Value):0}%";
         LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
         LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";
+        BackgroundReminderIntervalValueText.Text = $"{Math.Round(BackgroundReminderIntervalSlider.Value):0} min";
+        BackgroundReminderDurationValueText.Text = $"{Math.Round(BackgroundReminderDurationSlider.Value):0} s";
+        BackgroundReminderMaxUnackValueText.Text = $"{Math.Round(BackgroundReminderMaxUnackSlider.Value):0} times";
         CommandChainingTimeoutValueText.Text = $"{CommandChainingTimeoutSlider.Value:0.0} s";
     }
 

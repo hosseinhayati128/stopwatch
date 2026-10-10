@@ -9,8 +9,8 @@ namespace StopwatchOverlay;
 public static class ShortcutCommandMap
 {
     public const string GuidanceLine1 = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller";
-    public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync · B Separate · M Merge · Tab Switch";
-    public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · U Undo · A Record · S Sync · B Separate · M Merge · Tab Switch";
+    public const string GuidanceLine2 = "C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync · B Separate · M Merge · J Switch · K Clocks · H Active";
+    public const string GuidanceStatusText = "Timer command: Space Start/Stop · R Reset · O Overlay · L Lap · W Controller · C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · U Undo · A Record · S Sync · B Separate · M Merge · J Switch · K Clocks · H Active";
 
     // Virtual key codes for fixed commands
     public const uint VK_SPACE = 0x20;
@@ -34,6 +34,8 @@ public static class ShortcutCommandMap
     public const uint VK_KEY_B = 0x42;
     public const uint VK_KEY_M = 0x4D;
     public const uint VK_KEY_J = 0x4A;
+    public const uint VK_KEY_K = 0x4B;
+    public const uint VK_KEY_H = 0x48;
 
     public static readonly IReadOnlyDictionary<uint, ShortcutAction> ActionMap = new Dictionary<uint, ShortcutAction>
     {
@@ -55,22 +57,61 @@ public static class ShortcutCommandMap
         [VK_KEY_V] = ShortcutAction.PeriodicReview,
         [VK_KEY_B] = ShortcutAction.SeparateOverlay,
         [VK_KEY_M] = ShortcutAction.MergeOverlay,
-        [VK_TAB] = ShortcutAction.NextSeparatedOverlay,
         [VK_KEY_J] = ShortcutAction.NextSeparatedOverlay,
+        [VK_KEY_K] = ShortcutAction.ShowAllClocks,
+        [VK_KEY_H] = ShortcutAction.ToggleActiveClocks,
     };
+
+    public static Dictionary<uint, ShortcutAction> BuildActionMap(IReadOnlyDictionary<ShortcutAction, uint> commandKeys)
+    {
+        var map = new Dictionary<uint, ShortcutAction>();
+        foreach (var (action, vk) in commandKeys)
+        {
+            if (vk != 0)
+            {
+                map[vk] = action;
+                if (vk >= 0x30 && vk <= 0x39)
+                {
+                    map[vk - 0x30 + 0x60] = action; // Numpad equivalent
+                }
+            }
+        }
+        return map;
+    }
 
     public static bool TryGetAction(uint virtualKey, out ShortcutAction action)
     {
         return ActionMap.TryGetValue(virtualKey, out action);
     }
 
+    public static bool TryGetAction(uint virtualKey, IReadOnlyDictionary<ShortcutAction, uint>? customKeys, out ShortcutAction action)
+    {
+        if (customKeys != null && customKeys.Count > 0)
+        {
+            foreach (var (act, vk) in customKeys)
+            {
+                if (vk != 0)
+                {
+                    if (vk == virtualKey)
+                    {
+                        action = act;
+                        return true;
+                    }
+                    if (vk >= 0x30 && vk <= 0x39 && virtualKey == vk - 0x30 + 0x60)
+                    {
+                        action = act;
+                        return true;
+                    }
+                }
+            }
+            action = default;
+            return false;
+        }
+        return ActionMap.TryGetValue(virtualKey, out action);
+    }
+
     public static bool TryGetAction(char keyChar, out ShortcutAction action)
     {
-        if (keyChar == '\t')
-        {
-            action = ShortcutAction.NextSeparatedOverlay;
-            return true;
-        }
         char upper = char.ToUpperInvariant(keyChar);
         if (upper == ' ')
         {

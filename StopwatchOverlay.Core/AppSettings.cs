@@ -31,7 +31,9 @@ namespace StopwatchOverlay
         PeriodicReview = 20,
         SeparateOverlay = 21,
         MergeOverlay = 22,
-        NextSeparatedOverlay = 23
+        NextSeparatedOverlay = 23,
+        ShowAllClocks = 24,
+        ToggleActiveClocks = 25
     }
 
     // VirtualKey == 0 means the action is unbound (no global hotkey).
@@ -156,6 +158,8 @@ namespace StopwatchOverlay
         public Shortcut LeaderShortcut { get; set; } = DefaultLeaderShortcut();
         public Shortcut NoteLeaderShortcut { get; set; } = DefaultNoteLeaderShortcut();
         public Dictionary<ShortcutAction, Shortcut> Shortcuts { get; set; } = new();
+        public Dictionary<ShortcutAction, uint> CommandModeKeys { get; set; } = DefaultCommandModeKeys();
+        public Dictionary<NoteCommandAction, uint> NoteCommandModeKeys { get; set; } = DefaultNoteCommandModeKeys();
         public double CommandChainingTimeoutSeconds { get; set; } = DefaultCommandChainingTimeoutSeconds;
 
         // Application chrome theme. Stable display names are kept in JSON for
@@ -217,6 +221,15 @@ namespace StopwatchOverlay
         public bool BlinkColon { get; set; } = false;
         public bool UseSmartCountdownInput { get; set; } = false;
         public bool StartWithWindows { get; set; } = false;
+        public int MinimumIntervalSeconds { get; set; } = 5;
+        public double MaxContinuousTimerHours { get; set; } = 8.0;
+        public bool ExclusiveTimerMode { get; set; } = false;
+
+        // Background Running Timers Reminder & Guard
+        public bool BackgroundTimerReminderEnabled { get; set; } = true;
+        public double BackgroundTimerReminderIntervalMinutes { get; set; } = 3.0;
+        public double BackgroundTimerReminderDurationSeconds { get; set; } = 30.0;
+        public int BackgroundTimerMaxRemindersBeforeStop { get; set; } = 3;
 
         // Obsidian / Markdown Export
         public bool ObsidianAutoSyncEnabled { get; set; } = true;
@@ -258,6 +271,7 @@ namespace StopwatchOverlay
         public int FocusMinimumPauseSeconds { get; set; } = 10;
         public int FocusPromptTimeoutSeconds { get; set; } = 12;
         public string FocusLogFileName { get; set; } = "Focus Log.md";
+        public int MaxTrackedPauseMinutes { get; set; } = 120;
 
         // Periodic Activity & Time Review
         public bool PeriodicReviewEnabled { get; set; } = false;
@@ -270,8 +284,9 @@ namespace StopwatchOverlay
         public bool PeriodicReviewAllowMultiProject { get; set; } = false;
         public double PeriodicReviewMinActivityPercent { get; set; } = 3.0;
         public bool PeriodicReviewFeelingsEnabled { get; set; } = true;
+        public string PeriodicReviewFixedCollisionBehavior { get; set; } = "CutAndContinue"; // "CutAndContinue" or "StopAtFixed"
         public string MoodLogFileName { get; set; } = "Mood Log.md";
-        public double DefaultMoodScore { get; set; } = 7.0;
+        public double DefaultMoodScore { get; set; } = 5.0;
         public List<string> MoodPresetKeywords { get; set; } =
         [
             "Anxious", "Depressed", "Sad", "Happy", "Thrilled",
@@ -347,6 +362,39 @@ namespace StopwatchOverlay
             [ShortcutAction.OpenController] = DefaultOpenControllerShortcut(),
         };
 
+        public static Dictionary<ShortcutAction, uint> DefaultCommandModeKeys() => new()
+        {
+            [ShortcutAction.StartStop] = ShortcutCommandMap.VK_SPACE,
+            [ShortcutAction.Reset] = ShortcutCommandMap.VK_KEY_R,
+            [ShortcutAction.ToggleOverlay] = ShortcutCommandMap.VK_KEY_O,
+            [ShortcutAction.Lap] = ShortcutCommandMap.VK_KEY_L,
+            [ShortcutAction.ToggleClock] = ShortcutCommandMap.VK_KEY_C,
+            [ShortcutAction.NewTimer] = ShortcutCommandMap.VK_KEY_N,
+            [ShortcutAction.NextTimer] = ShortcutCommandMap.VK_KEY_T,
+            [ShortcutAction.CloseTimer] = ShortcutCommandMap.VK_KEY_X,
+            [ShortcutAction.RenameTimer] = ShortcutCommandMap.VK_KEY_P,
+            [ShortcutAction.OpenDashboard] = ShortcutCommandMap.VK_KEY_D,
+            [ShortcutAction.OpenController] = ShortcutCommandMap.VK_KEY_W,
+            [ShortcutAction.EditTimer] = ShortcutCommandMap.VK_KEY_E,
+            [ShortcutAction.UndoTimerEdit] = ShortcutCommandMap.VK_KEY_U,
+            [ShortcutAction.AddRecord] = ShortcutCommandMap.VK_KEY_A,
+            [ShortcutAction.SyncActivityWatch] = ShortcutCommandMap.VK_KEY_S,
+            [ShortcutAction.PeriodicReview] = ShortcutCommandMap.VK_KEY_V,
+            [ShortcutAction.SeparateOverlay] = ShortcutCommandMap.VK_KEY_B,
+            [ShortcutAction.MergeOverlay] = ShortcutCommandMap.VK_KEY_M,
+            [ShortcutAction.NextSeparatedOverlay] = ShortcutCommandMap.VK_KEY_J,
+            [ShortcutAction.ShowAllClocks] = ShortcutCommandMap.VK_KEY_K,
+            [ShortcutAction.ToggleActiveClocks] = ShortcutCommandMap.VK_KEY_H
+        };
+
+        public static Dictionary<NoteCommandAction, uint> DefaultNoteCommandModeKeys() => new()
+        {
+            [NoteCommandAction.AddTodo] = 0x31,     // '1'
+            [NoteCommandAction.AddNote] = 0x32,     // '2'
+            [NoteCommandAction.AddReminder] = 0x33, // '3'
+            [NoteCommandAction.ViewNotes] = 0x34    // '4'
+        };
+
         // Ensure shortcuts dictionary, leader shortcut, ShowActiveOverlay, and OpenController are initialized.
         public void EnsureAllActions()
         {
@@ -376,7 +424,115 @@ namespace StopwatchOverlay
                 bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
                 Shortcuts[ShortcutAction.OpenController] = collides ? new Shortcut(0, 0) : def;
             }
+
+            EnsureCommandModeKeys();
         }
+
+        public void EnsureCommandModeKeys()
+        {
+            CommandModeKeys ??= DefaultCommandModeKeys();
+            var defCmd = DefaultCommandModeKeys();
+            foreach (var kvp in defCmd)
+            {
+                if (!CommandModeKeys.ContainsKey(kvp.Key))
+                {
+                    CommandModeKeys[kvp.Key] = kvp.Value;
+                }
+            }
+
+            // Guarantee Tab (0x09) is never used for NextSeparatedOverlay; migrate to J (0x4A)
+            if (CommandModeKeys.TryGetValue(ShortcutAction.NextSeparatedOverlay, out var switchVk) && switchVk == ShortcutCommandMap.VK_TAB)
+            {
+                CommandModeKeys[ShortcutAction.NextSeparatedOverlay] = ShortcutCommandMap.VK_KEY_J;
+            }
+
+            NoteCommandModeKeys ??= DefaultNoteCommandModeKeys();
+            var defNote = DefaultNoteCommandModeKeys();
+            foreach (var kvp in defNote)
+            {
+                if (!NoteCommandModeKeys.ContainsKey(kvp.Key))
+                {
+                    NoteCommandModeKeys[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
+        public static bool ValidateCommandModeKeys(IReadOnlyDictionary<ShortcutAction, uint> keys, out string? errorMessage)
+        {
+            var seen = new Dictionary<uint, ShortcutAction>();
+            foreach (var (action, vk) in keys)
+            {
+                if (vk == 0) continue;
+                if (vk == ShortcutCommandMap.VK_ESCAPE)
+                {
+                    errorMessage = "Key 'Escape' is reserved for canceling command mode.";
+                    return false;
+                }
+                if (seen.TryGetValue(vk, out var otherAction))
+                {
+                    errorMessage = $"Key '{Shortcut.FormatKeyName(vk)}' is assigned to both '{FormatActionName(otherAction)}' and '{FormatActionName(action)}'. Duplicate keys are not allowed. Each task must have a unique command key.";
+                    return false;
+                }
+                seen[vk] = action;
+            }
+            errorMessage = null;
+            return true;
+        }
+
+        public static bool ValidateNoteCommandModeKeys(IReadOnlyDictionary<NoteCommandAction, uint> keys, out string? errorMessage)
+        {
+            var seen = new Dictionary<uint, NoteCommandAction>();
+            foreach (var (action, vk) in keys)
+            {
+                if (vk == 0) continue;
+                if (vk == ShortcutCommandMap.VK_ESCAPE)
+                {
+                    errorMessage = "Key 'Escape' is reserved for canceling command mode.";
+                    return false;
+                }
+                if (seen.TryGetValue(vk, out var otherAction))
+                {
+                    errorMessage = $"Key '{Shortcut.FormatKeyName(vk)}' is assigned to both '{FormatNoteActionName(otherAction)}' and '{FormatNoteActionName(action)}'. Duplicate keys are not allowed. Each task must have a unique command key.";
+                    return false;
+                }
+                seen[vk] = action;
+            }
+            errorMessage = null;
+            return true;
+        }
+
+        public static string FormatActionName(ShortcutAction action) => action switch
+        {
+            ShortcutAction.StartStop => "Start / Stop active timer",
+            ShortcutAction.Reset => "Reset active timer",
+            ShortcutAction.ToggleOverlay => "Show / Hide active timer overlay",
+            ShortcutAction.Lap => "Record a lap",
+            ShortcutAction.ToggleClock => "Toggle Clock mode",
+            ShortcutAction.NewTimer => "Create new timer",
+            ShortcutAction.NextTimer => "Select next timer",
+            ShortcutAction.CloseTimer => "Close active timer",
+            ShortcutAction.RenameTimer => "Select / Change project",
+            ShortcutAction.OpenDashboard => "Open project dashboard",
+            ShortcutAction.OpenController => "Open stopwatch controller",
+            ShortcutAction.EditTimer => "Edit active timer",
+            ShortcutAction.UndoTimerEdit => "Undo timer edit",
+            ShortcutAction.AddRecord => "Add completed record",
+            ShortcutAction.SyncActivityWatch => "Sync ActivityWatch log",
+            ShortcutAction.PeriodicReview => "Open periodic review",
+            ShortcutAction.SeparateOverlay => "Separate overlay",
+            ShortcutAction.MergeOverlay => "Merge overlay",
+            ShortcutAction.NextSeparatedOverlay => "Switch focus between overlays",
+            _ => action.ToString()
+        };
+
+        public static string FormatNoteActionName(NoteCommandAction action) => action switch
+        {
+            NoteCommandAction.AddTodo => "Add Todo item",
+            NoteCommandAction.AddNote => "Add Quick Note",
+            NoteCommandAction.AddReminder => "Add Reminder",
+            NoteCommandAction.ViewNotes => "View Notes",
+            _ => action.ToString()
+        };
 
         public void NormalizeForRuntime()
         {
@@ -423,6 +579,8 @@ namespace StopwatchOverlay
                 bool collides = Shortcuts.Values.Any(s => s != null && s.VirtualKey != 0 && s.VirtualKey == def.VirtualKey && s.Modifiers == def.Modifiers);
                 Shortcuts[ShortcutAction.OpenController] = collides ? new Shortcut(0, 0) : def;
             }
+
+            EnsureCommandModeKeys();
 
             NotesSubfolder = string.IsNullOrWhiteSpace(NotesSubfolder) ? "Notes" : NotesSubfolder.Trim();
 
@@ -518,6 +676,21 @@ namespace StopwatchOverlay
                 ? "Focus Log.md"
                 : FocusLogFileName.Trim();
 
+            MinimumIntervalSeconds = Math.Clamp(MinimumIntervalSeconds, 0, 3600);
+            if (MaxContinuousTimerHours <= 0) MaxContinuousTimerHours = 8.0;
+            else if (MaxContinuousTimerHours > 24.0) MaxContinuousTimerHours = 24.0;
+            if (MaxTrackedPauseMinutes < 1) MaxTrackedPauseMinutes = 120;
+            else if (MaxTrackedPauseMinutes > 1440) MaxTrackedPauseMinutes = 1440;
+
+            if (BackgroundTimerReminderIntervalMinutes < 0.1) BackgroundTimerReminderIntervalMinutes = 3.0;
+            else if (BackgroundTimerReminderIntervalMinutes > 1440.0) BackgroundTimerReminderIntervalMinutes = 1440.0;
+
+            if (BackgroundTimerReminderDurationSeconds < 5.0) BackgroundTimerReminderDurationSeconds = 30.0;
+            else if (BackgroundTimerReminderDurationSeconds > 600.0) BackgroundTimerReminderDurationSeconds = 600.0;
+
+            if (BackgroundTimerMaxRemindersBeforeStop < 1) BackgroundTimerMaxRemindersBeforeStop = 3;
+            else if (BackgroundTimerMaxRemindersBeforeStop > 20) BackgroundTimerMaxRemindersBeforeStop = 20;
+
             if (PeriodicReviewIntervalMinutes < 1)
                 PeriodicReviewIntervalMinutes = 1;
             else if (PeriodicReviewIntervalMinutes > 1440)
@@ -539,6 +712,9 @@ namespace StopwatchOverlay
                 PeriodicReviewMinDurationSeconds = 3600;
 
             PeriodicReviewMinActivityPercent = Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0);
+            PeriodicReviewFixedCollisionBehavior = string.Equals(PeriodicReviewFixedCollisionBehavior, "StopAtFixed", StringComparison.OrdinalIgnoreCase)
+                ? "StopAtFixed"
+                : "CutAndContinue";
 
             MoodLogFileName = string.IsNullOrWhiteSpace(MoodLogFileName)
                 ? "Mood Log.md"
