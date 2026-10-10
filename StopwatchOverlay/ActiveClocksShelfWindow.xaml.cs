@@ -20,6 +20,12 @@ public partial class ActiveClocksShelfWindow : Window
         InitializeComponent();
     }
 
+    public void ApplyTheme(string? overlayTheme, string? applicationTheme)
+    {
+        string effective = OverlayThemeManager.Apply(this, overlayTheme, applicationTheme);
+        Themes.NavigatorVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
+    }
+
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Hide();
@@ -45,7 +51,8 @@ public partial class ActiveClocksShelfWindow : Window
                 var emptyBlock = new TextBlock
                 {
                     Text = "No running clocks",
-                    Foreground = (Brush)FindResource("SecondaryTextBrush"),
+                    Foreground = (Brush)FindResource("OverlayProjectForegroundBrush"),
+                    Opacity = 0.7,
                     FontSize = 11,
                     FontStyle = FontStyles.Italic,
                     HorizontalAlignment = HorizontalAlignment.Center,
@@ -88,9 +95,9 @@ public partial class ActiveClocksShelfWindow : Window
                 var nameBlock = new TextBlock
                 {
                     Text = timerRef.DisplayName,
-                    Foreground = isActive ? (Brush)FindResource("AccentBrush") : (Brush)FindResource("PrimaryTextBrush"),
+                    Foreground = isActive ? (Brush)FindResource("AccentBrush") : (Brush)FindResource("OverlayProjectForegroundBrush"),
                     FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
+                    FontWeight = isActive ? FontWeights.Bold : FontWeights.SemiBold,
                     VerticalAlignment = VerticalAlignment.Center,
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     Margin = new Thickness(2, 0, 6, 0)
@@ -103,7 +110,7 @@ public partial class ActiveClocksShelfWindow : Window
                 {
                     Text = $"{timerRef.Elapsed:hh\\:mm\\:ss}",
                     FontFamily = (FontFamily)FindResource("ThemeTimerFontFamily"),
-                    Foreground = (Brush)FindResource("AccentBrush"),
+                    Foreground = (Brush)FindResource("OverlayTimerForegroundBrush"),
                     FontSize = 12,
                     FontWeight = FontWeights.SemiBold,
                     VerticalAlignment = VerticalAlignment.Center,

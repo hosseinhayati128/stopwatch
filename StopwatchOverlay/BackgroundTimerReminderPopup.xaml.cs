@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -29,6 +30,12 @@ public partial class BackgroundTimerReminderPopup : Window
         _countdownTimer.Tick += CountdownTimer_Tick;
     }
 
+    public void ApplyTheme(string? overlayTheme, string? applicationTheme)
+    {
+        string effective = OverlayThemeManager.Apply(this, overlayTheme, applicationTheme);
+        Themes.NavigatorVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
+    }
+
     public void ShowAlert(BackgroundTimerAlert alert, Window? targetWindow)
     {
         _timerSessionId = alert.TimerSessionId;
@@ -44,16 +51,16 @@ public partial class BackgroundTimerReminderPopup : Window
         bool isFinal = alert.ReminderIndex >= alert.MaxRemindersBeforeStop;
         if (isFinal)
         {
-            ReminderBadgeBorder.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 69, 58));
-            ReminderBadgeBorder.Background = new SolidColorBrush(Color.FromArgb(40, 255, 69, 58));
-            ReminderBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(255, 69, 58));
+            ReminderBadgeBorder.BorderBrush = (Brush)FindResource("RecBrush");
+            ReminderBadgeBorder.Background = new SolidColorBrush(Color.FromArgb(40, 229, 57, 53));
+            ReminderBadgeText.Foreground = (Brush)FindResource("RecBrush");
             ReminderBadgeText.Text = $"⚠️ Final reminder ({alert.ReminderIndex} of {alert.MaxRemindersBeforeStop})";
         }
         else
         {
-            ReminderBadgeBorder.BorderBrush = (Brush)FindResource("BorderSoftBrush");
-            ReminderBadgeBorder.Background = (Brush)FindResource("SurfaceBrush");
-            ReminderBadgeText.Foreground = (Brush)FindResource("SecondaryTextBrush");
+            ReminderBadgeBorder.SetResourceReference(Border.BorderBrushProperty, "OverlayToolbarBorderBrush");
+            ReminderBadgeBorder.SetResourceReference(Border.BackgroundProperty, "OverlayToolbarSurfaceBrush");
+            ReminderBadgeText.SetResourceReference(TextBlock.ForegroundProperty, "OverlayActionForegroundBrush");
             ReminderBadgeText.Text = $"Reminder {alert.ReminderIndex} of {alert.MaxRemindersBeforeStop}";
         }
 

@@ -1887,6 +1887,7 @@ namespace StopwatchOverlay
                 };
             }
 
+            _activeClocksShelfWindow.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
             _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
             var primaryOverlay = GetPrimaryOverlayWindow();
             if (primaryOverlay != null)
@@ -2009,6 +2010,7 @@ namespace StopwatchOverlay
                 };
             }
 
+            _backgroundTimerReminderPopup.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
             var primaryOverlay = GetPrimaryOverlayWindow();
             _backgroundTimerReminderPopup.ShowAlert(alert, primaryOverlay);
         }
@@ -5602,6 +5604,8 @@ namespace StopwatchOverlay
                 ApplyOverlaySettings(instance.Window);
             foreach (var instance in _combinedOverlayInstances)
                 ApplyOverlaySettings(instance.Window);
+            _activeClocksShelfWindow?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            _backgroundTimerReminderPopup?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
             RepositionAllOverlays();
         }
 
@@ -5611,6 +5615,8 @@ namespace StopwatchOverlay
                 ApplyOverlaySettings(instance.Window);
             foreach (var instance in _combinedOverlayInstances)
                 ApplyOverlaySettings(instance.Window);
+            _activeClocksShelfWindow?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            _backgroundTimerReminderPopup?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
         }
 
         private void ApplyOverlaySettings(OverlayWindow overlay)
