@@ -1887,7 +1887,7 @@ namespace StopwatchOverlay
                 };
             }
 
-            _activeClocksShelfWindow.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            ApplyShelfOverlaySettings(_activeClocksShelfWindow);
             _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
             var primaryOverlay = GetPrimaryOverlayWindow();
             if (primaryOverlay != null)
@@ -2010,7 +2010,7 @@ namespace StopwatchOverlay
                 };
             }
 
-            _backgroundTimerReminderPopup.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            ApplyPopupOverlaySettings(_backgroundTimerReminderPopup);
             var primaryOverlay = GetPrimaryOverlayWindow();
             _backgroundTimerReminderPopup.ShowAlert(alert, primaryOverlay);
         }
@@ -5055,6 +5055,11 @@ namespace StopwatchOverlay
             PositionCombinedOverlay(overlay, screen);
             _combinedPositionsByScreen[screen.DeviceName] = (overlay.Left, overlay.Top);
             CheckpointState();
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                var primary = GetPrimaryOverlayWindow();
+                if (primary != null) _activeClocksShelfWindow.RepositionUnder(primary);
+            }
         }
 
         private IEnumerable<Screen> SelectedScreens()
@@ -5218,6 +5223,11 @@ namespace StopwatchOverlay
             if (overlay.Tag is Screen movedScreen)
                 PositionOverlay(timer, overlay, movedScreen);
             CheckpointState();
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                var primary = GetPrimaryOverlayWindow();
+                if (primary != null) _activeClocksShelfWindow.RepositionUnder(primary);
+            }
         }
 
         private void RepositionAllOverlays()
@@ -5228,6 +5238,11 @@ namespace StopwatchOverlay
                 PositionOverlay(instance.Session, instance.Window, instance.Screen);
             foreach (var instance in _combinedOverlayInstances)
                 PositionCombinedOverlay(instance.Window, instance.Screen);
+            if (_activeClocksShelfWindow != null && _activeClocksShelfWindow.IsVisible)
+            {
+                var primary = GetPrimaryOverlayWindow();
+                if (primary != null) _activeClocksShelfWindow.RepositionUnder(primary);
+            }
         }
 
         private void RebuildVisibleOverlays()
@@ -5604,8 +5619,8 @@ namespace StopwatchOverlay
                 ApplyOverlaySettings(instance.Window);
             foreach (var instance in _combinedOverlayInstances)
                 ApplyOverlaySettings(instance.Window);
-            _activeClocksShelfWindow?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
-            _backgroundTimerReminderPopup?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            ApplyShelfOverlaySettings(_activeClocksShelfWindow);
+            ApplyPopupOverlaySettings(_backgroundTimerReminderPopup);
             RepositionAllOverlays();
         }
 
@@ -5615,8 +5630,28 @@ namespace StopwatchOverlay
                 ApplyOverlaySettings(instance.Window);
             foreach (var instance in _combinedOverlayInstances)
                 ApplyOverlaySettings(instance.Window);
-            _activeClocksShelfWindow?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
-            _backgroundTimerReminderPopup?.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
+            ApplyShelfOverlaySettings(_activeClocksShelfWindow);
+            ApplyPopupOverlaySettings(_backgroundTimerReminderPopup);
+        }
+
+        private void ApplyShelfOverlaySettings(ActiveClocksShelfWindow? shelf)
+        {
+            if (shelf == null) return;
+            var textColor = TextColorSelector != null ? GetColorFromSelection(TextColorSelector) : Colors.White;
+            var borderColor = BorderColorSelector != null ? GetColorFromSelection(BorderColorSelector) : Colors.White;
+            var fontFamily = (FontSelector?.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? _settings.FontFamily ?? "Consolas";
+            var bgOpacity = (BackgroundOpacitySlider?.Value ?? _settings.BackgroundOpacity) / 100.0;
+            shelf.ApplyOverlaySettings(_settings.OverlayTheme, _settings.ThemeMode, textColor, borderColor, fontFamily, bgOpacity, useThemeTextColor: _settings.TextColor == "Theme default");
+        }
+
+        private void ApplyPopupOverlaySettings(BackgroundTimerReminderPopup? popup)
+        {
+            if (popup == null) return;
+            var textColor = TextColorSelector != null ? GetColorFromSelection(TextColorSelector) : Colors.White;
+            var borderColor = BorderColorSelector != null ? GetColorFromSelection(BorderColorSelector) : Colors.White;
+            var fontFamily = (FontSelector?.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? _settings.FontFamily ?? "Consolas";
+            var bgOpacity = (BackgroundOpacitySlider?.Value ?? _settings.BackgroundOpacity) / 100.0;
+            popup.ApplyOverlaySettings(_settings.OverlayTheme, _settings.ThemeMode, textColor, borderColor, fontFamily, bgOpacity, useThemeTextColor: _settings.TextColor == "Theme default");
         }
 
         private void ApplyOverlaySettings(OverlayWindow overlay)

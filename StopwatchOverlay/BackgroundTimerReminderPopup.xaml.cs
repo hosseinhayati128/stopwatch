@@ -36,6 +36,59 @@ public partial class BackgroundTimerReminderPopup : Window
         Themes.NavigatorVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
     }
 
+    public void ApplyOverlaySettings(
+        string? overlayTheme,
+        string? applicationTheme,
+        Color textColor,
+        Color borderColor,
+        string fontFamily,
+        double bgOpacity,
+        bool useThemeTextColor)
+    {
+        ApplyTheme(overlayTheme, applicationTheme);
+
+        // Resolve timer font
+        var timerFont = OverlayThemeManager.ResolveTimerFont(this, overlayTheme, fontFamily);
+        TimerElapsedText.FontFamily = timerFont;
+
+        // Resolve colors
+        Color themeTimerColor = GetThemeColor("OverlayTimerForegroundBrush", textColor);
+        Color timerColor = useThemeTextColor ? themeTimerColor : textColor;
+        Color themeProjectColor = GetThemeColor("OverlayProjectForegroundBrush", timerColor);
+        Color projectColor = useThemeTextColor ? themeProjectColor : textColor;
+
+        TimerElapsedText.Foreground = new SolidColorBrush(timerColor);
+        TimerNameText.Foreground = new SolidColorBrush(projectColor);
+
+        // Background surface with user's opacity and pattern
+        Color chrome = GetThemeColor("OverlayChromeBrush", Colors.Black);
+        Brush surface = AppBackgroundManager.CreateOverlaySurfaceBrush(chrome, bgOpacity);
+        ReminderBackgroundSurface.Background = surface;
+
+        // Border matching clock overlay
+        Color chromeBorder = OverlayThemeCatalog.Resolve(overlayTheme, applicationTheme) != OverlayThemeCatalog.Midnight
+            ? GetThemeColor("OverlayChromeBorderBrush", textColor)
+            : Color.FromArgb(255, textColor.R, textColor.G, textColor.B);
+        ReminderBorder.BorderBrush = new SolidColorBrush(chromeBorder);
+
+        if (TryFindResource("ThemeOverlayCornerRadius") is CornerRadius cr)
+        {
+            ReminderBorder.CornerRadius = cr;
+            ReminderBackgroundSurface.CornerRadius = cr;
+            ReminderInnerRule.CornerRadius = cr;
+        }
+
+        if (TryFindResource("OverlayShadowEffect") is System.Windows.Media.Effects.Effect shadow)
+        {
+            ReminderBackgroundSurface.Effect = shadow;
+        }
+    }
+
+    private Color GetThemeColor(string key, Color fallback)
+        => TryFindResource(key) is SolidColorBrush brush
+            ? brush.Color
+            : fallback;
+
     public void ShowAlert(BackgroundTimerAlert alert, Window? targetWindow)
     {
         _timerSessionId = alert.TimerSessionId;
@@ -128,12 +181,15 @@ public partial class BackgroundTimerReminderPopup : Window
             double newLeft = targetLeft + (targetWidth - selfWidth) / 2.0;
             double newTop = targetTop + targetHeight + 6.0;
 
+            double vLeft = SystemParameters.VirtualScreenLeft;
+            double vTop = SystemParameters.VirtualScreenTop;
             double screenWidth = SystemParameters.VirtualScreenWidth;
             double screenHeight = SystemParameters.VirtualScreenHeight;
 
-            if (newLeft < 0) newLeft = 0;
-            if (newLeft + selfWidth > screenWidth) newLeft = screenWidth - selfWidth;
-            if (newTop + selfHeight > screenHeight) newTop = targetTop - selfHeight - 6.0;
+            if (newLeft < vLeft) newLeft = vLeft;
+            if (newLeft + selfWidth > vLeft + screenWidth) newLeft = vLeft + screenWidth - selfWidth;
+            if (newTop + selfHeight > vTop + screenHeight) newTop = targetTop - selfHeight - 6.0;
+            if (newTop < vTop) newTop = vTop;
 
             Left = newLeft;
             Top = newTop;

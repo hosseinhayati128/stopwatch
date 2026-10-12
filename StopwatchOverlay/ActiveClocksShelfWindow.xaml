@@ -10,7 +10,7 @@
         ShowActivated="False"
         Focusable="False"
         ResizeMode="NoResize"
-        SizeToContent="WidthAndHeight">
+        SizeToContent="Height">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -22,8 +22,8 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="CornerRadius" Value="{DynamicResource ThemeOverlayButtonCornerRadius}"/>
-                <Setter Property="Padding" Value="7,4"/>
-                <Setter Property="Margin" Value="0,1.5"/>
+                <Setter Property="Padding" Value="6,4"/>
+                <Setter Property="Margin" Value="0,1"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
@@ -37,7 +37,9 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource OverlayPauseBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Foreground" Value="{DynamicResource OverlayPauseForegroundBrush}"/>
-                <Setter Property="Padding" Value="7,2"/>
+                <Setter Property="Width" Value="22"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Padding" Value="0"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -46,8 +48,7 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="{DynamicResource ThemeOverlayButtonCornerRadius}"
-                                    Padding="{TemplateBinding Padding}">
+                                    CornerRadius="{DynamicResource ThemeOverlayButtonCornerRadius}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -66,49 +67,62 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="6">
-        <Border Background="{DynamicResource OverlayChromeBrush}"
-                BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
-                BorderThickness="1"
+    <Grid x:Name="ShelfSurface" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+        <!-- Layer 1: Background surface with opacity & drop shadow matching clock overlay -->
+        <Border x:Name="ShelfBackgroundSurface"
+                Background="{DynamicResource OverlayChromeBrush}"
                 CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
                 Effect="{DynamicResource OverlayShadowEffect}"
-                Padding="12,8"
-                MinWidth="230"
-                MaxWidth="380">
+                IsHitTestVisible="False"/>
+
+        <!-- Layer 2: Outer frame border matching clock overlay -->
+        <Border x:Name="ShelfBorder"
+                Background="Transparent"
+                BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
+                BorderThickness="{DynamicResource ThemeOverlayFrameBorderThickness}"
+                CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
+                Padding="8,5">
             <StackPanel>
-                <!-- Header bar -->
-                <Grid Margin="2,0,2,6">
+                <!-- Compact sub-header -->
+                <Grid Margin="2,0,2,3">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Ellipse Width="6" Height="6" Fill="{DynamicResource RecBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Running Clocks"
-                                   Foreground="{DynamicResource OverlayProjectForegroundBrush}"
-                                   FontSize="10.5"
+                        <Ellipse Width="5" Height="5" Fill="{DynamicResource RecBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ShelfHeaderTitle"
+                                   Text="RUNNING CLOCKS"
+                                   FontSize="8.5"
                                    FontFamily="{DynamicResource AppFontFamily}"
-                                   FontWeight="{DynamicResource OverlayProjectFontWeight}"
-                                   Opacity="{DynamicResource OverlayProjectOpacity}"/>
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource OverlayProjectForegroundBrush}"
+                                   Opacity="0.55"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Grid.Column="1" Content="✕"
                             Background="Transparent" BorderThickness="0"
                             Foreground="{DynamicResource OverlayActionForegroundBrush}"
-                            Opacity="0.75"
-                            FontSize="11" Cursor="Hand"
-                            Click="CloseButton_Click" ToolTip="Hide running clocks shelf"/>
+                            Opacity="0.6"
+                            Width="16" Height="16"
+                            FontSize="10" Cursor="Hand"
+                            Click="CloseButton_Click" ToolTip="Hide running clocks shelf (Win+F2, H)"/>
                 </Grid>
+
+                <Border Height="0.5" Background="{DynamicResource OverlayChromeBorderBrush}" Opacity="0.25" Margin="0,0,0,3"/>
 
                 <!-- Clocks List -->
                 <StackPanel x:Name="ActiveClocksPanel"/>
             </StackPanel>
         </Border>
 
-        <!-- Inner decorative hairline border for Acanthus & themed clock styles -->
-        <Border BorderBrush="{DynamicResource OverlayInnerRuleBrush}"
+        <!-- Layer 3: Inner decorative rule in Acanthus themes -->
+        <Border x:Name="ShelfInnerRule"
+                BorderBrush="{DynamicResource OverlayInnerRuleBrush}"
                 BorderThickness="1"
                 CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
                 Visibility="{DynamicResource OverlayInnerRuleVisibility}"
+                Margin="4"
                 IsHitTestVisible="False"/>
     </Grid>
 </Window>

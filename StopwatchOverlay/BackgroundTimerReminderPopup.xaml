@@ -68,12 +68,19 @@
     </Window.Resources>
 
     <Grid Margin="6">
-        <!-- Main container styled to match floating clock overlay theme -->
-        <Border Background="{DynamicResource OverlayChromeBrush}"
+        <!-- Layer 1: Background surface matching clock overlay with opacity, pattern & shadow -->
+        <Border x:Name="ReminderBackgroundSurface"
+                Background="{DynamicResource OverlayChromeBrush}"
+                CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
+                Effect="{DynamicResource OverlayShadowEffect}"
+                IsHitTestVisible="False"/>
+
+        <!-- Layer 2: Main border container matching floating clock overlay frame -->
+        <Border x:Name="ReminderBorder"
+                Background="Transparent"
                 BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
-                Effect="{DynamicResource OverlayShadowEffect}"
                 Padding="14,10"
                 MinWidth="310"
                 MaxWidth="400">
@@ -169,10 +176,12 @@
         </Border>
 
         <!-- Inner hairline decorative rule for Acanthus & themed clock styles -->
-        <Border BorderBrush="{DynamicResource OverlayInnerRuleBrush}"
+        <Border x:Name="ReminderInnerRule"
+                BorderBrush="{DynamicResource OverlayInnerRuleBrush}"
                 BorderThickness="1"
                 CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
                 Visibility="{DynamicResource OverlayInnerRuleVisibility}"
+                Margin="4"
                 IsHitTestVisible="False"/>
     </Grid>
 </Window>
