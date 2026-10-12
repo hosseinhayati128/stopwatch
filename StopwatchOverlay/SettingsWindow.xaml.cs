@@ -176,6 +176,10 @@ public partial class SettingsWindow : Window
             UpdateTelegramOutboxUi();
             LoadIdleStopControls();
             PopulateCategories();
+            FocusTrackingEnabledCheck.IsChecked = _settings.FocusTrackingEnabled;
+            FocusDistractionThresholdTextBox.Text = _settings.FocusDistractionThresholdMinutes.ToString();
+            FocusMinimumPauseTextBox.Text = _settings.FocusMinimumPauseSeconds.ToString();
+            FocusMaxResumePauseTextBox.Text = _settings.MaxResumePauseMinutes.ToString();
         }
         finally
         {
@@ -279,6 +283,7 @@ public partial class SettingsWindow : Window
         WireCheckBox(FocusTrackingEnabledCheck, SettingsChangeKind.FocusTracking);
         FocusDistractionThresholdTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
         FocusMinimumPauseTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
+        FocusMaxResumePauseTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -461,6 +466,10 @@ public partial class SettingsWindow : Window
                 if (int.TryParse(FocusMinimumPauseTextBox.Text.Trim(), out int minPause) && minPause > 0)
                 {
                     _settings.FocusMinimumPauseSeconds = minPause;
+                }
+                if (int.TryParse(FocusMaxResumePauseTextBox.Text.Trim(), out int maxResume) && maxResume > 0)
+                {
+                    _settings.MaxResumePauseMinutes = maxResume;
                 }
             }
 

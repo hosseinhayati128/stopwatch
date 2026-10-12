@@ -49,6 +49,7 @@ namespace StopwatchOverlay.Tests
             first.LastPresetPosition = "Bottom Right";
             first.CascadeIndex = 4;
             first.IsSeparated = true;
+            first.LastPauseUtc = SavedUtc;
             first.RestoreElapsed(TimeSpan.FromSeconds(9), start: false);
 
             var snapshot = TimerWorkspaceStore.Capture(source, SavedUtc);
@@ -65,6 +66,7 @@ namespace StopwatchOverlay.Tests
             Assert.Equal("Deep work", actual.Name);
             Assert.Equal(3, actual.Mode);
             Assert.Equal(TimeSpan.FromSeconds(9), actual.Elapsed);
+            Assert.Equal(SavedUtc, actual.LastPauseUtc);
             Assert.Equal("next monday at 9am", actual.SmartInputText);
             Assert.Equal("Lap 1: 00:01.2", Assert.Single(actual.LapTimes));
             Assert.True(actual.OverlayVisible);

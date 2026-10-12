@@ -45,6 +45,7 @@ namespace StopwatchOverlay
         public bool IsRunning { get; set; }
         public bool IsSeparated { get; set; }
         public TimeSpan Elapsed { get; set; }
+        public DateTime? LastPauseUtc { get; set; }
 
         public int Mode { get; set; }
         public int LastNonClockMode { get; set; }
@@ -574,6 +575,7 @@ namespace StopwatchOverlay
                 IsRunning = timer.IsRunning,
                 IsSeparated = timer.IsSeparated,
                 Elapsed = timer.Elapsed,
+                LastPauseUtc = timer.LastPauseUtc,
                 Mode = timer.Mode,
                 LastNonClockMode = timer.LastNonClockMode,
                 CountdownDuration = timer.CountdownDuration,
@@ -635,6 +637,7 @@ namespace StopwatchOverlay
                 Category = string.IsNullOrWhiteSpace(saved.Category) ? "Work" : saved.Category.Trim(),
                 ScorePerHour = saved.ScorePerHour > 0 ? saved.ScorePerHour : 1.0,
                 IsRunning = saved.IsRunning,
+                LastPauseUtc = saved.LastPauseUtc,
                 IsSeparated = saved.IsSeparated,
                 Mode = saved.Mode,
                 LastNonClockMode = saved.LastNonClockMode,

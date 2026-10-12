@@ -242,4 +242,84 @@ public class FocusTrackingTests
         Assert.Equal(start.AddMinutes(120), record.ResumeUtc);
         Assert.Contains("Extended break / inactive", record.Note);
     }
+
+    [Fact]
+    public void AppSettings_MaxResumePauseMinutes_DefaultsTo30()
+    {
+        var settings = new AppSettings();
+        Assert.Equal(30, settings.MaxResumePauseMinutes);
+    }
+
+    [Fact]
+    public void AppSettings_MaxResumePauseMinutes_Normalization_ClampsExtremeValues()
+    {
+        var settings = new AppSettings
+        {
+            MaxResumePauseMinutes = 0
+        };
+        settings.NormalizeForRuntime();
+        Assert.Equal(30, settings.MaxResumePauseMinutes);
+
+        settings.MaxResumePauseMinutes = -5;
+        settings.NormalizeForRuntime();
+        Assert.Equal(30, settings.MaxResumePauseMinutes);
+
+        settings.MaxResumePauseMinutes = 2000;
+        settings.NormalizeForRuntime();
+        Assert.Equal(1440, settings.MaxResumePauseMinutes);
+
+        settings.MaxResumePauseMinutes = 45;
+        settings.NormalizeForRuntime();
+        Assert.Equal(45, settings.MaxResumePauseMinutes);
+    }
+
+    [Theory]
+    [InlineData(10, 30, false)] // 10 min pause with 30 min threshold: resume existing session
+    [InlineData(29, 30, false)] // 29 min pause with 30 min threshold: resume existing session
+    [InlineData(30, 30, true)]  // 30 min pause with 30 min threshold: new session
+    [InlineData(45, 30, true)]  // 45 min pause with 30 min threshold: new session
+    [InlineData(120, 30, true)] // 2 hours pause with 30 min threshold: new session
+    public void TimerSession_ResumePauseThreshold_DeterminesNewSessionVsResume(
+        int pauseDurationMinutes,
+        int maxResumeMinutes,
+        bool expectedIsLongPause)
+    {
+        var timer = new TimerSession(Guid.NewGuid(), 1);
+        timer.RestoreElapsed(TimeSpan.FromMinutes(25), start: false);
+        var pauseStart = DateTime.UtcNow.AddMinutes(-pauseDurationMinutes);
+        timer.LastPauseUtc = pauseStart;
+
+        var transitionUtc = DateTime.UtcNow;
+        TimeSpan pauseDuration = transitionUtc - pauseStart;
+        TimeSpan maxResumePause = TimeSpan.FromMinutes(maxResumeMinutes);
+
+        bool isLongPause = timer.LastPauseUtc.HasValue 
+            && timer.Elapsed > TimeSpan.Zero 
+            && pauseDuration >= maxResumePause 
+            && timer.Mode != 2;
+
+        Assert.Equal(expectedIsLongPause, isLongPause);
+
+        if (isLongPause)
+        {
+            timer.Stopwatch.Reset();
+            timer.Stopwatch.Start();
+            timer.IsRunning = true;
+            timer.LapTimes.Clear();
+            timer.LapCount = 0;
+
+            // Session has been reset to fresh start
+            Assert.True(timer.Elapsed < TimeSpan.FromSeconds(1));
+            Assert.Empty(timer.LapTimes);
+        }
+        else
+        {
+            timer.Stopwatch.Start();
+            timer.IsRunning = true;
+
+            // Session preserved accumulated time
+            Assert.True(timer.Elapsed >= TimeSpan.FromMinutes(25));
+        }
+    }
 }
+

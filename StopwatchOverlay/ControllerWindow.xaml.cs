@@ -3274,6 +3274,8 @@ namespace StopwatchOverlay
             TimeSpan pauseDuration)
         {
             if (!_settings.FocusTrackingEnabled) return;
+            int maxResumePauseMin = _settings.MaxResumePauseMinutes > 0 ? _settings.MaxResumePauseMinutes : 30;
+            if (pauseDuration >= TimeSpan.FromMinutes(maxResumePauseMin)) return;
 
             string projectName = !string.IsNullOrWhiteSpace(timer.Name) ? timer.Name : timer.DisplayName;
 
@@ -4587,6 +4589,7 @@ namespace StopwatchOverlay
             var timer = _activeTimer;
             if (ProjectTransitionIsTemporarilyBlocked(timer)) return;
             DateTime transitionUtc;
+            bool isLongPause = false;
 
             if (timer.IsRunning)
             {
@@ -4657,12 +4660,60 @@ namespace StopwatchOverlay
                 }
 
                 DateTime? pauseStart = timer.LastPauseUtc;
+                if (!pauseStart.HasValue && timer.Elapsed > TimeSpan.Zero)
+                {
+                    pauseStart = _projectHistory?.GetIntervalsForTimer(timer.Id).LastOrDefault()?.EndUtc;
+                }
                 timer.LastPauseUtc = null;
 
-                timer.Stopwatch.Start();
-                timer.IsRunning = true;
+                TimeSpan pauseDuration = pauseStart.HasValue && transitionUtc > pauseStart.Value
+                    ? transitionUtc - pauseStart.Value
+                    : TimeSpan.Zero;
 
-                if (_settings.ExclusiveTimerMode)
+                int maxResumePauseMin = _settings.MaxResumePauseMinutes > 0 ? _settings.MaxResumePauseMinutes : 30;
+                TimeSpan maxResumePause = TimeSpan.FromMinutes(maxResumePauseMin);
+
+                isLongPause = pauseStart.HasValue && timer.Elapsed > TimeSpan.Zero && pauseDuration >= maxResumePause && runningMode != 2;
+
+                if (isLongPause)
+                {
+                    timer.Stopwatch.Reset();
+                    timer.Stopwatch.Start();
+                    timer.IsRunning = true;
+                    timer.LapTimes.Clear();
+                    timer.LapCount = 0;
+                    CrashLogger.RecordUiAction(
+                        $"Pause duration ({ObsidianLogSync.FormatDuration(pauseDuration)}) reached threshold ({maxResumePauseMin}m). Started new session for '{timer.DisplayName}'.",
+                        "FocusTracker");
+                }
+                else
+                {
+                    timer.Stopwatch.Start();
+                    timer.IsRunning = true;
+                }
+
+                if (isLongPause)
+                {
+                    if (_settings.ExclusiveTimerMode)
+                    {
+                        PauseOtherRunningTimers(timer, transitionUtc);
+                        UpdateStatus($"New Session (paused {ObsidianLogSync.FormatDuration(pauseDuration)}, Exclusive)", Brushes.LimeGreen);
+                    }
+                    else
+                    {
+                        var otherRunning = _timers.Where(t => t.IsRunning && !ReferenceEquals(t, timer)).ToList();
+                        if (otherRunning.Count > 0)
+                        {
+                            string names = string.Join(", ", otherRunning.Select(t => t.DisplayName));
+                            UpdateStatus($"New Session (paused {ObsidianLogSync.FormatDuration(pauseDuration)}, Concurrent with {names})", Brushes.LimeGreen);
+                        }
+                        else
+                        {
+                            UpdateStatus($"Started new session for '{timer.DisplayName}' (paused {ObsidianLogSync.FormatDuration(pauseDuration)})", Brushes.LimeGreen);
+                        }
+                    }
+                }
+                else if (_settings.ExclusiveTimerMode)
                 {
                     PauseOtherRunningTimers(timer, transitionUtc);
                     UpdateStatus("Running (Exclusive)", Brushes.LimeGreen);
@@ -4681,9 +4732,8 @@ namespace StopwatchOverlay
                     }
                 }
 
-                if (pauseStart.HasValue && _settings.FocusTrackingEnabled)
+                if (!isLongPause && pauseStart.HasValue && _settings.FocusTrackingEnabled)
                 {
-                    TimeSpan pauseDuration = transitionUtc - pauseStart.Value;
                     if (pauseDuration >= TimeSpan.FromSeconds(_settings.FocusMinimumPauseSeconds))
                     {
                         PromptFocusInterruption(timer, pauseStart.Value, transitionUtc, pauseDuration);
@@ -4692,6 +4742,12 @@ namespace StopwatchOverlay
             }
 
             SynchronizeProjectTracking(timer, transitionUtc);
+
+            if (isLongPause)
+            {
+                LapPlaceholder.Visibility = Visibility.Visible;
+                UpdateTimeDisplay();
+            }
 
             timer.RecBlinkVisible = timer.IsRunning && ShowRecIndicatorCheckBox?.IsChecked == true;
             RecIndicator.Visibility = timer.RecBlinkVisible ? Visibility.Visible : Visibility.Collapsed;

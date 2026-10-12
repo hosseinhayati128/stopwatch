@@ -272,6 +272,7 @@ namespace StopwatchOverlay
         public int FocusPromptTimeoutSeconds { get; set; } = 12;
         public string FocusLogFileName { get; set; } = "Focus Log.md";
         public int MaxTrackedPauseMinutes { get; set; } = 120;
+        public int MaxResumePauseMinutes { get; set; } = 30;
 
         // Periodic Activity & Time Review
         public bool PeriodicReviewEnabled { get; set; } = false;
@@ -681,6 +682,8 @@ namespace StopwatchOverlay
             else if (MaxContinuousTimerHours > 24.0) MaxContinuousTimerHours = 24.0;
             if (MaxTrackedPauseMinutes < 1) MaxTrackedPauseMinutes = 120;
             else if (MaxTrackedPauseMinutes > 1440) MaxTrackedPauseMinutes = 1440;
+            if (MaxResumePauseMinutes < 1) MaxResumePauseMinutes = 30;
+            else if (MaxResumePauseMinutes > 1440) MaxResumePauseMinutes = 1440;
 
             if (BackgroundTimerReminderIntervalMinutes < 0.1) BackgroundTimerReminderIntervalMinutes = 3.0;
             else if (BackgroundTimerReminderIntervalMinutes > 1440.0) BackgroundTimerReminderIntervalMinutes = 1440.0;

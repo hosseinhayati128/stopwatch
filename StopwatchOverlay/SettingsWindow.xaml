@@ -422,6 +422,18 @@
                                 <TextBox x:Name="FocusMinimumPauseTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
                             </Grid>
 
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Max pause before new session (minutes)" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Pauses at or above this threshold start a new session instead of resuming (default: 30)." FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+                                <TextBox x:Name="FocusMaxResumePauseTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" Padding="4,0" FontSize="12" FontFamily="{DynamicResource AppFontFamily}"/>
+                            </Grid>
+
                             <TextBlock Text="When enabled, resuming a paused timer shows a fast popup with shortcuts: 1 for Valid Break, 2 for Distraction, 3 for Quick Idea. Auto-closes in 12s if not answered."
                                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextWrapping="Wrap"/>
                         </StackPanel></Border>
