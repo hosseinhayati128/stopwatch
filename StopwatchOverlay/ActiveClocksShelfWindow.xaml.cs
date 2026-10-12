@@ -98,8 +98,6 @@ public partial class ActiveClocksShelfWindow : Window
         {
             ShelfBackgroundSurface.Effect = shadow;
         }
-
-        ShelfHeaderTitle.Foreground = _projectForeground;
     }
 
     private Color GetThemeColor(string key, Color fallback)
@@ -111,6 +109,22 @@ public partial class ActiveClocksShelfWindow : Window
     {
         Hide();
         ShelfClosed?.Invoke();
+    }
+
+    private void Window_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        Hide();
+        ShelfClosed?.Invoke();
+    }
+
+    protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Key == System.Windows.Input.Key.Escape)
+        {
+            Hide();
+            ShelfClosed?.Invoke();
+        }
     }
 
     public void UpdateClocks(IReadOnlyList<TimerSession> runningTimers, TimerSession? activeTimer)
@@ -132,10 +146,10 @@ public partial class ActiveClocksShelfWindow : Window
                     Text = "No running clocks",
                     Foreground = _projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush"),
                     Opacity = 0.6,
-                    FontSize = 11,
+                    FontSize = 11.5,
                     FontStyle = FontStyles.Italic,
                     HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 4, 0, 4)
+                    Margin = new Thickness(0, 6, 0, 6)
                 };
                 ActiveClocksPanel.Children.Add(emptyBlock);
                 return;
@@ -146,87 +160,69 @@ public partial class ActiveClocksShelfWindow : Window
                 var timerRef = timer;
                 bool isActive = ReferenceEquals(timerRef, activeTimer);
 
-                var rowBorder = new Border
+                // Add subtle separator between multiple clocks
+                if (ActiveClocksPanel.Children.Count > 0)
+                {
+                    var separator = new Border
+                    {
+                        Height = 0.5,
+                        Background = (Brush)FindResource("OverlayChromeBorderBrush"),
+                        Opacity = 0.2,
+                        Margin = new Thickness(8, 2, 8, 2)
+                    };
+                    ActiveClocksPanel.Children.Add(separator);
+                }
+
+                // Card container
+                var cardBorder = new Border
                 {
                     Style = (Style)FindResource("ShelfRowStyle"),
                     Tag = timerRef,
-                    ToolTip = isActive ? "Current active clock" : $"Click to switch to {timerRef.DisplayName}"
+                    ToolTip = isActive ? $"{timerRef.DisplayName} (Active clock)" : $"Click to switch to {timerRef.DisplayName}"
                 };
-
-                var grid = new Grid { Margin = new Thickness(0) };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Name + dot (flexible)
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Time
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Pause button
-
-                // Left side: dot + name + active badge
-                var nameDock = new DockPanel { LastChildFill = true, VerticalAlignment = VerticalAlignment.Center };
-
-                var dot = new System.Windows.Shapes.Ellipse
-                {
-                    Width = 6,
-                    Height = 6,
-                    Fill = (Brush)FindResource("RecBrush"),
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Margin = new Thickness(2, 0, 6, 0)
-                };
-                DockPanel.SetDock(dot, Dock.Left);
-                nameDock.Children.Add(dot);
 
                 if (isActive)
                 {
-                    var activeBadge = new Border
-                    {
-                        Background = (Brush)FindResource("AccentBrush"),
-                        CornerRadius = new CornerRadius(3),
-                        Padding = new Thickness(4, 1, 4, 1),
-                        Margin = new Thickness(4, 0, 4, 0),
-                        VerticalAlignment = VerticalAlignment.Center
-                    };
-                    DockPanel.SetDock(activeBadge, Dock.Right);
-                    var activeText = new TextBlock
-                    {
-                        Text = "ACTIVE",
-                        FontSize = 7.5,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = Brushes.White
-                    };
-                    activeBadge.Child = activeText;
-                    nameDock.Children.Add(activeBadge);
+                    // Subtle accent border for active clock - no text badge or red dot
+                    cardBorder.BorderBrush = (Brush)FindResource("AccentBrush");
+                    cardBorder.BorderThickness = new Thickness(1);
+                    cardBorder.Opacity = 1.0;
+                }
+                else
+                {
+                    cardBorder.BorderBrush = Brushes.Transparent;
+                    cardBorder.BorderThickness = new Thickness(1);
+                    cardBorder.Opacity = 0.88;
                 }
 
-                var nameBlock = new TextBlock
-                {
-                    Text = timerRef.DisplayName,
-                    FontFamily = (FontFamily)FindResource("AppFontFamily"),
-                    Foreground = isActive
-                        ? (Brush)FindResource("AccentBrush")
-                        : (_projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush")),
-                    FontSize = 11,
-                    FontWeight = isActive ? FontWeights.Bold : FontWeights.SemiBold,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    TextTrimming = TextTrimming.CharacterEllipsis
-                };
-                nameDock.Children.Add(nameBlock);
+                // Two-line layout: Line 1 = clock + pause button, Line 2 = project name
+                var grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Line 1: Clock
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Line 2: Project name
 
-                Grid.SetColumn(nameDock, 0);
-                grid.Children.Add(nameDock);
+                // Line 1: Clock row with centered time and right-aligned pause button
+                var clockRow = new Grid { Margin = new Thickness(0, 1, 0, 0) };
+                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); // Left spacer to balance pause button
+                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Centered time
+                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); // Right pause button
 
-                // Time block
+                // Time block (centered, prominent digits matching clock overlay)
                 var timeBlock = new TextBlock
                 {
-                    Text = $"{timerRef.Elapsed:hh\\:mm\\:ss}",
+                    Text = FormatTimerDisplay(timerRef),
                     FontFamily = _timerFont ?? (FontFamily)FindResource("ThemeTimerFontFamily"),
                     Foreground = _timerForeground ?? (Brush)FindResource("OverlayTimerForegroundBrush"),
-                    FontSize = 12.5,
+                    FontSize = 21,
                     FontWeight = _timerFontWeight,
+                    HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
-                    Margin = new Thickness(6, 0, 6, 0)
+                    TextAlignment = TextAlignment.Center
                 };
                 Grid.SetColumn(timeBlock, 1);
-                grid.Children.Add(timeBlock);
+                clockRow.Children.Add(timeBlock);
                 _timeBlocks[timerRef.Id] = timeBlock;
 
-                // Pause button
+                // Pause button (right side of line 1)
                 var pauseBtn = new Button
                 {
                     Content = "❚❚",
@@ -235,6 +231,7 @@ public partial class ActiveClocksShelfWindow : Window
                     FontSize = 8.5,
                     Width = 20,
                     Height = 20,
+                    HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 };
                 pauseBtn.Click += (s, e) =>
@@ -243,17 +240,41 @@ public partial class ActiveClocksShelfWindow : Window
                     PauseTimerRequested?.Invoke(timerRef);
                 };
                 Grid.SetColumn(pauseBtn, 2);
-                grid.Children.Add(pauseBtn);
+                clockRow.Children.Add(pauseBtn);
 
-                rowBorder.Child = grid;
+                Grid.SetRow(clockRow, 0);
+                grid.Children.Add(clockRow);
+
+                // Line 2: Project name (spans full width across card, centered, full space)
+                string displayName = timerRef.DisplayName;
+
+                var nameBlock = new TextBlock
+                {
+                    Text = displayName,
+                    FontFamily = (FontFamily)FindResource("AppFontFamily"),
+                    Foreground = isActive
+                        ? (Brush)FindResource("AccentBrush")
+                        : (_projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush")),
+                    FontSize = 12,
+                    FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(4, 1, 4, 3),
+                    Opacity = isActive ? 1.0 : 0.82
+                };
+                Grid.SetRow(nameBlock, 1);
+                grid.Children.Add(nameBlock);
+
+                cardBorder.Child = grid;
 
                 // Clicking row switches to timer
-                rowBorder.MouseLeftButtonDown += (s, e) =>
+                cardBorder.MouseLeftButtonDown += (s, e) =>
                 {
                     SwitchToTimerRequested?.Invoke(timerRef);
                 };
 
-                ActiveClocksPanel.Children.Add(rowBorder);
+                ActiveClocksPanel.Children.Add(cardBorder);
             }
         }
         else
@@ -263,10 +284,23 @@ public partial class ActiveClocksShelfWindow : Window
             {
                 if (_timeBlocks.TryGetValue(timer.Id, out var tb))
                 {
-                    tb.Text = $"{timer.Elapsed:hh\\:mm\\:ss}";
+                    tb.Text = FormatTimerDisplay(timer);
                 }
             }
         }
+    }
+
+    private static string FormatTimerDisplay(TimerSession timer)
+    {
+        if (timer.Mode == 2)
+        {
+            var remaining = timer.CountdownRemaining;
+            bool isNegative = remaining < TimeSpan.Zero;
+            var abs = isNegative ? remaining.Negate() : remaining;
+            string sign = isNegative ? "-" : "";
+            return $"{sign}{(long)abs.TotalHours:D2}:{abs.Minutes:D2}:{abs.Seconds:D2}";
+        }
+        return $"{timer.Elapsed:hh\\:mm\\:ss}";
     }
 
     public void RepositionUnder(Window targetWindow)
