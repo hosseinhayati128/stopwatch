@@ -310,6 +310,11 @@ namespace StopwatchOverlay
             RecIndicator.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        public void SetRecIndicatorToolTip(string? tooltip)
+        {
+            RecIndicator.ToolTip = tooltip;
+        }
+
         private void Window_MouseEnter(object sender, MouseEventArgs e)
         {
             if (_isClickThrough) return;

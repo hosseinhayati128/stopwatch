@@ -20,7 +20,7 @@ public sealed class BackgroundTimerReminderService
 {
     private class TimerReminderState
     {
-        public DateTime LastReminderUtc { get; set; }
+        public DateTime NextReminderUtc { get; set; }
         public int UnacknowledgedCount { get; set; }
         public bool IsPopupOpen { get; set; }
     }
@@ -29,6 +29,7 @@ public sealed class BackgroundTimerReminderService
 
     public bool IsEnabled { get; set; } = true;
     public TimeSpan Interval { get; set; } = TimeSpan.FromMinutes(3);
+    public TimeSpan AcknowledgedInterval { get; set; } = TimeSpan.FromMinutes(30);
     public TimeSpan PopupDuration { get; set; } = TimeSpan.FromSeconds(30);
     public int MaxRemindersBeforeStop { get; set; } = 3;
 
@@ -40,10 +41,12 @@ public sealed class BackgroundTimerReminderService
         bool enabled,
         TimeSpan interval,
         TimeSpan popupDuration,
-        int maxRemindersBeforeStop)
+        int maxRemindersBeforeStop,
+        TimeSpan? acknowledgedInterval = null)
     {
         IsEnabled = enabled;
         Interval = interval;
+        AcknowledgedInterval = acknowledgedInterval ?? TimeSpan.FromMinutes(30);
         PopupDuration = popupDuration;
         MaxRemindersBeforeStop = Math.Max(1, maxRemindersBeforeStop);
     }
@@ -72,7 +75,7 @@ public sealed class BackgroundTimerReminderService
         {
             state = new TimerReminderState
             {
-                LastReminderUtc = nowUtc,
+                NextReminderUtc = nowUtc + Interval,
                 UnacknowledgedCount = 0,
                 IsPopupOpen = false
             };
@@ -85,11 +88,11 @@ public sealed class BackgroundTimerReminderService
             return false;
         }
 
-        if (nowUtc - state.LastReminderUtc >= Interval)
+        if (nowUtc >= state.NextReminderUtc)
         {
             int reminderIndex = state.UnacknowledgedCount + 1;
             state.IsPopupOpen = true;
-            state.LastReminderUtc = nowUtc;
+            state.NextReminderUtc = nowUtc + Interval;
 
             alert = new BackgroundTimerAlert(
                 timer.Id,
@@ -108,8 +111,9 @@ public sealed class BackgroundTimerReminderService
 
     /// <summary>
     /// Records that the reminder popup timed out without any reaction from the user.
+    /// Next reminder is scheduled after the standard interval (e.g. 3 minutes).
     /// </summary>
-    public bool RecordPopupTimedOut(Guid timerId, out int unacknowledgedCount, out bool shouldAutoStop)
+    public bool RecordPopupTimedOut(Guid timerId, out int unacknowledgedCount, out bool shouldAutoStop, DateTime? nowUtc = null)
     {
         unacknowledgedCount = 0;
         shouldAutoStop = false;
@@ -126,13 +130,17 @@ public sealed class BackgroundTimerReminderService
             shouldAutoStop = true;
             state.UnacknowledgedCount = 0; // Reset after auto-stopping
         }
+        else if (nowUtc.HasValue)
+        {
+            state.NextReminderUtc = nowUtc.Value + Interval;
+        }
 
         return true;
     }
 
     /// <summary>
-    /// Records that the user actively acknowledged the reminder ("Keep Running" / "OK").
-    /// Resets the unacknowledged counter and schedules the next reminder after Interval.
+    /// Records that the user actively acknowledged the reminder ("Keep Running" / "Yes").
+    /// Resets the unacknowledged counter and schedules the next reminder after AcknowledgedInterval (default: 30 minutes).
     /// </summary>
     public void RecordUserAcknowledged(Guid timerId, DateTime nowUtc)
     {
@@ -140,13 +148,13 @@ public sealed class BackgroundTimerReminderService
         {
             state.IsPopupOpen = false;
             state.UnacknowledgedCount = 0;
-            state.LastReminderUtc = nowUtc;
+            state.NextReminderUtc = nowUtc + AcknowledgedInterval;
         }
         else
         {
             _state[timerId] = new TimerReminderState
             {
-                LastReminderUtc = nowUtc,
+                NextReminderUtc = nowUtc + AcknowledgedInterval,
                 UnacknowledgedCount = 0,
                 IsPopupOpen = false
             };
@@ -169,6 +177,7 @@ public sealed class BackgroundTimerReminderService
         if (_state.TryGetValue(timerId, out var state))
         {
             state.IsPopupOpen = false;
+            state.NextReminderUtc = DateTime.UtcNow + Interval;
         }
     }
 
@@ -180,6 +189,11 @@ public sealed class BackgroundTimerReminderService
     public bool IsPopupOpen(Guid timerId)
     {
         return _state.TryGetValue(timerId, out var state) && state.IsPopupOpen;
+    }
+
+    public DateTime? GetNextReminderUtc(Guid timerId)
+    {
+        return _state.TryGetValue(timerId, out var state) ? state.NextReminderUtc : null;
     }
 
     public void Reset()

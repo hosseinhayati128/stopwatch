@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Xunit;
 
 namespace StopwatchOverlay.Tests;
@@ -164,16 +165,16 @@ public class BackgroundTimerReminderTests
         t = t.AddMinutes(3);
         service.ShouldShowReminder(timer, activeTimerId, t, out _);
 
-        // User clicks "Keep Running"
+        // User clicks "Keep Running" (says yes -> snooze for 30 minutes)
         service.RecordUserAcknowledged(timer.Id, t);
         Assert.Equal(0, service.GetUnacknowledgedCount(timer.Id));
         Assert.False(service.IsPopupOpen(timer.Id));
 
-        // Next reminder will come after another 3 minutes
-        t = t.AddMinutes(2);
+        // Next reminder will come after 30 minutes, NOT after 3 minutes
+        t = t.AddMinutes(29);
         Assert.False(service.ShouldShowReminder(timer, activeTimerId, t, out _));
 
-        t = t.AddMinutes(1);
+        t = t.AddMinutes(1); // 30 minutes reached!
         Assert.True(service.ShouldShowReminder(timer, activeTimerId, t, out var aNew));
         Assert.Equal(1, aNew!.ReminderIndex); // Starts again at 1, not 3!
     }
@@ -200,5 +201,43 @@ public class BackgroundTimerReminderTests
         bool show = service.ShouldShowReminder(timer, timer.Id, t, out _);
         Assert.False(show);
         Assert.Equal(0, service.GetUnacknowledgedCount(timer.Id));
+    }
+
+    [Fact]
+    public void AppSettings_BackgroundTimerAcknowledgedInterval_DefaultsAndNormalizesCorrectly()
+    {
+        var settings = new AppSettings();
+        Assert.Equal(30.0, settings.BackgroundTimerAcknowledgedIntervalMinutes);
+
+        settings.BackgroundTimerAcknowledgedIntervalMinutes = -10;
+        settings.NormalizeForRuntime();
+        Assert.Equal(30.0, settings.BackgroundTimerAcknowledgedIntervalMinutes);
+
+        settings.BackgroundTimerAcknowledgedIntervalMinutes = 2000;
+        settings.NormalizeForRuntime();
+        Assert.Equal(1440.0, settings.BackgroundTimerAcknowledgedIntervalMinutes);
+
+        settings.BackgroundTimerAcknowledgedIntervalMinutes = 45;
+        settings.NormalizeForRuntime();
+        Assert.Equal(45.0, settings.BackgroundTimerAcknowledgedIntervalMinutes);
+    }
+
+    [Theory]
+    [InlineData(true, false, false)]  // Only active timer running -> Red dot should NOT flash
+    [InlineData(false, false, false)] // Neither timer running -> Red dot should NOT flash
+    [InlineData(false, true, true)]   // Active paused, background running -> Red dot MUST flash!
+    [InlineData(true, true, true)]    // Active running, background running -> Red dot MUST flash!
+    public void BackgroundRunningRedDotLogic_FlashesOnlyWhenNonActiveStopwatchRuns(
+        bool activeTimerRunning,
+        bool otherTimerRunning,
+        bool expectedRedDotFlashes)
+    {
+        var activeTimer = new TimerSession(Guid.NewGuid(), 1) { IsRunning = activeTimerRunning };
+        var otherTimer = new TimerSession(Guid.NewGuid(), 2) { IsRunning = otherTimerRunning };
+        var timers = new[] { activeTimer, otherTimer };
+
+        bool hasBackgroundRunning = timers.Any(t => t.IsRunning && !ReferenceEquals(t, activeTimer));
+
+        Assert.Equal(expectedRedDotFlashes, hasBackgroundRunning);
     }
 }

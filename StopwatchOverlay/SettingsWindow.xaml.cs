@@ -122,6 +122,7 @@ public partial class SettingsWindow : Window
             ExclusiveTimerModeCheck.IsChecked = _settings.ExclusiveTimerMode;
             BackgroundTimerReminderCheck.IsChecked = _settings.BackgroundTimerReminderEnabled;
             BackgroundReminderIntervalSlider.Value = _settings.BackgroundTimerReminderIntervalMinutes;
+            BackgroundReminderAckIntervalSlider.Value = _settings.BackgroundTimerAcknowledgedIntervalMinutes;
             BackgroundReminderDurationSlider.Value = _settings.BackgroundTimerReminderDurationSeconds;
             BackgroundReminderMaxUnackSlider.Value = _settings.BackgroundTimerMaxRemindersBeforeStop;
             CommandChainingTimeoutSlider.Value = _settings.CommandChainingTimeoutSeconds;
@@ -229,6 +230,7 @@ public partial class SettingsWindow : Window
         WireCheckBox(ExclusiveTimerModeCheck, SettingsChangeKind.Behavior);
         WireCheckBox(BackgroundTimerReminderCheck, SettingsChangeKind.Behavior);
         WireSlider(BackgroundReminderIntervalSlider, SettingsChangeKind.Behavior);
+        WireSlider(BackgroundReminderAckIntervalSlider, SettingsChangeKind.Behavior);
         WireSlider(BackgroundReminderDurationSlider, SettingsChangeKind.Behavior);
         WireSlider(BackgroundReminderMaxUnackSlider, SettingsChangeKind.Behavior);
         WireCheckBox(StartWithWindowsCheck, SettingsChangeKind.Startup);
@@ -439,6 +441,7 @@ public partial class SettingsWindow : Window
                 _settings.ExclusiveTimerMode = ExclusiveTimerModeCheck.IsChecked == true;
                 _settings.BackgroundTimerReminderEnabled = BackgroundTimerReminderCheck.IsChecked == true;
                 _settings.BackgroundTimerReminderIntervalMinutes = BackgroundReminderIntervalSlider.Value;
+                _settings.BackgroundTimerAcknowledgedIntervalMinutes = BackgroundReminderAckIntervalSlider.Value;
                 _settings.BackgroundTimerReminderDurationSeconds = BackgroundReminderDurationSlider.Value;
                 _settings.BackgroundTimerMaxRemindersBeforeStop = (int)Math.Round(BackgroundReminderMaxUnackSlider.Value);
                 _settings.CommandChainingTimeoutSeconds = Math.Round(CommandChainingTimeoutSlider.Value, 1);
@@ -566,6 +569,7 @@ public partial class SettingsWindow : Window
         LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
         LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";
         BackgroundReminderIntervalValueText.Text = $"{Math.Round(BackgroundReminderIntervalSlider.Value):0} min";
+        BackgroundReminderAckIntervalValueText.Text = $"{Math.Round(BackgroundReminderAckIntervalSlider.Value):0} min";
         BackgroundReminderDurationValueText.Text = $"{Math.Round(BackgroundReminderDurationSlider.Value):0} s";
         BackgroundReminderMaxUnackValueText.Text = $"{Math.Round(BackgroundReminderMaxUnackSlider.Value):0} times";
         CommandChainingTimeoutValueText.Text = $"{CommandChainingTimeoutSlider.Value:0.0} s";

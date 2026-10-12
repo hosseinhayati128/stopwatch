@@ -228,6 +228,7 @@ namespace StopwatchOverlay
         // Background Running Timers Reminder & Guard
         public bool BackgroundTimerReminderEnabled { get; set; } = true;
         public double BackgroundTimerReminderIntervalMinutes { get; set; } = 3.0;
+        public double BackgroundTimerAcknowledgedIntervalMinutes { get; set; } = 30.0;
         public double BackgroundTimerReminderDurationSeconds { get; set; } = 30.0;
         public int BackgroundTimerMaxRemindersBeforeStop { get; set; } = 3;
 
@@ -687,6 +688,9 @@ namespace StopwatchOverlay
 
             if (BackgroundTimerReminderIntervalMinutes < 0.1) BackgroundTimerReminderIntervalMinutes = 3.0;
             else if (BackgroundTimerReminderIntervalMinutes > 1440.0) BackgroundTimerReminderIntervalMinutes = 1440.0;
+
+            if (BackgroundTimerAcknowledgedIntervalMinutes < 1.0) BackgroundTimerAcknowledgedIntervalMinutes = 30.0;
+            else if (BackgroundTimerAcknowledgedIntervalMinutes > 1440.0) BackgroundTimerAcknowledgedIntervalMinutes = 1440.0;
 
             if (BackgroundTimerReminderDurationSeconds < 5.0) BackgroundTimerReminderDurationSeconds = 30.0;
             else if (BackgroundTimerReminderDurationSeconds > 600.0) BackgroundTimerReminderDurationSeconds = 600.0;

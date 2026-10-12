@@ -1802,7 +1802,6 @@ namespace StopwatchOverlay
                 instance.Window.SetTimerName(timer.Name);
                 if (resetForNewProject)
                 {
-                    instance.Window.SetRecIndicatorVisible(timer.RecBlinkVisible);
                     instance.Window.SetRunning(timer.IsRunning);
                 }
             }
@@ -1810,9 +1809,7 @@ namespace StopwatchOverlay
             RepositionAllOverlays();
             if (resetForNewProject)
                 UpdateTimeDisplay();
-            RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            UpdateRecIndicatorVisibility();
             UpdateButtonStates();
             UpdateShortcutLabels();
 
@@ -1923,6 +1920,7 @@ namespace StopwatchOverlay
             {
                 _activeClocksShelfWindow.UpdateClocks(_timers, _activeTimer);
             }
+            UpdateRecIndicatorVisibility();
         }
 
         private void CheckBackgroundRunningTimers(DateTime utcNow)
@@ -1931,6 +1929,7 @@ namespace StopwatchOverlay
 
             _backgroundTimerReminderService.IsEnabled = _settings.BackgroundTimerReminderEnabled;
             _backgroundTimerReminderService.Interval = TimeSpan.FromMinutes(_settings.BackgroundTimerReminderIntervalMinutes);
+            _backgroundTimerReminderService.AcknowledgedInterval = TimeSpan.FromMinutes(_settings.BackgroundTimerAcknowledgedIntervalMinutes > 0 ? _settings.BackgroundTimerAcknowledgedIntervalMinutes : 30.0);
             _backgroundTimerReminderService.PopupDuration = TimeSpan.FromSeconds(_settings.BackgroundTimerReminderDurationSeconds);
             _backgroundTimerReminderService.MaxRemindersBeforeStop = _settings.BackgroundTimerMaxRemindersBeforeStop;
 
@@ -1965,9 +1964,10 @@ namespace StopwatchOverlay
                 {
                     _backgroundTimerReminderService.RecordUserAcknowledged(timerId, DateTime.UtcNow);
                     var t = _timers.FirstOrDefault(x => x.Id == timerId);
+                    int ackMinutes = (int)Math.Round(_settings.BackgroundTimerAcknowledgedIntervalMinutes > 0 ? _settings.BackgroundTimerAcknowledgedIntervalMinutes : 30.0);
                     if (t != null)
                     {
-                        UpdateStatus($"Clock '{t.DisplayName}' acknowledged (running in background)", Brushes.DeepSkyBlue);
+                        UpdateStatus($"Clock '{t.DisplayName}' acknowledged (reminder snoozed for {ackMinutes}m)", Brushes.DeepSkyBlue);
                     }
                 };
                 _backgroundTimerReminderPopup.SwitchRequested += timerId =>
@@ -2004,7 +2004,8 @@ namespace StopwatchOverlay
                         }
                         else
                         {
-                            UpdateStatus($"Background reminder for '{t.DisplayName}' unacknowledged ({unackCount}/{_settings.BackgroundTimerMaxRemindersBeforeStop})", Brushes.Orange);
+                            int intervalMinutes = (int)Math.Round(_settings.BackgroundTimerReminderIntervalMinutes > 0 ? _settings.BackgroundTimerReminderIntervalMinutes : 3.0);
+                            UpdateStatus($"Background reminder for '{t.DisplayName}' unacknowledged ({unackCount}/{_settings.BackgroundTimerMaxRemindersBeforeStop}, next in {intervalMinutes}m)", Brushes.Orange);
                         }
                     }
                 };
@@ -3129,6 +3130,7 @@ namespace StopwatchOverlay
                 instance.Window.SetRunning(false);
             }
             RefreshCombinedOverlayState();
+            UpdateRecIndicatorVisibility();
 
             string message = $"Timer '{timer.DisplayName}' paused automatically after reaching maximum continuous limit ({_settings.MaxContinuousTimerHours:0.#}h).";
             UpdateStatus(message, Brushes.OrangeRed);
@@ -3159,6 +3161,7 @@ namespace StopwatchOverlay
             {
                 TimerRailList?.Items.Refresh();
                 RefreshCombinedOverlayState();
+                UpdateRecIndicatorVisibility();
             }
         }
 
@@ -3598,26 +3601,9 @@ namespace StopwatchOverlay
             {
                 timer.ColonVisible = BlinkColonCheckBox?.IsChecked == true && timer.Mode == 1
                     ? !timer.ColonVisible : true;
-                timer.RecBlinkVisible = timer.IsRunning
-                    && ShowRecIndicatorCheckBox?.IsChecked == true
-                    && !timer.RecBlinkVisible;
-
-                foreach (var instance in _overlayInstances.Where(item => ReferenceEquals(item.Session, timer)))
-                    instance.Window.SetRecIndicatorVisible(timer.RecBlinkVisible);
             }
 
-            if (_combinedOverlayMode)
-            {
-                TimerSession? herdTimer = OverlayPresentationPolicy.SelectCombinedTimer(_timers, _activeTimer);
-                if (herdTimer != null)
-                {
-                    foreach (var instance in _combinedOverlayInstances)
-                        instance.Window.SetRecIndicatorVisible(herdTimer.RecBlinkVisible);
-                }
-            }
-
-            RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
-                ? Visibility.Visible : Visibility.Collapsed;
+            UpdateRecIndicatorVisibility(toggleBlink: true);
             UpdateTimeDisplay();
         }
 
@@ -4749,13 +4735,11 @@ namespace StopwatchOverlay
                 UpdateTimeDisplay();
             }
 
-            timer.RecBlinkVisible = timer.IsRunning && ShowRecIndicatorCheckBox?.IsChecked == true;
-            RecIndicator.Visibility = timer.RecBlinkVisible ? Visibility.Visible : Visibility.Collapsed;
             foreach (var overlay in ActiveOverlayWindows())
             {
-                overlay.SetRecIndicatorVisible(timer.RecBlinkVisible);
                 overlay.SetRunning(timer.IsRunning);
             }
+            UpdateRecIndicatorVisibility();
 
             UpdateButtonStates();
             UpdateShortcutLabels();
@@ -4786,14 +4770,12 @@ namespace StopwatchOverlay
 
             timer.LapTimes.Clear();
             timer.LapCount = 0;
-            timer.RecBlinkVisible = false;
             LapPlaceholder.Visibility = Visibility.Visible;
-            RecIndicator.Visibility = Visibility.Collapsed;
             foreach (var overlay in ActiveOverlayWindows())
             {
-                overlay.SetRecIndicatorVisible(false);
                 overlay.SetRunning(false);
             }
+            UpdateRecIndicatorVisibility();
 
             UpdateTimeDisplay();
             UpdateButtonStates();
@@ -5203,8 +5185,7 @@ namespace StopwatchOverlay
             if (ClickThroughCheckBox?.IsChecked == true)
                 overlay.SetClickThrough(true);
             
-            overlay.SetRecIndicatorVisible(timer.IsRunning
-                && ShowRecIndicatorCheckBox?.IsChecked == true);
+            overlay.SetRecIndicatorVisible(ReferenceEquals(timer, _activeTimer) ? _backgroundRecBlink : false);
             
             _overlayInstances.Add(new OverlayInstance(timer, screen, overlay));
         }
@@ -5518,21 +5499,61 @@ namespace StopwatchOverlay
             CheckpointState();
         }
 
-        private void UpdateRecIndicatorVisibility()
+        private bool _backgroundRecBlink;
+
+        private void UpdateRecIndicatorVisibility(bool toggleBlink = false)
         {
+            bool hasBackgroundRunning = _timers.Any(t => t.IsRunning && !ReferenceEquals(t, _activeTimer));
+            bool enabled = ShowRecIndicatorCheckBox?.IsChecked ?? _settings.ShowRecIndicator;
+
+            if (hasBackgroundRunning && enabled)
+            {
+                if (toggleBlink)
+                {
+                    _backgroundRecBlink = !_backgroundRecBlink;
+                }
+                else
+                {
+                    _backgroundRecBlink = true;
+                }
+            }
+            else
+            {
+                _backgroundRecBlink = false;
+            }
+
+            bool recVisible = _backgroundRecBlink;
+
             foreach (var timer in _timers)
             {
-                timer.RecBlinkVisible = _settings.ShowRecIndicator && timer.IsRunning;
+                timer.RecBlinkVisible = ReferenceEquals(timer, _activeTimer) ? recVisible : false;
                 foreach (var instance in _overlayInstances.Where(item => ReferenceEquals(item.Session, timer)))
                     instance.Window.SetRecIndicatorVisible(timer.RecBlinkVisible);
             }
-            if (_combinedOverlayMode && _activeTimer != null)
+
+            if (_combinedOverlayMode)
             {
                 foreach (var instance in _combinedOverlayInstances)
-                    instance.Window.SetRecIndicatorVisible(_activeTimer.RecBlinkVisible);
+                    instance.Window.SetRecIndicatorVisible(recVisible);
             }
-            RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
-                ? Visibility.Visible : Visibility.Collapsed;
+
+            RecIndicator.Visibility = recVisible ? Visibility.Visible : Visibility.Collapsed;
+
+            if (hasBackgroundRunning)
+            {
+                var bgRunning = _timers.Where(t => t.IsRunning && !ReferenceEquals(t, _activeTimer)).ToList();
+                string bgNames = string.Join(", ", bgRunning.Select(t => t.DisplayName));
+                string tip = $"Background stopwatch running: {bgNames}";
+                RecIndicator.ToolTip = tip;
+                foreach (var overlay in ActiveOverlayWindows())
+                    overlay.SetRecIndicatorToolTip(tip);
+            }
+            else
+            {
+                RecIndicator.ToolTip = null;
+                foreach (var overlay in ActiveOverlayWindows())
+                    overlay.SetRecIndicatorToolTip(null);
+            }
         }
 
         private void ClickThroughCheckBox_Changed(object sender, RoutedEventArgs e)
