@@ -1,6 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using StopwatchOverlay;
 using StopwatchOverlay.ActivityWatch;
 using Xunit;
@@ -256,25 +262,101 @@ public sealed class ActivityWatchSyncTests : IDisposable
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task SyncAsync_WithLiveServer_ProducesExpectedMarkdown()
+    public async Task SyncAsync_WithControlledServer_ExportsOnlyForegroundBrowserTime()
     {
+        await using var server = new ActivityWatchTestServer();
         var settings = new AppSettings
         {
-            ObsidianVaultFolder = @"C:\Users\h128\Documents\HCourses\SecondBrain\Time",
+            ObsidianVaultFolder = _testDirectory,
             ActivityWatchExportFileName = "ActivityWatch Log.md",
-            ActivityWatchServerUrl = "http://localhost:5600",
-            ActivityWatchEnabled = true
+            ActivityWatchServerUrl = server.BaseUrl,
+            ActivityWatchEnabled = true,
+            ActivityWatchIncludeWeb = true,
+            ActivityWatchIncludeTitles = true
         };
 
         var res1 = await ActivityWatchSync.SyncAsync(settings, new DateOnly(2026, 9, 25));
         Assert.True(res1.Success);
         var res2 = await ActivityWatchSync.SyncAsync(settings, new DateOnly(2026, 9, 26));
         Assert.True(res2.Success);
+        Assert.Equal(1, res2.AppCount);
+        Assert.Equal(1, res2.WebCount);
+        Assert.Equal(Path.Combine(_testDirectory, "ActivityWatch Log.md"), res2.TargetFilePath);
 
-        string content = await System.IO.File.ReadAllTextAsync(res2.TargetFilePath);
+        // Updating a date again must replace its section while retaining other dates.
+        var repeated = await ActivityWatchSync.SyncAsync(settings, new DateOnly(2026, 9, 26));
+        Assert.True(repeated.Success);
+        string content = await File.ReadAllTextAsync(res2.TargetFilePath);
         Assert.Contains("### ⏱️ Activity Timeline Intervals", content);
         Assert.Contains("| Date | Activity | Details | Start | End | Duration (min) | Duration | Type |", content);
-        // Ensure the bug where localhost was 10h 14m across the whole day is resolved
-        Assert.DoesNotContain("| 2026-09-26 | **localhost** | ActivityWatch | 00:00 | 10:13 | 614 | 10h 14m | Web |", content);
+        Assert.Contains("| 2026-09-26 | **localhost** | ActivityWatch | 10:13 | 10:20 | 7 | 7m | Web |", content);
+        Assert.Contains("## 📅 2026-09-25", content);
+        Assert.Equal(1, content.Split("## 📅 2026-09-26", StringSplitOptions.None).Length - 1);
+    }
+
+    // Exercise the real HTTP client, report generation and Markdown writer without
+    // depending on an installed ActivityWatch server or writing into a user's vault.
+    private sealed class ActivityWatchTestServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+        private readonly CancellationTokenSource _stop = new();
+        private readonly Task _requests;
+        public string BaseUrl { get; }
+
+        public ActivityWatchTestServer()
+        {
+            _listener.Start();
+            BaseUrl = $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
+            _requests = ServeAsync();
+        }
+
+        private async Task ServeAsync()
+        {
+            try
+            {
+                while (!_stop.IsCancellationRequested)
+                {
+                    using var connection = await _listener.AcceptTcpClientAsync(_stop.Token);
+                    await using var stream = connection.GetStream();
+                    using var reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                    string request = await reader.ReadLineAsync(_stop.Token) ?? "";
+                    while (await reader.ReadLineAsync(_stop.Token) is { Length: > 0 }) { }
+                    string path = request.Split(' ')[1].Split('?')[0];
+                    string json;
+                    if (path == "/api/0/buckets/")
+                    {
+                        json = """
+                            {"aw-watcher-window-test":{"id":"aw-watcher-window-test","type":"currentwindow"},
+                             "aw-watcher-web-chrome-test":{"id":"aw-watcher-web-chrome-test","type":"web.tab.current"}}
+                            """;
+                    }
+                    else
+                    {
+                        bool web = path.Contains("aw-watcher-web-chrome-test", StringComparison.Ordinal);
+                        var localTime = new DateTime(2026, 9, 26, web ? 0 : 10, web ? 0 : 13, 0, DateTimeKind.Local);
+                        json = JsonSerializer.Serialize(new[] { new
+                        {
+                            id = 1, timestamp = new DateTimeOffset(localTime).ToUniversalTime(),
+                            duration = web ? 37200 : 420,
+                            data = new { app = "chrome.exe", title = "ActivityWatch", url = "http://localhost:5600" }
+                        } });
+                    }
+                    byte[] body = Encoding.UTF8.GetBytes(json);
+                    byte[] header = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
+                    await stream.WriteAsync(header, _stop.Token);
+                    await stream.WriteAsync(body, _stop.Token);
+                }
+            }
+            catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+            catch (SocketException) when (_stop.IsCancellationRequested) { }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _stop.CancelAsync();
+            _listener.Stop();
+            await _requests;
+            _stop.Dispose();
+        }
     }
 }
