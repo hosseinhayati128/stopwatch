@@ -34,6 +34,7 @@ public partial class BackgroundTimerReminderPopup : Window
     {
         string effective = OverlayThemeManager.Apply(this, overlayTheme, applicationTheme);
         Themes.NavigatorVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
+        Themes.PirateVisual.SetEnabled(this, effective == OverlayThemeCatalog.Pirate);
     }
 
     public void ApplyOverlaySettings(
@@ -82,6 +83,28 @@ public partial class BackgroundTimerReminderPopup : Window
         {
             ReminderBackgroundSurface.Effect = shadow;
         }
+        bool pirate = Themes.PirateVisual.GetEnabled(this);
+        PirateFrame.Visibility = PiratePaper.Visibility = pirate ? Visibility.Visible : Visibility.Collapsed;
+        PirateFrame.Opacity = PiratePaper.Opacity = Math.Clamp(bgOpacity, 0, 1);
+        ReminderBackgroundSurface.Visibility = pirate ? Visibility.Collapsed : Visibility.Visible;
+        ReminderBorder.BorderThickness = new Thickness(pirate ? 0 : 1);
+        ReminderBorder.Padding = pirate ? new Thickness(22) : new Thickness(14, 10, 14, 10);
+        ReminderBorder.MinWidth = pirate ? 380 : 310;
+        ReminderBorder.MaxWidth = pirate ? 460 : 400;
+        if (pirate) ReminderInnerRule.Visibility = Visibility.Collapsed;
+        else ReminderInnerRule.SetResourceReference(VisibilityProperty, "OverlayInnerRuleVisibility");
+        ReminderHeading.FontSize = pirate ? 22 : 11;
+        ReminderHeading.Foreground = pirate ? new SolidColorBrush(Color.FromRgb(242, 213, 156)) : (Brush)FindResource("OverlayProjectForegroundBrush");
+        TimerNameText.FontSize = pirate ? 21 : (double)FindResource("OverlayProjectFontSize");
+        TimerElapsedText.FontSize = pirate ? 38 : 18;
+        TimerDetails.Margin = pirate ? new Thickness(18, 14, 18, 0) : new Thickness(0);
+        TimerElapsedText.Margin = pirate ? new Thickness(18, 6, 18, 14) : new Thickness(0);
+        TimerElapsedText.HorizontalAlignment = pirate ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+        Grid.SetColumn(TimerElapsedText, pirate ? 0 : 1);
+        Grid.SetColumnSpan(TimerElapsedText, pirate ? 2 : 1);
+        Grid.SetRow(TimerElapsedText, pirate ? 1 : 0);
+        Grid.SetColumnSpan(TimerDetails, pirate ? 2 : 1);
+        TypographyManager.ApplyWindow(this);
     }
 
     private Color GetThemeColor(string key, Color fallback)
@@ -90,6 +113,15 @@ public partial class BackgroundTimerReminderPopup : Window
             : fallback;
 
     public void ShowAlert(BackgroundTimerAlert alert, Window? targetWindow)
+    {
+        PrepareAlert(alert);
+        Reposition(targetWindow);
+        _countdownTimer.Stop();
+        _countdownTimer.Start();
+        Show();
+    }
+
+    internal void PrepareAlert(BackgroundTimerAlert alert)
     {
         _timerSessionId = alert.TimerSessionId;
         _remainingSeconds = (int)Math.Max(5, alert.Duration.TotalSeconds);
@@ -108,6 +140,11 @@ public partial class BackgroundTimerReminderPopup : Window
             ReminderBadgeBorder.Background = new SolidColorBrush(Color.FromArgb(40, 229, 57, 53));
             ReminderBadgeText.Foreground = (Brush)FindResource("RecBrush");
             ReminderBadgeText.Text = $"⚠️ Final reminder ({alert.ReminderIndex} of {alert.MaxRemindersBeforeStop})";
+            if (Themes.PirateVisual.GetEnabled(this))
+            {
+                ReminderBadgeBorder.Background = new SolidColorBrush(Color.FromRgb(120, 48, 36));
+                ReminderBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(255, 232, 189));
+            }
         }
         else
         {
@@ -117,12 +154,6 @@ public partial class BackgroundTimerReminderPopup : Window
             ReminderBadgeText.Text = $"Reminder {alert.ReminderIndex} of {alert.MaxRemindersBeforeStop}";
         }
 
-        Reposition(targetWindow);
-
-        _countdownTimer.Stop();
-        _countdownTimer.Start();
-
-        Show();
     }
 
     public void UpdateElapsed(TimeSpan elapsed)

@@ -68,7 +68,7 @@
             <Setter Property="BorderThickness" Value="{DynamicResource ThemePanelBorderThickness}"/>
             <Setter Property="CornerRadius" Value="{DynamicResource ThemeDashboardCardCornerRadius}"/>
             <Setter Property="Effect" Value="{DynamicResource ThemePanelShadowEffect}"/>
-            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Padding" Value="24"/>
             <Style.Triggers>
                 <Trigger Property="ac:AcanthusVisual.Scope" Value="Visible">
                     <Setter Property="BorderBrush" Value="{DynamicResource SubtleDividerBrush}"/>
@@ -87,7 +87,7 @@
         <Style x:Key="SummaryCard" TargetType="Border" BasedOn="{StaticResource DashboardCard}">
             <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
             <Setter Property="Margin" Value="0,0,10,0"/>
-            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="Padding" Value="24,20"/>
             <Style.Triggers>
                 <Trigger Property="ac:AcanthusVisual.Scope" Value="Visible">
                     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
@@ -174,8 +174,8 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Style.Triggers>
                 <Trigger Property="ac:PirateVisual.Enabled" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource PiratePaperBrush}"/>
-                    <Setter Property="BorderBrush" Value="#9B703F"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
                     <Setter Property="Foreground" Value="#3C1C11"/>
                 </Trigger>
             </Style.Triggers>
@@ -237,6 +237,7 @@
         </Style>
     </Window.Resources>
 
+    <ac:NoteArtworkBorder Artwork="Frame" Padding="12">
     <DockPanel Style="{StaticResource DashboardFrame}" LayoutTransform="{DynamicResource ApplicationScaleTransform}">
         <Border DockPanel.Dock="Top"
                 Style="{StaticResource DashboardHeader}"
@@ -259,7 +260,7 @@
                           Source="{StaticResource AcanthusCrestImage}" Stretch="Uniform"
                           Visibility="{DynamicResource OrnamentVisibility}"/>
                     <StackPanel>
-                        <TextBlock Text="Project time" Style="{StaticResource DashboardWoodHeading}"/>
+                        <TextBlock Text="Records &amp; Analytics" Style="{StaticResource DashboardWoodHeading}"/>
                         <TextBlock Text="Analytics and project records"
                                    Style="{StaticResource DashboardWoodCaption}" Margin="0,3,0,0"/>
                     </StackPanel>
@@ -357,7 +358,7 @@
                 </Grid>
 
                 <UniformGrid x:Name="SummaryGrid" Grid.Row="1" Rows="1" Columns="5" Margin="0,0,-10,18">
-                    <Border Style="{StaticResource SummaryCard}">
+                    <ac:NoteArtworkBorder Artwork="Paper" Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
                         <StackPanel>
@@ -367,8 +368,8 @@
                                        FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
-                    </Border>
-                    <Border Style="{StaticResource SummaryCard}">
+                    </ac:NoteArtworkBorder>
+                    <ac:NoteArtworkBorder Artwork="Paper" Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
                         <StackPanel>
@@ -378,8 +379,8 @@
                                        FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
-                    </Border>
-                    <Border Style="{StaticResource SummaryCard}">
+                    </ac:NoteArtworkBorder>
+                    <ac:NoteArtworkBorder Artwork="Paper" Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
                         <StackPanel>
@@ -389,8 +390,8 @@
                                        FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
-                    </Border>
-                    <Border Style="{StaticResource SummaryCard}">
+                    </ac:NoteArtworkBorder>
+                    <ac:NoteArtworkBorder Artwork="Paper" Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
                         <StackPanel>
@@ -400,8 +401,8 @@
                                        FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
-                    </Border>
-                    <Border Style="{StaticResource SummaryCard}">
+                    </ac:NoteArtworkBorder>
+                    <ac:NoteArtworkBorder Artwork="Paper" Style="{StaticResource SummaryCard}">
                         <Grid>
                             <Rectangle Style="{StaticResource DashboardSkull}"/>
                         <Grid>
@@ -419,7 +420,7 @@
                                      Fill="{DynamicResource AccentBrush}" VerticalAlignment="Bottom" Margin="8,4,0,0"/>
                         </Grid>
                     </Grid>
-                    </Border>
+                    </ac:NoteArtworkBorder>
                 </UniformGrid>
 
                 <Grid x:Name="ChartsGrid" Grid.Row="2" Margin="0,0,0,16">
@@ -427,23 +428,23 @@
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Style="{StaticResource DashboardCard}" Margin="0,0,8,0" MinHeight="230">
+                    <ac:NoteArtworkBorder Artwork="Paper" Grid.Column="0" Style="{StaticResource DashboardCard}" Margin="0,0,8,0" MinHeight="230">
                         <StackPanel>
                             <TextBlock Text="Time by project" Style="{StaticResource ChartTitle}"/>
                             <TextBlock Text="Compared within the selected period" Style="{StaticResource Caption}" Margin="0,4,0,16"/>
                             <StackPanel x:Name="ProjectBarsPanel"/>
                         </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Style="{StaticResource DashboardCard}" Margin="8,0,0,0" MinHeight="230">
+                    </ac:NoteArtworkBorder>
+                    <ac:NoteArtworkBorder Artwork="Paper" Grid.Column="1" Style="{StaticResource DashboardCard}" Margin="8,0,0,0" MinHeight="230">
                         <StackPanel>
                             <TextBlock Text="Daily totals" Style="{StaticResource ChartTitle}"/>
                             <TextBlock Text="Tracked time by local date" Style="{StaticResource Caption}" Margin="0,4,0,16"/>
                             <StackPanel x:Name="DailyBarsPanel"/>
                         </StackPanel>
-                    </Border>
+                    </ac:NoteArtworkBorder>
                 </Grid>
 
-                <Border x:Name="HeatmapCard" Grid.Row="3" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
+                <ac:NoteArtworkBorder Artwork="Paper" x:Name="HeatmapCard" Grid.Row="3" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
                     <StackPanel>
                         <Grid Margin="0,0,0,14">
                             <Grid.ColumnDefinitions>
@@ -480,18 +481,19 @@
                                         HorizontalAlignment="Right"/>
                         </Grid>
                     </StackPanel>
-                </Border>
+                </ac:NoteArtworkBorder>
 
-                <Border x:Name="TimelineCard" Grid.Row="4" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
+                <ac:NoteArtworkBorder Artwork="Paper" x:Name="TimelineCard" Grid.Row="4" Style="{StaticResource DashboardCard}" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Daily timeline" Style="{StaticResource ChartTitle}"/>
                         <TextBlock Text="Each row spans 00:00&#x2013;24:00; overlapping timers use separate lanes"
                                    Style="{StaticResource Caption}" Margin="0,4,0,16"/>
                         <StackPanel x:Name="TimelineDaysPanel"/>
                     </StackPanel>
-                </Border>
+                </ac:NoteArtworkBorder>
 
-                <Grid Grid.Row="5" Margin="0,0,0,16">
+                <ac:NoteArtworkBorder Artwork="Paper" Grid.Row="5" Margin="0,0,0,16" Padding="8">
+                <Grid>
                     <Expander x:Name="ProjectRecordsExpander"
                               Style="{StaticResource DashboardRecordsExpander}"
                               IsExpanded="False"
@@ -608,8 +610,9 @@
                             ToolTipService.ShowOnDisabled="True"
                             Click="AddRecordButton_Click"/>
                 </Grid>
+                </ac:NoteArtworkBorder>
 
-                <Border x:Name="EmptyState" Grid.Row="6" Style="{StaticResource DashboardCard}"
+                <ac:NoteArtworkBorder Artwork="Paper" x:Name="EmptyState" Grid.Row="6" Style="{StaticResource DashboardCard}"
                         Padding="28" Margin="0,16,0,0" Visibility="Collapsed">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock x:Name="EmptyStateHeadingText" Text="No tracked time in this period" FontSize="17" FontWeight="SemiBold"
@@ -618,8 +621,9 @@
                                    Style="{StaticResource Caption}" Margin="0,7,0,0"
                                    HorizontalAlignment="Center" TextAlignment="Center"/>
                     </StackPanel>
-                </Border>
+                </ac:NoteArtworkBorder>
             </Grid>
         </ScrollViewer>
     </DockPanel>
+    </ac:NoteArtworkBorder>
 </Window>

@@ -27,6 +27,7 @@ public partial class PeriodicReviewWindow : Window
     private bool _isStep2 => _currentStep == 2;
     private bool _isStep3 => _currentStep == 3;
     private bool _handled;
+    private bool _allocationsInitialized;
     private double _thresholdPercent;
     private bool _isOthersExpanded;
 
@@ -49,6 +50,7 @@ public partial class PeriodicReviewWindow : Window
         public TextBox MinInput { get; set; } = null!;
         public TextBox? StartBox { get; set; }
         public TextBox? EndBox { get; set; }
+        public Button? SplitButton { get; set; }
     }
 
     private readonly List<AllocatedCardViewHolder> _cardViewHolders = [];
@@ -61,6 +63,10 @@ public partial class PeriodicReviewWindow : Window
     private TimeSpan _dragItemDuration;
     private DateTime _dragMinStartUtc;
     private DateTime _dragMaxStartUtc;
+    private ReviewTimelineResize? _timelineResize;
+    private double _resizeStartX;
+    private double _resizeTrackWidth;
+    private int? _resizeDeltaMinutes;
 
     // Unallocated drag state
     private bool _isUnallocDragging;
@@ -79,6 +85,14 @@ public partial class PeriodicReviewWindow : Window
         Color.FromRgb(77, 208, 225)    // Turquoise
     ];
 
+    private static readonly Color[] PiratePaletteColors =
+    [
+        Color.FromRgb(22, 124, 112), Color.FromRgb(142, 94, 43),
+        Color.FromRgb(133, 43, 34), Color.FromRgb(67, 101, 115),
+        Color.FromRgb(109, 79, 105), Color.FromRgb(92, 115, 59), Color.FromRgb(157, 101, 65)
+    ];
+    private static Color[] ReviewPalette => AppThemeManager.IsPirate ? PiratePaletteColors : PaletteColors;
+
     public PeriodicReviewWindow(
         DateTime startUtc,
         DateTime endUtc,
@@ -90,6 +104,15 @@ public partial class PeriodicReviewWindow : Window
         Action<MoodEntry>? onSaveMood = null)
     {
         InitializeComponent();
+
+        if (AppThemeManager.IsPirate)
+        {
+            Themes.PirateVisual.SetEnabled(this, true);
+            ReviewTitle.SetResourceReference(TextBlock.FontFamilyProperty, "PirateHeadingFont");
+            ReviewTitle.Foreground = new SolidColorBrush(Color.FromRgb(243, 217, 168));
+            StepSubtitleText.Foreground = new SolidColorBrush(Color.FromRgb(232, 201, 155));
+            FooterShortcutHintText.Foreground = new SolidColorBrush(Color.FromRgb(232, 201, 155));
+        }
 
         _startUtc = PeriodicReviewDataAggregator.TruncateToMinute(ProjectTimeHistory.NormalizeUtc(startUtc));
         _endUtc = PeriodicReviewDataAggregator.TruncateToMinute(ProjectTimeHistory.NormalizeUtc(endUtc));
@@ -124,19 +147,53 @@ public partial class PeriodicReviewWindow : Window
             : "Step 1 of 2: Projects & Overview";
 
         DistributionBarContainer.Background = Brushes.Transparent;
+        DistributionBarContainer.Focusable = true;
         DistributionBarContainer.PreviewMouseMove += DistributionBarContainer_PreviewMouseMove;
         DistributionBarContainer.PreviewMouseLeftButtonUp += DistributionBarContainer_PreviewMouseLeftButtonUp;
         DistributionBarContainer.LostMouseCapture += (_, _) =>
         {
+            if (_timelineResize != null) EndTimelineResize(cancel: true);
             _draggingItem = null;
             _isUnallocDragging = false;
             _unallocDragSlot = null;
         };
 
         InitializeProjectsList();
+        // Stopwatch history is local and must be available even while ActivityWatch loads.
+        _model = new PeriodicReviewModel
+        {
+            StartUtc = _startUtc, EndUtc = _endUtc,
+            StopwatchSlots = PeriodicReviewDataAggregator.SliceStopwatchIntervals(_startUtc, _endUtc, _history, _runningSessions)
+        };
+        AutoSelectStopwatchProjects();
     }
 
     private int TotalPeriodMinutes => Math.Max(1, (int)Math.Round((_endUtc - _startUtc).TotalMinutes));
+
+    private void ReviewScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Prefer the nearest scrollable child (for example a multiline note), then
+        // pass through exhausted/non-scrollable project panels to the page.
+        for (DependencyObject? node = e.OriginalSource as DependencyObject; node != null;
+             node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
+        {
+            if (node == MoodSlider) return; // Keep its explicit wheel-to-score control.
+            if (node is not ScrollViewer viewer) continue;
+            bool canScroll = e.Delta > 0 ? viewer.VerticalOffset > 0 : viewer.VerticalOffset < viewer.ScrollableHeight;
+            if (!canScroll) continue;
+            int lines = SystemParameters.WheelScrollLines;
+            double distance = lines < 0 ? viewer.ViewportHeight : lines * 16;
+            viewer.ScrollToVerticalOffset(viewer.VerticalOffset - e.Delta / 120.0 * distance);
+            e.Handled = true;
+            return;
+        }
+    }
+
+    private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Left && e.ButtonState == MouseButtonState.Pressed)
+            DragMove();
+    }
     private TimeSpan TotalPeriodDuration => _endUtc > _startUtc ? _endUtc - _startUtc : TimeSpan.FromMinutes(30);
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -193,7 +250,7 @@ public partial class PeriodicReviewWindow : Window
                 _runningSessions);
 
             SyncKnownProjects();
-            AutoSelectStopwatchProjects();
+            if (!_allocationsInitialized) AutoSelectStopwatchProjects();
             UpdateStep1SequenceSummary();
             RenderProjectCards();
             RenderActivitySummaries();
@@ -360,11 +417,11 @@ public partial class PeriodicReviewWindow : Window
 
             var addAnotherBtn = new Button
             {
-                Content = "＋",
-                Width = 20,
-                Height = 20,
+                Content = "+ Part",
+                MinWidth = 30,
+                MinHeight = 32,
                 Padding = new Thickness(0),
-                FontSize = 10,
+                FontSize = 15,
                 FontWeight = FontWeights.Bold,
                 Style = (Style)FindResource("SecondaryButton"),
                 ToolTip = $"Add another session of {item.DisplayName} to sequence"
@@ -379,10 +436,10 @@ public partial class PeriodicReviewWindow : Window
             var removeBtn = new Button
             {
                 Content = "✕",
-                Width = 20,
-                Height = 20,
+                MinWidth = 30,
+                MinHeight = 32,
                 Padding = new Thickness(0),
-                FontSize = 9,
+                FontSize = 15,
                 Margin = new Thickness(3, 0, 0, 0),
                 Style = (Style)FindResource("SecondaryButton"),
                 ToolTip = $"Remove last session of {item.DisplayName} from sequence"
@@ -408,7 +465,7 @@ public partial class PeriodicReviewWindow : Window
             var iconText = new TextBlock
             {
                 Text = item.IsBreak ? "☕ " : "📁 ",
-                FontSize = 12,
+                FontSize = 15,
                 Margin = new Thickness(0, 0, 6, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -419,7 +476,7 @@ public partial class PeriodicReviewWindow : Window
         var labelText = new TextBlock
         {
             Text = item.DisplayName,
-            FontSize = 12,
+            FontSize = 15,
             FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal,
             Foreground = isSelected ? (Brush)FindResource("PrimaryTextBrush") : (Brush)FindResource("SecondaryTextBrush"),
             VerticalAlignment = VerticalAlignment.Center
@@ -566,10 +623,10 @@ public partial class PeriodicReviewWindow : Window
             var closeBtn = new Button
             {
                 Content = "✕",
-                Width = 16,
-                Height = 16,
+                MinWidth = 30,
+                MinHeight = 32,
                 Padding = new Thickness(0),
-                FontSize = 8.5,
+                FontSize = 15,
                 Margin = new Thickness(5, 0, 0, 0),
                 Style = (Style)FindResource("SecondaryButton"),
                 ToolTip = "Remove this session from sequence"
@@ -695,7 +752,7 @@ public partial class PeriodicReviewWindow : Window
                 {
                     Text = "No ActivityWatch logs recorded during this period.",
                     Foreground = (Brush)FindResource("SecondaryTextBrush"),
-                    FontSize = 12,
+                    FontSize = 15,
                     Margin = new Thickness(10, 20, 10, 0),
                     HorizontalAlignment = HorizontalAlignment.Center
                 };
@@ -927,7 +984,13 @@ public partial class PeriodicReviewWindow : Window
         if (_selectedItems.Count == 0) return;
 
         // Build exact chronological allocations from stopwatch slots and manual selections
-        PrePopulateStopwatchAllocations();
+        if (!_allocationsInitialized)
+        {
+            PrePopulateStopwatchAllocations();
+            _allocationsInitialized = true;
+        }
+        foreach (var item in _selectedItems.Where(it => !it.StartUtc.HasValue).ToList())
+            ReviewTimelineEditor.PlaceNew(_selectedItems, item, _startUtc, _endUtc);
 
         _currentStep = 2;
         Step1Container.Visibility = Visibility.Collapsed;
@@ -937,7 +1000,7 @@ public partial class PeriodicReviewWindow : Window
         StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
             ? "Step 2 of 3: Time Allocation"
             : "Step 2 of 2: Time Allocation";
-        StepSubtitleText.Text = "Step 2: Allocate & position time. Drag items on the timeline to move them. Click ∨ to set exact times.";
+        StepSubtitleText.Text = "Duration grows to the right, replacing manual time. Shrinking leaves a gap. Fixed records stay locked. Use Times to move a session.";
 
         Step1SkipButton.Visibility = Visibility.Collapsed;
         Step2BackButton.Visibility = Visibility.Visible;
@@ -982,21 +1045,6 @@ public partial class PeriodicReviewWindow : Window
         Step3SkipButton.Visibility = Visibility.Collapsed;
         Step3SaveButton.Visibility = Visibility.Collapsed;
 
-        // Restore _selectedItems to project cards preserving duplicates
-        var clonedList = _selectedItems
-            .Select(it => new ReviewProjectSelectionItem
-            {
-                ProjectName = it.ProjectName,
-                OriginalProjectName = it.OriginalProjectName,
-                IsBreak = it.IsBreak,
-                AllocatedMinutes = it.AllocatedMinutes,
-                IsFixedTracked = it.IsFixedTracked,
-                StopwatchIntervalId = it.StopwatchIntervalId
-            })
-            .ToList();
-        _selectedItems.Clear();
-        _selectedItems.AddRange(clonedList);
-
         RenderStep1();
     }
 
@@ -1014,8 +1062,8 @@ public partial class PeriodicReviewWindow : Window
         UpdateCollisionButtonUI();
 
         // Repack and build full contiguous timeline so items have valid StartUtc and EndUtc
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
-        PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
+        ReviewTimelineEditor.Sort(_selectedItems);
+        ReviewTimelineEditor.Snapshot(_startUtc, _endUtc, _selectedItems);
 
         RenderAllocatedCards();
         SyncAllViews(updateCards: true);
@@ -1033,7 +1081,7 @@ public partial class PeriodicReviewWindow : Window
         }
         SettingsStore.Save(_settings);
         UpdateCollisionButtonUI();
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+        ReviewTimelineEditor.Sort(_selectedItems);
         RenderAllocatedCards();
         SyncAllViews(updateCards: true);
     }
@@ -1072,9 +1120,9 @@ public partial class PeriodicReviewWindow : Window
             IsBreak = isBreak,
             AllocatedMinutes = 0
         };
-        _selectedItems.Add(newItem);
+        ReviewTimelineEditor.PlaceNew(_selectedItems, newItem, _startUtc, _endUtc);
         for (int k = 0; k < _selectedItems.Count; k++) _selectedItems[k].SelectionOrder = k + 1;
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+        ReviewTimelineEditor.Sort(_selectedItems);
         RenderAllocatedCards();
         SyncAllViews(updateCards: true);
     }
@@ -1087,6 +1135,7 @@ public partial class PeriodicReviewWindow : Window
         double half1 = Math.Floor(curMin / 2.0);
         double half2 = curMin - half1;
         item.AllocatedMinutes = half1;
+        item.EndUtc = (item.StartUtc ?? _startUtc).AddMinutes(half1);
 
         var part2 = new ReviewProjectSelectionItem
         {
@@ -1108,7 +1157,7 @@ public partial class PeriodicReviewWindow : Window
             _selectedItems.Add(part2);
         }
 
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+        ReviewTimelineEditor.Sort(_selectedItems);
         RenderAllocatedCards();
         SyncAllViews(updateCards: true);
     }
@@ -1116,7 +1165,7 @@ public partial class PeriodicReviewWindow : Window
     private void DeleteSession(ReviewProjectSelectionItem item)
     {
         _selectedItems.Remove(item);
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+        ReviewTimelineEditor.Sort(_selectedItems);
         RenderAllocatedCards();
         SyncAllViews(updateCards: true);
     }
@@ -1124,14 +1173,17 @@ public partial class PeriodicReviewWindow : Window
     private void SetItemAllocatedMinutes(ReviewProjectSelectionItem changedItem, double targetMinutes)
     {
         if (changedItem.IsFixedTracked) return;
-        PeriodicReviewDataAggregator.RebalanceAllocatedMinutes(_selectedItems, changedItem, targetMinutes, TotalPeriodMinutes);
-        PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+        ReviewTimelineEditor.Resize(_selectedItems, changedItem, targetMinutes, _startUtc, _endUtc,
+            _settings.PeriodicReviewFixedCollisionBehavior);
+        if (_selectedItems.Count != _cardViewHolders.Count ||
+            !_selectedItems.SequenceEqual(_cardViewHolders.Select(holder => holder.Item)))
+            RenderAllocatedCards();
         SyncAllViews(updateCards: true);
     }
 
     private void SyncAllViews(bool updateCards = true)
     {
-        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
+        var fullTimeline = ReviewTimelineEditor.Snapshot(_startUtc, _endUtc, _selectedItems);
 
         RenderDistributionBar(fullTimeline);
         RenderTimelinePreview(fullTimeline);
@@ -1176,6 +1228,7 @@ public partial class PeriodicReviewWindow : Window
                     }
 
                     holder.Border.ToolTip = CreateRichToolTip(it);
+                    if (holder.SplitButton != null) holder.SplitButton.IsEnabled = it.AllocatedMinutes >= 2;
                 }
             }
             finally
@@ -1215,7 +1268,7 @@ public partial class PeriodicReviewWindow : Window
             SnapsToDevicePixels = true
         };
 
-        var color = PaletteColors[index % PaletteColors.Length];
+        var color = ReviewPalette[index % ReviewPalette.Length];
 
         // Attach rich Hover ToolTip
         border.ToolTip = CreateRichToolTip(item);
@@ -1233,7 +1286,7 @@ public partial class PeriodicReviewWindow : Window
             Background = item.IsFixedTracked ? (Brush)FindResource("AccentBrush") : new SolidColorBrush(color),
             CornerRadius = new CornerRadius(10),
             MinWidth = 22,
-            Height = 22,
+            MinHeight = 34,
             Padding = new Thickness(6, 0, 6, 0),
             Margin = new Thickness(0, 0, 8, 0),
             VerticalAlignment = VerticalAlignment.Center
@@ -1327,17 +1380,17 @@ public partial class PeriodicReviewWindow : Window
         headGrid.Children.Add(titleStack);
 
         // Header Action Controls: Shift (◀ ▶) + Move (▲ ▼) + Split + Add Part + Delete + Expand Chevron (∨)
-        var actionStack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        var actionStack = new WrapPanel { Margin = new Thickness(0, 8, 0, 8) };
 
         // Shift Buttons (◀ 1m earlier, ▶ 1m later)
         var shiftLeftBtn = new Button
         {
-            Content = "◀",
-            Width = 24,
-            Height = 22,
+            Content = "← 1m",
+            MinWidth = 40,
+            MinHeight = 34,
             Margin = new Thickness(0, 0, 3, 0),
             Padding = new Thickness(0),
-            FontSize = 9,
+            FontSize = 15,
             IsEnabled = !item.IsFixedTracked,
             Style = (Style)FindResource("SecondaryButton"),
             ToolTip = item.IsFixedTracked ? "Fixed stopwatch records cannot be shifted" : "Shift 1 minute earlier on timeline"
@@ -1347,12 +1400,12 @@ public partial class PeriodicReviewWindow : Window
 
         var shiftRightBtn = new Button
         {
-            Content = "▶",
-            Width = 24,
-            Height = 22,
+            Content = "1m →",
+            MinWidth = 40,
+            MinHeight = 34,
             Margin = new Thickness(0, 0, 6, 0),
             Padding = new Thickness(0),
-            FontSize = 9,
+            FontSize = 15,
             IsEnabled = !item.IsFixedTracked,
             Style = (Style)FindResource("SecondaryButton"),
             ToolTip = item.IsFixedTracked ? "Fixed stopwatch records cannot be shifted" : "Shift 1 minute later on timeline"
@@ -1365,20 +1418,19 @@ public partial class PeriodicReviewWindow : Window
         {
             var upBtn = new Button
             {
-                Content = "▲",
-                Width = 24,
-                Height = 22,
+                Content = "Earlier",
+                MinWidth = 40,
+                MinHeight = 34,
                 Margin = new Thickness(0, 0, 3, 0),
                 Padding = new Thickness(0),
-                FontSize = 9,
+                FontSize = 15,
                 Style = (Style)FindResource("SecondaryButton"),
+                IsEnabled = !item.IsFixedTracked && !_selectedItems[index - 1].IsFixedTracked,
                 ToolTip = "Swap order with previous project"
             };
             upBtn.Click += (_, _) =>
             {
-                (_selectedItems[index], _selectedItems[index - 1]) = (_selectedItems[index - 1], _selectedItems[index]);
-                for (int k = 0; k < _selectedItems.Count; k++) _selectedItems[k].SelectionOrder = k + 1;
-                PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+                ReviewTimelineEditor.Swap(_selectedItems, item, -1);
                 RenderAllocatedCards();
                 SyncAllViews(updateCards: true);
             };
@@ -1388,20 +1440,19 @@ public partial class PeriodicReviewWindow : Window
         {
             var downBtn = new Button
             {
-                Content = "▼",
-                Width = 24,
-                Height = 22,
+                Content = "Later",
+                MinWidth = 40,
+                MinHeight = 34,
                 Margin = new Thickness(0, 0, 6, 0),
                 Padding = new Thickness(0),
-                FontSize = 9,
+                FontSize = 15,
                 Style = (Style)FindResource("SecondaryButton"),
+                IsEnabled = !item.IsFixedTracked && !_selectedItems[index + 1].IsFixedTracked,
                 ToolTip = "Swap order with next project"
             };
             downBtn.Click += (_, _) =>
             {
-                (_selectedItems[index], _selectedItems[index + 1]) = (_selectedItems[index + 1], _selectedItems[index]);
-                for (int k = 0; k < _selectedItems.Count; k++) _selectedItems[k].SelectionOrder = k + 1;
-                PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
+                ReviewTimelineEditor.Swap(_selectedItems, item, 1);
                 RenderAllocatedCards();
                 SyncAllViews(updateCards: true);
             };
@@ -1409,32 +1460,64 @@ public partial class PeriodicReviewWindow : Window
         }
 
         // Split Session Button
-        if (!item.IsFixedTracked && item.AllocatedMinutes >= 2)
+        Button? splitButton = null;
+        if (!item.IsFixedTracked)
         {
             var splitBtn = new Button
             {
-                Content = "✂️",
-                Width = 24,
-                Height = 22,
+                Content = "Split",
+                MinWidth = 40,
+                MinHeight = 34,
                 Margin = new Thickness(0, 0, 3, 0),
                 Padding = new Thickness(0),
-                FontSize = 10,
+                FontSize = 15,
                 Style = (Style)FindResource("SecondaryButton"),
-                ToolTip = "Split this session into two parts"
+                IsEnabled = item.AllocatedMinutes >= 2,
+                ToolTip = "Split this session into two parts (requires at least 2 minutes)"
             };
             splitBtn.Click += (_, _) => SplitSession(item);
+            splitButton = splitBtn;
             actionStack.Children.Add(splitBtn);
+        }
+
+        if (!item.IsFixedTracked)
+        {
+            var replaceButton = new Button
+            {
+                Content = "Replace", MinHeight = 34, FontSize = 15, Margin = new Thickness(0, 0, 6, 0),
+                Padding = new Thickness(8, 3, 8, 3), Style = (Style)FindResource("SecondaryButton"),
+                ToolTip = "Change this session to another project or a break without moving its time."
+            };
+            replaceButton.Click += (_, _) =>
+            {
+                var menu = new ContextMenu { PlacementTarget = replaceButton };
+                foreach (var project in _availableProjects)
+                {
+                    var choice = new MenuItem { Header = project.DisplayName };
+                    choice.Click += (_, _) =>
+                    {
+                        item.ProjectName = project.ProjectName;
+                        item.IsBreak = project.IsBreak;
+                        ReviewTimelineEditor.Sort(_selectedItems);
+                        RenderAllocatedCards();
+                        SyncAllViews();
+                    };
+                    menu.Items.Add(choice);
+                }
+                menu.IsOpen = true;
+            };
+            actionStack.Children.Add(replaceButton);
         }
 
         // Add Part Button
         var addPartBtn = new Button
         {
-            Content = "＋",
-            Width = 24,
-            Height = 22,
+            Content = "+ Part",
+            MinWidth = 40,
+            MinHeight = 34,
             Margin = new Thickness(0, 0, 3, 0),
             Padding = new Thickness(0),
-            FontSize = 11,
+            FontSize = 15,
             Style = (Style)FindResource("SecondaryButton"),
             ToolTip = "Add another session of this project"
         };
@@ -1444,12 +1527,12 @@ public partial class PeriodicReviewWindow : Window
         // Delete Session Button
         var delBtn = new Button
         {
-            Content = "🗑️",
-            Width = 24,
-            Height = 22,
+            Content = "Remove",
+            MinWidth = 40,
+            MinHeight = 34,
             Margin = new Thickness(0, 0, 6, 0),
             Padding = new Thickness(0),
-            FontSize = 9.5,
+            FontSize = 15,
             Style = (Style)FindResource("SecondaryButton"),
             ToolTip = item.IsFixedTracked ? "Remove this stopwatch record from review" : "Delete this session"
         };
@@ -1459,11 +1542,11 @@ public partial class PeriodicReviewWindow : Window
         // Expand Chevron Button (∨ / ▲)
         var expandBtn = new Button
         {
-            Content = item.IsExpanded ? "▲" : "∨",
-            Width = 26,
-            Height = 22,
+            Content = item.IsExpanded ? "Less" : "Times",
+            MinWidth = 40,
+            MinHeight = 34,
             Padding = new Thickness(0),
-            FontSize = 10,
+            FontSize = 15,
             FontWeight = FontWeights.Bold,
             Style = (Style)FindResource("SecondaryButton"),
             ToolTip = item.IsExpanded ? "Collapse exact time fields" : "Expand to set exact start and end times"
@@ -1476,9 +1559,8 @@ public partial class PeriodicReviewWindow : Window
         };
         actionStack.Children.Add(expandBtn);
 
-        Grid.SetColumn(actionStack, 2);
-        headGrid.Children.Add(actionStack);
         stack.Children.Add(headGrid);
+        stack.Children.Add(actionStack);
 
         // Collision Warning Banner (if any)
         if (!string.IsNullOrWhiteSpace(item.CollisionWarning))
@@ -1504,6 +1586,8 @@ public partial class PeriodicReviewWindow : Window
 
         // 2. Duration Controls: Slider + Text box + Quick +/- Buttons
         var ctrlGrid = new Grid();
+        ctrlGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        ctrlGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         ctrlGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Slider
         ctrlGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // TextBox (min)
         ctrlGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // Preset Buttons
@@ -1524,8 +1608,8 @@ public partial class PeriodicReviewWindow : Window
         var minInput = new TextBox
         {
             Text = ((int)Math.Round(item.AllocatedMinutes)).ToString(),
-            Width = 44,
-            Height = 26,
+            Width = 58,
+            MinHeight = 34,
             TextAlignment = TextAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
             FontSize = 12,
@@ -1550,17 +1634,18 @@ public partial class PeriodicReviewWindow : Window
             }
         };
 
-        minInput.TextChanged += (_, _) =>
+        void CommitMinutes()
         {
             if (_isUpdatingViews || item.IsFixedTracked) return;
-            if (int.TryParse(minInput.Text, out int parsed))
-            {
-                int clamped = Math.Clamp(parsed, 0, maxMinutes);
-                if ((int)Math.Round(item.AllocatedMinutes) != clamped)
-                {
-                    SetItemAllocatedMinutes(item, clamped);
-                }
-            }
+            if (int.TryParse(minInput.Text, out int parsed)) SetItemAllocatedMinutes(item, parsed);
+            minInput.Text = ((int)Math.Round(item.AllocatedMinutes)).ToString();
+        }
+        minInput.LostKeyboardFocus += (_, _) => CommitMinutes();
+        minInput.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { e.Handled = true; CommitMinutes(); }
+            else if (e.Key == Key.Escape)
+            { e.Handled = true; minInput.Text = ((int)Math.Round(item.AllocatedMinutes)).ToString(); }
         };
 
         Grid.SetColumn(slider, 0);
@@ -1584,9 +1669,9 @@ public partial class PeriodicReviewWindow : Window
             {
                 Content = label,
                 Padding = new Thickness(6, 2, 6, 2),
-                Height = 26,
+                MinHeight = 34,
                 Margin = new Thickness(0, 0, 4, 0),
-                FontSize = 11,
+                FontSize = 15,
                 Style = (Style)FindResource("SecondaryButton")
             };
             btn.Click += (_, _) =>
@@ -1600,7 +1685,9 @@ public partial class PeriodicReviewWindow : Window
         quickStack.Children.Add(CreateQuickButton("+5m", 5));
         quickStack.Children.Add(CreateQuickButton("+10m", 10));
 
-        Grid.SetColumn(quickStack, 2);
+        Grid.SetRow(quickStack, 1);
+        Grid.SetColumnSpan(quickStack, 3);
+        quickStack.Margin = new Thickness(0, 8, 0, 0);
         ctrlGrid.Children.Add(quickStack);
         stack.Children.Add(ctrlGrid);
 
@@ -1626,7 +1713,8 @@ public partial class PeriodicReviewWindow : Window
             Slider = slider,
             MinInput = minInput,
             StartBox = startBox,
-            EndBox = endBox
+            EndBox = endBox,
+            SplitButton = splitButton
         };
 
         return (border, holder);
@@ -1657,9 +1745,8 @@ public partial class PeriodicReviewWindow : Window
         rootStack.Children.Add(headerText);
 
         var timeGrid = new Grid();
-        timeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        timeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
-        timeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        timeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        timeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // Left Column: Start Time Field
         var startStack = new StackPanel();
@@ -1694,6 +1781,7 @@ public partial class PeriodicReviewWindow : Window
             if (TryParseLocalTime(startBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemStartTime(item, parsedUtc);
+                startBox.Text = (item.StartUtc ?? _startUtc).ToLocalTime().ToString("HH:mm");
             }
             else
             {
@@ -1708,6 +1796,7 @@ public partial class PeriodicReviewWindow : Window
                 if (TryParseLocalTime(startBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
                 {
                     SetItemStartTime(item, parsedUtc);
+                startBox.Text = (item.StartUtc ?? _startUtc).ToLocalTime().ToString("HH:mm");
                 }
             }
         };
@@ -1716,11 +1805,11 @@ public partial class PeriodicReviewWindow : Window
 
         // Start Nudge Buttons (-1m, +1m)
         var startNudgeStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 0, 0, 0) };
-        Button sMinus1 = new() { Content = "-1m", Height = 28, Padding = new Thickness(5, 0, 5, 0), FontSize = 10, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 2, 0) };
+        Button sMinus1 = new() { Content = "-1m", MinHeight = 34, Padding = new Thickness(5, 0, 5, 0), FontSize = 14, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 2, 0) };
         sMinus1.Click += (_, _) => ShiftItem(item, -1);
         startNudgeStack.Children.Add(sMinus1);
 
-        Button sPlus1 = new() { Content = "+1m", Height = 28, Padding = new Thickness(5, 0, 5, 0), FontSize = 10, Style = (Style)FindResource("SecondaryButton") };
+        Button sPlus1 = new() { Content = "+1m", MinHeight = 34, Padding = new Thickness(5, 0, 5, 0), FontSize = 14, Style = (Style)FindResource("SecondaryButton") };
         sPlus1.Click += (_, _) => ShiftItem(item, 1);
         startNudgeStack.Children.Add(sPlus1);
 
@@ -1763,6 +1852,7 @@ public partial class PeriodicReviewWindow : Window
             if (TryParseLocalTime(endBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemEndTime(item, parsedUtc);
+                endBox.Text = (item.EndUtc ?? _endUtc).ToLocalTime().ToString("HH:mm");
             }
             else
             {
@@ -1777,6 +1867,7 @@ public partial class PeriodicReviewWindow : Window
                 if (TryParseLocalTime(endBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
                 {
                     SetItemEndTime(item, parsedUtc);
+                endBox.Text = (item.EndUtc ?? _endUtc).ToLocalTime().ToString("HH:mm");
                 }
             }
         };
@@ -1785,21 +1876,23 @@ public partial class PeriodicReviewWindow : Window
 
         // End Nudge Buttons (-1m, +1m)
         var endNudgeStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 0, 0, 0) };
-        Button eMinus1 = new() { Content = "-1m", Height = 28, Padding = new Thickness(5, 0, 5, 0), FontSize = 10, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 2, 0) };
+        Button eMinus1 = new() { Content = "-1m", MinHeight = 34, Padding = new Thickness(5, 0, 5, 0), FontSize = 14, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 2, 0) };
         eMinus1.Click += (_, _) => AdjustEnd(item, -1);
         endNudgeStack.Children.Add(eMinus1);
 
-        Button ePlus1 = new() { Content = "+1m", Height = 28, Padding = new Thickness(5, 0, 5, 0), FontSize = 10, Style = (Style)FindResource("SecondaryButton") };
+        Button ePlus1 = new() { Content = "+1m", MinHeight = 34, Padding = new Thickness(5, 0, 5, 0), FontSize = 14, Style = (Style)FindResource("SecondaryButton") };
         ePlus1.Click += (_, _) => AdjustEnd(item, 1);
         endNudgeStack.Children.Add(ePlus1);
 
         Grid.SetColumn(endNudgeStack, 1);
         endInputRow.Children.Add(endNudgeStack);
         endStack.Children.Add(endInputRow);
-        Grid.SetColumn(endStack, 2);
+        Grid.SetRow(endStack, 1);
+        endStack.Margin = new Thickness(0, 10, 0, 0);
         timeGrid.Children.Add(endStack);
 
         rootStack.Children.Add(timeGrid);
+        rootStack.IsEnabled = !item.IsFixedTracked;
         expandBorder.Child = rootStack;
         return (expandBorder, startBox, endBox);
     }
@@ -1836,30 +1929,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void SetItemStartTime(ReviewProjectSelectionItem item, DateTime newStartUtc)
     {
-        newStartUtc = PeriodicReviewDataAggregator.TruncateToMinute(newStartUtc);
-
-        var sorted = _selectedItems
-            .OrderBy(it => it.StartUtc ?? _startUtc)
-            .ToList();
-
-        int idx = sorted.IndexOf(item);
-        DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
-        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
-
-        TimeSpan duration = TimeSpan.FromMinutes(Math.Max(0, item.AllocatedMinutes));
-
-        if (newStartUtc < minStart) newStartUtc = minStart;
-        DateTime newEndUtc = newStartUtc + duration;
-        if (newEndUtc > maxEnd)
-        {
-            newEndUtc = maxEnd;
-            newStartUtc = newEndUtc - duration;
-            if (newStartUtc < minStart) newStartUtc = minStart;
-        }
-
-        item.StartUtc = newStartUtc;
-        item.EndUtc = newEndUtc;
-
+        ReviewTimelineEditor.Move(_selectedItems, item, newStartUtc, _startUtc, _endUtc);
         SyncAllViews(updateCards: true);
     }
 
@@ -1874,37 +1944,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void ShiftItem(ReviewProjectSelectionItem item, int deltaMinutes)
     {
-        if (!item.StartUtc.HasValue || !item.EndUtc.HasValue) return;
-
-        TimeSpan duration = item.EndUtc.Value - item.StartUtc.Value;
-        DateTime newStart = item.StartUtc.Value.AddMinutes(deltaMinutes);
-        DateTime newEnd = newStart + duration;
-
-        // Find preceding and following items bounds
-        var sorted = _selectedItems
-            .OrderBy(it => it.StartUtc ?? _startUtc)
-            .ToList();
-
-        int idx = sorted.IndexOf(item);
-        DateTime minStart = (idx > 0 && sorted[idx - 1].EndUtc.HasValue) ? sorted[idx - 1].EndUtc!.Value : _startUtc;
-        DateTime maxEnd = (idx < sorted.Count - 1 && sorted[idx + 1].StartUtc.HasValue) ? sorted[idx + 1].StartUtc!.Value : _endUtc;
-
-        if (newStart < minStart)
-        {
-            newStart = minStart;
-            newEnd = newStart + duration;
-        }
-        if (newEnd > maxEnd)
-        {
-            newEnd = maxEnd;
-            newStart = newEnd - duration;
-            if (newStart < minStart) newStart = minStart;
-        }
-
-        item.StartUtc = newStart;
-        item.EndUtc = newEnd;
-
-        SyncAllViews(updateCards: true);
+        if (item.StartUtc.HasValue) SetItemStartTime(item, item.StartUtc.Value.AddMinutes(deltaMinutes));
     }
 
     private void AdjustEnd(ReviewProjectSelectionItem item, int deltaMinutes)
@@ -2012,14 +2052,9 @@ public partial class PeriodicReviewWindow : Window
         for (int i = 0; i < slots.Count; i++)
         {
             var slot = slots[i];
-            if (slot.DurationMinutes <= 0)
-            {
-                if (slot.Item != null)
-                {
-                    RenderZeroMinutePin(slot);
-                }
-                continue;
-            }
+            // Zero-minute sessions remain editable in the cards; giving them pixel
+            // columns here distorts the time scale and drag-to-minute conversion.
+            if (slot.DurationMinutes <= 0) continue;
 
             DistributionBarContainer.ColumnDefinitions.Add(new ColumnDefinition
             {
@@ -2065,13 +2100,13 @@ public partial class PeriodicReviewWindow : Window
                 // Project Item block
                 var item = slot.Item!;
                 int itemIdx = _selectedItems.IndexOf(item);
-                var segColor = PaletteColors[itemIdx >= 0 ? (itemIdx % PaletteColors.Length) : 0];
+                var segColor = ReviewPalette[itemIdx >= 0 ? (itemIdx % ReviewPalette.Length) : 0];
 
                 segBorder.Background = item.IsBreak
                     ? new SolidColorBrush(Color.FromArgb(160, 100, 110, 120))
                     : new SolidColorBrush(segColor);
 
-                segBorder.Cursor = item.IsFixedTracked ? Cursors.Arrow : Cursors.SizeWE;
+                segBorder.Cursor = item.IsFixedTracked ? Cursors.Arrow : Cursors.SizeAll;
                 segBorder.ToolTip = CreateRichToolTip(slot);
 
                 var segContent = new StackPanel
@@ -2090,13 +2125,26 @@ public partial class PeriodicReviewWindow : Window
                 });
                 segContent.Children.Add(new TextBlock
                 {
-                    Text = $"{slot.StartLocal:HH:mm}–{slot.EndLocal:HH:mm}",
+                    Text = $"{slot.StartLocal:HH:mm}–{slot.EndLocal:HH:mm} · {slot.DurationMinutes:0.#}m",
                     FontSize = 9.5,
                     Foreground = Brushes.White,
                     Opacity = 0.9,
                     HorizontalAlignment = HorizontalAlignment.Center
                 });
-                segBorder.Child = segContent;
+                var segment = new Grid();
+                segment.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                segment.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                segment.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Grid.SetColumn(segContent, 1);
+                segment.Children.Add(segContent);
+                if (!item.IsFixedTracked)
+                {
+                    segment.Children.Add(CreateTimelineResizeGrip(item, fromStart: true));
+                    var endGrip = CreateTimelineResizeGrip(item, fromStart: false);
+                    Grid.SetColumn(endGrip, 2);
+                    segment.Children.Add(endGrip);
+                }
+                segBorder.Child = segment;
 
                 AttachProjectBlockDrag(segBorder, item);
             }
@@ -2110,7 +2158,7 @@ public partial class PeriodicReviewWindow : Window
     {
         var item = slot.Item!;
         int itemIdx = _selectedItems.IndexOf(item);
-        var segColor = PaletteColors[itemIdx >= 0 ? (itemIdx % PaletteColors.Length) : 0];
+        var segColor = ReviewPalette[itemIdx >= 0 ? (itemIdx % ReviewPalette.Length) : 0];
 
         DistributionBarContainer.ColumnDefinitions.Add(new ColumnDefinition
         {
@@ -2162,6 +2210,67 @@ public partial class PeriodicReviewWindow : Window
         DistributionBarContainer.Children.Add(pinBorder);
     }
 
+    private Border CreateTimelineResizeGrip(ReviewProjectSelectionItem item, bool fromStart)
+    {
+        var grip = new Border
+        {
+            Width = 11, Cursor = Cursors.SizeWE,
+            Background = new SolidColorBrush(Color.FromArgb(65, 255, 228, 172)),
+            Tag = fromStart ? "TimelineStartGrip" : "TimelineEndGrip",
+            ToolTip = fromStart ? "Drag to change start / duration. End stays put. Esc cancels."
+                : "Drag to change end / duration. Start stays put. Esc cancels.",
+            Child = new Border { Width = 2, Height = 18, CornerRadius = new CornerRadius(1),
+                Background = new SolidColorBrush(Color.FromRgb(246, 222, 162)),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+        };
+        grip.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            // Commit any text-field edit before snapshotting the drag, and route
+            // Escape to the chart instead of the previously focused input.
+            DistributionBarContainer.Focus();
+            BeginTimelineResize(item, fromStart, e.GetPosition(DistributionBarContainer).X);
+            if (!DistributionBarContainer.CaptureMouse()) EndTimelineResize(cancel: true);
+            e.Handled = true;
+        };
+        return grip;
+    }
+
+    private void BeginTimelineResize(ReviewProjectSelectionItem item, bool fromStart, double pointerX)
+    {
+        if (item.IsFixedTracked) return;
+        _draggingItem = null;
+        _isUnallocDragging = false;
+        _unallocDragSlot = null;
+        _resizeStartX = pointerX;
+        _resizeTrackWidth = Math.Max(1, DistributionBarContainer.ActualWidth);
+        _resizeDeltaMinutes = null;
+        _timelineResize = new ReviewTimelineResize(_selectedItems, item, fromStart, _startUtc, _endUtc,
+            _settings.PeriodicReviewFixedCollisionBehavior);
+    }
+
+    private void UpdateTimelineResize(double pointerX)
+    {
+        if (_timelineResize == null) return;
+        int delta = (int)Math.Round((pointerX - _resizeStartX) / _resizeTrackWidth * TotalPeriodMinutes);
+        if (_resizeDeltaMinutes == delta) return;
+        _resizeDeltaMinutes = delta;
+        _timelineResize.Preview(delta);
+        // Collision previews can create/remove split parts, so synchronize the cards
+        // from this preview rather than keep holders for a previous mouse position.
+        RenderAllocatedCards();
+        SyncAllViews();
+    }
+
+    private void EndTimelineResize(bool cancel)
+    {
+        var resize = _timelineResize;
+        _timelineResize = null;
+        if (cancel) resize?.Cancel();
+        DistributionBarContainer.ReleaseMouseCapture();
+        RenderAllocatedCards();
+        SyncAllViews();
+    }
+
     private void AttachProjectBlockDrag(Border segBorder, ReviewProjectSelectionItem item)
     {
         if (item.IsFixedTracked)
@@ -2170,7 +2279,7 @@ public partial class PeriodicReviewWindow : Window
             return;
         }
 
-        segBorder.PreviewMouseLeftButtonDown += (s, e) =>
+        segBorder.MouseLeftButtonDown += (s, e) =>
         {
             _draggingItem = item;
             _isUnallocDragging = false;
@@ -2212,6 +2321,12 @@ public partial class PeriodicReviewWindow : Window
 
     private void DistributionBarContainer_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (_timelineResize != null && DistributionBarContainer.IsMouseCaptured)
+        {
+            UpdateTimelineResize(e.GetPosition(DistributionBarContainer).X);
+            e.Handled = true;
+            return;
+        }
         if (_draggingItem != null && DistributionBarContainer.IsMouseCaptured)
         {
             Point currentPoint = e.GetPosition(DistributionBarContainer);
@@ -2258,6 +2373,13 @@ public partial class PeriodicReviewWindow : Window
 
     private void DistributionBarContainer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (_timelineResize != null)
+        {
+            UpdateTimelineResize(e.GetPosition(DistributionBarContainer).X);
+            EndTimelineResize(cancel: false);
+            e.Handled = true;
+            return;
+        }
         if (_draggingItem != null || _isUnallocDragging)
         {
             _draggingItem = null;
@@ -2412,7 +2534,7 @@ public partial class PeriodicReviewWindow : Window
         StepIndicatorBadge.Text = _settings.PeriodicReviewFeelingsEnabled
             ? "Step 2 of 3: Time Allocation"
             : "Step 2 of 2: Time Allocation";
-        StepSubtitleText.Text = "Step 2: Allocate & position time. Drag items on the timeline to move them. Click ∨ to set exact times.";
+        StepSubtitleText.Text = "Duration grows to the right, replacing manual time. Shrinking leaves a gap. Fixed records stay locked. Use Times to move a session.";
         FooterShortcutHintText.Text = "Press Esc to go back · Enter to proceed to feelings";
 
         Step3BackButton.Visibility = Visibility.Collapsed;
@@ -2442,7 +2564,7 @@ public partial class PeriodicReviewWindow : Window
                 Style = (Style)FindResource("SecondaryButton"),
                 Padding = new Thickness(10, 4, 10, 4),
                 Margin = new Thickness(0, 0, 6, 6),
-                FontSize = 11,
+                FontSize = 15,
                 Tag = preset
             };
             btn.Click += (s, e) =>
@@ -2503,6 +2625,10 @@ public partial class PeriodicReviewWindow : Window
         }
 
         MoodDescriptorText.Text = $"{emoji} {descriptor}";
+        // Dark ink variants stay legible against the parchment surface.
+        if (AppThemeManager.IsPirate)
+            badgeColor = _currentMoodScore < 5 ? Color.FromRgb(133, 43, 34)
+                : _currentMoodScore < 7 ? Color.FromRgb(116, 79, 25) : Color.FromRgb(22, 104, 89);
         MoodDescriptorText.Foreground = new SolidColorBrush(badgeColor);
         MoodSubtext.Text = subtext;
     }
@@ -2668,7 +2794,7 @@ public partial class PeriodicReviewWindow : Window
         if (_handled) return;
         _handled = true;
 
-        var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
+        var fullTimeline = ReviewTimelineEditor.Snapshot(_startUtc, _endUtc, _selectedItems);
         var slotsToSave = new List<PeriodicReviewStopwatchSlot>();
 
         var retainedIntervalIds = new HashSet<Guid>();
@@ -2777,6 +2903,13 @@ public partial class PeriodicReviewWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (_timelineResize != null && e.Key == Key.Escape)
+        {
+            EndTimelineResize(cancel: true);
+            e.Handled = true;
+            return;
+        }
+        if (Keyboard.FocusedElement is TextBox && e.Key is Key.Enter or Key.Escape) return;
         if (e.Key == Key.Escape)
         {
             e.Handled = true;

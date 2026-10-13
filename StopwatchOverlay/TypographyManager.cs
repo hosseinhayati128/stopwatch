@@ -87,7 +87,7 @@ public static class TypographyManager
             "ProjectDashboardWindow" or "ProjectRecordEditorWindow" or "ProjectRecordDeleteWindow" => "Dashboard",
             "SettingsWindow" => "Settings",
             "NoteEntryWindow" or "NotesViewerWindow" or "NoteCommandHintWindow" => "Notes",
-            "OverlayWindow" => "Overlay",
+            "OverlayWindow" or "ActiveClocksShelfWindow" or "BackgroundTimerReminderPopup" => "Overlay",
             _ => "Dialogs"
         };
     }

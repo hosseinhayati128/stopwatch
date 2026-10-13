@@ -14,12 +14,22 @@ public partial class TimerPickerWindow : Window
     private readonly TimerSession? _activeTimer;
     private int _selectedIndex = 0;
     private readonly List<Border> _itemBorders = new();
+    private readonly bool _pirate;
 
     public TimerSession? SelectedTimer { get; private set; }
 
     public TimerPickerWindow(IReadOnlyList<TimerSession> timers, TimerSession? activeTimer)
     {
         InitializeComponent();
+        _pirate = AppThemeManager.CurrentTheme == AppThemeCatalog.Pirate;
+        Themes.PirateVisual.SetEnabled(this, _pirate);
+        if (_pirate)
+        {
+            PickerHint.Foreground = new SolidColorBrush(Color.FromRgb(222, 194, 148));
+            PickerHint.FontSize = 13;
+            PickerCloseButton.Background = new SolidColorBrush(Color.FromRgb(111, 48, 38));
+            PickerCloseButton.Foreground = new SolidColorBrush(Color.FromRgb(246, 230, 191));
+        }
         _timers = timers ?? Array.Empty<TimerSession>();
         _activeTimer = activeTimer;
 
@@ -40,6 +50,12 @@ public partial class TimerPickerWindow : Window
     {
         TimersListPanel.Children.Clear();
         _itemBorders.Clear();
+
+        if (_timers.Count == 0)
+            TimersListPanel.Children.Add(new TextBlock {
+                Text = "No clocks yet. Create a timer in the controller.", TextWrapping = TextWrapping.Wrap,
+                Foreground = PickerHint.Foreground, FontSize = 15, Margin = new Thickness(4, 16, 4, 20)
+            });
 
         for (int i = 0; i < _timers.Count; i++)
         {
@@ -163,6 +179,7 @@ public partial class TimerPickerWindow : Window
             }
 
             border.Child = grid;
+            if (_pirate) DecoratePirateCard(border, timer, index, isActive);
 
             border.MouseEnter += (s, ev) =>
             {
@@ -177,6 +194,52 @@ public partial class TimerPickerWindow : Window
             TimersListPanel.Children.Add(border);
             _itemBorders.Add(border);
         }
+        TypographyManager.ApplyWindow(this);
+    }
+
+    private void DecoratePirateCard(Border border, TimerSession timer, int index, bool active)
+    {
+        border.Padding = new Thickness(0);
+        border.BorderThickness = new Thickness(2);
+        border.ToolTip = timer.DisplayName;
+        var layers = new Grid();
+        layers.Children.Add(new Themes.NoteArtworkBorder { Artwork = "Paper", IsHitTestVisible = false });
+        var content = new Grid { Margin = new Thickness(16, 12, 16, 12) };
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var number = new Border {
+            Width = 30, Height = 30, CornerRadius = new CornerRadius(15), VerticalAlignment = VerticalAlignment.Top,
+            Background = (Brush)FindResource("PirateBrass"), BorderBrush = new SolidColorBrush(Color.FromRgb(103, 70, 33)), BorderThickness = new Thickness(2),
+            Child = new Viewbox { Margin = new Thickness(4), Child = new TextBlock { Text = (index + 1).ToString(), FontSize = 16,
+                Foreground = Brushes.Black, FontWeight = FontWeights.Bold } }
+        };
+        content.Children.Add(number);
+        var details = new StackPanel { Margin = new Thickness(6, 0, 0, 0) };
+        Grid.SetColumn(details, 1);
+        content.Children.Add(details);
+        details.Children.Add(new TextBlock { Text = timer.DisplayName, FontSize = 21, FontWeight = FontWeights.Bold,
+            FontFamily = (FontFamily)FindResource("PirateHeadingFont"), Foreground = new SolidColorBrush(Color.FromRgb(63, 33, 19)),
+            TextTrimming = TextTrimming.CharacterEllipsis });
+        var status = new WrapPanel { Margin = new Thickness(0, 3, 0, 4) };
+        if (active) status.Children.Add(new Border { Background = new SolidColorBrush(Color.FromRgb(32, 115, 98)), CornerRadius = new CornerRadius(3),
+            Padding = new Thickness(5, 1, 5, 1), Margin = new Thickness(0, 0, 7, 2),
+            Child = new TextBlock { Text = "ACTIVE", FontSize = 10, FontWeight = FontWeights.Bold, Foreground = Brushes.White } });
+        status.Children.Add(new TextBlock { Text = (timer.IsRunning ? "Running" : "Paused") + (string.IsNullOrWhiteSpace(timer.Category) ? "" : " · " + timer.Category),
+            FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = new SolidColorBrush(Color.FromRgb(112, 76, 44)) });
+        details.Children.Add(status);
+        var time = timer.Mode == 2 ? timer.CountdownRemaining : timer.Elapsed;
+        var magnitude = time.Duration();
+        details.Children.Add(new TextBlock { Text = $"{(time < TimeSpan.Zero ? "−" : "")}{(long)magnitude.TotalHours:D2}:{magnitude.Minutes:D2}:{magnitude.Seconds:D2}",
+            FontFamily = (FontFamily)FindResource("PirateBodyFont"), FontSize = 27, FontWeight = FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(Color.FromRgb(50, 29, 15)), TextWrapping = TextWrapping.Wrap });
+        layers.Children.Add(content);
+        border.Child = layers;
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = false;
+        Close();
     }
 
     private void HighlightSelectedIndex()
@@ -184,6 +247,12 @@ public partial class TimerPickerWindow : Window
         for (int i = 0; i < _itemBorders.Count; i++)
         {
             var b = _itemBorders[i];
+            if (_pirate)
+            {
+                b.Background = Brushes.Transparent;
+                b.BorderBrush = i == _selectedIndex ? new SolidColorBrush(Color.FromRgb(45, 160, 140)) : Brushes.Transparent;
+                continue;
+            }
             if (i == _selectedIndex)
             {
                 b.Background = (Brush)FindResource("SurfaceRaisedBrush");
@@ -237,6 +306,7 @@ public partial class TimerPickerWindow : Window
             {
                 _selectedIndex--;
                 HighlightSelectedIndex();
+                _itemBorders[_selectedIndex].BringIntoView();
             }
             e.Handled = true;
             return;
@@ -248,6 +318,7 @@ public partial class TimerPickerWindow : Window
             {
                 _selectedIndex++;
                 HighlightSelectedIndex();
+                _itemBorders[_selectedIndex].BringIntoView();
             }
             e.Handled = true;
             return;

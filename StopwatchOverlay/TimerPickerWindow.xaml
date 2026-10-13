@@ -1,6 +1,7 @@
 <Window x:Class="StopwatchOverlay.TimerPickerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:theme="clr-namespace:StopwatchOverlay.Themes"
         Title="Select Stopwatch"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -17,6 +18,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Overlay/OverlayStyles.xaml"/>
+                <ResourceDictionary Source="Themes/PirateNotesStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="TimerItemBorderStyle" TargetType="Border">
@@ -31,39 +33,34 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="{DynamicResource SurfaceRaisedBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="{DynamicResource ThemePanelBorderThickness}"
-            CornerRadius="{DynamicResource ThemePanelCornerRadius}"
-            Padding="18,14"
+    <theme:NoteArtworkBorder Artwork="Frame" Style="{StaticResource NotesFrameStyle}"
             Margin="10"
             MinWidth="380"
             MaxWidth="480">
-        <Border.Effect>
+        <theme:NoteArtworkBorder.Effect>
             <DropShadowEffect BlurRadius="18" Direction="270" ShadowDepth="4" Opacity="0.55"/>
-        </Border.Effect>
+        </theme:NoteArtworkBorder.Effect>
 
         <StackPanel>
             <!-- Header -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                <TextBlock Text="⏱ " Foreground="{DynamicResource AccentBrush}" FontSize="15" FontWeight="Bold"/>
+            <Grid Margin="0,2,0,8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="28"/></Grid.ColumnDefinitions>
                 <TextBlock Text="Select Stopwatch"
-                           Foreground="{DynamicResource AccentBrush}"
-                           FontSize="15"
-                           FontFamily="{DynamicResource AppFontFamily}"
-                           FontWeight="SemiBold"/>
-            </StackPanel>
+                           Style="{StaticResource NotesHeadingStyle}" Margin="0,0,8,0"/>
+                <Button x:Name="PickerCloseButton" Grid.Column="1" Content="✕" Width="24" Height="24" VerticalAlignment="Top"
+                        Style="{StaticResource OverlayCloseButtonStyle}" Click="Cancel_Click" ToolTip="Cancel (Esc)"/>
+            </Grid>
 
             <TextBlock Text="Press 1–9 or click to switch immediately · Esc to cancel"
-                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       x:Name="PickerHint" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
                        FontSize="11"
                        FontFamily="{DynamicResource AppFontFamily}"
                        Margin="0,0,0,12"/>
 
             <!-- List of Timers -->
-            <ScrollViewer MaxHeight="340" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ScrollViewer x:Name="TimersScrollViewer" MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="TimersListPanel"/>
             </ScrollViewer>
         </StackPanel>
-    </Border>
+    </theme:NoteArtworkBorder>
 </Window>

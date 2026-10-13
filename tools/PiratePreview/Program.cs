@@ -34,7 +34,7 @@ internal static class Program
         string output = Path.Combine(repo, "design", "pirate", "previews");
         Directory.CreateDirectory(output);
         // Fail locally rather than append a recoverable preview error to the user's log.
-        typeof(App).Assembly.GetType("StopwatchOverlay.CrashLogger")!
+        typeof(CrashLogger)
             .GetField("_writeInProgress", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, 1);
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         XDocument application = XDocument.Load(Path.Combine(repo, "StopwatchOverlay", "App.xaml"));
@@ -43,6 +43,26 @@ internal static class Program
             dictionary.SetAttributeValue(ns.Name, ns.Value);
         app.Resources = (ResourceDictionary)XamlReader.Parse(Prepare(dictionary.ToString()));
         AppThemeManager.Apply(AppThemeCatalog.Pirate);
+        if (args.Contains("--records-review-only"))
+        {
+            CaptureRecordsAndReview(output);
+            return;
+        }
+        if (args.Contains("--reminder-only"))
+        {
+            CaptureReminder(output);
+            return;
+        }
+        if (args.Contains("--picker-only"))
+        {
+            CapturePicker(output);
+            return;
+        }
+        if (args.Contains("--shelf-only"))
+        {
+            CaptureShelf(output);
+            return;
+        }
         if (args.Contains("--typography-only"))
         {
             CaptureTypographySettings(output);
@@ -141,6 +161,277 @@ internal static class Program
         CaptureSecondaryPages(output);
         CaptureNotes(output);
         Console.WriteLine("Rendered production-XAML previews; theme round-trip, minimum-size scrolling and scale interaction checks passed. User stores were not opened.");
+    }
+
+    private static void CaptureRecordsAndReview(string output)
+    {
+        var now = DateTime.UtcNow;
+        var history = new ProjectTimeHistory();
+        foreach (var name in new[] { "Navigation", "Illustration", "Research" })
+            for (int day = 0; day < 7; day++)
+                history.AddManualInterval(name, now.AddDays(-day).AddHours(-3), now.AddDays(-day).AddHours(-2));
+        var view = history.CreateView(now);
+        foreach (var theme in new[] { AppThemeCatalog.Pirate, AppThemeCatalog.Midnight })
+        {
+            AppThemeManager.Apply(theme);
+            var settings = new AppSettings { ThemeMode = theme, PeriodicReviewFeelingsEnabled = true };
+            var dashboard = new ProjectDashboardWindow(() => view,
+                (_, _, _) => throw new InvalidOperationException("Preview cannot edit records."),
+                (_, _, _, _) => throw new InvalidOperationException("Preview cannot edit records."),
+                _ => throw new InvalidOperationException("Preview cannot delete records."), () => true, () => null, settings);
+            Node<Button>(dashboard, "SevenDaysButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            string suffix = theme == AppThemeCatalog.Pirate ? "one-piece" : "midnight";
+            CaptureTypography(dashboard, output, "analytics-" + suffix, 1120, 800);
+            dashboard.GetType().GetMethod("RecordsButton_Click", Hidden)!.Invoke(dashboard, [dashboard, new RoutedEventArgs()]);
+            Node<ScrollViewer>(dashboard, "DashboardScrollViewer").ScrollToBottom();
+            CaptureTypography(dashboard, output, "records-" + suffix, 1120, 800);
+            CaptureTypography(dashboard, output, "records-compact-" + suffix, 760, 560);
+            var review = new StopwatchOverlay.PeriodicReview.PeriodicReviewWindow(now.AddMinutes(-30), now,
+                settings, view, null, _ => throw new InvalidOperationException("Preview cannot save review."));
+            var model = new StopwatchOverlay.PeriodicReview.PeriodicReviewModel
+            {
+                StartUtc = now.AddMinutes(-30), EndUtc = now, ActivityWatchAvailable = true,
+                ActivitySummaries = [new() { App = "Illustration", TotalDuration = TimeSpan.FromMinutes(20), Percentage = 66.7 },
+                    new() { App = "Research", TotalDuration = TimeSpan.FromMinutes(10), Percentage = 33.3 }]
+            };
+            review.GetType().GetField("_model", Hidden)!.SetValue(review, model);
+            Invoke(review, "RenderStep1");
+            CaptureTypography(review, output, "activity-review-" + suffix, 980, 700);
+            review.GetType().GetMethod("AddProjectInstance", Hidden)!.Invoke(review, ["Illustration", false]);
+            Node<Button>(review, "ContinueToStep2Button").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            if (Node<Grid>(review, "Step2Container").Visibility != Visibility.Visible)
+                throw new InvalidOperationException("Review project selection did not advance to allocation.");
+            CaptureTypography(review, output, "time-review-" + suffix, 980, 700);
+            ExerciseReviewEditing(review, output, suffix);
+            Node<Button>(review, "Step2ContinueButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            if (Node<Grid>(review, "Step3Container").Visibility != Visibility.Visible)
+                throw new InvalidOperationException("Review allocation did not advance to feelings.");
+            CaptureTypography(review, output, "feelings-review-" + suffix, 980, 700);
+            TypographyManager.Apply(new TypographySettings { Global = new TypographyStyle { SizePercent = 150 } });
+            CaptureTypography(review, output, "review-large-text-" + suffix, 850, 640);
+            Node<ScrollViewer>(review, "ReviewScrollViewer").ScrollToBottom();
+            CaptureTypography(review, output, "review-large-text-bottom-" + suffix, 850, 640);
+            TypographyManager.Apply(new TypographySettings());
+            dashboard.Close(); review.Close();
+        }
+    }
+
+    private static void ExerciseReviewEditing(StopwatchOverlay.PeriodicReview.PeriodicReviewWindow review, string output, string suffix)
+    {
+        var items = (List<StopwatchOverlay.PeriodicReview.ReviewProjectSelectionItem>)review.GetType()
+            .GetField("_selectedItems", Hidden)!.GetValue(review)!;
+        void Call(string method, params object[] args) => review.GetType().GetMethod(method, Hidden)!.Invoke(review, args);
+        var first = items.Single();
+        DateTime originalStart = first.StartUtc!.Value;
+        var input = LogicalControls<TextBox>(Node<StackPanel>(review, "AllocatedProjectsContainer")).Single();
+        input.Text = "1";
+        input.Text = "12";
+        if (first.AllocatedMinutes != 30) throw new InvalidOperationException("Typing changed allocation before commit.");
+        input.RaiseEvent(new KeyboardFocusChangedEventArgs(Keyboard.PrimaryDevice, 0, input, null)
+            { RoutedEvent = Keyboard.LostKeyboardFocusEvent });
+        if (first.AllocatedMinutes != 12) throw new InvalidOperationException("Duration did not commit on leaving field.");
+        Call("AddNewSessionInStep2", "Research", false);
+        var second = items.Single(it => it != first);
+        Call("SetItemAllocatedMinutes", second, 18d);
+        Call("SetItemAllocatedMinutes", first, 18d);
+        if (first.StartUtc != originalStart || second.StartUtc != originalStart.AddMinutes(18) || second.AllocatedMinutes != 12)
+            throw new InvalidOperationException("Review duration did not replace the right-hand interval predictably.");
+        var positions = items.Select(it => (it.Id, it.StartUtc, it.EndUtc, it.AllocatedMinutes)).ToArray();
+        Node<Button>(review, "Step2BackButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Node<Button>(review, "ContinueToStep2Button").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!positions.SequenceEqual(items.Select(it => (it.Id, it.StartUtc, it.EndUtc, it.AllocatedMinutes))))
+            throw new InvalidOperationException("Back and Continue discarded edited positions.");
+        Call("SplitSession", first);
+        if (items.Count != 3 || items.Sum(it => it.AllocatedMinutes) != 30)
+            throw new InvalidOperationException("Split changed total allocation.");
+        first.IsExpanded = true;
+        Invoke(review, "RenderAllocatedCards");
+        CaptureTypography(review, output, "review-editing-" + suffix, 980, 800);
+        TypographyManager.Apply(new TypographySettings { Global = new TypographyStyle { SizePercent = 175 } });
+        CaptureTypography(review, output, "review-editing-large-" + suffix, 850, 640);
+        var page = Node<ScrollViewer>(review, "ReviewScrollViewer");
+        page.ScrollToTop(); page.UpdateLayout();
+        if (page.ScrollableHeight <= 0) throw new InvalidOperationException("Scrolling fixture has no overflow.");
+        var projectCard = Node<StackPanel>(review, "AllocatedProjectsContainer").Children[0];
+        var wheelDown = new MouseWheelEventArgs(Mouse.PrimaryDevice, 0, -120) { RoutedEvent = Mouse.PreviewMouseWheelEvent };
+        projectCard.RaiseEvent(wheelDown);
+        // Offscreen windows do not receive a compositor layout pass. Render the
+        // production tree to process the ScrollViewer's queued scroll command.
+        Capture(review, output, "review-wheel-down-" + suffix, 850, 640);
+        if (!wheelDown.Handled || page.VerticalOffset <= 0)
+            throw new InvalidOperationException($"Wheel over a project card failed: handled={wheelDown.Handled}, offset={page.VerticalOffset}, extent={page.ScrollableHeight}, lines={SystemParameters.WheelScrollLines}.");
+        double beforeUp = page.VerticalOffset;
+        projectCard.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, 0, 120) { RoutedEvent = Mouse.PreviewMouseWheelEvent });
+        Capture(review, output, "review-wheel-up-" + suffix, 850, 640);
+        if (page.VerticalOffset >= beforeUp) throw new InvalidOperationException("Wheel up over a project card failed.");
+        var chart = Node<Grid>(review, "DistributionBarContainer");
+        double deltaX = chart.ActualWidth * 3 / 30d;
+        Call("BeginTimelineResize", first, false, 0d);
+        Call("UpdateTimelineResize", deltaX);
+        if (first.AllocatedMinutes != 12) throw new InvalidOperationException("Timeline right edge failed to grow session.");
+        Call("UpdateTimelineResize", 0d);
+        if (first.AllocatedMinutes != 9 || items.Sum(it => it.AllocatedMinutes) != 30)
+            throw new InvalidOperationException("Reversing chart drag failed to restore neighboring time.");
+        Call("EndTimelineResize", false);
+        var middle = items.Single(it => it != first && it.ProjectName == first.ProjectName);
+        Call("BeginTimelineResize", middle, true, 0d);
+        Call("UpdateTimelineResize", -deltaX);
+        if (middle.AllocatedMinutes != 12 || first.AllocatedMinutes != 6)
+            throw new InvalidOperationException("Timeline left edge failed to resize session.");
+        Call("EndTimelineResize", true);
+        if (middle.AllocatedMinutes != 9 || first.AllocatedMinutes != 9)
+            throw new InvalidOperationException("Cancelling chart drag failed to restore the timeline.");
+        Console.WriteLine("Review wheel routing and both timeline resize edges passed.");
+        Node<ScrollViewer>(review, "ReviewScrollViewer").ScrollToBottom();
+        CaptureTypography(review, output, "review-editing-large-bottom-" + suffix, 850, 640);
+        TypographyManager.Apply(new TypographySettings());
+        Node<ScrollViewer>(review, "ReviewScrollViewer").ScrollToTop();
+        Console.WriteLine("Review editing checks passed: deferred input, right-hand resize, Back/Continue, split.");
+    }
+
+    private static void CaptureReminder(string output)
+    {
+        var popup = new BackgroundTimerReminderPopup();
+        ((FrameworkElement)popup.Content).VerticalAlignment = VerticalAlignment.Top;
+        var id = Guid.NewGuid();
+        var prepare = typeof(BackgroundTimerReminderPopup).GetMethod("PrepareAlert", Hidden)!;
+        void Prepare(int index, string name = "Illustration") => prepare.Invoke(popup, new object[] {
+            new BackgroundTimerAlert(id, name, 1, TimeSpan.FromSeconds(2667), index, 3, TimeSpan.FromSeconds(30))
+        });
+        try
+        {
+            foreach (var (name, theme, percent, opacity, index) in new[] {
+                ("background-reminder-one-piece", OverlayThemeCatalog.Pirate, 100, 1d, 1),
+                ("background-reminder-final", OverlayThemeCatalog.Pirate, 100, 1d, 3),
+                ("background-reminder-large-text", OverlayThemeCatalog.Pirate, 175, 1d, 3),
+                ("background-reminder-transparent", OverlayThemeCatalog.Pirate, 100, .35, 1),
+                ("background-reminder-midnight", OverlayThemeCatalog.Midnight, 100, 1d, 1)
+            })
+            {
+                TypographyManager.Apply(new TypographySettings { Global = new TypographyStyle { SizePercent = percent } });
+                popup.ApplyOverlaySettings(theme, AppThemeCatalog.Pirate, Colors.White, Colors.Gold, "Consolas", opacity, true);
+                Prepare(index, percent == 175 ? "Planning the next long voyage" : "Illustration");
+                CaptureTypography(popup, output, name, 480, 540);
+                var surface = (FrameworkElement)popup.Content;
+                Capture(popup, output, name, 480, (int)Math.Ceiling(surface.ActualHeight + surface.Margin.Top + surface.Margin.Bottom));
+                if (index == 3 && !Node<TextBlock>(popup, "ReminderBadgeText").Text.Contains("Final")) throw new InvalidOperationException("Final warning missing.");
+            }
+            int keep = 0, switched = 0, stopped = 0, expired = 0;
+            popup.KeepRunningRequested += value => { if (value == id) keep++; };
+            popup.SwitchRequested += value => { if (value == id) switched++; };
+            popup.StopRequested += value => { if (value == id) stopped++; };
+            popup.TimedOut += value => { if (value == id) expired++; };
+            foreach (string name in new[] { "KeepRunningButton", "SwitchButton", "StopButton" })
+            {
+                Prepare(1);
+                Node<Button>(popup, name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+            typeof(BackgroundTimerReminderPopup).GetField("_remainingSeconds", Hidden)!.SetValue(popup, 1);
+            typeof(BackgroundTimerReminderPopup).GetMethod("CountdownTimer_Tick", Hidden)!.Invoke(popup, new object?[] { null, EventArgs.Empty });
+            if (keep != 1 || switched != 1 || stopped != 1 || expired != 1) throw new InvalidOperationException("Reminder event routing changed.");
+            Console.WriteLine("Reminder: normal/final states, long names, large text, opacity, Midnight and all four action/timeout events passed without displaying native windows.");
+        }
+        finally { popup.Close(); TypographyManager.Apply(new TypographySettings()); }
+    }
+
+    private static void CapturePicker(string output)
+    {
+        var timers = Enumerable.Range(1, 12).Select(i => new TimerSession(i) {
+            Name = i == 1 ? "Illustration" : i == 2 ? "Learning" : i == 3 ? "Planning the next long voyage" : "Project " + i,
+            Category = i % 2 == 0 ? "Study" : "Creative work", IsRunning = i % 2 != 0
+        }).ToArray();
+        foreach (var timer in timers) timer.RestoreElapsed(TimeSpan.FromMinutes(timer.Number * 17), false);
+        foreach (var (name, theme, percent, count) in new[] {
+            ("clock-picker-one-piece", AppThemeCatalog.Pirate, 100, 3),
+            ("clock-picker-large-text", AppThemeCatalog.Pirate, 175, 3),
+            ("clock-picker-many", AppThemeCatalog.Pirate, 100, 12),
+            ("clock-picker-empty", AppThemeCatalog.Pirate, 100, 0),
+            ("clock-picker-midnight", AppThemeCatalog.Midnight, 100, 3)
+        })
+        {
+            AppThemeManager.Apply(theme);
+            TypographyManager.Apply(new TypographySettings { Global = new TypographyStyle { SizePercent = percent } });
+            var window = new TimerPickerWindow(timers.Take(count).ToArray(), count > 0 ? timers[0] : null);
+            ((FrameworkElement)window.Content).VerticalAlignment = VerticalAlignment.Top;
+            try
+            {
+                Invoke(window, "PopulateList");
+                Invoke(window, "HighlightSelectedIndex");
+                CaptureTypography(window, output, name, 500, 540);
+                var surface = (FrameworkElement)window.Content;
+                Capture(window, output, name, 500, (int)Math.Ceiling(surface.ActualHeight + surface.Margin.Top + surface.Margin.Bottom));
+                var panel = Node<StackPanel>(window, "TimersListPanel");
+                if (panel.Children.OfType<Border>().Count() != count) throw new InvalidOperationException("Picker timer count changed.");
+                if (count > 1)
+                {
+                    var row = (Border)panel.Children[1];
+                    row.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.MouseEnterEvent });
+                    if ((int)typeof(TimerPickerWindow).GetField("_selectedIndex", Hidden)!.GetValue(window)! != 1)
+                        throw new InvalidOperationException("Picker hover selection failed.");
+                }
+                if (count == 12)
+                {
+                    var scroll = Node<ScrollViewer>(window, "TimersScrollViewer");
+                    scroll.ScrollToBottom();
+                    Capture(window, output, name + "-bottom", 500, 540);
+                    if (scroll.VerticalOffset <= 0) throw new InvalidOperationException("Picker does not scroll.");
+                }
+            }
+            finally { window.Close(); }
+        }
+        TypographyManager.Apply(new TypographySettings());
+        AppThemeManager.Apply(AppThemeCatalog.Pirate);
+        Console.WriteLine("Picker: populated/empty lists, hover selection, large text, long names, scrolling and Midnight fallback passed.");
+    }
+
+    private static void CaptureShelf(string output)
+    {
+        var shelf = new ActiveClocksShelfWindow();
+        var timers = new[] {
+            new TimerSession(1) { Name = "Illustration", IsRunning = true },
+            new TimerSession(2) { Name = "Learning", IsRunning = true },
+            new TimerSession(3) { Name = "Planning the next long voyage", IsRunning = true }
+        };
+        for (int i = 0; i < timers.Length; i++) timers[i].RestoreElapsed(TimeSpan.FromSeconds(2667 + i * 813), false);
+        void Render(string theme, string name, int width, double opacity = 1)
+        {
+            shelf.ApplyOverlaySettings(theme, AppThemeCatalog.Pirate, Colors.White, Colors.Gold, "Consolas", opacity, true);
+            shelf.UpdateClocks(timers, timers[0]);
+            var root = (FrameworkElement)shelf.Content;
+            // Prime layout after theme/typography changes before cropping to the
+            // content height; a hidden Window retains its previous constraints.
+            PumpTypography();
+            Capture(shelf, output, name, width, 750);
+            int height = (int)Math.Ceiling(root.ActualHeight);
+            Capture(shelf, output, name, width, height);
+        }
+        try
+        {
+            Render(OverlayThemeCatalog.Pirate, "active-clocks-one-piece", 320);
+            var panel = Node<StackPanel>(shelf, "ActiveClocksPanel");
+            Border original = (Border)panel.Children[0];
+            shelf.UpdateClocks(timers, timers[1]);
+            if (ReferenceEquals(original, panel.Children[0])) throw new InvalidOperationException("Active-clock selection did not refresh.");
+            int pauses = 0, switches = 0;
+            shelf.PauseTimerRequested += _ => pauses++;
+            shelf.SwitchToTimerRequested += _ => switches++;
+            var row = (Border)panel.Children[0];
+            LogicalControls<Button>(row).Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            row.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonDownEvent });
+            if (pauses != 1 || switches != 1) throw new InvalidOperationException("Shelf commands changed.");
+            Render(OverlayThemeCatalog.Pirate, "active-clocks-narrow", 230);
+            Render(OverlayThemeCatalog.Pirate, "active-clocks-transparent", 320, .35);
+            TypographyManager.Apply(new TypographySettings { Global = new TypographyStyle { SizePercent = 175 } });
+            Render(OverlayThemeCatalog.Pirate, "active-clocks-large-text", 320);
+            TypographyManager.Apply(new TypographySettings());
+            Render(OverlayThemeCatalog.Midnight, "active-clocks-midnight", 260);
+            Render(OverlayThemeCatalog.Pirate, "active-clocks-roundtrip", 320);
+            shelf.UpdateClocks(Array.Empty<TimerSession>(), null);
+            Capture(shelf, output, "active-clocks-empty", 320, 125);
+            if (panel.Children.Count != 1 || panel.Children[0] is not TextBlock) throw new InvalidOperationException("Empty shelf missing.");
+            Console.WriteLine("Shelf: selection refresh, pause/switch commands, narrow width, opacity, typography, theme roundtrip and empty state passed.");
+        }
+        finally { shelf.Close(); TypographyManager.Apply(new TypographySettings()); }
     }
 
     private static void CaptureTypographySettings(string output)

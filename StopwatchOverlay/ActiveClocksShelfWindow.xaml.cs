@@ -22,6 +22,9 @@ public partial class ActiveClocksShelfWindow : Window
     private string _effectiveOverlayTheme = OverlayThemeCatalog.Midnight;
     private double _backgroundOpacity = 0.5;
     private double _targetWidth = 260;
+    private bool _rebuildRows = true;
+    private Guid? _displayedActiveId;
+    private readonly Dictionary<Guid, TextBlock> _nameBlocks = new();
 
     public ActiveClocksShelfWindow()
     {
@@ -32,7 +35,9 @@ public partial class ActiveClocksShelfWindow : Window
     {
         string effectiveTheme = OverlayThemeManager.Apply(this, overlayTheme, applicationTheme);
         Themes.NavigatorVisual.SetEnabled(this, effectiveTheme == OverlayThemeCatalog.Pirate);
+        Themes.PirateVisual.SetEnabled(this, effectiveTheme == OverlayThemeCatalog.Pirate);
         _effectiveOverlayTheme = effectiveTheme;
+        _rebuildRows = true;
 
         Visibility lightScope = effectiveTheme == OverlayThemeCatalog.AcanthusLight
             ? Visibility.Visible : Visibility.Collapsed;
@@ -98,6 +103,23 @@ public partial class ActiveClocksShelfWindow : Window
         {
             ShelfBackgroundSurface.Effect = shadow;
         }
+
+        bool pirate = _effectiveOverlayTheme == OverlayThemeCatalog.Pirate;
+        PirateFrame.Visibility = PirateHeader.Visibility = PirateFooter.Visibility = pirate ? Visibility.Visible : Visibility.Collapsed;
+        PirateFrame.Opacity = Math.Clamp(bgOpacity, 0, 1);
+        ShelfBackgroundSurface.Visibility = pirate ? Visibility.Collapsed : Visibility.Visible;
+        if (pirate)
+        {
+            ShelfBorder.BorderThickness = new Thickness(0);
+            ShelfInnerRule.Visibility = Visibility.Collapsed;
+        }
+        else ShelfInnerRule.SetResourceReference(VisibilityProperty, "OverlayInnerRuleVisibility");
+        ShelfBorder.Padding = pirate ? new Thickness(14, 15, 14, 12) : new Thickness(6, 4, 6, 4);
+        ShelfCloseButton.Width = ShelfCloseButton.Height = pirate ? 24 : 14;
+        ShelfCloseButton.Margin = pirate ? new Thickness(0, 17, 17, 0) : new Thickness(0, 3, 4, 0);
+        ShelfCloseButton.Opacity = pirate ? 1 : .35;
+        ShelfCloseButton.FontSize = pirate ? 12 : 8.5;
+        ShelfCloseButton.SetResourceReference(StyleProperty, "OverlayCloseButtonStyle");
     }
 
     private Color GetThemeColor(string key, Color fallback)
@@ -131,22 +153,26 @@ public partial class ActiveClocksShelfWindow : Window
     {
         var list = runningTimers?.Where(t => t.IsRunning).ToList() ?? new List<TimerSession>();
 
-        bool needsRebuild = list.Count != _timeBlocks.Count ||
+        bool pirate = _effectiveOverlayTheme == OverlayThemeCatalog.Pirate;
+        bool needsRebuild = _rebuildRows || _displayedActiveId != activeTimer?.Id || list.Count != _timeBlocks.Count ||
                             list.Any(t => !_timeBlocks.ContainsKey(t.Id));
 
         if (needsRebuild)
         {
             ActiveClocksPanel.Children.Clear();
             _timeBlocks.Clear();
+            _nameBlocks.Clear();
+            _rebuildRows = false;
+            _displayedActiveId = activeTimer?.Id;
 
             if (list.Count == 0)
             {
                 var emptyBlock = new TextBlock
                 {
                     Text = "No running clocks",
-                    Foreground = _projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush"),
+                    Foreground = pirate ? new SolidColorBrush(Color.FromRgb(242, 213, 156)) : _projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush"),
                     Opacity = 0.6,
-                    FontSize = 11.5,
+                    FontSize = pirate ? 17 : 11.5,
                     FontStyle = FontStyles.Italic,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 6, 0, 6)
@@ -161,7 +187,7 @@ public partial class ActiveClocksShelfWindow : Window
                 bool isActive = ReferenceEquals(timerRef, activeTimer);
 
                 // Add subtle separator between multiple clocks
-                if (ActiveClocksPanel.Children.Count > 0)
+                if (!pirate && ActiveClocksPanel.Children.Count > 0)
                 {
                     var separator = new Border
                     {
@@ -195,6 +221,15 @@ public partial class ActiveClocksShelfWindow : Window
                     cardBorder.Opacity = 0.88;
                 }
 
+                if (pirate)
+                {
+                    cardBorder.Padding = new Thickness(0);
+                    cardBorder.Margin = new Thickness(0, 4, 0, 4);
+                    cardBorder.Opacity = 1;
+                    cardBorder.BorderBrush = isActive ? new SolidColorBrush(Color.FromRgb(45, 160, 140)) : Brushes.Transparent;
+                    cardBorder.BorderThickness = new Thickness(2);
+                }
+
                 // Two-line layout: Line 1 = clock + pause button, Line 2 = project name
                 var grid = new Grid();
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Line 1: Clock
@@ -202,9 +237,9 @@ public partial class ActiveClocksShelfWindow : Window
 
                 // Line 1: Clock row with centered time and right-aligned pause button
                 var clockRow = new Grid { Margin = new Thickness(0, 1, 0, 0) };
-                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); // Left spacer to balance pause button
+                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(pirate ? 12 : 28) });
                 clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Centered time
-                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) }); // Right pause button
+                clockRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(pirate ? 42 : 28) });
 
                 // Time block (centered, prominent digits matching clock overlay)
                 var timeBlock = new TextBlock
@@ -212,14 +247,15 @@ public partial class ActiveClocksShelfWindow : Window
                     Text = FormatTimerDisplay(timerRef),
                     FontFamily = _timerFont ?? (FontFamily)FindResource("ThemeTimerFontFamily"),
                     Foreground = _timerForeground ?? (Brush)FindResource("OverlayTimerForegroundBrush"),
-                    FontSize = 21,
+                    FontSize = pirate ? 29 : 21,
                     FontWeight = _timerFontWeight,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     TextAlignment = TextAlignment.Center
                 };
-                Grid.SetColumn(timeBlock, 1);
-                clockRow.Children.Add(timeBlock);
+                var timeView = new Viewbox { Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, Child = timeBlock };
+                Grid.SetColumn(timeView, 1);
+                clockRow.Children.Add(timeView);
                 _timeBlocks[timerRef.Id] = timeBlock;
 
                 // Pause button (right side of line 1)
@@ -239,6 +275,12 @@ public partial class ActiveClocksShelfWindow : Window
                     e.Handled = true;
                     PauseTimerRequested?.Invoke(timerRef);
                 };
+                if (pirate)
+                {
+                    pauseBtn.Width = pauseBtn.Height = 40;
+                    pauseBtn.Template = (ControlTemplate)FindResource("NavigatorDialButtonTemplate");
+                    Themes.NavigatorVisual.SetAction(pauseBtn, "Pause");
+                }
                 Grid.SetColumn(pauseBtn, 2);
                 clockRow.Children.Add(pauseBtn);
 
@@ -255,7 +297,7 @@ public partial class ActiveClocksShelfWindow : Window
                     Foreground = isActive
                         ? (Brush)FindResource("AccentBrush")
                         : (_projectForeground ?? (Brush)FindResource("OverlayProjectForegroundBrush")),
-                    FontSize = 12,
+                    FontSize = pirate ? 17 : 12,
                     FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
@@ -265,8 +307,17 @@ public partial class ActiveClocksShelfWindow : Window
                 };
                 Grid.SetRow(nameBlock, 1);
                 grid.Children.Add(nameBlock);
+                _nameBlocks[timerRef.Id] = nameBlock;
 
-                cardBorder.Child = grid;
+                if (pirate)
+                {
+                    var layers = new Grid();
+                    layers.Children.Add(new Themes.NoteArtworkBorder { Artwork = "Paper", Opacity = Math.Clamp(_backgroundOpacity, 0, 1), IsHitTestVisible = false });
+                    grid.Margin = new Thickness(12, 9, 12, 10);
+                    layers.Children.Add(grid);
+                    cardBorder.Child = layers;
+                }
+                else cardBorder.Child = grid;
 
                 // Clicking row switches to timer
                 cardBorder.MouseLeftButtonDown += (s, e) =>
@@ -276,6 +327,7 @@ public partial class ActiveClocksShelfWindow : Window
 
                 ActiveClocksPanel.Children.Add(cardBorder);
             }
+            TypographyManager.ApplyWindow(this);
         }
         else
         {
@@ -286,6 +338,7 @@ public partial class ActiveClocksShelfWindow : Window
                 {
                     tb.Text = FormatTimerDisplay(timer);
                 }
+                if (_nameBlocks.TryGetValue(timer.Id, out var name)) name.Text = timer.DisplayName;
             }
         }
     }
@@ -317,7 +370,7 @@ public partial class ActiveClocksShelfWindow : Window
         _targetWidth = targetWidth;
 
         // Match the exact rendered width of the clock overlay
-        if (Math.Abs(this.Width - targetWidth) > 0.5)
+        if (double.IsNaN(this.Width) || Math.Abs(this.Width - targetWidth) > 0.5)
         {
             this.Width = targetWidth;
             ShelfSurface.Width = targetWidth;
