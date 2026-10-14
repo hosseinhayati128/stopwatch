@@ -23,6 +23,7 @@ public partial class OverlayWindow : Window
     private int _borderWidth = 2;
     private string _fontFamily = "Consolas";
     private bool _useThemeTextColor;
+    private NavigatorOpaqueParts _opaqueParts = NavigatorOpaqueParts.Default;
     private string _effectiveOverlayTheme = string.Empty;
 
     public string EffectiveOverlayTheme => _effectiveOverlayTheme;
@@ -81,25 +82,21 @@ public partial class OverlayWindow : Window
 
     public void UpdateTime(string timeText)
     {
-        TimeText.Text = timeText;
-        TimeTextShadow1.Text = timeText;
-        TimeTextShadow2.Text = timeText;
-        TimeTextShadow3.Text = timeText;
-        TimeTextShadow4.Text = timeText;
+        ClockFace.Text = timeText;
     }
 
     public void SetTimerName(string? timerName)
     {
         string name = timerName?.Trim() ?? string.Empty;
-        TimerNameText.Text = name;
-        TimerNameText.IsVisible = OverlayPresentationPolicy.ShouldShowProjectName(name);
+        ClockFace.ProjectName = name;
     }
 
     public void SetActive(bool active)
     {
         _isActive = active;
+        ActiveIndicatorBorder.IsVisible = !ClockFace.IsNavigator;
         ActiveIndicatorBorder.BorderBrush = active
-            ? new SolidColorBrush(Color.FromArgb(220, 56, 189, 248))
+            ? ClockFace.BrushToken("ActiveItemBorderBrush", new SolidColorBrush(Color.FromArgb(220, 56, 189, 248)))
             : Brushes.Transparent;
     }
 
@@ -125,6 +122,7 @@ public partial class OverlayWindow : Window
 
     public void SetRunning(bool running)
     {
+        ClockFace.IsRunning = running;
         PauseIcon.IsVisible = running;
         ResumeIcon.IsVisible = !running;
         ToolTip.SetTip(PauseResumeActionButton, running ? "Pause timer" : "Resume timer");
@@ -158,51 +156,24 @@ public partial class OverlayWindow : Window
         _useThemeTextColor = useThemeTextColor;
         _backgroundOpacity = OverlayPresentationPolicy.ClampBackgroundOpacity(backgroundOpacity);
 
-        string resolvedFont = string.IsNullOrWhiteSpace(fontFamily) ? "Consolas, monospace" : fontFamily;
-        var font = new FontFamily(resolvedFont);
-        TimeText.FontFamily = font;
-        TimeTextShadow1.FontFamily = font;
-        TimeTextShadow2.FontFamily = font;
-        TimeTextShadow3.FontFamily = font;
-        TimeTextShadow4.FontFamily = font;
-
-        Color timerColor = useThemeTextColor ? Colors.White : textColor;
-        Color projectColor = useThemeTextColor ? timerColor : textColor;
-        TimeText.Foreground = new SolidColorBrush(timerColor);
-        TimeText.FontSize = _fontSize;
-        TimerNameText.Foreground = new SolidColorBrush(projectColor);
-
-        var outlineBrush = new SolidColorBrush(borderColor);
-        TimeTextShadow1.Foreground = outlineBrush;
-        TimeTextShadow2.Foreground = outlineBrush;
-        TimeTextShadow3.Foreground = outlineBrush;
-        TimeTextShadow4.Foreground = outlineBrush;
-
-        TimeTextShadow1.FontSize = _fontSize;
-        TimeTextShadow2.FontSize = _fontSize;
-        TimeTextShadow3.FontSize = _fontSize;
-        TimeTextShadow4.FontSize = _fontSize;
-
-        UpdateShadowOffset(TimeTextShadow1, _borderWidth, _borderWidth);
-        UpdateShadowOffset(TimeTextShadow2, -_borderWidth, -_borderWidth);
-        UpdateShadowOffset(TimeTextShadow3, _borderWidth, -_borderWidth);
-        UpdateShadowOffset(TimeTextShadow4, -_borderWidth, _borderWidth);
-
-        byte alpha = (byte)Math.Round(_backgroundOpacity * 255);
-        OverlayBackgroundSurface.Background = new SolidColorBrush(Color.FromArgb(alpha, 20, 24, 28));
-        OverlayBorder.BorderBrush = new SolidColorBrush(borderColor);
-        OverlayBorder.BorderThickness = new Thickness(_borderWidth);
+        _opaqueParts = opaqueParts;
+        ClockFace.ApplyAppearance(_textColor, _borderColor, _fontSize, _borderWidth, _fontFamily,
+            _backgroundOpacity, _useThemeTextColor, _opaqueParts);
+        OverlayBorder.Padding = ClockFace.ClockPadding;
+        OverlayBorder.CornerRadius = ClockFace.ClockCornerRadius;
+        ActiveIndicatorBorder.CornerRadius = ClockFace.ClockCornerRadius;
+        ClockFace.ApplyToolbar(ActionSurface, new[] { CloseActionButton, PauseResumeActionButton, ResetActionButton, EditActionButton, SeparateMergeActionButton });
+        ActionPopup.VerticalOffset = ClockFace.Token("OverlayToolbarGap", 6d);
 
         SetActive(_isActive);
     }
 
     public void ApplyTheme(string? overlayTheme, string? applicationTheme)
     {
-        _effectiveOverlayTheme = OverlayThemeCatalog.Normalize(overlayTheme);
-        if (_effectiveOverlayTheme == OverlayThemeCatalog.FollowApplicationTheme)
-        {
-            _effectiveOverlayTheme = AppThemeCatalog.Normalize(applicationTheme);
-        }
+        _effectiveOverlayTheme = OverlayThemeCatalog.Resolve(overlayTheme, applicationTheme);
+        ClockFace.ApplyTheme(overlayTheme, applicationTheme);
+        Resources.MergedDictionaries.Clear();
+        Resources.MergedDictionaries.Add(ThemeResources.Load("Overlay/" + ThemeResources.OverlayFile(_effectiveOverlayTheme)));
 
         ApplySettings(
             _textColor,
@@ -211,7 +182,8 @@ public partial class OverlayWindow : Window
             _borderWidth,
             _fontFamily,
             _backgroundOpacity,
-            _useThemeTextColor);
+            _useThemeTextColor,
+            _opaqueParts);
     }
 
     public void SetHideFromCapture(bool hideFromCapture)
@@ -223,14 +195,9 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private static void UpdateShadowOffset(TextBlock textBlock, double x, double y)
-    {
-        textBlock.RenderTransform = new TranslateTransform(x, y);
-    }
-
     public void SetRecIndicatorVisible(bool visible)
     {
-        RecIndicator.IsVisible = visible;
+        ClockFace.ShowRec = visible;
     }
 
     public void SetClickThrough(bool clickThrough)

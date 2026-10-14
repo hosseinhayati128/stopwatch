@@ -26,6 +26,8 @@ public partial class NoteEntryWindow : Window
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
         ConfigureMode(noteType);
+        // Handle shortcuts before the multiline TextBox consumes Enter.
+        AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => NoteInputBox.Focus();
     }
 
@@ -81,9 +83,8 @@ public partial class NoteEntryWindow : Window
         await SaveAndCloseAsync();
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
-        base.OnKeyDown(e);
         if (e.Key == Key.Escape)
         {
             e.Handled = true;

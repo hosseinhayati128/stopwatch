@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries><ResourceInclude Source="avares://StopwatchOverlay.Desktop/Themes/Overlay/OverlayDefaults.axaml" /></ResourceDictionary.MergedDictionaries>
+    <SolidColorBrush x:Key="OverlayChromeBrush" Color="#3B281D" />
+    <SolidColorBrush x:Key="OverlayChromeBorderBrush" Color="#A8793D" />
+    <SolidColorBrush x:Key="OverlayToolbarSurfaceBrush" Color="#3B281D" />
+    <SolidColorBrush x:Key="OverlayToolbarBorderBrush" Color="#C39B58" />
+    <SolidColorBrush x:Key="OverlayActionForegroundBrush" Color="#F6E6BF" />
+    <SolidColorBrush x:Key="OverlayHoverBrush" Color="#E7C88B" />
+    <SolidColorBrush x:Key="OverlayPressedBrush" Color="#C39B58" />
+    <SolidColorBrush x:Key="OverlayInnerRuleBrush" Color="#B28A4F" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#7D3326" />
+    <SolidColorBrush x:Key="RecBrush" Color="#A8372C" />
+    <SolidColorBrush x:Key="BorderSoftBrush" Color="#A8793D" />
+    <SolidColorBrush x:Key="ActiveItemBorderBrush" Color="#7D3326" />
+    <SolidColorBrush x:Key="OverlayTimerForegroundBrush" Color="#27160D" />
+    <SolidColorBrush x:Key="OverlayProjectForegroundBrush" Color="#351D12" />
+    <SolidColorBrush x:Key="OverlayActionBackgroundBrush" Color="#5C3C25" />
+    <SolidColorBrush x:Key="OverlayActionBorderBrush" Color="#C39B58" />
+    <SolidColorBrush x:Key="OverlayCloseBackgroundBrush" Color="#6F3026" />
+    <SolidColorBrush x:Key="OverlayCloseBorderBrush" Color="#C39B58" />
+    <SolidColorBrush x:Key="OverlayCloseForegroundBrush" Color="#F6E6BF" />
+    <SolidColorBrush x:Key="OverlayCloseHoverForegroundBrush" Color="#6F3026" />
+    <SolidColorBrush x:Key="OverlayPauseBackgroundBrush" Color="#C39B58" />
+    <SolidColorBrush x:Key="OverlayPauseBorderBrush" Color="#F6D797" />
+    <SolidColorBrush x:Key="OverlayPauseForegroundBrush" Color="#382519" />
+    <SolidColorBrush x:Key="OverlayPauseHoverForegroundBrush" Color="#382519" />
+    <SolidColorBrush x:Key="OverlayActionHoverForegroundBrush" Color="#382519" />
+    <SolidColorBrush x:Key="OverlayOrnamentBrush" Color="#A8793D" />
+    <SolidColorBrush x:Key="OverlayOrnamentAccentBrush" Color="#7D3326" />
+    <FontFamily x:Key="AppFontFamily">avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Almendra</FontFamily>
+    <FontFamily x:Key="ThemeTimerFontFamily">avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Barlow Condensed</FontFamily>
+    <Thickness x:Key="ThemeOverlayPadding">0</Thickness>
+    <Thickness x:Key="ThemeOverlayFrameBorderThickness">2</Thickness>
+    <CornerRadius x:Key="ThemeOverlayCornerRadius">6</CornerRadius>
+    <Thickness x:Key="OverlayActionBorderThickness">1</Thickness>
+    <x:Double x:Key="OverlayActionSize">30</x:Double>
+    <CornerRadius x:Key="OverlayToolbarCornerRadius">6</CornerRadius>
+    <x:Double x:Key="OverlayProjectOpacity">1</x:Double>
+    <x:Boolean x:Key="OverlayUseThemedChrome">True</x:Boolean>
+</ResourceDictionary>

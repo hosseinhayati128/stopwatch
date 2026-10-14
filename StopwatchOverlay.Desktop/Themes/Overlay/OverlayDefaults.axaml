@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="OverlayChromeBrush" Color="#CC000000" />
+    <SolidColorBrush x:Key="OverlayChromeBorderBrush" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="OverlayToolbarSurfaceBrush" Color="#171B20" />
+    <SolidColorBrush x:Key="OverlayToolbarBorderBrush" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="OverlayActionForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayHoverBrush" Color="#24FFFFFF" />
+    <SolidColorBrush x:Key="OverlayPressedBrush" Color="#3AFFFFFF" />
+    <SolidColorBrush x:Key="OverlayInnerRuleBrush" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#42B9E8" />
+    <SolidColorBrush x:Key="RecBrush" Color="#E53935" />
+    <SolidColorBrush x:Key="BorderSoftBrush" Color="#46515C" />
+    <SolidColorBrush x:Key="ActiveItemBorderBrush" Color="#42B9E8" />
+    <SolidColorBrush x:Key="OverlayTimerForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayProjectForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayActionBackgroundBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="OverlayActionBorderBrush" Color="#46515C" />
+    <SolidColorBrush x:Key="OverlayCloseBackgroundBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="OverlayCloseBorderBrush" Color="#46515C" />
+    <SolidColorBrush x:Key="OverlayCloseForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayCloseHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayPauseBackgroundBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="OverlayPauseBorderBrush" Color="#46515C" />
+    <SolidColorBrush x:Key="OverlayPauseForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayPauseHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayActionHoverForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayOrnamentBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="OverlayOrnamentAccentBrush" Color="Transparent" />
+    <FontFamily x:Key="AppFontFamily">avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Inter</FontFamily>
+    <FontFamily x:Key="ThemeTimerFontFamily">avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Cascadia Mono</FontFamily>
+    <Thickness x:Key="ThemePanelBorderThickness">1</Thickness>
+    <Thickness x:Key="ThemeOverlayPadding">15,8</Thickness>
+    <Thickness x:Key="ThemeOverlayFrameBorderThickness">0</Thickness>
+    <Thickness x:Key="ThemeOverlayButtonBorderThickness">0</Thickness>
+    <CornerRadius x:Key="ThemeOverlayCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="ThemeOverlayButtonCornerRadius">5</CornerRadius>
+    <Thickness x:Key="OverlayActionBorderThickness">0</Thickness>
+    <x:Double x:Key="OverlayActionSize">28</x:Double>
+    <Thickness x:Key="OverlayToolbarPadding">3</Thickness>
+    <CornerRadius x:Key="OverlayToolbarCornerRadius">8</CornerRadius>
+    <x:Double x:Key="OverlayToolbarGap">6</x:Double>
+    <x:Double x:Key="OverlayProjectFontSize">13</x:Double>
+    <FontWeight x:Key="OverlayProjectFontWeight">SemiBold</FontWeight>
+    <FontWeight x:Key="OverlayTimerFontWeight">Bold</FontWeight>
+    <Thickness x:Key="OverlayProjectMargin">4,2,4,0</Thickness>
+    <x:Double x:Key="OverlayProjectOpacity">0.78</x:Double>
+    <x:Boolean x:Key="OverlayUseThemedChrome">False</x:Boolean>
+    <x:Double x:Key="OverlayMinimumWidth">0</x:Double>
+</ResourceDictionary>

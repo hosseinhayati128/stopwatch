@@ -121,4 +121,11 @@
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
+    <Style Selector="Button.clockAction:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource OverlayHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OverlayActionBorderBrush}" />
+    </Style>
+    <Style Selector="Button.clockAction:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource OverlayPressedBrush}" />
+    </Style>
 </Styles>

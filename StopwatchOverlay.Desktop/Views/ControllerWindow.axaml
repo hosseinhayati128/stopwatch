@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:StopwatchOverlay.Desktop.Controls"
         xmlns:views="clr-namespace:StopwatchOverlay.Desktop.Views"
         x:Class="StopwatchOverlay.Desktop.Views.ControllerWindow"
         Title="Stopwatch Controller"
@@ -7,35 +8,41 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBackgroundBrush}">
 
-    <Grid RowDefinitions="Auto,Auto,*">
-        
+    <Window.Styles>
+        <StyleInclude Source="/Styles/PirateControllerStyles.axaml"/>
+    </Window.Styles>
+    <Grid x:Name="ControllerFrame" RowDefinitions="Auto,Auto,*">
+        <controls:PirateArtwork Classes="pirateLayer" Part="Wood" Grid.RowSpan="3"/>
+        <controls:PirateArtwork Classes="pirateLayer" Part="Header" Grid.Row="0"/>
+
         <!-- Header -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource HeaderBrush}"
+        <Border Classes="header" Grid.Row="0"
+
                 BorderBrush="{DynamicResource SubtleDividerBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,10">
+               >
             <Grid ColumnDefinitions="*,Auto">
                 <!-- Brand Title -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                    <Path Width="22" Height="22"
+                    <controls:PirateArtwork Classes="pirateLayer" Part="Skull" Width="38" Height="38"/>
+                    <Path Classes="brandIcon" Width="22" Height="22"
                           Data="M 12,2 C 6.48,2 2,6.48 2,12 C 2,17.52 6.48,22 12,22 C 17.52,22 22,17.52 22,12 C 22,6.48 17.52,2 12,2 Z M 12.5,7 L 11,7 L 11,13 L 16.25,16.15 L 17,14.92 L 12.5,12.25 L 12.5,7 Z"
                           Fill="{DynamicResource PrimaryAccentBrush}"
                           Stretch="Uniform" VerticalAlignment="Center"/>
-                    <TextBlock Classes="heading" Text="Stopwatch Overlay" FontSize="18" VerticalAlignment="Center"/>
+                    <TextBlock Classes="heading brandTitle" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Top Action Buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="DashboardTopButton" Classes="modern" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
-                    <Button x:Name="SettingsTopButton" Classes="modern" Content="Settings" Click="SettingsButton_Click"/>
-                    <Button x:Name="ShortcutsTopButton" Classes="modern" Content="Shortcuts" Click="ShortcutsButton_Click"/>
+                    <Button x:Name="DashboardTopButton" Classes="modern topAction" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
+                    <Button x:Name="SettingsTopButton" Classes="modern topAction" Content="Settings" Click="SettingsButton_Click"/>
+                    <Button x:Name="ShortcutsTopButton" Classes="modern topAction" Content="Shortcuts" Click="ShortcutsButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Menu Bar -->
-        <Menu Grid.Row="1" Background="{DynamicResource NavigationRailBrush}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
+        <Menu Classes="controllerMenu" Grid.Row="1" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
             <MenuItem Header="_Timers">
                 <MenuItem Header="_New timer" Click="NewTimerMenuItem_Click"/>
                 <MenuItem Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
@@ -51,31 +58,33 @@
         </Menu>
 
         <!-- Main Body -->
-        <Grid Grid.Row="2" ColumnDefinitions="260,*">
-            
+        <Grid Grid.Row="2" ColumnDefinitions="260,*" x:Name="ControllerBody" Classes="controllerBody">
+            <controls:PirateArtwork Classes="pirateLayer" Part="Rail"/>
+            <controls:PirateArtwork Classes="pirateLayer" Part="Map" Grid.Column="1" Margin="8,4,0,0"/>
+
             <!-- Left Rail: Timers List -->
-            <Border Grid.Column="0"
-                    Background="{DynamicResource NavigationRailBrush}"
+            <Border Classes="rail" Grid.Column="0"
+
                     BorderBrush="{DynamicResource SubtleDividerBrush}"
-                    BorderThickness="0,0,1,0"
-                    Padding="12">
+
+                   >
                 <Grid RowDefinitions="Auto,*,Auto">
-                    <TextBlock Grid.Row="0" Text="Timers" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
-                    
+                    <TextBlock Classes="railHeading" Grid.Row="0" Text="Timers" Margin="0,0,0,10"/>
+
                     <ListBox Grid.Row="1" x:Name="TimerRailList"
                              Background="Transparent" BorderThickness="0"
                              SelectionChanged="TimerRailList_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="views:TimerRailItemViewModel">
-                                <Border Background="{DynamicResource SurfaceRaisedBrush}"
-                                        BorderBrush="{DynamicResource BorderBrush}"
-                                        BorderThickness="1"
+                                <Border Classes="railCard"
+
+
                                         CornerRadius="6"
-                                        Padding="10,8" Margin="0,2">
+                                        Margin="0,2">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding DisplaySummary}" FontSize="12" Opacity="0.75" FontFamily="Consolas, monospace"/>
+                                            <TextBlock Classes="railName" Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Classes="railSummary" Text="{Binding DisplaySummary}"/>
                                         </StackPanel>
                                         <Ellipse Grid.Column="1" Width="8" Height="8"
                                                  Fill="{DynamicResource PrimaryAccentBrush}"
@@ -88,21 +97,21 @@
                     </ListBox>
 
                     <StackPanel Grid.Row="2" Margin="0,10,0,0" Spacing="6">
-                        <TextBlock x:Name="CombinedRailStatus" Text="Separate overlays" FontSize="11" Opacity="0.6" HorizontalAlignment="Center"/>
-                        <Button x:Name="NewTimerRailButton" Classes="primary" Content="+ New timer" HorizontalAlignment="Stretch" Click="NewTimerMenuItem_Click"/>
+                        <TextBlock Classes="railStatus" x:Name="CombinedRailStatus" Text="Separate overlays" HorizontalAlignment="Center"/>
+                        <Button x:Name="NewTimerRailButton" controls:PirateArtwork.Icon="Anchor" Classes="primary railNew" Content="+ New timer" HorizontalAlignment="Stretch" Click="NewTimerMenuItem_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Right Workspace -->
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Margin="24,18">
-                    
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Classes="workspace">
+
                     <!-- Title and New Timer Button -->
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading" Text="Active Timer" FontSize="20" VerticalAlignment="Center"/>
-                            <Button Content="Set Project" Classes="modern" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
+                        <StackPanel Grid.Column="0" Classes="workspaceTitlePanel" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading workspaceTitle" Text="Active Timer" VerticalAlignment="Center"/>
+                            <Button Content="Set Project" Classes="modern renameProject" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
                         </StackPanel>
                         <Button Grid.Column="1" Content="+ New timer" Classes="modern" Click="NewTimerMenuItem_Click"/>
                     </Grid>
@@ -155,18 +164,18 @@
                     </Border>
 
                     <!-- Hero Time Display -->
-                    <Border Grid.Row="3"
-                            Background="{DynamicResource SurfaceRaisedBrush}"
+                    <Border Classes="hero" Grid.Row="3"
+
                             BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1.5"
+
                             CornerRadius="12"
-                            Padding="32,20"
-                            Margin="0,0,0,18"
+
+
                             HorizontalAlignment="Stretch">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
                                 <Ellipse x:Name="RecIndicator" Width="18" Height="18" Fill="#EF4444" IsVisible="False" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="TimeDisplay"
+                                <TextBlock Classes="timeDisplay" x:Name="TimeDisplay"
                                            Text="00:00:00.0"
                                            FontFamily="Consolas, monospace"
                                            FontSize="64"
@@ -175,28 +184,31 @@
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
+                            <Viewbox Classes="pirateOnly" MaxHeight="112" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,4">
+                                <controls:PirateTimerText Text="{Binding Text, ElementName=TimeDisplay}"/>
+                            </Viewbox>
                             <TextBlock x:Name="ProjectSubtitle" Text="" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0" IsVisible="False"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Control Buttons -->
-                    <WrapPanel Grid.Row="4" HorizontalAlignment="Center" Margin="0,0,0,18">
-                        <Button x:Name="StartStopButton" Classes="primary" Content="Start" MinWidth="110" Height="40" Margin="0,0,10,6" Click="StartStopButton_Click"/>
-                        <Button x:Name="LapButton" Classes="modern" Content="Add lap" MinWidth="90" Height="40" Margin="0,0,10,6" Click="LapButton_Click"/>
-                        <Button x:Name="ResetButton" Classes="modern" Content="Reset" MinWidth="90" Height="40" Margin="0,0,10,6" Click="ResetButton_Click"/>
-                        <Button x:Name="ToggleOverlayButton" Classes="modern" Content="Hide overlay" MinWidth="110" Height="40" Margin="0,0,10,6" Click="ToggleOverlayButton_Click"/>
-                        <Button x:Name="EditButton" Classes="modern" Content="Edit" MinWidth="80" Height="40" Margin="0,0,0,6" Click="EditTimerMenuItem_Click"/>
-                    </WrapPanel>
+                    <controls:PirateActionPanel x:Name="ControllerActions" Grid.Row="4">
+                        <Button x:Name="StartStopButton" controls:PirateArtwork.Icon="Lion" Classes="primary mainAction" Content="Start" Click="StartStopButton_Click"/>
+                        <Button x:Name="LapButton" controls:PirateArtwork.Icon="Telescope" Classes="modern mainAction" Content="Add lap" Click="LapButton_Click"/>
+                        <Button x:Name="ResetButton" controls:PirateArtwork.Icon="Ram" Classes="modern mainAction" Content="Reset" Click="ResetButton_Click"/>
+                        <Button x:Name="ToggleOverlayButton" controls:PirateArtwork.Icon="Paint" Classes="modern mainAction" Content="Hide overlay" Click="ToggleOverlayButton_Click"/>
+                        <Button x:Name="EditButton" Classes="modern editAction" Content="Edit" Click="EditTimerMenuItem_Click"/>
+                    </controls:PirateActionPanel>
 
                     <!-- Lap Times List -->
-                    <Border Grid.Row="5"
-                            Background="{DynamicResource SurfaceBrush}"
+                    <Border Classes="laps" Grid.Row="5"
+
                             BorderBrush="{DynamicResource SubtleDividerBrush}"
-                            BorderThickness="1"
+
                             CornerRadius="8"
-                            Padding="14,10"
-                            MinHeight="100"
-                            MaxHeight="180">
+
+
+                           >
                         <Grid RowDefinitions="Auto,*">
                             <TextBlock Grid.Row="0" Text="Lap times" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
                             <ListBox Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
@@ -206,14 +218,14 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <TextBlock x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
-                                       Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Classes="lapPlaceholder" x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
                     <!-- Status Bar -->
-                    <Border Grid.Row="6" Margin="0,16,0,0" Padding="0,8,0,0"
-                            BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,1,0,0">
+                    <Border Classes="status" Grid.Row="6"
+                            BorderBrush="{DynamicResource SubtleDividerBrush}">
                         <Grid ColumnDefinitions="Auto,*">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="Gray"/>
@@ -227,5 +239,15 @@
                 </Grid>
             </ScrollViewer>
         </Grid>
+        <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Right" VerticalAlignment="Top" RenderTransformOrigin="50%,50%">
+            <controls:PirateArtwork.RenderTransform><ScaleTransform ScaleX="-1"/></controls:PirateArtwork.RenderTransform>
+        </controls:PirateArtwork>
+        <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Left" VerticalAlignment="Bottom" RenderTransformOrigin="50%,50%">
+            <controls:PirateArtwork.RenderTransform><ScaleTransform ScaleY="-1"/></controls:PirateArtwork.RenderTransform>
+        </controls:PirateArtwork>
+        <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Right" VerticalAlignment="Bottom" RenderTransformOrigin="50%,50%">
+            <controls:PirateArtwork.RenderTransform><ScaleTransform ScaleX="-1" ScaleY="-1"/></controls:PirateArtwork.RenderTransform>
+        </controls:PirateArtwork>
     </Grid>
 </Window>

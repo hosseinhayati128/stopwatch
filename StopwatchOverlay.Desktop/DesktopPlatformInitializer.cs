@@ -39,7 +39,11 @@ internal static class DesktopPlatformInitializer
             PlatformServices.SingleInstance = new LinuxSingleInstanceService();
         }
 
-        PlatformServices.HotKey = new SharpHookHotKeyService();
+        PlatformServices.HotKey = OperatingSystem.IsLinux()
+            && (Environment.GetEnvironmentVariable("XDG_SESSION_TYPE") == "wayland"
+                || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            ? new PortalHotKeyService()
+            : new SharpHookHotKeyService();
     }
 
     private static string FormatVirtualKey(uint vk) => vk switch

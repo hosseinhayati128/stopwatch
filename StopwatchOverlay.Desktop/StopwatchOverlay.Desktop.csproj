@@ -21,6 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets/**" />
+    <EmbeddedResource Include="Platform/portal_hotkeys.py" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\StopwatchOverlay.Core\StopwatchOverlay.Core.csproj" />
   </ItemGroup>
 </Project>

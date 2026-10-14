@@ -13,6 +13,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        ThemeResources.ApplyApplication(SettingsStore.Load().ThemeMode);
 
         AppBackgroundCatalog.ImageDimensionReader = (stream, _) =>
         {

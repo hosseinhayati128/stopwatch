@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:StopwatchOverlay.Desktop.Views"
+        xmlns:controls="clr-namespace:StopwatchOverlay.Desktop.Controls"
         x:Class="StopwatchOverlay.Desktop.Views.SettingsWindow"
         Title="Settings and Overlay Inspector"
         Width="1060" Height="740"
@@ -10,7 +11,7 @@
 
     <DockPanel>
         <!-- Top Header -->
-        <Border DockPanel.Dock="Top"
+        <Border x:Name="SettingsHeaderSurface" DockPanel.Dock="Top"
                 Background="{DynamicResource ApplicationHeaderBrush}"
                 BorderBrush="{DynamicResource SubtleDividerBrush}"
                 BorderThickness="0,0,0,1"
@@ -32,7 +33,7 @@
         </Border>
 
         <!-- Main Content Area: 3 Columns -->
-        <Grid ColumnDefinitions="340,190,*">
+        <Grid ColumnDefinitions="340,190,*" Background="{DynamicResource SurfaceBrush}">
 
             <!-- Column 0: Live overlay preview -->
             <Border Grid.Column="0"
@@ -60,31 +61,12 @@
                             ClipToBounds="True">
                         <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="12">
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Border x:Name="PreviewSurface"
-                                        MinWidth="280" MinHeight="100"
-                                        Padding="20,12"
-                                        CornerRadius="{DynamicResource ThemeOverlayCornerRadius}"
-                                        BorderThickness="{DynamicResource ThemeOverlayFrameBorderThickness}"
-                                        BorderBrush="{DynamicResource OverlayChromeBorderBrush}"
-                                        HorizontalAlignment="Center">
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <TextBlock x:Name="PreviewTimeText" Text="00:05:10"
-                                                   HorizontalAlignment="Center"
-                                                   FontFamily="{DynamicResource ThemeTimerFontFamily}"
-                                                   FontSize="48" FontWeight="Bold"/>
-                                        <TextBlock x:Name="PreviewProjectText" Text="Programming"
-                                                   HorizontalAlignment="Center" Margin="0,4,0,0"
-                                                   FontFamily="{DynamicResource AppFontFamily}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="14"
-                                                   Opacity="0.85"/>
-                                    </StackPanel>
-                                </Border>
+                                <controls:ThemedClockFace x:Name="PreviewClock" Text="00:05:10" ProjectName="Programming" />
 
                                 <Border x:Name="PreviewToolbarSurface" HorizontalAlignment="Center"
                                         Margin="0,10,0,0" Padding="6,4"
                                         Background="{DynamicResource OverlayToolbarSurfaceBrush}"
-                                        CornerRadius="6"
+                                        CornerRadius="{DynamicResource OverlayToolbarCornerRadius}"
                                         BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="1">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -101,6 +83,12 @@
                                             <Path Data="M 12.5,4.5 A 5.5,5.5 0 1 0 13,10 M 12.5,4.5 L 8.5,4.5 M 12.5,4.5 L 12.5,0.5"
                                                   Stretch="Uniform" Width="13" Height="13"
                                                   Stroke="{DynamicResource PrimaryTextBrush}" StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"/>
+                                        </Button>
+                                        <Button x:Name="PreviewEditButton" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
+                                            <Path Width="13" Height="13" Data="M9.5,1.5 L11.5,3.5 L3.5,11.5 L1.5,11.5 L1.5,9.5 Z M8,3 L10,5" Stroke="{DynamicResource OverlayActionForegroundBrush}" StrokeThickness="1.5" />
+                                        </Button>
+                                        <Button x:Name="PreviewSeparateMergeButton" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
+                                            <Path Width="13" Height="13" Data="M2,12 L12,2 M12,2 L6,2 M12,2 L12,8" Stroke="{DynamicResource OverlayActionForegroundBrush}" StrokeThickness="1.5" />
                                         </Button>
                                     </StackPanel>
                                 </Border>

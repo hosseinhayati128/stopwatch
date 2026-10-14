@@ -11,6 +11,12 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class ShortcutsWindow : Window
 {
+    internal void SetRegistrationStatus(string status)
+    {
+        PortalRegistrationText.Text = status;
+        PortalRegistrationText.IsVisible = true;
+    }
+
     private static readonly (ShortcutAction Action, string Description)[] WinF2Actions =
     [
         (ShortcutAction.StartStop, "Start or stop the active timer"),
@@ -542,7 +548,7 @@ public partial class ShortcutsWindow : Window
         }
     }
 
-    private static uint KeyToVirtualKey(Key key)
+    internal static uint KeyToVirtualKey(Key key)
     {
         if (key >= Key.A && key <= Key.Z)
             return (uint)(0x41 + (key - Key.A));

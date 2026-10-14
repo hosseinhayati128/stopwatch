@@ -24,7 +24,7 @@
                            FontSize="12"
                            FontWeight="SemiBold"/>
             </StackPanel>
-            <TextBlock Text="1 Todo · 2 Quick Note · 3 Reminder · 4 View Notes"
+            <TextBlock x:Name="NoteOptions" Text="T Todo · N Quick Note · R Reminder · V View Notes"
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        FontSize="12"
                        FontWeight="Medium"

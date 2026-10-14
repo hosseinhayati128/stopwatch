@@ -339,6 +339,17 @@ In Countdown mode, use the menu (**Switch to smart input** / **Switch to classic
 
 ---
 
+## Linux desktop build
+
+The Avalonia desktop target is `StopwatchOverlay.Desktop`; the `StopwatchOverlay` target uses Windows WPF.
+Build the Linux executable with the .NET 10 SDK and `bash scripts/package.sh`, then run `dist/linux-x64/install.sh`.
+
+On Wayland, global shortcuts use the desktop's Global Shortcuts portal and require system Python 3 with PyGObject/Gio (`python3` and `python3-gi` on Ubuntu/Debian), plus a desktop portal backend that supports global shortcuts. Allow the desktop permission dialog when prompted. The **Shortcuts** window shows the keys actually assigned by your desktop. X11 sessions retain the SharpHook backend.
+
+**Super+F2**, then a command key, controls timers. **Super+F3**, then **T**, **N**, **R**, or **V**, opens Todo, Quick Note, Reminder, or the notes viewer. Release the leader shortcut and press the note command key within five seconds (timer commands use two seconds). In the note editor, **Ctrl+Enter** saves and **Enter** inserts a newline. A notes folder is only required when saving; if none is configured, the note entry window asks you to choose one.
+
+The Linux target supports live settings persistence, display formats, the One Piece controller artwork and navigator clock, and floating-clock frames, typography, ornaments, and toolbars. The settings preview uses the live clock renderer, including independent navigator transparency layers. Decorative skins for other Windows dialogs remain specific to the Windows target.
+
 ## For Developers
 
 See [DEVELOPERS.md](DEVELOPERS.md) for build instructions, architecture details, and contribution guidelines.

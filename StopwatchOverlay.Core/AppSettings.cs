@@ -391,10 +391,10 @@ namespace StopwatchOverlay
 
         public static Dictionary<NoteCommandAction, uint> DefaultNoteCommandModeKeys() => new()
         {
-            [NoteCommandAction.AddTodo] = 0x31,     // '1'
-            [NoteCommandAction.AddNote] = 0x32,     // '2'
-            [NoteCommandAction.AddReminder] = 0x33, // '3'
-            [NoteCommandAction.ViewNotes] = 0x34    // '4'
+            [NoteCommandAction.AddTodo] = 0x54,     // 'T'
+            [NoteCommandAction.AddNote] = 0x4E,     // 'N'
+            [NoteCommandAction.AddReminder] = 0x52, // 'R'
+            [NoteCommandAction.ViewNotes] = 0x56    // 'V'
         };
 
         // Ensure shortcuts dictionary, leader shortcut, ShowActiveOverlay, and OpenController are initialized.

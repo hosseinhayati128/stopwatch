@@ -25,6 +25,14 @@ fi
 
 mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR/scalable/apps" "$ICON_DIR/256x256/apps"
 
+# Wayland global shortcuts use the desktop portal through the system Gio bindings.
+if [[ "${XDG_SESSION_TYPE:-}" == "wayland" || -n "${WAYLAND_DISPLAY:-}" ]]; then
+    if ! /usr/bin/python3 -c 'from gi.repository import Gio, GLib' >/dev/null 2>&1; then
+        echo "Warning: Wayland shortcuts require python3 and python3-gi (PyGObject)." >&2
+        echo "On Ubuntu/Debian: sudo apt install python3 python3-gi xdg-desktop-portal" >&2
+    fi
+fi
+
 # 1. Install executable
 if [[ -f "$SCRIPT_DIR/$BIN_NAME" ]]; then
     cp "$SCRIPT_DIR/$BIN_NAME" "$BIN_DIR/$BIN_NAME"

@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using StopwatchOverlay;
 using Avalonia;
 using Avalonia.Controls;
 
@@ -6,9 +9,18 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class NoteCommandHintWindow : Window
 {
-    public NoteCommandHintWindow()
+    public NoteCommandHintWindow() : this(null) { }
+
+    public NoteCommandHintWindow(IReadOnlyDictionary<NoteCommandAction, uint>? keys)
     {
         InitializeComponent();
+        keys ??= AppSettings.DefaultNoteCommandModeKeys();
+        var options = new[] {
+            (NoteCommandAction.AddTodo, "Todo"), (NoteCommandAction.AddNote, "Quick Note"),
+            (NoteCommandAction.ViewNotes, "View Notes"), (NoteCommandAction.AddReminder, "Reminder")
+        };
+        NoteOptions.Text = string.Join(" · ", options.Select(option =>
+            $"{(keys.TryGetValue(option.Item1, out var key) && key != 0 ? Shortcut.FormatKeyName(key) : "—")} {option.Item2}"));
         Opened += OnWindowOpened;
     }
 

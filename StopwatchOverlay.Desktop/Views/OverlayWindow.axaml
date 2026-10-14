@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls"
         x:Class="StopwatchOverlay.Desktop.Views.OverlayWindow"
         Title="Stopwatch Overlay"
         SystemDecorations="None"
@@ -11,97 +12,11 @@
         SizeToContent="WidthAndHeight">
 
     <Grid x:Name="RootLayout" Background="{x:Null}">
-        <!-- Timer Background Surface -->
-        <Border x:Name="OverlayBackgroundSurface"
-                CornerRadius="8"
-                IsHitTestVisible="False" />
-
-        <!-- Timer Border & Interactive Surface -->
-        <Border x:Name="OverlayBorder"
-                Background="Transparent"
-                BorderThickness="2"
-                CornerRadius="8"
-                Padding="16,10"
+        <controls:ThemedClockFace x:Name="ClockFace" IsHitTestVisible="False" />
+        <Border x:Name="OverlayBorder" Background="Transparent"
                 PointerEntered="OnTimerSurfacePointerEntered"
                 PointerExited="OnTimerSurfacePointerExited"
-                PointerPressed="OnTimerSurfacePointerPressed">
-            <StackPanel Spacing="4">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <!-- REC Indicator -->
-                    <Ellipse x:Name="RecIndicator"
-                             Width="14" Height="14"
-                             Fill="#EF4444"
-                             Margin="0,0,10,0"
-                             VerticalAlignment="Center"
-                             IsVisible="False" />
-
-                    <!-- Outlined text effect using multiple TextBlocks -->
-                    <Grid x:Name="TimeTextGrid">
-                        <TextBlock x:Name="TimeTextShadow1"
-                                   Text="00:00:00.0"
-                                   FontFamily="Consolas"
-                                   FontSize="48"
-                                   FontWeight="Bold"
-                                   Foreground="Black">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform X="2" Y="2"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-
-                        <TextBlock x:Name="TimeTextShadow2"
-                                   Text="00:00:00.0"
-                                   FontFamily="Consolas"
-                                   FontSize="48"
-                                   FontWeight="Bold"
-                                   Foreground="Black">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform X="-2" Y="-2"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-
-                        <TextBlock x:Name="TimeTextShadow3"
-                                   Text="00:00:00.0"
-                                   FontFamily="Consolas"
-                                   FontSize="48"
-                                   FontWeight="Bold"
-                                   Foreground="Black">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform X="2" Y="-2"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-
-                        <TextBlock x:Name="TimeTextShadow4"
-                                   Text="00:00:00.0"
-                                   FontFamily="Consolas"
-                                   FontSize="48"
-                                   FontWeight="Bold"
-                                   Foreground="Black">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform X="-2" Y="2"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-
-                        <TextBlock x:Name="TimeText"
-                                   Text="00:00:00.0"
-                                   FontFamily="Consolas"
-                                   FontSize="48"
-                                   FontWeight="Bold"
-                                   Foreground="White"/>
-                    </Grid>
-                </StackPanel>
-
-                <!-- Project / Timer name text -->
-                <TextBlock x:Name="TimerNameText"
-                           IsVisible="False"
-                           HorizontalAlignment="Center"
-                           TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis"
-                           FontFamily="Segoe UI, Inter, Sans-Serif"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Opacity="0.85"/>
-            </StackPanel>
-        </Border>
+                PointerPressed="OnTimerSurfacePointerPressed" />
 
         <!-- Active Border Indicator -->
         <Border x:Name="ActiveIndicatorBorder"

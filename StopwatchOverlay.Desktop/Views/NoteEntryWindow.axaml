@@ -11,6 +11,12 @@
         Width="520" Height="270"
         MinWidth="360" MinHeight="220"
         WindowStartupLocation="CenterScreen">
+    <Window.Styles>
+        <Style Selector="TextBox.noteInput:pointerover /template/ Border#PART_BorderElement, TextBox.noteInput:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+    </Window.Styles>
     <Border Background="{DynamicResource SurfaceRaisedBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="{DynamicResource ThemePanelBorderThickness}"
@@ -46,6 +52,9 @@
                     Padding="6"
                     MinHeight="80">
                 <TextBox x:Name="NoteInputBox"
+                         Classes="noteInput"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         CaretBrush="{DynamicResource PrimaryTextBrush}"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
                          Background="Transparent"

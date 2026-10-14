@@ -8,6 +8,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
+using Avalonia.Input;
+using StopwatchOverlay.Desktop.Platform;
 using Avalonia.Media;
 using Avalonia.Threading;
 using StopwatchOverlay.Platform;
@@ -43,7 +45,8 @@ public partial class ControllerWindow : Window
     private ProjectDashboardWindow? _dashboardWindow;
     private SettingsWindow? _settingsWindow;
     private ShortcutsWindow? _shortcutsWindow;
-    private ShortcutCommandHintWindow? _commandHintWindow;
+    private Window? _commandHintWindow;
+    private bool _isNoteCommandModeActive;
     private DispatcherTimer? _commandModeTimer;
     private bool _isCommandModeActive;
     private bool _overlaysVisible = true;
@@ -59,6 +62,9 @@ public partial class ControllerWindow : Window
         InitializeComponent();
 
         _settings = SettingsStore.Load();
+        ApplyControllerTheme();
+        if (PlatformServices.HotKey is PortalHotKeyService portal)
+            portal.RegistrationStatusChanged += OnPortalRegistrationStatusChanged;
         if (_projectTimeStore.TryLoad(out var loadedHistory) && loadedHistory != null)
         {
             _projectHistory = loadedHistory;
@@ -104,6 +110,16 @@ public partial class ControllerWindow : Window
         UpdateLightRing();
     }
 
+    private void OnPortalRegistrationStatusChanged(object? sender, string status)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            ToolTip.SetTip(ShortcutsTopButton, status);
+            ShortcutsTopButton.Content = status.StartsWith("ERROR ") ? "Shortcuts unavailable" : "Shortcuts";
+            _shortcutsWindow?.SetRegistrationStatus(status);
+        });
+    }
+
     private void InitializePlatformServices()
     {
         try
@@ -114,6 +130,8 @@ public partial class ControllerWindow : Window
             PlatformServices.HotKey.HotKeyPressed += OnHotKeyPressed;
             PlatformServices.HotKey.CommandKeyPressed += OnCommandKeyPressed;
 
+            var noteLeader = _settings.NoteLeaderShortcut ?? AppSettings.DefaultNoteLeaderShortcut();
+            PlatformServices.HotKey.RegisterHotKey(ShortcutAction.NoteCommandLeader, noteLeader.Modifiers, noteLeader.VirtualKey);
             var leader = _settings.LeaderShortcut ?? AppSettings.DefaultLeaderShortcut();
             PlatformServices.HotKey.RegisterHotKey(ShortcutAction.CommandLeader, leader.Modifiers, leader.VirtualKey);
 
@@ -139,11 +157,16 @@ public partial class ControllerWindow : Window
             switch (action)
             {
                 case ShortcutAction.ShowActiveOverlay:
-                    ToggleOverlayVisibility();
+                    _overlaysVisible = true;
+                    UpdateOverlayStates();
                     break;
                 case ShortcutAction.OpenController:
                     Show();
                     Activate();
+                    break;
+                case ShortcutAction.NoteCommandLeader:
+                    if (_isCommandModeActive) ExitShortcutCommandMode();
+                    EnterShortcutCommandMode(noteMode: true);
                     break;
                 case ShortcutAction.CommandLeader:
                     if (_isCommandModeActive)
@@ -159,18 +182,23 @@ public partial class ControllerWindow : Window
         });
     }
 
-    private void EnterShortcutCommandMode()
+    private void EnterShortcutCommandMode(bool noteMode = false)
     {
         _isCommandModeActive = true;
+        _isNoteCommandModeActive = noteMode;
         PlatformServices.HotKey.IsInCommandMode = true;
 
         if (_commandHintWindow == null)
         {
-            _commandHintWindow = new ShortcutCommandHintWindow();
+            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow();
+            if (PlatformServices.HotKey is PortalHotKeyService)
+                _commandHintWindow.KeyDown += OnPortalCommandKeyDown;
             _commandHintWindow.Show();
+            if (PlatformServices.HotKey is PortalHotKeyService)
+                _commandHintWindow.Activate();
         }
 
-        double timeout = Math.Max(1.0, _settings.CommandChainingTimeoutSeconds);
+        double timeout = noteMode ? 5.0 : 2.0;
         if (_commandModeTimer == null)
         {
             _commandModeTimer = new DispatcherTimer
@@ -186,6 +214,14 @@ public partial class ControllerWindow : Window
         }
 
         _commandModeTimer.Start();
+    }
+
+    private void OnPortalCommandKeyDown(object? sender, KeyEventArgs e)
+    {
+        uint key = ShortcutsWindow.KeyToVirtualKey(e.Key);
+        if (key == 0) return;
+        e.Handled = true;
+        OnCommandKeyPressed(sender, key);
     }
 
     private void ExitShortcutCommandMode()
@@ -213,6 +249,36 @@ public partial class ControllerWindow : Window
                 return;
             }
 
+            if (_isNoteCommandModeActive)
+            {
+                // The leader may repeat while the user releases Super+F3.
+                if (vk == _settings.NoteLeaderShortcut.VirtualKey) return;
+                var noteAction = _settings.NoteCommandModeKeys.FirstOrDefault(item => item.Value == vk).Key;
+                // Keep the original Windows letter aliases, even for saved numeric bindings.
+                if (noteAction == 0)
+                    noteAction = vk switch
+                    {
+                        0x54 => NoteCommandAction.AddTodo,
+                        0x4E => NoteCommandAction.AddNote,
+                        0x52 => NoteCommandAction.AddReminder,
+                        0x56 => NoteCommandAction.ViewNotes,
+                        _ => 0
+                    };
+                if (noteAction == 0) return;
+                ExitShortcutCommandMode();
+                Window? noteWindow = noteAction switch
+                {
+                    NoteCommandAction.AddTodo => new NoteEntryWindow(NoteType.Todo, _settings),
+                    NoteCommandAction.AddNote => new NoteEntryWindow(NoteType.Note, _settings),
+                    NoteCommandAction.AddReminder => new NoteEntryWindow(NoteType.Reminder, _settings),
+                    NoteCommandAction.ViewNotes => new NotesViewerWindow(_settings),
+                    _ => null
+                };
+                noteWindow?.Show();
+                noteWindow?.Activate();
+                return;
+            }
+
             if (ShortcutCommandMap.TryGetAction(vk, _settings.CommandModeKeys, out var action))
             {
                 if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord)
@@ -222,6 +288,8 @@ public partial class ControllerWindow : Window
                 else
                 {
                     _commandModeTimer?.Stop();
+                    if (_commandModeTimer != null)
+                        _commandModeTimer.Interval = TimeSpan.FromSeconds(_settings.CommandChainingTimeoutSeconds);
                     _commandModeTimer?.Start();
                 }
 
@@ -489,6 +557,7 @@ public partial class ControllerWindow : Window
 
     private void ApplyOverlayStyle(OverlayWindow overlay)
     {
+        overlay.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
         Color text = _settings.TextColor == "Theme default" ? Colors.White : ParseColor(_settings.TextColor, Colors.White);
         Color border = ParseColor(_settings.BorderColor, Colors.Black);
         overlay.ApplySettings(
@@ -498,7 +567,8 @@ public partial class ControllerWindow : Window
             (int)_settings.BorderWidth,
             _settings.FontFamily,
             _settings.BackgroundOpacity / 100.0,
-            _settings.TextColor == "Theme default");
+            _settings.TextColor == "Theme default",
+            _settings.OpaqueOverlayParts);
     }
 
     private static Color ParseColor(string name, Color fallback) => name switch
@@ -630,7 +700,7 @@ public partial class ControllerWindow : Window
         }
     }
 
-    private static string FormatDisplayTime(TimerSession session)
+    private string FormatDisplayTime(TimerSession session)
     {
         TimeSpan time = session.Mode switch
         {
@@ -639,7 +709,18 @@ public partial class ControllerWindow : Window
             _ => session.Elapsed
         };
 
-        return $"{(int)time.TotalHours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}";
+        string sign = time < TimeSpan.Zero ? "-" : "";
+        time = time.Duration();
+        long hours = (long)time.TotalHours;
+        long minutes = session.Mode == 1 ? time.Minutes : (long)time.TotalMinutes;
+        return _settings.TimeFormat switch
+        {
+            1 => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}",
+            2 => $"{sign}{minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}",
+            3 => $"{sign}{minutes:00}:{time.Seconds:00}",
+            4 => $"{sign}{hours:00}:{time.Minutes:00}",
+            _ => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}"
+        };
     }
 
     private void RefreshTimerRail()
@@ -1043,7 +1124,7 @@ public partial class ControllerWindow : Window
     {
         if (_settingsWindow == null || !_settingsWindow.IsVisible)
         {
-            _settingsWindow = new SettingsWindow();
+            _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow));
             _settingsWindow.SettingsChanged += OnSettingsChanged;
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
@@ -1056,7 +1137,17 @@ public partial class ControllerWindow : Window
 
     private void OnSettingsChanged(SettingsChangeKind change)
     {
-        _settings = SettingsStore.Load();
+        if ((change & SettingsChangeKind.Theme) != 0)
+        {
+            ThemeResources.ApplyApplication(_settings.ThemeMode);
+            ApplyControllerTheme();
+        }
+        if (!SettingsStore.Save(_settings))
+        {
+            CrashLogger.LogRecoverable(
+                new IOException("Unable to save application settings."),
+                "ControllerWindow.OnSettingsChanged");
+        }
         if (_herdOverlay != null)
         {
             ApplyOverlayStyle(_herdOverlay);
@@ -1071,6 +1162,7 @@ public partial class ControllerWindow : Window
         }
         UpdateOverlayStates();
         UpdateLightRing();
+        UpdateActiveTimerDisplay();
     }
 
     private async void ShortcutsButton_Click(object? sender, RoutedEventArgs e)
@@ -1082,10 +1174,14 @@ public partial class ControllerWindow : Window
                 _settings.CommandChainingTimeoutSeconds,
                 _settings.CommandModeKeys,
                 _settings.NoteCommandModeKeys);
+            if (PlatformServices.HotKey is PortalHotKeyService portal)
+                _shortcutsWindow.SetRegistrationStatus(portal.RegistrationStatus);
             await _shortcutsWindow.ShowDialog(this);
             if (_shortcutsWindow.DialogResult == true)
             {
                 _settings.Shortcuts[ShortcutAction.CommandLeader] = _shortcutsWindow.ResultLeader;
+                _settings.LeaderShortcut = _shortcutsWindow.ResultLeader;
+                _settings.NoteLeaderShortcut = _shortcutsWindow.ResultNoteLeader;
                 _settings.Shortcuts[ShortcutAction.NoteCommandLeader] = _shortcutsWindow.ResultNoteLeader;
                 _settings.Shortcuts[ShortcutAction.ShowActiveOverlay] = _shortcutsWindow.ResultShowActiveOverlay;
                 _settings.Shortcuts[ShortcutAction.OpenController] = _shortcutsWindow.ResultOpenController;
@@ -1167,6 +1263,9 @@ public partial class ControllerWindow : Window
         foreach (var overlay in _overlays.Values)
             overlay.Close();
         _overlays.Clear();
+        if (PlatformServices.HotKey is PortalHotKeyService portal)
+            portal.RegistrationStatusChanged -= OnPortalRegistrationStatusChanged;
+        PlatformServices.HotKey.Dispose();
         base.OnClosed(e);
     }
 }

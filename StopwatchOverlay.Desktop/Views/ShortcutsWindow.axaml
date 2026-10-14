@@ -17,6 +17,7 @@
                 
                 <!-- Header -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,14" Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock x:Name="PortalRegistrationText" IsVisible="False" TextWrapping="Wrap" FontSize="12" MaxWidth="440" />
                     <TextBlock Classes="heading" Text="Keyboard Shortcuts" HorizontalAlignment="Center" />
                     <TextBlock Text="Configure global leader shortcuts and custom command mode keys."
                                TextWrapping="Wrap" Opacity="0.75" TextAlignment="Center" MaxWidth="440"/>

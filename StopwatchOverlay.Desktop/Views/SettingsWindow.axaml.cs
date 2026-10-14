@@ -581,24 +581,22 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            double opacity = OverlayPresentationPolicy.ClampBackgroundOpacity(_settings.BackgroundOpacity / 100.0);
-            Color chromeColor = Color.FromArgb((byte)(opacity * 255), 20, 24, 28);
-            PreviewSurface.Background = new SolidColorBrush(chromeColor);
-
-            bool useThemeTextColor = _settings.TextColor == "Theme default";
-            Color textColor = useThemeTextColor ? Colors.White : SelectedTextColor(_settings.TextColor);
-            Color projectColor = useThemeTextColor ? textColor : SelectedTextColor(_settings.TextColor);
-
-            PreviewTimeText.Foreground = new SolidColorBrush(textColor);
-            PreviewProjectText.Foreground = new SolidColorBrush(projectColor);
-
-            string fontName = string.IsNullOrWhiteSpace(_settings.FontFamily) ? "Cascadia Mono, Consolas, monospace" : _settings.FontFamily;
-            PreviewTimeText.FontFamily = new FontFamily(fontName);
-            PreviewTimeText.FontSize = Math.Clamp(_settings.TextSize, 16, 120);
-
-            Color borderColor = SelectedBorderColor(_settings.BorderColor);
-            PreviewSurface.BorderBrush = new SolidColorBrush(borderColor);
-            PreviewSurface.BorderThickness = new Thickness(_settings.BorderWidth);
+            if (AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Pirate)
+                SettingsHeaderSurface.Resources["PrimaryTextBrush"] = new SolidColorBrush(Color.Parse("#F6E6BF"));
+            else
+                SettingsHeaderSurface.Resources.Remove("PrimaryTextBrush");
+            PreviewClock.ApplySettings(_settings);
+            PreviewClock.Text = _settings.TimeFormat switch
+            {
+                1 => "00:05:10",
+                2 => "05:10.5",
+                3 => "05:10",
+                4 => "00:05",
+                _ => "00:05:10.5"
+            };
+            PreviewClock.ProjectName = "Programming";
+            PreviewClock.ApplyToolbar(PreviewToolbarSurface,
+                new[] { PreviewCloseButton, PreviewPauseButton, PreviewResetButton, PreviewEditButton, PreviewSeparateMergeButton });
 
             _previewFailureReported = false;
         }
