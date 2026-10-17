@@ -27,6 +27,8 @@ public sealed record NoteSyncResult(
 
 public static class ObsidianNotesSync
 {
+    private static readonly Regex TaskLine = new(@"^\s*-\s+\[([ xX])\]\s+(\d{1,2}:\d{2})\s*(?:⏰)?\s*(.*)$");
+
     public const string DefaultNotesFolder = "Notes";
     public const string TodosFileName = "Todos.md";
     public const string NotesFileName = "Notes.md";
@@ -104,18 +106,124 @@ public static class ObsidianNotesSync
         }
     }
 
+    /// <summary>Update one unchanged, unambiguous todo while preserving the surrounding Markdown.</summary>
+    public static NoteSyncResult SetTodoCompleted(string vaultFolder, NoteEntry entry, bool completed, string? notesSubfolder = null)
+        => ChangeTodo(vaultFolder, entry, completed, notesSubfolder);
+
+    public static NoteSyncResult DeleteTodo(string vaultFolder, NoteEntry entry, string? notesSubfolder = null)
+        => ChangeTodo(vaultFolder, entry, null, notesSubfolder);
+
+    public static NoteSyncResult ValidateTodoForDeletion(string vaultFolder, NoteEntry entry, string? notesSubfolder = null)
+        => ChangeTodo(vaultFolder, entry, null, notesSubfolder, validateOnly: true);
+
+    private static NoteSyncResult ChangeTodo(string vaultFolder, NoteEntry entry, bool? completed, string? notesSubfolder, bool validateOnly = false)
+    {
+        string folder = string.IsNullOrWhiteSpace(notesSubfolder) ? DefaultNotesFolder : notesSubfolder.Trim();
+        string path = Path.Combine(vaultFolder, folder, TodosFileName);
+        string? temporary = null;
+        try
+        {
+            if (entry.Type != NoteType.Todo || string.IsNullOrWhiteSpace(vaultFolder) || !File.Exists(path))
+                return new(false, path, "Todo file is unavailable. Check your notes folder in Settings.");
+            string original = File.ReadAllText(path, Encoding.UTF8);
+            var candidates = ReadTaskBlocks(original, NoteType.Todo)
+                .Where(block => block.Entry.Timestamp == entry.Timestamp && block.Entry.Text == entry.Text)
+                .Select(block => (Index: block.CheckboxIndex, Completed: block.Entry.IsCompleted,
+                    LineStart: block.Start, LineLength: block.Length)).ToList();
+            if (candidates.Count != 1)
+                return new(false, path, candidates.Count == 0 ? "This todo changed. Refresh and try again." : "Identical todos share this time. Rename one in your notes file, then refresh.");
+            var target = candidates[0];
+            if (target.Completed != entry.IsCompleted)
+                return new(false, path, "This todo changed. Refresh and try again.");
+            if (validateOnly) return new(true, path);
+            string updated;
+            if (completed.HasValue)
+                updated = original.Remove(target.Index, 1).Insert(target.Index, completed.Value ? "x" : " ");
+            else
+            {
+                int end = target.LineStart + target.LineLength;
+                updated = original.Remove(target.LineStart, end - target.LineStart);
+            }
+            temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            byte[] bytes = File.ReadAllBytes(path);
+            bool bom = bytes.Length >= 3 && bytes[0] == 239 && bytes[1] == 187 && bytes[2] == 191;
+            File.WriteAllText(temporary, updated, new UTF8Encoding(bom));
+            if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(temporary, File.GetUnixFileMode(path));
+            if (File.ReadAllText(path, Encoding.UTF8) != original)
+                return new(false, path, "Your notes file changed. Refresh and try again.");
+            File.Move(temporary, path, overwrite: true);
+            return new(true, path);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "ObsidianNotesSync.ChangeTodo");
+            return new(false, path, "Could not change this todo. Check the notes folder permissions and try again.");
+        }
+        finally
+        {
+            if (temporary != null && File.Exists(temporary))
+                try { File.Delete(temporary); } catch (IOException) { }
+        }
+    }
+
     public static string FormatEntry(NoteType type, string text, DateTime time)
     {
         string timeStr = time.ToString("HH:mm");
         return type switch
         {
-            NoteType.Todo => $"- [ ] {timeStr} {text.Replace("\r\n", " ").Replace("\n", " ")}",
+            NoteType.Todo => $"- [ ] {timeStr} {IndentTaskText(text)}",
             NoteType.Reminder => $"- [ ] {timeStr} ⏰ {text.Replace("\r\n", " ").Replace("\n", " ")}",
             NoteType.Note => text.Contains('\n')
                 ? $"### {timeStr}{Environment.NewLine}{text}{Environment.NewLine}"
                 : $"- **{timeStr}** {text}",
             _ => $"- {timeStr} {text}"
         };
+    }
+
+    // Continuation lines belong to the parent Markdown checkbox, including nested lists.
+    private static string IndentTaskText(string text) => text.Replace("\r\n", "\n").Replace('\r', '\n')
+        .Replace("\n", "\n    ");
+
+    private sealed record TaskBlock(NoteEntry Entry, int CheckboxIndex, int Start, int Length);
+
+    private static IReadOnlyList<TaskBlock> ReadTaskBlocks(string content, NoteType type)
+    {
+        var result = new List<TaskBlock>();
+        var lines = Regex.Matches(content, @"[^\r\n]*(?:\r\n|\r|\n|$)")
+            .Cast<Match>().Where(m => m.Length > 0).ToArray();
+        DateTime date = DateTime.Today;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string raw = lines[i].Value.TrimEnd('\r', '\n');
+            var heading = Regex.Match(raw, @"^##\s+(\d{4}-\d{2}-\d{2})");
+            if (heading.Success && DateTime.TryParse(heading.Groups[1].Value, out var parsed)) date = parsed;
+            // Indented checkboxes are content of the parent task, not independent todos.
+            if (!raw.StartsWith("-")) continue;
+            var task = TaskLine.Match(raw);
+            if (!task.Success || !TimeSpan.TryParse(task.Groups[2].Value, out var time)) continue;
+            int start = lines[i].Index, check = start + task.Groups[1].Index;
+            int end = start + lines[i].Length;
+            var text = new StringBuilder(task.Groups[3].Value.TrimStart());
+            while (i + 1 < lines.Length)
+            {
+                string next = lines[i + 1].Value.TrimEnd('\r', '\n');
+                if (next.StartsWith("    ") || next.StartsWith("\t") || next.StartsWith("  "))
+                {
+                    int indent = next.StartsWith("    ") ? 4 : next.StartsWith("\t") ? 1 : 2;
+                    text.Append('\n').Append(next[indent..]);
+                    i++; end = lines[i].Index + lines[i].Length;
+                }
+                else if (next.Length == 0 && i + 2 < lines.Length &&
+                    (lines[i + 2].Value.StartsWith("  ") || lines[i + 2].Value.StartsWith("\t")))
+                {
+                    text.Append('\n'); i++; end = lines[i].Index + lines[i].Length;
+                }
+                else break;
+            }
+            result.Add(new TaskBlock(new NoteEntry(type, date.Date + time, text.ToString().TrimEnd(),
+                task.Groups[1].Value != " "), check, start, end - start));
+        }
+        return result;
     }
 
     private static string CreateNewDocument(NoteType type, DateTime now, string dateHeader, string formattedEntry)
@@ -228,6 +336,11 @@ public static class ObsidianNotesSync
         try
         {
             string content = File.ReadAllText(filePath, Encoding.UTF8);
+            if (type == NoteType.Todo || type == NoteType.Reminder)
+            {
+                result.AddRange(ReadTaskBlocks(content, type).Select(block => block.Entry));
+                return;
+            }
             var lines = content.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
 
             DateTime currentDate = DateTime.Today;
@@ -292,7 +405,7 @@ public static class ObsidianNotesSync
                 }
 
                 // Check for Todo or Reminder: - [ ] HH:mm [⏰] text or - [x] HH:mm [⏰] text
-                var taskMatch = Regex.Match(line, @"^-\s+\[([ xX])\]\s+(\d{1,2}:\d{2})\s*(?:⏰)?\s*(.*)$");
+                var taskMatch = TaskLine.Match(line);
                 if (taskMatch.Success)
                 {
                     bool isCompleted = taskMatch.Groups[1].Value.Equals("x", StringComparison.OrdinalIgnoreCase);

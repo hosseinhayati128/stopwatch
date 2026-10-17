@@ -224,13 +224,11 @@ public partial class NotesViewerWindow : Window
         grid.Children.Add(timeText);
 
         // Content
-        var contentText = new TextBlock
-        {
-            Text = entry.Text,
-            FontSize = 13,
-            TextWrapping = TextWrapping.Wrap,
-            VerticalAlignment = VerticalAlignment.Top
-        };
+        var contentText = entry.Type == NoteType.Todo
+            ? Controls.TodoRichText.Create(entry.Text, entry.IsCompleted)
+            : new TextBlock { Text = entry.Text, TextWrapping = TextWrapping.Wrap };
+        contentText.FontSize = 13;
+        contentText.VerticalAlignment = VerticalAlignment.Top;
         string textBrushKey = entry.IsCompleted ? "SecondaryTextBrush" : "PrimaryTextBrush";
         if (Application.Current?.TryFindResource(textBrushKey, out var tb) == true && tb is IBrush tBrush)
             contentText.Foreground = tBrush;

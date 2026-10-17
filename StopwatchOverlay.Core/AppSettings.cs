@@ -208,6 +208,12 @@ namespace StopwatchOverlay
         public double CustomLeft { get; set; } = 0;
         public double CustomTop { get; set; } = 0;
 
+        // Floating todo launcher has an independent position and always starts collapsed.
+        public bool TodoOverlayShowCompleted { get; set; } = true;
+        public bool TodoOverlayHasPosition { get; set; }
+        public int TodoOverlayLeft { get; set; }
+        public int TodoOverlayTop { get; set; }
+
         // Light ring
         public bool LightRingEnabled { get; set; } = false;
         public double LightRingBrightness { get; set; } = 100;
@@ -394,7 +400,8 @@ namespace StopwatchOverlay
             [NoteCommandAction.AddTodo] = 0x54,     // 'T'
             [NoteCommandAction.AddNote] = 0x4E,     // 'N'
             [NoteCommandAction.AddReminder] = 0x52, // 'R'
-            [NoteCommandAction.ViewNotes] = 0x56    // 'V'
+            [NoteCommandAction.ViewNotes] = 0x56,   // 'V'
+            [NoteCommandAction.ToggleTodoOverlay] = 0x4F // 'O'
         };
 
         // Ensure shortcuts dictionary, leader shortcut, ShowActiveOverlay, and OpenController are initialized.

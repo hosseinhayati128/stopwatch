@@ -8,5 +8,6 @@ public enum NoteCommandAction
     AddTodo = 1,
     AddNote = 2,
     AddReminder = 3,
-    ViewNotes = 4
+    ViewNotes = 4,
+    ToggleTodoOverlay = 5
 }

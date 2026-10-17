@@ -106,6 +106,7 @@ public partial class NoteEntryWindow : Window
             return;
         }
 
+        DateTime entryTimestamp = DateTime.Now;
         string vaultFolder = _settings.ObsidianVaultFolder;
         bool hasVault = !string.IsNullOrWhiteSpace(vaultFolder) && Directory.Exists(vaultFolder);
 
@@ -141,7 +142,8 @@ public partial class NoteEntryWindow : Window
                 vaultFolder,
                 _noteType,
                 text,
-                _settings.NotesSubfolder);
+                _settings.NotesSubfolder,
+                entryTimestamp);
 
             if (!result.Success && !_settings.TelegramEnabled)
             {
@@ -151,7 +153,7 @@ public partial class NoteEntryWindow : Window
 
         if (_settings.TelegramEnabled)
         {
-            TelegramNotesSync.DispatchNoteInBackground(_settings, _noteType, text, DateTime.Now);
+            TelegramNotesSync.DispatchNoteInBackground(_settings, _noteType, text, entryTimestamp);
         }
 
         Close();

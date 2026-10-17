@@ -1,0 +1,113 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:art="using:StopwatchOverlay.Desktop.Controls"
+        x:Class="StopwatchOverlay.Desktop.Views.TodoOverlayWindow"
+        Title="Floating Todos" Width="88" Height="88"
+        SystemDecorations="None" Background="Transparent"
+        TransparencyLevelHint="Transparent" Topmost="True"
+        ShowInTaskbar="False" ShowActivated="False" CanResize="False" Focusable="True">
+    <Window.Styles>
+        <Style Selector="Button.todoLauncher">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Content="{TemplateBinding Content}" Background="Transparent"
+                                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.todoLauncher:pointerover">
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button.todoLauncher:focus-visible">
+            <Setter Property="Opacity" Value="0.75"/>
+        </Style>
+        <Style Selector="Window.pirate Border#TodoPanel">
+            <Setter Property="BorderBrush" Value="#AD7834"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement, TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="{DynamicResource DialogSurfaceBrush}"/>
+        </Style>
+        <Style Selector="CheckBox.todoRow">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+    </Window.Styles>
+    <Grid Margin="8" RowDefinitions="72,*">
+        <Grid x:Name="OverlayHeader" ColumnDefinitions="72,*" Background="Transparent">
+            <Button x:Name="LauncherButton" Classes="todoLauncher" Width="72" Height="72"
+                    Click="ToggleClicked" AutomationProperties.Name="Expand todos"
+                    ToolTip.Tip="Click to expand todos · Drag to move">
+                <Grid Width="72" Height="72">
+                    <art:PirateArtwork x:Name="SkullArtwork" Part="Skull"/>
+                    <Border x:Name="PlainLauncher" Background="{DynamicResource SurfaceRaisedBrush}"
+                            CornerRadius="{DynamicResource ThemePanelCornerRadius}" Padding="21"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <Path Data="M 2,7 L 5,10 L 10,3 M 14,6 L 29,6 M 2,21 L 5,24 L 10,17 M 14,20 L 29,20 M 14,27 L 25,27"
+                              Stroke="{DynamicResource AccentBrush}" StrokeThickness="2.4" Stretch="Uniform"/>
+                    </Border>
+                </Grid>
+            </Button>
+            <StackPanel x:Name="ExpandedHeading" Grid.Column="1" VerticalAlignment="Center" Margin="12,0,8,0" IsVisible="False">
+                <TextBlock Text="Todos" FontSize="25" FontFamily="{DynamicResource DisplayHeadingFontFamily}"
+                           FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBlock x:Name="TodoCount" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+            <Border x:Name="HeadingSurface" Grid.ColumnSpan="2" IsHitTestVisible="False" IsVisible="False"
+                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource ThemePanelCornerRadius}" ZIndex="-1"/>
+        </Grid>
+        <Border x:Name="TodoPanel" Grid.Row="1" IsVisible="False" Margin="0,8,0,0"
+                Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1" CornerRadius="{DynamicResource ThemePanelCornerRadius}" Padding="16,14">
+            <Grid x:Name="TodoContentGrid" RowDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                <Grid x:Name="TodoOptionsRow" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                    <CheckBox x:Name="ShowCompletedToggle" Content="Show completed"
+                              Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
+                    <Button x:Name="EditTodosButton" Grid.Column="1" Content="Edit" Classes="modern" Height="28"
+                            Padding="10,0" FontSize="12" Click="EditTodosClicked" AutomationProperties.Name="Edit todo actions"/>
+                </Grid>
+                <ScrollViewer x:Name="TodoScrollViewer" Grid.Row="1" ClipToBounds="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock x:Name="EmptyMessage" Text="No todos yet. Add your first task below." TextWrapping="Wrap"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,16"/>
+                        <StackPanel x:Name="TodoRows"/>
+                    </StackPanel>
+                </ScrollViewer>
+                <StackPanel Grid.Row="2" Spacing="5">
+                    <TextBlock x:Name="TelegramSyncStatus" TextWrapping="Wrap" FontSize="11" IsVisible="False" Margin="0,6,0,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Border x:Name="TelegramLinkPanel" IsVisible="False" Padding="0,8,0,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock x:Name="LinkTaskText" TextWrapping="Wrap" MaxHeight="40" FontSize="12"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <TextBox x:Name="TelegramMessageLink" Watermark="Telegram message link or ID" FontSize="12"
+                                     Background="{DynamicResource DialogSurfaceBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+                                     CaretBrush="{DynamicResource PrimaryTextBrush}"/>
+                            <Grid ColumnDefinitions="*,8,*">
+                                <Button x:Name="ConfirmTelegramLink" Content="Link message" Classes="primary" FontSize="12"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="ConfirmLinkClicked"/>
+                                <Button Grid.Column="2" Content="Cancel" Classes="modern" FontSize="12"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="CancelLinkClicked"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <TextBlock x:Name="ErrorMessage" Grid.Row="3" TextWrapping="Wrap" IsVisible="False"
+                           Foreground="{DynamicResource DangerTextBrush}" FontSize="12" Margin="0,8,0,6"/>
+                <Button x:Name="AddTodoButton" Grid.Row="4" Classes="primary" Margin="0,12,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="AddClicked">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Width="12" Height="12" Data="M 6,0 L 6,12 M 0,6 L 12,6" Stroke="{DynamicResource OnActionTextBrush}" StrokeThickness="1.8"/>
+                        <TextBlock Text="Add todo"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock x:Name="ShortcutHint" Grid.Row="5" FontSize="11" Margin="0,10,0,0"
+                           HorizontalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

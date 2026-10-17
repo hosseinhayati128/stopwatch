@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="StopwatchOverlay.Desktop.Views.ShortcutCommandHintWindow"
         Title="Timer Command Mode"
+        Focusable="True"
         SystemDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"

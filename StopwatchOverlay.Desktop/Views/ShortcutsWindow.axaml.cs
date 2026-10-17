@@ -48,6 +48,7 @@ public partial class ShortcutsWindow : Window
         (NoteCommandAction.AddNote, "Add a quick note"),
         (NoteCommandAction.AddReminder, "Add a reminder"),
         (NoteCommandAction.ViewNotes, "Open notes viewer"),
+        (NoteCommandAction.ToggleTodoOverlay, "Show/hide floating todo overlay"),
     ];
 
     private Shortcut _pendingLeader;

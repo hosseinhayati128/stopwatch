@@ -34,6 +34,7 @@ public partial class ControllerWindow : Window
     private readonly ProjectTimeStore _projectTimeStore = new();
     private ProjectTimeHistory _projectHistory = new();
     private AppSettings _settings = new();
+    private TodoOverlayWindow? _todoOverlayWindow;
 
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _saveTimer;
@@ -106,8 +107,26 @@ public partial class ControllerWindow : Window
     private void OnOpened(object? sender, EventArgs e)
     {
         InitializePlatformServices();
+        EnsureTodoOverlay();
         UpdateOverlayStates();
         UpdateLightRing();
+    }
+
+    private TodoOverlayWindow EnsureTodoOverlay()
+    {
+        if (_todoOverlayWindow != null) return _todoOverlayWindow;
+        var overlay = new TodoOverlayWindow(_settings);
+        _todoOverlayWindow = overlay;
+        overlay.AddTodoRequested += () =>
+        {
+            var entry = new NoteEntryWindow(NoteType.Todo, _settings);
+            entry.Closed += (_, _) => overlay.ReloadTodos();
+            entry.Show();
+            entry.Activate();
+        };
+        overlay.Closed += (_, _) => { if (ReferenceEquals(_todoOverlayWindow, overlay)) _todoOverlayWindow = null; };
+        overlay.Show();
+        return overlay;
     }
 
     private void OnPortalRegistrationStatusChanged(object? sender, string status)
@@ -191,11 +210,19 @@ public partial class ControllerWindow : Window
         if (_commandHintWindow == null)
         {
             _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow();
+            var hint = _commandHintWindow;
             if (PlatformServices.HotKey is PortalHotKeyService)
-                _commandHintWindow.KeyDown += OnPortalCommandKeyDown;
-            _commandHintWindow.Show();
+            {
+                hint.AddHandler(KeyDownEvent, OnPortalCommandKeyDown, RoutingStrategies.Tunnel);
+                // Wayland follow-up keys are local input: the hint must own Avalonia keyboard focus.
+                hint.Activated += (_, _) => { if (hint.IsVisible) hint.Focus(); };
+            }
+            hint.Show();
             if (PlatformServices.HotKey is PortalHotKeyService)
-                _commandHintWindow.Activate();
+            {
+                hint.Activate();
+                hint.Focus();
+            }
         }
 
         double timeout = noteMode ? 5.0 : 2.0;
@@ -251,6 +278,18 @@ public partial class ControllerWindow : Window
 
             if (_isNoteCommandModeActive)
             {
+                if (vk == 0x20)
+                {
+                    ExitShortcutCommandMode();
+                    var todoOverlay = EnsureTodoOverlay();
+                    if (!todoOverlay.IsVisible)
+                    {
+                        todoOverlay.Show();
+                        if (!todoOverlay.IsExpanded) todoOverlay.ToggleExpanded();
+                    }
+                    else todoOverlay.ToggleExpanded();
+                    return;
+                }
                 // The leader may repeat while the user releases Super+F3.
                 if (vk == _settings.NoteLeaderShortcut.VirtualKey) return;
                 var noteAction = _settings.NoteCommandModeKeys.FirstOrDefault(item => item.Value == vk).Key;
@@ -262,10 +301,22 @@ public partial class ControllerWindow : Window
                         0x4E => NoteCommandAction.AddNote,
                         0x52 => NoteCommandAction.AddReminder,
                         0x56 => NoteCommandAction.ViewNotes,
+                        0x4F => NoteCommandAction.ToggleTodoOverlay,
                         _ => 0
                     };
                 if (noteAction == 0) return;
                 ExitShortcutCommandMode();
+                if (noteAction == NoteCommandAction.ToggleTodoOverlay)
+                {
+                    var todoOverlay = EnsureTodoOverlay();
+                    if (todoOverlay.IsVisible) todoOverlay.Hide();
+                    else
+                    {
+                        todoOverlay.Show();
+                        if (todoOverlay.IsExpanded) { todoOverlay.Activate(); todoOverlay.Focus(); }
+                    }
+                    return;
+                }
                 Window? noteWindow = noteAction switch
                 {
                     NoteCommandAction.AddTodo => new NoteEntryWindow(NoteType.Todo, _settings),
@@ -1124,6 +1175,8 @@ public partial class ControllerWindow : Window
     {
         if (_settingsWindow == null || !_settingsWindow.IsVisible)
         {
+            if (PlatformServices.Startup.IsSupported)
+                _settings.StartWithWindows = PlatformServices.Startup.IsEnabled();
             _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow));
             _settingsWindow.SettingsChanged += OnSettingsChanged;
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
@@ -1137,6 +1190,17 @@ public partial class ControllerWindow : Window
 
     private void OnSettingsChanged(SettingsChangeKind change)
     {
+        if ((change & SettingsChangeKind.Startup) != 0 && PlatformServices.Startup.IsSupported)
+        {
+            PlatformServices.Startup.SetEnabled(_settings.StartWithWindows);
+            bool enabled = PlatformServices.Startup.IsEnabled();
+            if (_settings.StartWithWindows != enabled)
+            {
+                _settings.StartWithWindows = enabled;
+                _settingsWindow?.ReloadFromSettings();
+            }
+        }
+        _todoOverlayWindow?.ApplySettings();
         if ((change & SettingsChangeKind.Theme) != 0)
         {
             ThemeResources.ApplyApplication(_settings.ThemeMode);
@@ -1251,6 +1315,8 @@ public partial class ControllerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _todoOverlayWindow?.Close();
+        _todoOverlayWindow = null;
         _timer.Stop();
         _saveTimer.Stop();
         _idleTimer.Stop();

@@ -12,14 +12,15 @@ namespace StopwatchOverlay;
 public sealed record TelegramSyncResult(
     bool Success,
     string? ErrorMessage = null,
-    int? MessageId = null);
+    int? MessageId = null,
+    string? ChatId = null);
 
 public sealed record TelegramTestResult(
     bool Success,
     string Message,
     string? BotUsername = null);
 
-public static class TelegramNotesSync
+public static partial class TelegramNotesSync
 {
     private static readonly HttpClient SharedClient = new(new SocketsHttpHandler
     {
@@ -92,7 +93,7 @@ public static class TelegramNotesSync
 
     public static string FormatMessage(NoteType type, string text, DateTime time)
     {
-        string safeText = WebUtility.HtmlEncode(text.Trim());
+        string safeText = type == NoteType.Todo ? FormattedTodoText.ToTelegramHtml(text.Trim()) : WebUtility.HtmlEncode(text.Trim());
         string timeStr = time.ToString("HH:mm");
 
         return type switch
@@ -188,7 +189,10 @@ public static class TelegramNotesSync
                 {
                     messageId = id;
                 }
-                return new TelegramSyncResult(true, null, messageId);
+                string? actualChatId = null;
+                if (root.TryGetProperty("result", out var sentMessage) && sentMessage.TryGetProperty("chat", out var chat) && chat.TryGetProperty("id", out var chatNumber))
+                    actualChatId = chatNumber.ToString();
+                return new TelegramSyncResult(true, null, messageId, actualChatId);
             }
             else
             {
@@ -294,14 +298,16 @@ public static class TelegramNotesSync
 
         DateTime time = timestamp ?? DateTime.Now;
         // 1. Enqueue to persistent disk outbox FIRST so offline notes are never lost
-        TelegramOutboxStore.Enqueue(type, text, time);
+        settings = SnapshotTelegramSettings(settings);
+        var destination = ResolveDestination(settings, type);
+        TelegramOutboxStore.Enqueue(type, text, time, GetBotIdentity(settings), GetTodoVaultKey(settings), destination.targetChatId, destination.messageThreadId);
 
         // 2. Trigger asynchronous outbox flush
         Task.Run(async () =>
         {
             try
             {
-                await FlushOutboxAsync(settings);
+                await FlushOutboxAsync(settings, scopedOnly: true);
             }
             catch (Exception ex)
             {
@@ -311,12 +317,15 @@ public static class TelegramNotesSync
     }
 
     private static readonly System.Threading.SemaphoreSlim FlushGate = new(1, 1);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, TelegramSyncResult> DeliveredThisSession = new();
 
     public static async Task<(int SentCount, int RemainingCount, string? LastError)> FlushOutboxAsync(
         AppSettings settings,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient = null,
+        bool scopedOnly = false)
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
+        settings = SnapshotTelegramSettings(settings);
         if (!settings.TelegramEnabled ||
             string.IsNullOrWhiteSpace(settings.TelegramBotToken) ||
             string.IsNullOrWhiteSpace(settings.TelegramChatId))
@@ -331,10 +340,14 @@ public static class TelegramNotesSync
 
         try
         {
-            var entries = TelegramOutboxStore.GetAll().OrderBy(e => e.Timestamp).ToList();
+            string bot = GetBotIdentity(settings), vault = GetTodoVaultKey(settings);
+            var entries = TelegramOutboxStore.GetAll().Where(e =>
+                (e.BotIdentity == null ? !scopedOnly : e.BotIdentity == bot && e.VaultKey == vault) &&
+                !(e.NoteType == NoteType.Todo && TelegramOutboxStore.IsDeletedTodo(bot, vault, e.Text, e.Timestamp)))
+                .OrderBy(e => e.Timestamp).ToList();
             if (entries.Count == 0)
             {
-                return (0, 0, null);
+                return (0, TelegramOutboxStore.PendingCount, null);
             }
 
             int sentCount = 0;
@@ -346,17 +359,36 @@ public static class TelegramNotesSync
                 if (!TelegramOutboxStore.GetAll().Any(e => e.Id == entry.Id))
                     continue;
 
-                var result = await SendNoteAsync(
-                    settings,
-                    entry.NoteType,
-                    entry.Text,
-                    entry.Timestamp,
-                    httpClient).ConfigureAwait(false);
+                var deliverySettings = SnapshotTelegramSettings(settings);
+                if (!string.IsNullOrWhiteSpace(entry.ChatId))
+                {
+                    deliverySettings.TelegramChatId = entry.ChatId;
+                    deliverySettings.TelegramTodosTopicId = deliverySettings.TelegramNotesTopicId = deliverySettings.TelegramRemindersTopicId = entry.MessageThreadId?.ToString() ?? "";
+                }
+                TelegramSyncResult result;
+                if (entry.DeliveredMessageId.HasValue)
+                    result = new(true, null, entry.DeliveredMessageId, entry.DeliveredChatId);
+                else if (!DeliveredThisSession.TryGetValue(entry.Id, out result!))
+                    result = await SendNoteAsync(deliverySettings, entry.NoteType, entry.Text, entry.Timestamp, httpClient).ConfigureAwait(false);
 
                 if (result.Success)
                 {
-                    TelegramOutboxStore.Remove(entry.Id);
-                    TelegramOutboxStore.MarkSent(entry.NoteType, entry.Text, entry.Timestamp);
+                    DeliveredThisSession[entry.Id] = result;
+                    // Retain delivery information before removing anything, so receipt failures never cause a resend.
+                    bool retained = TelegramOutboxStore.Update(entry with { DeliveredMessageId = result.MessageId, DeliveredChatId = result.ChatId });
+                    bool receipt = retained && TelegramOutboxStore.MarkSent(entry.NoteType, entry.Text, entry.Timestamp, result.MessageId,
+                        result.ChatId ?? ResolveDestination(deliverySettings, entry.NoteType).targetChatId, bot, vault);
+                    if (!receipt)
+                    {
+                        lastError = "Message sent, but its receipt could not be saved. It will retry saving without sending again.";
+                        break;
+                    }
+                    if (!TelegramOutboxStore.Remove(entry.Id))
+                    {
+                        lastError = "Message sent, but the outbox could not be updated.";
+                        break;
+                    }
+                    DeliveredThisSession.TryRemove(entry.Id, out _);
                     sentCount++;
                 }
                 else

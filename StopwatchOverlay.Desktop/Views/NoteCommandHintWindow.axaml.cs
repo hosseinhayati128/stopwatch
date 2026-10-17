@@ -17,7 +17,8 @@ public partial class NoteCommandHintWindow : Window
         keys ??= AppSettings.DefaultNoteCommandModeKeys();
         var options = new[] {
             (NoteCommandAction.AddTodo, "Todo"), (NoteCommandAction.AddNote, "Quick Note"),
-            (NoteCommandAction.ViewNotes, "View Notes"), (NoteCommandAction.AddReminder, "Reminder")
+            (NoteCommandAction.ViewNotes, "View Notes"), (NoteCommandAction.AddReminder, "Reminder"),
+            (NoteCommandAction.ToggleTodoOverlay, "Show/hide todos")
         };
         NoteOptions.Text = string.Join(" · ", options.Select(option =>
             $"{(keys.TryGetValue(option.Item1, out var key) && key != 0 ? Shortcut.FormatKeyName(key) : "—")} {option.Item2}"));
