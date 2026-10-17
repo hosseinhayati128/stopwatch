@@ -10,6 +10,7 @@
 
     <!-- Modern Buttons -->
     <Style Selector="Button">
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="CornerRadius" Value="{DynamicResource ThemeControlCornerRadius}"/>
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
         <Setter Property="Cursor" Value="Hand"/>

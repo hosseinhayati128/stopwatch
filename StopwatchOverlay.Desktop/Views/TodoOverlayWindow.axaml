@@ -64,10 +64,14 @@
                 Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1" CornerRadius="{DynamicResource ThemePanelCornerRadius}" Padding="16,14">
             <Grid x:Name="TodoContentGrid" RowDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                <Grid x:Name="TodoOptionsRow" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                    <CheckBox x:Name="ShowCompletedToggle" Content="Show completed"
+                <Grid x:Name="TodoOptionsRow" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,0,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,10" Grid.ColumnSpan="2">
+                        <TextBlock Text="Sort" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <ComboBox x:Name="TodoSortCombo" MinWidth="136" MinHeight="30" FontSize="12" AutomationProperties.Name="Todo sort order"/>
+                    </StackPanel>
+                    <CheckBox x:Name="ShowCompletedToggle" Grid.Row="1" Content="Show completed"
                               Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
-                    <Button x:Name="EditTodosButton" Grid.Column="1" Content="Edit" Classes="modern" Height="28"
+                    <Button x:Name="EditTodosButton" Grid.Column="1" Grid.Row="1" Content="Edit" Classes="modern" Height="28"
                             Padding="10,0" FontSize="12" Click="EditTodosClicked" AutomationProperties.Name="Edit todo actions"/>
                 </Grid>
                 <ScrollViewer x:Name="TodoScrollViewer" Grid.Row="1" ClipToBounds="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

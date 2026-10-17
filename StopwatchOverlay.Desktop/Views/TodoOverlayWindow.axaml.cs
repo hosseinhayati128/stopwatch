@@ -11,13 +11,27 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ShapePath = Avalonia.Controls.Shapes.Path;
+using StopwatchOverlay.Desktop.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace StopwatchOverlay.Desktop.Views;
 
 public partial class TodoOverlayWindow : Window
 {
     private readonly AppSettings _settings;
+    private bool _loadingOrganization;
+    private TodoOrganization? _organization;
+    private NoteEntry? _draggedEntry;
+    private Grid? _draggedRow;
+    private Grid? _dropRow;
+    private NoteEntry? _dropEntry;
+    private Point _dragOrigin;
+    private bool _reordering;
+    private bool _dropAfter;
+    private IPointer? _dragPointer;
+
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _positionTimer;
     private string? _snapshot;
@@ -44,9 +58,27 @@ public partial class TodoOverlayWindow : Window
     {
         InitializeComponent();
         _settings = settings;
+        TodoSortCombo.ItemsSource = new[] { "Priority", "Manual" };
+        TodoSortCombo.SelectionChanged += (_, _) =>
+        {
+            if (_loadingOrganization || TodoSortCombo.SelectedItem is not string mode) return;
+            SaveOrganization(TodoOrganizationStore.SetSortMode(_settings.ObsidianVaultFolder, mode, _settings.NotesSubfolder));
+            TodoScrollViewer.Offset = default;
+        };
+        Deactivated += (_, _) => CancelInteractions();
+        TodoScrollViewer.ScrollChanged += (_, e) =>
+        {
+            if (e.OffsetDelta == default) return;
+            foreach (var row in TodoRows.GetVisualDescendants().OfType<HoldToCompleteCheckBox>()) row.CancelHold();
+        };
+        TodoScrollViewer.AddHandler(PointerWheelChangedEvent, (_, _) =>
+        {
+            foreach (var row in TodoRows.GetVisualDescendants().OfType<HoldToCompleteCheckBox>()) row.CancelHold();
+        }, RoutingStrategies.Tunnel);
         PropertyChanged += (_, change) =>
         {
-            if (change.Property != IsVisibleProperty || !IsVisible) return;
+            if (change.Property != IsVisibleProperty) return;
+            if (!IsVisible) { CancelInteractions(); return; }
             // X11 window managers clear ABOVE when the window is unmapped. Avalonia
             // retains Topmost=true, so force a fresh native request after each show.
             Dispatcher.UIThread.Post(() =>
@@ -120,8 +152,8 @@ public partial class TodoOverlayWindow : Window
         if (_positionTimer.IsEnabled) RememberDraggedPosition();
         IsExpanded = !IsExpanded;
         _dragMoved = false;
-        Width = IsExpanded ? 360 : 88;
-        Height = IsExpanded ? 430 : 88;
+        Width = IsExpanded ? 400 : 88;
+        Height = IsExpanded ? 500 : 88;
         TodoPanel.IsVisible = ExpandedHeading.IsVisible = HeadingSurface.IsVisible = IsExpanded;
         AutomationProperties.SetName(LauncherButton, IsExpanded ? "Collapse todos" : "Expand todos");
         ToolTip.SetTip(LauncherButton, IsExpanded ? "Click to collapse todos · Drag to move" : "Click to expand todos · Drag to move");
@@ -134,6 +166,7 @@ public partial class TodoOverlayWindow : Window
         }
         if (!IsExpanded)
         {
+            CancelInteractions();
             CloseLinkEditor();
             _editing = false;
             EditTodosButton.Content = "Edit";
@@ -146,11 +179,17 @@ public partial class TodoOverlayWindow : Window
     {
         try
         {
+            if (_draggedEntry != null || TodoRows.GetVisualDescendants().OfType<HoldToCompleteCheckBox>().Any(row => row.IsHolding)) return;
             bool configured = !string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder) && Directory.Exists(_settings.ObsidianVaultFolder);
             var entries = configured
                 ? ObsidianNotesSync.LoadAllNotes(_settings.ObsidianVaultFolder, _settings.NotesSubfolder)
-                    .Where(entry => entry.Type == NoteType.Todo).OrderBy(entry => entry.IsCompleted).ThenByDescending(entry => entry.Timestamp).ToArray()
+                    .Where(entry => entry.Type == NoteType.Todo).ToArray()
                 : Array.Empty<NoteEntry>();
+            _organization = configured ? TodoOrganizationStore.Load(_settings.ObsidianVaultFolder, _settings.NotesSubfolder) : null;
+            entries = _organization?.Arrange(entries) ?? entries;
+            _loadingOrganization = true;
+            try { TodoSortCombo.IsEnabled = configured && !_deleteInProgress; TodoSortCombo.SelectedItem = _organization?.SortMode ?? "Priority"; }
+            finally { _loadingOrganization = false; }
             var tracked = _settings.TelegramEnabled
                 ? TelegramOutboxStore.GetTrackedTodos(TelegramNotesSync.GetBotIdentity(_settings), TelegramNotesSync.GetTodoVaultKey(_settings))
                 : Array.Empty<TelegramSentNoteRecord>();
@@ -159,10 +198,11 @@ public partial class TodoOverlayWindow : Window
             TelegramSyncStatus.Text = _syncError ?? (_syncRunning ? "Updating Telegram…" :
                 entries.Any(entry => !Linked(entry)) ? "Use Edit → Link to connect older Telegram messages." : "Completion sync is up to date.");
             var visible = entries.Where(entry => _settings.TodoOverlayShowCompleted || !entry.IsCompleted).ToArray();
-            string snapshot = configured + "|" + _editing + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
-                string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{entry.Text}"));
+            string snapshot = (_organization?.SortMode ?? "Priority") + "|" + configured + "|" + _editing + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
+                string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{_organization?.GetPriority(entry) ?? 3}|{entry.Text}"));
             if (_snapshot == snapshot) return;
             _snapshot = snapshot;
+            var scrollOffset = TodoScrollViewer.Offset;
             TodoRows.Children.Clear();
             int remaining = entries.Count(entry => !entry.IsCompleted);
             TodoCount.Text = remaining == 1 ? "1 task remaining" : $"{remaining} tasks remaining";
@@ -172,12 +212,12 @@ public partial class TodoOverlayWindow : Window
             foreach (var entry in visible)
             {
                 var text = Controls.TodoRichText.Create(entry.Text, entry.IsCompleted);
-                text.MaxWidth = 240;
+                text.MaxWidth = _organization?.SortMode == "Manual" ? 210 : 230;
                 text.Margin = new Thickness(7, 0, 0, 0);
-                var row = new CheckBox { Content = text, IsChecked = entry.IsCompleted, IsEnabled = !_deleteInProgress };
+                var row = new HoldToCompleteCheckBox { Content = text, IsChecked = entry.IsCompleted, IsEnabled = !_deleteInProgress };
                 row.Classes.Add("todoRow");
                 AutomationProperties.SetName(row, entry.Text);
-                ToolTip.SetTip(row, entry.Timestamp.ToString("g"));
+                ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") + " · " + entry.Timestamp.ToString("g"));
                 row.IsCheckedChanged += (_, _) =>
                 {
                     var result = ObsidianNotesSync.SetTodoCompleted(_settings.ObsidianVaultFolder, entry, row.IsChecked == true, _settings.NotesSubfolder);
@@ -186,7 +226,22 @@ public partial class TodoOverlayWindow : Window
                     _snapshot = null;
                     Dispatcher.UIThread.Post(() => { ReloadTodos(); _nextSyncUtc = DateTime.MinValue; _ = SynchronizeTelegramAsync(); });
                 };
-                var container = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto") };
+                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*"), Margin = new Thickness(0, 0, 0, 6) };
+                var badge = CreatePriorityBadge(entry);
+                Grid.SetColumn(badge, 0);
+                container.Children.Add(badge);
+                if (_organization?.SortMode == "Manual")
+                {
+                    var handle = CreateDragHandle(entry, container);
+                    Grid.SetColumn(handle, 1);
+                    container.Children.Add(handle);
+                }
+                Grid.SetColumn(row, 2);
+                var progress = new ProgressBar { Minimum = 0, Maximum = 1, Height = 3, Margin = new Thickness(7, 0, 0, 0), IsHitTestVisible = false, Background = Brushes.Transparent };
+                progress.Bind(ProgressBar.ValueProperty, row.GetObservable(HoldToCompleteCheckBox.HoldProgressProperty));
+                progress.Foreground = PriorityBrush(_organization?.GetPriority(entry) ?? 3);
+                Grid.SetColumn(progress, 2); Grid.SetRow(progress, 1);
+                container.Children.Add(progress);
                 var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                     HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 10), IsVisible = _editing, IsEnabled = !_deleteInProgress };
                 if (_settings.TelegramEnabled)
@@ -203,17 +258,159 @@ public partial class TodoOverlayWindow : Window
                 AutomationProperties.SetName(deleteButton, "Delete todo " + entry.Text);
                 deleteButton.Click += async (_, _) => await DeleteTodoAsync(entry);
                 actions.Children.Add(deleteButton);
-                Grid.SetRow(actions, 1);
+                Grid.SetRow(actions, 2);
+                Grid.SetColumnSpan(actions, 3);
                 container.Children.Add(actions);
                 container.Children.Add(row);
                 TodoRows.Children.Add(container);
             }
+            TodoScrollViewer.Offset = scrollOffset;
         }
         catch (Exception ex)
         {
             CrashLogger.LogRecoverable(ex, "TodoOverlayWindow.ReloadTodos");
             ShowError("Could not read your todos. Check the notes folder in Settings.");
         }
+    }
+
+    private static readonly string[] PriorityTitles = { "Urgent", "High", "Normal", "Low" };
+
+    private IBrush PriorityBrush(int priority)
+    {
+        bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        string[] colors = dark
+            ? new[] { "#FF8A83", "#FFBC75", "#91C1FF", "#BBC2CD" }
+            : new[] { "#A6202D", "#944900", "#245BA6", "#4C535C" };
+        return new SolidColorBrush(Color.Parse(colors[Math.Clamp(priority, 1, 4) - 1]));
+    }
+
+    private Button CreatePriorityBadge(NoteEntry entry)
+    {
+        int priority = _organization?.GetPriority(entry) ?? 3;
+        var color = PriorityBrush(priority);
+        var label = new TextBlock { Text = PriorityTitles[priority - 1], FontSize = 11, FontWeight = FontWeight.SemiBold, Foreground = color, HorizontalAlignment = HorizontalAlignment.Center };
+        var badge = new Button { IsEnabled = !_deleteInProgress, Content = label, Width = 52, Height = 26, MinHeight = 26, Padding = new Thickness(3, 1), Margin = new Thickness(0, 3, 7, 0), VerticalAlignment = VerticalAlignment.Top };
+        badge.Classes.Add("modern"); badge.Classes.Add("priorityBadge");
+        AutomationProperties.SetName(badge, "Priority " + priority + ": " + PriorityTitles[priority - 1] + ". Change priority for " + entry.Text);
+        ToolTip.SetTip(badge, "Change priority");
+        var menu = new ContextMenu();
+        for (int level = 1; level <= 4; level++)
+        {
+            int selected = level;
+            var item = new MenuItem { Header = PriorityTitles[level - 1], Foreground = PriorityBrush(level) };
+            item.Click += (_, _) => SaveOrganization(TodoOrganizationStore.SetPriority(_settings.ObsidianVaultFolder, entry, selected, _settings.NotesSubfolder));
+            menu.Items.Add(item);
+        }
+        badge.ContextMenu = menu;
+        badge.Click += (_, _) => menu.Open(badge);
+        return badge;
+    }
+
+    private void SaveOrganization(NoteSyncResult result)
+    {
+        if (!result.Success) { ShowError(result.Message ?? "Could not save todo organization."); return; }
+        ErrorMessage.IsVisible = false;
+        _snapshot = null;
+        ReloadTodos();
+    }
+
+    private Button CreateDragHandle(NoteEntry entry, Grid container)
+    {
+        var icon = new ShapePath { Data = Geometry.Parse("M2,2 L3,2 M7,2 L8,2 M2,7 L3,7 M7,7 L8,7 M2,12 L3,12 M7,12 L8,12"), StrokeThickness = 2, StrokeLineCap = PenLineCap.Round, Width = 9, Height = 14, Stretch = Stretch.Uniform };
+        icon.Stroke = PriorityBrush(4);
+        var handle = new Button { IsEnabled = !_deleteInProgress, Content = icon, Width = 18, Padding = new Thickness(3, 6), Margin = new Thickness(0, 5, 3, 0), Background = Brushes.Transparent, BorderThickness = new Thickness(0), VerticalAlignment = VerticalAlignment.Top };
+        handle.Classes.Add("todoDragHandle");
+        AutomationProperties.SetName(handle, "Reorder " + entry.Text);
+        ToolTip.SetTip(handle, "Drag to reorder · Up/Down also moves this task");
+        handle.AddHandler(PointerPressedEvent, (_, e) =>
+        {
+            if (!e.GetCurrentPoint(handle).Properties.IsLeftButtonPressed) return;
+            _dragPointer = e.Pointer; _draggedEntry = entry; _draggedRow = container; _dragOrigin = e.GetPosition(this);
+            _reordering = false;
+            e.Pointer.Capture(handle); e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+        handle.AddHandler(PointerMovedEvent, (_, e) =>
+        {
+            if (_draggedEntry == null) return;
+            var delta = e.GetPosition(this) - _dragOrigin;
+            if (Math.Abs(delta.X) < 5 && Math.Abs(delta.Y) < 5 && !_reordering) return;
+            _reordering = true; container.Opacity = .55;
+            UpdateDropTarget(entry, container, e.GetPosition(TodoScrollViewer), e.GetPosition(TodoRows));
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+        handle.AddHandler(PointerReleasedEvent, (_, e) =>
+        {
+            if (_draggedEntry != null)
+                UpdateDropTarget(_draggedEntry, container, e.GetPosition(TodoScrollViewer), e.GetPosition(TodoRows));
+            var source = _draggedEntry; var target = _dropEntry; bool after = _dropAfter; bool moved = _reordering;
+            CancelDrag(); e.Pointer.Capture(null); e.Handled = true;
+            if (moved && source != null && target != null) MoveTodo(source, target, after);
+        }, RoutingStrategies.Tunnel);
+        handle.PointerCaptureLost += (_, _) => CancelDrag();
+        handle.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Up && e.Key != Key.Down) return;
+            var group = TodoRows.Children.OfType<Grid>().Select(row => row.Tag).OfType<NoteEntry>().Where(item => item.IsCompleted == entry.IsCompleted).ToArray();
+            int current = Array.IndexOf(group, entry), target = current + (e.Key == Key.Up ? -1 : 1);
+            if (current >= 0 && target >= 0 && target < group.Length) MoveTodo(entry, group[target], e.Key == Key.Down);
+            e.Handled = true;
+        };
+        container.Tag = entry;
+        return handle;
+    }
+
+    private void UpdateDropTarget(NoteEntry source, Grid sourceRow, Point viewportPoint, Point rowPoint)
+    {
+        if (_dropRow != null) _dropRow.Background = Brushes.Transparent;
+        _dropRow = null; _dropEntry = null;
+        if (!new Rect(TodoScrollViewer.Bounds.Size).Contains(viewportPoint)) return;
+        foreach (var candidate in TodoRows.Children.OfType<Grid>())
+        {
+            if (candidate.Tag is not NoteEntry target || target.IsCompleted != source.IsCompleted || candidate == sourceRow) continue;
+            if (!candidate.Bounds.Contains(rowPoint)) continue;
+            _dropRow = candidate; _dropEntry = target; _dropAfter = rowPoint.Y > candidate.Bounds.Center.Y;
+            candidate.Background = new SolidColorBrush(Color.FromArgb(30, 85, 140, 190));
+            break;
+        }
+    }
+
+    private void MoveTodo(NoteEntry source, NoteEntry target, bool after)
+    {
+        try
+        {
+            var entries = ObsidianNotesSync.LoadAllNotes(_settings.ObsidianVaultFolder, _settings.NotesSubfolder).Where(item => item.Type == NoteType.Todo);
+            var ordered = TodoOrganizationStore.Load(_settings.ObsidianVaultFolder, _settings.NotesSubfolder).Arrange(entries).ToList();
+            string sourceKey = TodoOrganizationStore.GetKey(source), targetKey = TodoOrganizationStore.GetKey(target);
+            if (ordered.Count(item => TodoOrganizationStore.GetKey(item) == sourceKey) != 1 || ordered.Count(item => TodoOrganizationStore.GetKey(item) == targetKey) != 1)
+            { ShowError("These tasks changed. Refresh and try reordering again."); return; }
+            var moving = ordered.Single(item => TodoOrganizationStore.GetKey(item) == sourceKey);
+            ordered.Remove(moving);
+            int index = ordered.FindIndex(item => TodoOrganizationStore.GetKey(item) == targetKey);
+            ordered.Insert(index + (after ? 1 : 0), moving);
+            var result = TodoOrganizationStore.SetManualOrder(_settings.ObsidianVaultFolder, ordered, _settings.NotesSubfolder);
+            SaveOrganization(result);
+            if (result.Success)
+            {
+                var movedRow = TodoRows.Children.OfType<Grid>().FirstOrDefault(row => row.Tag is NoteEntry item && TodoOrganizationStore.GetKey(item) == sourceKey);
+                movedRow?.GetVisualDescendants().OfType<Button>().FirstOrDefault(button => button.Classes.Contains("todoDragHandle"))?.Focus();
+            }
+        }
+        catch (Exception ex) { CrashLogger.LogRecoverable(ex, "TodoOverlayWindow.MoveTodo"); ShowError("Could not reorder todos. Check the notes folder and try again."); }
+    }
+
+    private void CancelDrag()
+    {
+        if (_draggedRow != null) _draggedRow.Opacity = 1;
+        if (_dropRow != null) _dropRow.Background = Brushes.Transparent;
+        _draggedEntry = null; _draggedRow = null; _dropRow = null; _dropEntry = null; _reordering = false;
+        var pointer = _dragPointer; _dragPointer = null;
+        pointer?.Capture(null);
+    }
+
+    private void CancelInteractions()
+    {
+        foreach (var row in TodoRows.GetVisualDescendants().OfType<HoldToCompleteCheckBox>()) row.CancelHold(resetKeyboard: true);
+        CancelDrag();
     }
 
     private void EditTodosClicked(object? sender, RoutedEventArgs e)
