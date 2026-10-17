@@ -15,6 +15,7 @@ using StopwatchOverlay.Desktop.Views;
 var checkDirectory = Path.Combine(Path.GetTempPath(), "stopwatch-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(checkDirectory);
 Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", checkDirectory);
+if (args.Contains("--todo-editing-only")) { TodoEditingChecks.Run(checkDirectory); Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editing and due times"); return; }
 var structuredVault=Path.Combine(checkDirectory,"structured");
 var structuredText="Installed and restarted.\n\n- **Edit** reveals Link/Delete; **Done** hides them.\n- **Delete** asks for confirmation.\n\nTests passed. See [documentation](https://example.com/docs).";
 var structuredTime=new DateTime(2026,10,15,10,0,0);
@@ -57,9 +58,12 @@ fallbackStartup.SetEnabled(true);
 if(!fallbackStartup.IsEnabled() || !File.ReadAllText(startupFile).Contains("%%name"))throw new Exception("Fallback startup executable was not safely quoted.");
 fallbackStartup.SetEnabled(false);
 TodoOrganizationChecks.Run(checkDirectory);
+TodoEditingChecks.Run(checkDirectory);
 TodoTelegramChecks.Run(checkDirectory);
 TodoDeletionChecks.Run(checkDirectory);
 AppBuilder.Configure<App>().UsePlatformDetect().With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } }).WithInterFont().SetupWithoutStarting();
+TodoEditorUiChecks.Run(checkDirectory);
+if (args.Contains("--todo-ui-only")) { Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editor and deadline UI"); return; }
 var formattedView=TodoRichText.Create(structuredText,false);
 var formattedRuns=formattedView.Inlines!.OfType<Avalonia.Controls.Documents.Run>().ToArray();
 if(!formattedRuns.Any(run=>run.Text=="Edit" && run.FontWeight==FontWeight.Bold) ||

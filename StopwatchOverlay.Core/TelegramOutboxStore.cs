@@ -19,7 +19,8 @@ public sealed record TelegramOutboxEntry(
     string? ChatId = null,
     long? MessageThreadId = null,
     int? DeliveredMessageId = null,
-    string? DeliveredChatId = null);
+    string? DeliveredChatId = null,
+    string? DeliveredContentHash = null);
 
 public sealed record TelegramSentNoteRecord(
     NoteType NoteType,
@@ -32,7 +33,8 @@ public sealed record TelegramSentNoteRecord(
     string? VaultKey = null,
     bool? IsCompleted = false,
     bool? PendingCompleted = null,
-    bool MessageDeleted = false);
+    bool MessageDeleted = false,
+    string? ContentHash = null);
 
 public static class TelegramOutboxStore
 {
@@ -172,8 +174,15 @@ public static class TelegramOutboxStore
         }
     }
 
+    public static bool IsTodoSent(string botIdentity, string vaultKey, NoteEntry entry)
+    {
+        lock (Gate) return LoadSentInternal().Any(record =>
+            ((record.BotIdentity == botIdentity && record.VaultKey == vaultKey) || (record.BotIdentity == null && record.VaultKey == null)) &&
+            TelegramNotesSync.MatchesTodo(record with { VaultKey = record.VaultKey ?? vaultKey }, entry));
+    }
+
     public static bool MarkSent(NoteType noteType, string text, DateTime timestamp,
-        int? messageId = null, string? chatId = null, string? botIdentity = null, string? vaultKey = null, bool isCompleted = false)
+        int? messageId = null, string? chatId = null, string? botIdentity = null, string? vaultKey = null, bool isCompleted = false, string? contentHash = null)
     {
         lock (Gate)
         {
@@ -184,7 +193,7 @@ public static class TelegramOutboxStore
                 s.TimestampMinute == minute && s.BotIdentity == botIdentity && s.VaultKey == vaultKey);
             if (index >= 0 && !messageId.HasValue) return true;
             var record = new TelegramSentNoteRecord(noteType, text.Trim(), minute, DateTime.UtcNow,
-                messageId, chatId, botIdentity, vaultKey, isCompleted);
+                messageId, chatId, botIdentity, vaultKey, isCompleted, ContentHash: contentHash);
             if (index >= 0) sent[index] = record; else sent.Add(record);
             // Todo message links must survive until their task is no longer needed.
             sent.RemoveAll(s => s.SentAtUtc < DateTime.UtcNow.AddDays(-30) && !(s.NoteType == NoteType.Todo && s.MessageId.HasValue));
@@ -201,8 +210,7 @@ public static class TelegramOutboxStore
     public static bool IsDeletedTodo(string botIdentity, string vaultKey, string text, DateTime timestamp)
     {
         lock (Gate) return LoadSentInternal().Any(s => s.MessageDeleted && s.NoteType == NoteType.Todo &&
-            s.BotIdentity == botIdentity && s.VaultKey == vaultKey && s.TimestampMinute == timestamp.ToString("yyyy-MM-dd HH:mm") &&
-            TelegramNotesSync.NormalizeTodoText(s.Text) == TelegramNotesSync.NormalizeTodoText(text));
+            s.BotIdentity == botIdentity && s.VaultKey == vaultKey && TelegramNotesSync.MatchesTodo(s, new(NoteType.Todo, timestamp, text)));
     }
 
     public static bool RecordTodoDeleted(NoteEntry entry, string botIdentity, string vaultKey, TelegramSentNoteRecord? record = null)
@@ -230,8 +238,7 @@ public static class TelegramOutboxStore
         {
             var pending = LoadInternal();
             int removed = pending.RemoveAll(e => e.NoteType == NoteType.Todo && e.BotIdentity == botIdentity && e.VaultKey == vaultKey &&
-                e.Timestamp.ToString("yyyy-MM-dd HH:mm") == entry.Timestamp.ToString("yyyy-MM-dd HH:mm") &&
-                TelegramNotesSync.NormalizeTodoText(e.Text) == TelegramNotesSync.NormalizeTodoText(entry.Text));
+                TelegramNotesSync.MatchesTodo(new TelegramSentNoteRecord(NoteType.Todo, e.Text, e.Timestamp.ToString("yyyy-MM-dd HH:mm"), DateTime.UtcNow, VaultKey: vaultKey), entry));
             return removed == 0 || SaveInternal(pending);
         }
     }
@@ -243,16 +250,15 @@ public static class TelegramOutboxStore
             var sent = LoadSentInternal();
             string minute = entry.Timestamp.ToString("yyyy-MM-dd HH:mm");
             if (sent.Any(s => s.BotIdentity == botIdentity && s.ChatId == chatId && s.MessageId == messageId &&
-                (s.VaultKey != vaultKey || s.NoteType != NoteType.Todo || s.Text != entry.Text.Trim() || s.TimestampMinute != minute))) return false;
-            sent.RemoveAll(s => s.NoteType == NoteType.Todo && s.Text == entry.Text.Trim() && s.TimestampMinute == minute &&
-                s.BotIdentity == botIdentity && s.VaultKey == vaultKey);
+                (s.VaultKey != vaultKey || !TelegramNotesSync.MatchesTodo(s, entry)))) return false;
+            sent.RemoveAll(s => s.BotIdentity == botIdentity && s.VaultKey == vaultKey && TelegramNotesSync.MatchesTodo(s, entry));
             sent.Add(new TelegramSentNoteRecord(NoteType.Todo, entry.Text.Trim(), minute, DateTime.UtcNow,
                 messageId, chatId, botIdentity, vaultKey, null, entry.IsCompleted));
             return SaveSentInternal(sent);
         }
     }
 
-    public static bool QueueTodoState(TelegramSentNoteRecord record, bool completed)
+    public static bool QueueTodoState(TelegramSentNoteRecord record, bool completed, string? contentHash = null)
     {
         lock (Gate)
         {
@@ -260,13 +266,14 @@ public static class TelegramOutboxStore
             int index = sent.FindIndex(s => SameBinding(s, record));
             if (index < 0) return false;
             var latest = sent[index];
-            if (latest.PendingCompleted == completed || (latest.PendingCompleted == null && latest.IsCompleted == completed)) return true;
+            if ((contentHash == null || (latest.ContentHash ?? TelegramNotesSync.TodoContentHash(latest.Text, null)) == contentHash) &&
+                (latest.PendingCompleted == completed || (latest.PendingCompleted == null && latest.IsCompleted == completed))) return true;
             sent[index] = latest with { PendingCompleted = completed };
             return SaveSentInternal(sent);
         }
     }
 
-    public static bool AcknowledgeTodoState(TelegramSentNoteRecord record, bool completed)
+    public static bool AcknowledgeTodoState(TelegramSentNoteRecord record, bool completed, string? contentHash = null)
     {
         lock (Gate)
         {
@@ -274,7 +281,7 @@ public static class TelegramOutboxStore
             int index = sent.FindIndex(s => SameBinding(s, record));
             if (index < 0) return false;
             var latest = sent[index];
-            sent[index] = latest with { IsCompleted = completed, PendingCompleted = latest.PendingCompleted == completed ? null : latest.PendingCompleted };
+            sent[index] = latest with { IsCompleted = completed, ContentHash = contentHash ?? latest.ContentHash, PendingCompleted = latest.PendingCompleted == completed ? null : latest.PendingCompleted };
             return SaveSentInternal(sent);
         }
     }

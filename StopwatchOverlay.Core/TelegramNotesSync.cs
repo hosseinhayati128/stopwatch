@@ -110,7 +110,8 @@ public static partial class TelegramNotesSync
         NoteType type,
         string text,
         DateTime? timestamp = null,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient = null,
+        DateTime? dueAt = null)
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
 
@@ -137,6 +138,7 @@ public static partial class TelegramNotesSync
 
         DateTime time = timestamp ?? DateTime.Now;
         string messageText = FormatMessage(type, text, time);
+        if (type == NoteType.Todo && dueAt.HasValue) messageText += $"\n<b>Due:</b> {dueAt:yyyy-MM-dd HH:mm}";
 
         return await SendTelegramMessageAsync(
             settings.TelegramBotToken,
@@ -318,6 +320,7 @@ public static partial class TelegramNotesSync
 
     private static readonly System.Threading.SemaphoreSlim FlushGate = new(1, 1);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, TelegramSyncResult> DeliveredThisSession = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, string> DeliveredContentThisSession = new();
 
     public static async Task<(int SentCount, int RemainingCount, string? LastError)> FlushOutboxAsync(
         AppSettings settings,
@@ -365,19 +368,35 @@ public static partial class TelegramNotesSync
                     deliverySettings.TelegramChatId = entry.ChatId;
                     deliverySettings.TelegramTodosTopicId = deliverySettings.TelegramNotesTopicId = deliverySettings.TelegramRemindersTopicId = entry.MessageThreadId?.ToString() ?? "";
                 }
+                NoteEntry? latestTodo = null;
+                DateTime? dueAt = null;
+                if (entry.NoteType == NoteType.Todo && !string.IsNullOrWhiteSpace(settings.ObsidianVaultFolder))
+                {
+                    var identity = new TelegramSentNoteRecord(NoteType.Todo, entry.Text, entry.Timestamp.ToString("yyyy-MM-dd HH:mm"), DateTime.UtcNow, VaultKey: vault);
+                    var matches = ObsidianNotesSync.LoadAllNotes(settings.ObsidianVaultFolder, settings.NotesSubfolder).Where(item => MatchesTodo(identity, item)).ToArray();
+                    if (matches.Length == 1) { latestTodo = matches[0]; dueAt = GetTodoDueAt(settings, latestTodo); }
+                }
                 TelegramSyncResult result;
+                string? deliveredHash = entry.DeliveredContentHash;
                 if (entry.DeliveredMessageId.HasValue)
                     result = new(true, null, entry.DeliveredMessageId, entry.DeliveredChatId);
-                else if (!DeliveredThisSession.TryGetValue(entry.Id, out result!))
-                    result = await SendNoteAsync(deliverySettings, entry.NoteType, entry.Text, entry.Timestamp, httpClient).ConfigureAwait(false);
+                else if (DeliveredThisSession.TryGetValue(entry.Id, out result!))
+                    deliveredHash = DeliveredContentThisSession.GetValueOrDefault(entry.Id);
+                else
+                {
+                    result = await SendNoteAsync(deliverySettings, entry.NoteType, latestTodo?.Text ?? entry.Text, entry.Timestamp, httpClient, dueAt).ConfigureAwait(false);
+                    if (result.Success && entry.NoteType == NoteType.Todo) deliveredHash = TodoContentHash(latestTodo?.Text ?? entry.Text, dueAt);
+                }
 
                 if (result.Success)
                 {
                     DeliveredThisSession[entry.Id] = result;
+                    if (deliveredHash != null) DeliveredContentThisSession[entry.Id] = deliveredHash;
                     // Retain delivery information before removing anything, so receipt failures never cause a resend.
-                    bool retained = TelegramOutboxStore.Update(entry with { DeliveredMessageId = result.MessageId, DeliveredChatId = result.ChatId });
+                    bool retained = TelegramOutboxStore.Update(entry with { DeliveredMessageId = result.MessageId, DeliveredChatId = result.ChatId, DeliveredContentHash = deliveredHash });
                     bool receipt = retained && TelegramOutboxStore.MarkSent(entry.NoteType, entry.Text, entry.Timestamp, result.MessageId,
-                        result.ChatId ?? ResolveDestination(deliverySettings, entry.NoteType).targetChatId, bot, vault);
+                        result.ChatId ?? ResolveDestination(deliverySettings, entry.NoteType).targetChatId, bot, vault,
+                        contentHash: deliveredHash);
                     if (!receipt)
                     {
                         lastError = "Message sent, but its receipt could not be saved. It will retry saving without sending again.";
@@ -389,6 +408,7 @@ public static partial class TelegramNotesSync
                         break;
                     }
                     DeliveredThisSession.TryRemove(entry.Id, out _);
+                    DeliveredContentThisSession.TryRemove(entry.Id, out _);
                     sentCount++;
                 }
                 else
@@ -422,10 +442,19 @@ public static partial class TelegramNotesSync
         var allNotes = ObsidianNotesSync.LoadAllNotes(settings.ObsidianVaultFolder, settings.NotesSubfolder);
         DateTime cutoff = DateTime.Now.Date.AddDays(-Math.Abs(lookbackDays));
         var outboxEntries = TelegramOutboxStore.GetAll();
+        string bot = GetBotIdentity(settings), vault = GetTodoVaultKey(settings);
 
         var unsent = new List<NoteEntry>();
         foreach (var note in allNotes.Where(n => n.Timestamp >= cutoff).OrderBy(n => n.Timestamp))
         {
+            if (note.Type == NoteType.Todo)
+            {
+                bool queuedTodo = outboxEntries.Any(e => e.NoteType == NoteType.Todo &&
+                    ((e.BotIdentity == bot && e.VaultKey == vault) || (e.BotIdentity == null && e.VaultKey == null)) &&
+                    MatchesTodo(new TelegramSentNoteRecord(NoteType.Todo, e.Text, e.Timestamp.ToString("yyyy-MM-dd HH:mm"), DateTime.UtcNow, VaultKey: vault), note));
+                if (!queuedTodo && !TelegramOutboxStore.IsTodoSent(bot, vault, note)) unsent.Add(note);
+                continue;
+            }
             string minute = note.Timestamp.ToString("yyyy-MM-dd HH:mm");
             bool inOutbox = outboxEntries.Any(e =>
                 e.NoteType == note.Type &&

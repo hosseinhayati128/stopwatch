@@ -76,6 +76,15 @@ public static class ObsidianNotesSync
                 Directory.CreateDirectory(folderPath);
             }
 
+            if (type == NoteType.Todo)
+            {
+                var candidate = new NoteEntry(type, timestamp ?? DateTime.Now, text.Trim());
+                var organization = TodoOrganizationStore.Load(vaultFolder, notesSubfolder);
+                string key = TodoOrganizationStore.GetKey(candidate);
+                string normalizedKey = TodoOrganizationStore.GetKey(candidate with { Text = TelegramNotesSync.NormalizeTodoText(candidate.Text) });
+                if (organization.ResolveKey(key) != key || organization.ResolveKey(normalizedKey) != normalizedKey)
+                    return new(false, "", "This title and time belong to an edited task. Choose a different title or add it a minute later.");
+            }
             string fileName = GetFileName(type);
             string filePath = Path.Combine(folderPath, fileName);
             DateTime now = timestamp ?? DateTime.Now;
@@ -116,7 +125,10 @@ public static class ObsidianNotesSync
     public static NoteSyncResult ValidateTodoForDeletion(string vaultFolder, NoteEntry entry, string? notesSubfolder = null)
         => ChangeTodo(vaultFolder, entry, null, notesSubfolder, validateOnly: true);
 
-    private static NoteSyncResult ChangeTodo(string vaultFolder, NoteEntry entry, bool? completed, string? notesSubfolder, bool validateOnly = false)
+    public static NoteSyncResult UpdateTodoText(string vaultFolder, NoteEntry entry, string text, string? notesSubfolder = null, bool validateOnly = false)
+        => ChangeTodo(vaultFolder, entry, entry.IsCompleted, notesSubfolder, validateOnly, text);
+
+    private static NoteSyncResult ChangeTodo(string vaultFolder, NoteEntry entry, bool? completed, string? notesSubfolder, bool validateOnly = false, string? replacementText = null)
     {
         string folder = string.IsNullOrWhiteSpace(notesSubfolder) ? DefaultNotesFolder : notesSubfolder.Trim();
         string path = Path.Combine(vaultFolder, folder, TodosFileName);
@@ -135,9 +147,25 @@ public static class ObsidianNotesSync
             var target = candidates[0];
             if (target.Completed != entry.IsCompleted)
                 return new(false, path, "This todo changed. Refresh and try again.");
-            if (validateOnly) return new(true, path);
+            if (replacementText != null)
+            {
+                if (string.IsNullOrWhiteSpace(replacementText)) return new(false, path, "Todo text cannot be empty.");
+                if (ReadTaskBlocks(original, NoteType.Todo).Any(block => block.Start != target.LineStart &&
+                    block.Entry.Timestamp == entry.Timestamp && TelegramNotesSync.NormalizeTodoText(block.Entry.Text) == TelegramNotesSync.NormalizeTodoText(replacementText)))
+                    return new(false, path, "Another todo already has this text and time. Choose a different title.");
+            }
+            if (validateOnly || replacementText == entry.Text) return new(true, path);
             string updated;
-            if (completed.HasValue)
+            if (replacementText != null)
+            {
+                string oldBlock = original.Substring(target.LineStart, target.LineLength);
+                string newline = original.Contains("\r\n") ? "\r\n" : "\n";
+                string replacement = FormatEntry(NoteType.Todo, replacementText, entry.Timestamp).Replace("\n", newline);
+                if (entry.IsCompleted) replacement = replacement.Remove(3, 1).Insert(3, "x");
+                if (oldBlock.EndsWith("\n") || oldBlock.EndsWith("\r")) replacement += newline;
+                updated = original.Remove(target.LineStart, target.LineLength).Insert(target.LineStart, replacement);
+            }
+            else if (completed.HasValue)
                 updated = original.Remove(target.Index, 1).Insert(target.Index, completed.Value ? "x" : " ");
             else
             {

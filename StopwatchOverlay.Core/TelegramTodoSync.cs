@@ -28,9 +28,24 @@ public static partial class TelegramNotesSync
         Path.GetFullPath(Path.Combine(settings.ObsidianVaultFolder, string.IsNullOrWhiteSpace(settings.NotesSubfolder) ? "Notes" : settings.NotesSubfolder.Trim()))
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-    public static bool MatchesTodo(TelegramSentNoteRecord record, NoteEntry entry) =>
-        record.NoteType == NoteType.Todo && entry.Type == NoteType.Todo && NormalizeTodoText(record.Text) == NormalizeTodoText(entry.Text) &&
-        record.TimestampMinute == entry.Timestamp.ToString("yyyy-MM-dd HH:mm");
+    public static bool MatchesTodo(TelegramSentNoteRecord record, NoteEntry entry)
+    {
+        if (record.NoteType != NoteType.Todo || entry.Type != NoteType.Todo || record.TimestampMinute != entry.Timestamp.ToString("yyyy-MM-dd HH:mm")) return false;
+        if (NormalizeTodoText(record.Text) == NormalizeTodoText(entry.Text)) return true;
+        if (string.IsNullOrWhiteSpace(record.VaultKey) || !DateTime.TryParseExact(record.TimestampMinute, "yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time)) return false;
+        var organization = TodoOrganizationStore.LoadFromFolder(record.VaultKey);
+        // Receipts historically flattened line endings. Compare aliases for both the original text and its normalized form.
+        string receipt = organization.ResolveKey(TodoOrganizationStore.GetKey(new(NoteType.Todo, time, record.Text)));
+        string actual = organization.ResolveKey(TodoOrganizationStore.GetKey(entry));
+        return receipt == actual;
+    }
+
+    internal static string TodoContentHash(string text, DateTime? dueAt)
+        => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(text.Replace("\r\n", "\n").Replace('\r', '\n').Trim() + "\n" + dueAt?.ToString("yyyy-MM-dd HH:mm"))));
+
+    internal static DateTime? GetTodoDueAt(AppSettings settings, NoteEntry entry)
+        => string.IsNullOrWhiteSpace(settings.ObsidianVaultFolder) ? null : TodoOrganizationStore.Load(settings.ObsidianVaultFolder, settings.NotesSubfolder).GetDueAt(entry);
+
 
     public static bool HasTodoMessageLink(AppSettings settings, NoteEntry entry) =>
         TelegramOutboxStore.GetTrackedTodos(GetBotIdentity(settings), GetTodoVaultKey(settings)).Count(record => MatchesTodo(record, entry)) == 1;
@@ -79,7 +94,7 @@ public static partial class TelegramNotesSync
                 foreach (var record in TelegramOutboxStore.GetTrackedTodos(bot, vault))
                 {
                     var matching = entries.Where(e => MatchesTodo(record, e)).ToArray();
-                    if (matching.Length == 1 && !TelegramOutboxStore.QueueTodoState(record, matching[0].IsCompleted)) return false;
+                    if (matching.Length == 1 && !TelegramOutboxStore.QueueTodoState(record, matching[0].IsCompleted, TodoContentHash(matching[0].Text, GetTodoDueAt(settings, matching[0])))) return false;
                 }
                 return true;
             }
@@ -100,10 +115,12 @@ public static partial class TelegramNotesSync
                     .Where(e => MatchesTodo(record, e)).ToArray();
                 if (matching.Length != 1) continue;
                 bool desired = matching[0].IsCompleted;
-                if (!TelegramOutboxStore.QueueTodoState(record, desired)) return new(false, "Could not save pending Telegram updates.");
-                var result = await EditTodoMessageAsync(settings.TelegramBotToken, record, matching[0], httpClient ?? SharedClient).ConfigureAwait(false);
+                if (!TelegramOutboxStore.QueueTodoState(record, desired, TodoContentHash(matching[0].Text, GetTodoDueAt(settings, matching[0])))) return new(false, "Could not save pending Telegram updates.");
+                DateTime? dueAt = GetTodoDueAt(settings, matching[0]);
+                string contentHash = TodoContentHash(matching[0].Text, dueAt);
+                var result = await EditTodoMessageAsync(settings.TelegramBotToken, record, matching[0], dueAt, httpClient ?? SharedClient).ConfigureAwait(false);
                 if (!result.Success) { lastError = result.ErrorMessage; continue; }
-                if (!TelegramOutboxStore.AcknowledgeTodoState(record, desired)) lastError = "Telegram updated, but its sync status could not be saved. It will retry safely.";
+                if (!TelegramOutboxStore.AcknowledgeTodoState(record, desired, contentHash)) lastError = "Telegram updated, but its sync status could not be saved. It will retry safely.";
             }
             return new(lastError == null, lastError);
         }
@@ -115,12 +132,13 @@ public static partial class TelegramNotesSync
         finally { CompletionGate.Release(); }
     }
 
-    private static async Task<TelegramSyncResult> EditTodoMessageAsync(string botToken, TelegramSentNoteRecord record, NoteEntry entry, HttpClient client)
+    private static async Task<TelegramSyncResult> EditTodoMessageAsync(string botToken, TelegramSentNoteRecord record, NoteEntry entry, DateTime? dueAt, HttpClient client)
     {
         try
         {
             string safe = FormattedTodoText.ToTelegramHtml(entry.Text.Trim());
             string text = $"☑️ <b>Todo</b> ({entry.Timestamp:HH:mm})\n" + (entry.IsCompleted ? $"<s>{safe}</s>" : safe);
+            if (dueAt.HasValue) text += $"\n<b>Due:</b> {dueAt:yyyy-MM-dd HH:mm}";
             var payload = new Dictionary<string, object?> { ["chat_id"] = record.ChatId, ["message_id"] = record.MessageId, ["text"] = text, ["parse_mode"] = "HTML" };
             using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             using var response = await client.PostAsync($"https://api.telegram.org/bot{botToken.Trim()}/editMessageText", content).ConfigureAwait(false);
@@ -132,7 +150,7 @@ public static partial class TelegramNotesSync
         }
         catch (Exception)
         {
-            return new(false, "Telegram is unavailable. The completion change is saved and will retry.");
+            return new(false, "Telegram is unavailable. The todo change is saved and will retry.");
         }
     }
 }

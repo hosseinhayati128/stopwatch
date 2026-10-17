@@ -39,6 +39,7 @@ public partial class TodoOverlayWindow : Window
     private bool _editing;
     private bool _deleteInProgress;
     private ConfirmationDialogWindow? _deleteDialog;
+    private NoteEntryWindow? _taskEditor;
     private bool _closed;
     private DateTime _nextSyncUtc;
     private NoteEntry? _linkEntry;
@@ -129,7 +130,7 @@ public partial class TodoOverlayWindow : Window
                 _positionTimer.Start();
             }
         };
-        Closed += (_, _) => { _closed = true; if (_deleteDialog?.IsVisible == true) _deleteDialog.Close(false); _refreshTimer.Stop(); _positionTimer.Stop(); };
+        Closed += (_, _) => { _closed = true; if (_taskEditor?.IsVisible == true) _taskEditor.Close(); if (_deleteDialog?.IsVisible == true) _deleteDialog.Close(false); _refreshTimer.Stop(); _positionTimer.Stop(); };
         ApplySettings();
     }
 
@@ -199,7 +200,7 @@ public partial class TodoOverlayWindow : Window
                 entries.Any(entry => !Linked(entry)) ? "Use Edit → Link to connect older Telegram messages." : "Completion sync is up to date.");
             var visible = entries.Where(entry => _settings.TodoOverlayShowCompleted || !entry.IsCompleted).ToArray();
             string snapshot = (_organization?.SortMode ?? "Priority") + "|" + configured + "|" + _editing + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
-                string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{_organization?.GetPriority(entry) ?? 3}|{entry.Text}"));
+                string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{_organization?.GetPriority(entry) ?? 3}|{_organization?.GetDueAt(entry):O}|{TodoDeadlines.GetState(entry, _organization?.GetDueAt(entry), DateTime.Now)}|{entry.Text}"));
             if (_snapshot == snapshot) return;
             _snapshot = snapshot;
             var scrollOffset = TodoScrollViewer.Offset;
@@ -226,7 +227,28 @@ public partial class TodoOverlayWindow : Window
                     _snapshot = null;
                     Dispatcher.UIThread.Post(() => { ReloadTodos(); _nextSyncUtc = DateTime.MinValue; _ = SynchronizeTelegramAsync(); });
                 };
-                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*"), Margin = new Thickness(0, 0, 0, 6) };
+                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*"), Margin = new Thickness(0, 0, 0, 6) };
+                DateTime? dueAt = _organization?.GetDueAt(entry);
+                var dueState = TodoDeadlines.GetState(entry, dueAt, DateTime.Now);
+                if (dueState is TodoDueState.Soon or TodoDueState.Overdue)
+                {
+                    bool dark = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Midnight;
+                    bool overdue = dueState == TodoDueState.Overdue;
+                    var deadlineSurface = new Border { Name = "DeadlineSurface", CornerRadius = new CornerRadius(5),
+                        Background = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#30F08080" : "#20C42635") : (dark ? "#32D5972C" : "#25B87816"))),
+                        BorderBrush = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#806E4343" : "#607E3030") : (dark ? "#807D622A" : "#60865F24"))),
+                        BorderThickness = new Thickness(1), Margin = new Thickness(-4, 0, -4, 0), IsHitTestVisible = false };
+                    Grid.SetRowSpan(deadlineSurface, 4); Grid.SetColumnSpan(deadlineSurface, 3);
+                    container.Children.Add(deadlineSurface);
+                }
+                if (dueAt.HasValue)
+                {
+                    var dueLabel = new TextBlock { Name = "TodoDueLabel", Text = TodoDeadlines.Label(dueAt.Value, dueState), FontSize = 11,
+                        TextWrapping = TextWrapping.Wrap, Margin = new Thickness(7, 0, 0, 7) };
+                    if (Application.Current?.TryFindResource(dueState == TodoDueState.Overdue ? "DangerTextBrush" : "SecondaryTextBrush", out var dueBrush) == true && dueBrush is IBrush brush) dueLabel.Foreground = brush;
+                    Grid.SetRow(dueLabel, 2); Grid.SetColumn(dueLabel, 2); container.Children.Add(dueLabel);
+                    ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") + " · " + dueLabel.Text);
+                }
                 var badge = CreatePriorityBadge(entry);
                 Grid.SetColumn(badge, 0);
                 container.Children.Add(badge);
@@ -244,6 +266,11 @@ public partial class TodoOverlayWindow : Window
                 container.Children.Add(progress);
                 var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
                     HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 2, 0, 10), IsVisible = _editing, IsEnabled = !_deleteInProgress };
+                var editTaskButton = new Button { Content = "Edit task", FontSize = 12, Height = 28, Padding = new Thickness(10, 0) };
+                editTaskButton.Classes.Add("modern");
+                AutomationProperties.SetName(editTaskButton, "Edit todo " + entry.Text);
+                editTaskButton.Click += async (_, _) => await EditTaskAsync(entry);
+                actions.Children.Add(editTaskButton);
                 if (_settings.TelegramEnabled)
                 {
                     var linkButton = new Button { Content = Linked(entry) ? "Relink" : "Link", FontSize = 12, Height = 28, Padding = new Thickness(10, 0) };
@@ -258,7 +285,7 @@ public partial class TodoOverlayWindow : Window
                 AutomationProperties.SetName(deleteButton, "Delete todo " + entry.Text);
                 deleteButton.Click += async (_, _) => await DeleteTodoAsync(entry);
                 actions.Children.Add(deleteButton);
-                Grid.SetRow(actions, 2);
+                Grid.SetRow(actions, 3);
                 Grid.SetColumnSpan(actions, 3);
                 container.Children.Add(actions);
                 container.Children.Add(row);
@@ -422,6 +449,24 @@ public partial class TodoOverlayWindow : Window
         AutomationProperties.SetName(EditTodosButton, _editing ? "Finish editing todo actions" : "Edit todo actions");
         _snapshot = null;
         ReloadTodos();
+    }
+
+    private async Task EditTaskAsync(NoteEntry entry)
+    {
+        if (_closed || _deleteInProgress) return;
+        if (_taskEditor?.IsVisible == true) { _taskEditor.Activate(); return; }
+        CancelInteractions();
+        _taskEditor = new NoteEntryWindow(NoteType.Todo, _settings, entry);
+        try { await _taskEditor.ShowDialog(this); }
+        finally
+        {
+            _taskEditor = null;
+            if (!_closed)
+            {
+                _snapshot = null; _nextSyncUtc = DateTime.MinValue;
+                ReloadTodos(); _ = SynchronizeTelegramAsync();
+            }
+        }
     }
 
     private async Task DeleteTodoAsync(NoteEntry entry)

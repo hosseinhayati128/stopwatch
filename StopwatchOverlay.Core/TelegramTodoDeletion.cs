@@ -25,7 +25,7 @@ public static partial class TelegramNotesSync
                 if (!valid.Success) return new(false, valid.Message);
                 string bot = GetBotIdentity(settings), vault = GetTodoVaultKey(settings);
                 var pending = TelegramOutboxStore.GetAll().Where(e => e.NoteType == NoteType.Todo && e.BotIdentity == bot && e.VaultKey == vault &&
-                    NormalizeTodoText(e.Text) == NormalizeTodoText(entry.Text) && e.Timestamp.ToString("yyyy-MM-dd HH:mm") == entry.Timestamp.ToString("yyyy-MM-dd HH:mm")).ToArray();
+                    MatchesTodo(new TelegramSentNoteRecord(NoteType.Todo, e.Text, e.Timestamp.ToString("yyyy-MM-dd HH:mm"), DateTime.UtcNow, VaultKey: vault), entry)).ToArray();
                 // Collect all possible targets before modifying a user-selected link.
                 var links = TelegramOutboxStore.GetTrackedTodos(bot, vault, includeDeleted: true).Where(r => MatchesTodo(r, entry)).ToList();
                 foreach (var queued in pending)
@@ -41,6 +41,9 @@ public static partial class TelegramNotesSync
                             DateTime.UtcNow, messageId, chatId, bot, vault));
                     }
                 }
+                var liveTodos = ObsidianNotesSync.LoadAllNotes(settings.ObsidianVaultFolder, settings.NotesSubfolder).Where(item => item.Type == NoteType.Todo).ToArray();
+                if (links.Any(record => liveTodos.Count(item => MatchesTodo(record, item)) != 1))
+                    return new(false, "This Telegram link matches more than one todo. Resolve the duplicate tasks before deleting.");
                 var targets = links.GroupBy(r => (r.ChatId, r.MessageId)).ToArray();
                 if (targets.Length > 1) return new(false, "Conflicting Telegram message receipts were found. Resolve the linked messages before deleting.");
                 var link = targets.SingleOrDefault()?.First();
@@ -54,7 +57,7 @@ public static partial class TelegramNotesSync
                     return new(false, "Enable Telegram in Settings to delete the linked message. The todo was kept.");
                 if (!TelegramOutboxStore.CancelPendingTodo(entry, bot, vault))
                     return new(false, "Could not cancel the queued Telegram copy. The todo was kept; try again.");
-                foreach (var queued in pending) DeliveredThisSession.TryRemove(queued.Id, out _);
+                foreach (var queued in pending) { DeliveredThisSession.TryRemove(queued.Id, out _); DeliveredContentThisSession.TryRemove(queued.Id, out _); }
                 if (link != null && !link.MessageDeleted)
                 {
                     var result = await DeleteLinkedTodoMessageAsync(settings.TelegramBotToken, link, httpClient ?? SharedClient).ConfigureAwait(false);
