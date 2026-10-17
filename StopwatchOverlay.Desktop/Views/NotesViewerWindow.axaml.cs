@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using StopwatchOverlay.Desktop.Platform;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -27,6 +28,8 @@ public partial class NotesViewerWindow : Window
     public NotesViewerWindow(AppSettings settings)
     {
         InitializeComponent();
+        WindowsTopmostGuard.Attach(this);
+        OverlayScreenConstraint.Attach(this);
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
         _autoCloseTimer = new DispatcherTimer

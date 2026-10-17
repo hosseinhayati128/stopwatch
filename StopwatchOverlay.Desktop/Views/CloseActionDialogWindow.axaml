@@ -10,6 +10,9 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Background="{DynamicResource AppBackgroundBrush}">
+    <Window.Styles>
+        <StyleInclude Source="/Styles/PirateControllerStyles.axaml"/>
+    </Window.Styles>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Border Margin="18"
                 Background="{DynamicResource DialogSurfaceBrush}"
@@ -48,27 +51,25 @@
                           HorizontalAlignment="Center"
                           Margin="0,0,0,22" />
 
-                <!-- Actions Grid -->
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                    <Button Grid.Column="0"
-                            Content="Cancel"
-                            MinWidth="80"
-                            Classes="modern"
-                            Click="OnCancelClicked" />
-                    <Button Grid.Column="2"
-                            x:Name="MinimizeButton"
+                <StackPanel Spacing="8">
+                    <Button x:Name="MinimizeButton"
                             Content="Minimize to Tray"
                             MinWidth="136"
-                            Margin="0,0,10,0"
-                            Classes="primary"
+                            HorizontalAlignment="Stretch"
+                            Classes="primary topAction"
                             Click="OnMinimizeClicked" />
-                    <Button Grid.Column="3"
-                            x:Name="ExitButton"
+                    <Button x:Name="ExitButton"
                             Content="Close Completely"
                             MinWidth="136"
-                            Classes="danger"
+                            HorizontalAlignment="Stretch"
+                            Classes="danger topAction"
                             Click="OnExitClicked" />
-                </Grid>
+                    <Button Content="Cancel"
+                            MinWidth="80"
+                            HorizontalAlignment="Stretch"
+                            Classes="modern topAction"
+                            Click="OnCancelClicked" />
+                </StackPanel>
             </StackPanel>
         </Border>
     </ScrollViewer>

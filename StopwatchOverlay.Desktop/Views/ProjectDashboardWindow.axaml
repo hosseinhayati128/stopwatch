@@ -5,7 +5,7 @@
         Width="1120" Height="800"
         MinWidth="760" MinHeight="560"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource WindowBackgroundBrush}">
+        Background="{DynamicResource AppBackgroundBrush}">
 
     <DockPanel>
         <!-- Header -->
@@ -27,10 +27,10 @@
                         <TextBlock Text="Project time"
                                    FontSize="22"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                   Foreground="{DynamicResource MenuForegroundBrush}"/>
                         <TextBlock Text="Analytics and project records"
                                    FontSize="12"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Foreground="{DynamicResource MenuForegroundBrush}"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>

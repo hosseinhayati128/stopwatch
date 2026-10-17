@@ -90,10 +90,20 @@ public sealed class ThemedClockFace : Control
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Button, SavedButtonTemplate> OriginalTemplates = new();
     private static readonly FuncControlTemplate<Button> NavigatorButtonTemplate = new((button, scope) =>
     {
-        var grid = new Grid();
-        grid.Children.Add(new NavigatorDialArtwork { IsHitTestVisible = false });
+        var grid = new Grid { Background = Brushes.Transparent };
+        var dial = new NavigatorDialArtwork { IsHitTestVisible = false };
+        dial.Bind(NavigatorDialArtwork.ActionProperty, button.GetObservable(NavigatorDialArtwork.ActionProperty));
+        grid.Children.Add(dial);
+        var hoverRing = new Avalonia.Controls.Shapes.Ellipse
+        {
+            Margin = new Thickness(12), Stroke = Brush.Parse("#FFF2B3"), StrokeThickness = 2,
+            Opacity = .7, IsHitTestVisible = false
+        };
+        hoverRing.Bind(IsVisibleProperty, button.GetObservable(IsPointerOverProperty));
+        grid.Children.Add(hoverRing);
         var content = new ContentPresenter
         {
+            IsVisible = false,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalContentAlignment = HorizontalAlignment.Center,
@@ -153,6 +163,7 @@ public sealed class ThemedClockFace : Control
         for (int i = 0; i < buttons.Count; i++)
         {
             var button = buttons[i];
+            button.SetValue(NavigatorDialArtwork.ActionProperty, i == 0 ? "Close" : i == 1 ? IsRunning ? "Pause" : "Play" : i == 2 ? "Reset" : "");
             var originalTemplate = OriginalTemplates.GetValue(button, b => new SavedButtonTemplate(b.Template));
             bool changingTemplate = IsNavigator
                 ? !ReferenceEquals(button.Template, NavigatorButtonTemplate)
@@ -175,6 +186,7 @@ public sealed class ThemedClockFace : Control
             button.Classes.Set("clockAction", true);
             string prefix = i == 0 ? "OverlayClose" : i == 1 ? "OverlayPause" : "OverlayAction";
             button.Width = button.Height = Token("OverlayActionSize", 28d);
+            button.MinWidth = button.MinHeight = 0;
             button.Padding = new Thickness(0);
             button.Background = BrushToken(prefix + "BackgroundBrush");
             button.BorderBrush = BrushToken(prefix + "BorderBrush");

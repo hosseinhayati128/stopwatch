@@ -12,6 +12,7 @@ public sealed class WindowsOverlayService : IWindowOverlayService
     private const int WS_EX_TRANSPARENT = 0x00000020;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_NOACTIVATE = 0x08000000;
+    private const int WS_EX_TOPMOST = 0x00000008;
 
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint SWP_NOMOVE = 0x0002;
@@ -49,6 +50,10 @@ public sealed class WindowsOverlayService : IWindowOverlayService
         if (windowHandle == IntPtr.Zero) return;
         try
         {
+            // Avoid reshuffling other topmost windows when the requested native
+            // state is already present. Avalonia's cached Topmost can be stale.
+            if (((GetWindowLong32(windowHandle, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0) == topmost)
+                return;
             SetWindowPos(windowHandle, topmost ? HWND_TOPMOST : new IntPtr(-2), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
         catch (Exception ex)

@@ -64,6 +64,7 @@ public partial class ControllerWindow : Window
 
         _settings = SettingsStore.Load();
         ApplyControllerTheme();
+        SizeChanged += (_, _) => UpdateControllerLayout();
         if (PlatformServices.HotKey is PortalHotKeyService portal)
             portal.RegistrationStatusChanged += OnPortalRegistrationStatusChanged;
         if (_projectTimeStore.TryLoad(out var loadedHistory) && loadedHistory != null)
@@ -188,12 +189,13 @@ public partial class ControllerWindow : Window
                     EnterShortcutCommandMode(noteMode: true);
                     break;
                 case ShortcutAction.CommandLeader:
-                    if (_isCommandModeActive)
+                    if (_isCommandModeActive && !_isNoteCommandModeActive)
                     {
                         ExitShortcutCommandMode();
                     }
                     else
                     {
+                        if (_isCommandModeActive) ExitShortcutCommandMode();
                         EnterShortcutCommandMode();
                     }
                     break;
@@ -211,6 +213,7 @@ public partial class ControllerWindow : Window
         {
             _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow();
             var hint = _commandHintWindow;
+            if (OperatingSystem.IsWindows()) hint.ShowActivated = false;
             if (PlatformServices.HotKey is PortalHotKeyService)
             {
                 hint.AddHandler(KeyDownEvent, OnPortalCommandKeyDown, RoutingStrategies.Tunnel);
@@ -1268,7 +1271,7 @@ public partial class ControllerWindow : Window
         if (action == CloseActionChoice.Ask)
         {
             e.Cancel = true;
-            var (choice, remember) = await CloseActionDialogWindow.ShowAsync(this);
+            var (choice, remember) = await CloseActionDialogWindow.ShowAsync(this, _settings.ThemeMode);
             if (choice == CloseDialogResult.Cancel)
                 return;
 

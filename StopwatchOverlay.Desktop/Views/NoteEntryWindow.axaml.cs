@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using StopwatchOverlay.Desktop.Platform;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -28,6 +29,7 @@ public partial class NoteEntryWindow : Window
     public NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry = null)
     {
         InitializeComponent();
+        OverlayScreenConstraint.Attach(this);
         _noteType = noteType;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 

@@ -6,12 +6,14 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using StopwatchOverlay.Platform;
+using StopwatchOverlay.Desktop.Platform;
 
 namespace StopwatchOverlay.Desktop.Views;
 
 public partial class OverlayWindow : Window
 {
     private readonly DispatcherTimer _hideControlsTimer;
+    private bool _closed;
     private IntPtr _hwnd = IntPtr.Zero;
     private bool _isClickThrough;
     private bool _isActive;
@@ -40,6 +42,8 @@ public partial class OverlayWindow : Window
     public OverlayWindow()
     {
         InitializeComponent();
+        WindowsTopmostGuard.Attach(this);
+        OverlayScreenConstraint.Attach(this);
 
         _hideControlsTimer = new DispatcherTimer
         {
@@ -50,6 +54,13 @@ public partial class OverlayWindow : Window
             _hideControlsTimer.Stop();
             ActionPopup.IsOpen = false;
         };
+
+        PropertyChanged += (_, change) =>
+        {
+            if (change.Property != IsVisibleProperty) return;
+            if (IsVisible) RestoreFloatingState();
+        };
+        Deactivated += (_, _) => RestoreFloatingState();
 
         Opened += OnOpened;
         ApplyTheme(OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Midnight);
@@ -70,10 +81,33 @@ public partial class OverlayWindow : Window
         {
             PlatformServices.WindowOverlay.SetClickThrough(_hwnd, true);
         }
+        RestoreFloatingState();
+    }
+
+    private void RestoreFloatingState()
+    {
+        // Reapply after Avalonia finishes showing/updating native chrome. X11
+        // also drops ABOVE when a window is unmapped, as with the todo overlay.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_closed || !IsVisible) return;
+            if (!OperatingSystem.IsWindows())
+            {
+                Topmost = false;
+                Topmost = true;
+            }
+            _hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (_hwnd != IntPtr.Zero)
+            {
+                PlatformServices.WindowOverlay.SetNoActivateToolWindow(_hwnd);
+                PlatformServices.WindowOverlay.SetAlwaysOnTop(_hwnd, true);
+            }
+        }, DispatcherPriority.Background);
     }
 
     protected override void OnClosed(EventArgs e)
     {
+        _closed = true;
         _hideControlsTimer.Stop();
         ActionPopup.IsOpen = false;
         _hwnd = IntPtr.Zero;
@@ -123,6 +157,7 @@ public partial class OverlayWindow : Window
     public void SetRunning(bool running)
     {
         ClockFace.IsRunning = running;
+        PauseResumeActionButton.SetValue(Controls.NavigatorDialArtwork.ActionProperty, running ? "Pause" : "Play");
         PauseIcon.IsVisible = running;
         ResumeIcon.IsVisible = !running;
         ToolTip.SetTip(PauseResumeActionButton, running ? "Pause timer" : "Resume timer");

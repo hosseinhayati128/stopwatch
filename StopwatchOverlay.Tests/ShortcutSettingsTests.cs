@@ -410,7 +410,7 @@ namespace StopwatchOverlay.Tests
         {
             var keys = new Dictionary<NoteCommandAction, uint>(AppSettings.DefaultNoteCommandModeKeys())
             {
-                [NoteCommandAction.AddNote] = 0x31 // Duplicate '1' (same as AddTodo)
+                [NoteCommandAction.AddNote] = AppSettings.DefaultNoteCommandModeKeys()[NoteCommandAction.AddTodo]
             };
             bool valid = AppSettings.ValidateNoteCommandModeKeys(keys, out var error);
             Assert.False(valid);

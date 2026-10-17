@@ -79,19 +79,24 @@ public sealed class PirateActionPanel : WrapPanel
     {
         if (!Pirate) return base.MeasureOverride(availableSize);
         double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 680;
-        foreach (var child in Children.Where(c => c.IsVisible)) child.Measure(new Size(Math.Max(0, (width - 14) / 2), 74));
-        return new Size(width, 154);
+        int columns = width < 500 ? 1 : 2;
+        var visible = Children.Where(c => c.IsVisible).ToArray();
+        foreach (var child in visible) child.Measure(new Size(Math.Max(0, (width - (columns - 1) * 14) / columns), 74));
+        int rows = (visible.Length + columns - 1) / columns;
+        return new Size(width, Math.Max(0, rows * 80 - 6));
     }
     protected override Size ArrangeOverride(Size finalSize)
     {
         if (!Pirate) return base.ArrangeOverride(finalSize);
-        double width = Math.Max(0, (finalSize.Width - 14) / 2);
+        int columns = finalSize.Width < 500 ? 1 : 2;
+        double width = Math.Max(0, (finalSize.Width - (columns - 1) * 14) / columns);
         int[] slots = [0, 2, 1, 3];
         int i = 0;
         foreach (var child in Children.Where(c => c.IsVisible))
         {
-            int slot = i < slots.Length ? slots[i] : i;
-            child.Arrange(new Rect(slot % 2 * (width + 14), slot / 2 * 80, width, 74));
+            // Keep Start/Reset followed by Lap/Overlay in either layout.
+            int slot = columns == 2 && i < slots.Length ? slots[i] : i;
+            child.Arrange(new Rect(slot % columns * (width + 14), slot / columns * 80, width, 74));
             i++;
         }
         return finalSize;

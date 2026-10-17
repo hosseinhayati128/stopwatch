@@ -10,6 +10,7 @@
 
     <!-- Modern Buttons -->
     <Style Selector="Button">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="CornerRadius" Value="{DynamicResource ThemeControlCornerRadius}"/>
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
@@ -17,7 +18,7 @@
     </Style>
 
     <Style Selector="Button.modern">
-        <Setter Property="Height" Value="38"/>
+        <Setter Property="MinHeight" Value="38"/>
         <Setter Property="Padding" Value="16,8"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -29,11 +30,16 @@
     <Style Selector="Button.modern:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    </Style>
+    <Style Selector="Button.modern:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SelectionBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
     </Style>
 
     <!-- Primary Action Button -->
     <Style Selector="Button.primary">
-        <Setter Property="Height" Value="38"/>
+        <Setter Property="MinHeight" Value="38"/>
         <Setter Property="Padding" Value="16,8"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -43,11 +49,16 @@
     </Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PrimaryActionBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
     </Style>
 
     <!-- Danger Action Button -->
     <Style Selector="Button.danger">
-        <Setter Property="Height" Value="38"/>
+        <Setter Property="MinHeight" Value="38"/>
         <Setter Property="Padding" Value="16,8"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -56,7 +67,13 @@
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DangerActionBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
         <Setter Property="Opacity" Value="0.85"/>
+    </Style>
+    <Style Selector="Button.danger:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DangerActionBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
     </Style>
 
     <!-- TextBlock Helpers -->

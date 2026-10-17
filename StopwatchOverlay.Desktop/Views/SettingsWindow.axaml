@@ -21,7 +21,7 @@
                     <TextBlock Text="⚙" FontSize="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                     <TextBlock Text="Settings &amp; Overlay Inspector"
                                FontSize="18" FontWeight="SemiBold"
-                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               Foreground="{DynamicResource MenuForegroundBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Grid.Column="1" Content="Done"
@@ -84,10 +84,10 @@
                                                   Stretch="Uniform" Width="13" Height="13"
                                                   Stroke="{DynamicResource PrimaryTextBrush}" StrokeThickness="1.7" StrokeLineCap="Round" StrokeJoin="Round"/>
                                         </Button>
-                                        <Button x:Name="PreviewEditButton" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
+                                        <Button x:Name="PreviewEditButton" IsVisible="False" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
                                             <Path Width="13" Height="13" Data="M9.5,1.5 L11.5,3.5 L3.5,11.5 L1.5,11.5 L1.5,9.5 Z M8,3 L10,5" Stroke="{DynamicResource OverlayActionForegroundBrush}" StrokeThickness="1.5" />
                                         </Button>
-                                        <Button x:Name="PreviewSeparateMergeButton" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
+                                        <Button x:Name="PreviewSeparateMergeButton" IsVisible="False" Classes="modern" Width="28" Height="28" Padding="0" IsHitTestVisible="False">
                                             <Path Width="13" Height="13" Data="M2,12 L12,2 M12,2 L6,2 M12,2 L12,8" Stroke="{DynamicResource OverlayActionForegroundBrush}" StrokeThickness="1.5" />
                                         </Button>
                                     </StackPanel>

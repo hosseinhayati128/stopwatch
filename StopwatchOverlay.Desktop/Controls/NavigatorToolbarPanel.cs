@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -15,29 +16,31 @@ public sealed class NavigatorToolbarPanel : Panel
     public double Spacing { get; set; } = 4;
     protected override Size MeasureOverride(Size availableSize)
     {
+        var visible = Children.Where(child => child.IsVisible).ToArray();
         if (!NavigatorEnabled)
         {
             double normalWidth = 0, height = 0;
-            foreach (var child in Children) { child.Measure(availableSize); normalWidth += child.DesiredSize.Width; height = Math.Max(height, child.DesiredSize.Height); }
-            return new Size(normalWidth + Math.Max(0, Children.Count - 1) * Spacing, height);
+            foreach (var child in visible) { child.Measure(availableSize); normalWidth += child.DesiredSize.Width; height = Math.Max(height, child.DesiredSize.Height); }
+            return new Size(normalWidth + Math.Max(0, visible.Length - 1) * Spacing, height);
         }
         double width = Math.Max(0, double.IsFinite(availableSize.Width) ? Math.Min(ReferenceWidth, availableSize.Width) : ReferenceWidth);
-        double diameter = width * Math.Min(.24, .84 / Math.Max(1, Children.Count));
-        foreach (var child in Children) { child.Width = child.Height = diameter; child.Measure(new Size(diameter, diameter)); }
+        double diameter = width * Math.Min(.24, .84 / Math.Max(1, visible.Length));
+        foreach (var child in visible) { child.Width = child.Height = diameter; child.Measure(new Size(diameter, diameter)); }
         return new Size(width, width * 340 / 900);
     }
     protected override Size ArrangeOverride(Size finalSize)
     {
+        var visible = Children.Where(child => child.IsVisible).ToArray();
         if (!NavigatorEnabled)
         {
             double x = 0;
-            foreach (var child in Children) { child.Arrange(new Rect(x, (finalSize.Height - child.DesiredSize.Height) / 2, child.DesiredSize.Width, child.DesiredSize.Height)); x += child.DesiredSize.Width + Spacing; }
+            foreach (var child in visible) { child.Arrange(new Rect(x, (finalSize.Height - child.DesiredSize.Height) / 2, child.DesiredSize.Width, child.DesiredSize.Height)); x += child.DesiredSize.Width + Spacing; }
             return finalSize;
         }
-        double diameter = finalSize.Width * Math.Min(.24, .84 / Math.Max(1, Children.Count));
-        double gap = Children.Count > 1 ? (finalSize.Width * .86 - diameter) / (Children.Count - 1) : 0;
+        double diameter = finalSize.Width * Math.Min(.24, .84 / Math.Max(1, visible.Length));
+        double gap = visible.Length > 1 ? (finalSize.Width * .86 - diameter) / (visible.Length - 1) : 0;
         double top = Math.Max(0, (finalSize.Height - diameter) / 2);
-        for (int i = 0; i < Children.Count; i++) Children[i].Arrange(new Rect(finalSize.Width * .07 + i * gap, top, diameter, diameter));
+        for (int i = 0; i < visible.Length; i++) visible[i].Arrange(new Rect(finalSize.Width * .07 + i * gap, top, diameter, diameter));
         return finalSize;
     }
 }

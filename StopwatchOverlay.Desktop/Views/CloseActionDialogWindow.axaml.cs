@@ -10,14 +10,17 @@ public partial class CloseActionDialogWindow : Window
     public CloseDialogResult SelectedAction { get; private set; } = CloseDialogResult.Cancel;
     public bool RememberChoice => RememberCheck.IsChecked == true;
 
-    public CloseActionDialogWindow()
+    public CloseActionDialogWindow() : this(SettingsStore.Load().ThemeMode) { }
+
+    public CloseActionDialogWindow(string? themeMode)
     {
         InitializeComponent();
+        Classes.Set("pirate", AppThemeCatalog.Normalize(themeMode) == AppThemeCatalog.Pirate);
     }
 
-    public static async Task<(CloseDialogResult Action, bool RememberChoice)> ShowAsync(Window? owner)
+    public static async Task<(CloseDialogResult Action, bool RememberChoice)> ShowAsync(Window? owner, string? themeMode = null)
     {
-        var dialog = new CloseActionDialogWindow();
+        var dialog = new CloseActionDialogWindow(themeMode ?? SettingsStore.Load().ThemeMode);
         if (owner != null)
         {
             var res = await dialog.ShowDialog<CloseDialogResult>(owner);

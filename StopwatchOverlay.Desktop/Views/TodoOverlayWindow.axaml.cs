@@ -15,6 +15,7 @@ using ShapePath = Avalonia.Controls.Shapes.Path;
 using StopwatchOverlay.Desktop.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using StopwatchOverlay.Desktop.Platform;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -58,6 +59,8 @@ public partial class TodoOverlayWindow : Window
     public TodoOverlayWindow(AppSettings settings)
     {
         InitializeComponent();
+        WindowsTopmostGuard.Attach(this);
+        OverlayScreenConstraint.Attach(this);
         _settings = settings;
         TodoSortCombo.ItemsSource = new[] { "Priority", "Manual" };
         TodoSortCombo.SelectionChanged += (_, _) =>
@@ -85,8 +88,11 @@ public partial class TodoOverlayWindow : Window
             Dispatcher.UIThread.Post(() =>
             {
                 if (_closed || !IsVisible) return;
-                Topmost = false;
-                Topmost = true;
+                if (!OperatingSystem.IsWindows())
+                {
+                    Topmost = false;
+                    Topmost = true;
+                }
             }, DispatcherPriority.Background);
         };
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
@@ -614,6 +620,7 @@ public partial class TodoOverlayWindow : Window
     private void RememberDraggedPosition()
     {
         _positionTimer.Stop();
+        Position = ClampToScreens(Position, Bounds.Size, Screens.All);
         _anchor = Position;
         _settings.TodoOverlayHasPosition = true;
         _settings.TodoOverlayLeft = Position.X;
@@ -627,23 +634,5 @@ public partial class TodoOverlayWindow : Window
     }
 
     internal static PixelPoint ClampToScreens(PixelPoint anchor, Size logicalSize, IReadOnlyList<Screen> screens)
-    {
-        // A top-edge launcher may overlap the system panel: choose by full monitor bounds first.
-        var screen = screens.FirstOrDefault(screen => anchor.X >= screen.Bounds.X && anchor.X < screen.Bounds.Right &&
-            anchor.Y >= screen.Bounds.Y && anchor.Y < screen.Bounds.Bottom) ??
-            screens.OrderBy(screen => DistanceToScreen(anchor, screen.Bounds)).FirstOrDefault();
-        if (screen == null) return anchor;
-        var area = screen.WorkingArea;
-        int width = (int)Math.Ceiling(logicalSize.Width * screen.Scaling);
-        int height = (int)Math.Ceiling(logicalSize.Height * screen.Scaling);
-        return new PixelPoint(Math.Clamp(anchor.X, area.X, Math.Max(area.X, area.Right - width)),
-                              Math.Clamp(anchor.Y, area.Y, Math.Max(area.Y, area.Bottom - height)));
-    }
-
-    private static double DistanceToScreen(PixelPoint anchor, PixelRect bounds)
-    {
-        double dx = (double)anchor.X - Math.Clamp(anchor.X, bounds.X, bounds.Right);
-        double dy = (double)anchor.Y - Math.Clamp(anchor.Y, bounds.Y, bounds.Bottom);
-        return dx * dx + dy * dy;
-    }
+        => OverlayScreenConstraint.ClampToScreens(anchor, logicalSize, screens);
 }

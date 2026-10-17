@@ -21,24 +21,24 @@
                 BorderBrush="{DynamicResource SubtleDividerBrush}"
                 BorderThickness="0,0,0,1"
                >
-            <Grid ColumnDefinitions="*,Auto">
+            <WrapPanel Orientation="Horizontal">
                 <!-- Brand Title -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10" Margin="0,0,24,8">
                     <controls:PirateArtwork Classes="pirateLayer" Part="Skull" Width="38" Height="38"/>
                     <Path Classes="brandIcon" Width="22" Height="22"
                           Data="M 12,2 C 6.48,2 2,6.48 2,12 C 2,17.52 6.48,22 12,22 C 17.52,22 22,17.52 22,12 C 22,6.48 17.52,2 12,2 Z M 12.5,7 L 11,7 L 11,13 L 16.25,16.15 L 17,14.92 L 12.5,12.25 L 12.5,7 Z"
-                          Fill="{DynamicResource PrimaryAccentBrush}"
+                          Fill="{DynamicResource AccentBrush}"
                           Stretch="Uniform" VerticalAlignment="Center"/>
                     <TextBlock Classes="heading brandTitle" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Top Action Buttons -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="DashboardTopButton" Classes="modern topAction" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
-                    <Button x:Name="SettingsTopButton" Classes="modern topAction" Content="Settings" Click="SettingsButton_Click"/>
-                    <Button x:Name="ShortcutsTopButton" Classes="modern topAction" Content="Shortcuts" Click="ShortcutsButton_Click"/>
-                </StackPanel>
-            </Grid>
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="DashboardTopButton" Classes="modern topAction" Content="Records &amp; Analytics" Margin="0,0,8,8" Click="DashboardButton_Click"/>
+                    <Button x:Name="SettingsTopButton" Classes="modern topAction" Content="Settings" Margin="0,0,8,8" Click="SettingsButton_Click"/>
+                    <Button x:Name="ShortcutsTopButton" Classes="modern topAction" Content="Shortcuts" Margin="0,0,0,8" Click="ShortcutsButton_Click"/>
+                </WrapPanel>
+            </WrapPanel>
         </Border>
 
         <!-- Menu Bar -->
@@ -87,7 +87,7 @@
                                             <TextBlock Classes="railSummary" Text="{Binding DisplaySummary}"/>
                                         </StackPanel>
                                         <Ellipse Grid.Column="1" Width="8" Height="8"
-                                                 Fill="{DynamicResource PrimaryAccentBrush}"
+                                                 Fill="{DynamicResource AccentBrush}"
                                                  IsVisible="{Binding IsRunning}"
                                                  VerticalAlignment="Center"/>
                                     </Grid>

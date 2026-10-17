@@ -11,7 +11,14 @@ public partial class ControllerWindow
         Classes.Set("pirate", pirate);
         if (this.FindControl<PirateActionPanel>("ControllerActions") is { } actions)
             actions.Pirate = pirate;
-        if (this.FindControl<Avalonia.Controls.Grid>("ControllerBody") is { } body)
-            body.ColumnDefinitions = new ColumnDefinitions(pirate ? "300,*" : "260,*");
+        UpdateControllerLayout();
+    }
+
+    private void UpdateControllerLayout()
+    {
+        bool compact = (Bounds.Width > 0 ? Bounds.Width : Width) < 900;
+        Classes.Set("compact", compact);
+        if (this.FindControl<Grid>("ControllerBody") is { } body)
+            body.ColumnDefinitions[0].Width = new GridLength(compact ? 210 : Classes.Contains("pirate") ? 300 : 260);
     }
 }

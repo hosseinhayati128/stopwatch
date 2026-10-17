@@ -1,5 +1,5 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:StopwatchOverlay.Desktop.Controls">
-<Style Selector="Border.header"><Setter Property="Padding" Value="16,10"/><Setter Property="Background" Value="{DynamicResource HeaderBrush}"/></Style>
+<Style Selector="Border.header"><Setter Property="Padding" Value="16,10"/><Setter Property="Background" Value="{DynamicResource ApplicationHeaderBrush}"/></Style>
 <Style Selector="Border.rail"><Setter Property="BorderThickness" Value="0,0,1,0"/><Setter Property="Padding" Value="12"/><Setter Property="Background" Value="{DynamicResource NavigationRailBrush}"/></Style>
 <Style Selector="Border.hero"><Setter Property="BorderThickness" Value="1.5"/><Setter Property="Padding" Value="32,20"/><Setter Property="Margin" Value="0,0,0,18"/><Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/></Style>
 <Style Selector="Border.laps"><Setter Property="MinHeight" Value="100"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="14,10"/><Setter Property="MaxHeight" Value="180"/><Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/></Style>
@@ -27,6 +27,7 @@
     <Style Selector="Window.pirate Border.laps"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0,2,0,0"/><Setter Property="Padding" Value="0,8,0,0"/><Setter Property="MinHeight" Value="130"/><Setter Property="MaxHeight" Value="400"/></Style>
     <Style Selector="Window.pirate Border.status"><Setter Property="BorderThickness" Value="0"/><Setter Property="Margin" Value="0,12,0,0"/></Style>
     <Style Selector="Window.pirate Grid.workspace"><Setter Property="Margin" Value="36,20,32,16"/></Style>
+    <Style Selector="Window.pirate.compact Grid.workspace"><Setter Property="Margin" Value="16,16"/></Style>
     <Style Selector="Window.pirate TextBlock.railHeading"><Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Almendra"/><Setter Property="FontSize" Value="34"/><Setter Property="Foreground" Value="#F4DCA1"/></Style>
     <Style Selector="Window.pirate TextBlock.railStatus"><Setter Property="FontSize" Value="17"/><Setter Property="Foreground" Value="#E9CFA4"/><Setter Property="Opacity" Value="1"/></Style>
     <Style Selector="Window.pirate TextBlock.workspaceTitle"><Setter Property="FontSize" Value="38"/><Setter Property="FontStyle" Value="Italic"/></Style>
@@ -57,7 +58,7 @@
                     <Grid ColumnDefinitions="Auto,*" Margin="{TemplateBinding Padding}">
                         <controls:PirateArtwork Classes="buttonIcon" Part="{Binding Path=(controls:PirateArtwork.Icon), RelativeSource={RelativeSource TemplatedParent}}" Width="64" Height="64" Margin="-4,-6,4,0"/>
                         <Viewbox Grid.Column="1" Stretch="Uniform" StretchDirection="DownOnly" Margin="4,0,4,4" VerticalAlignment="Center">
-                            <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" RecognizesAccessKey="True"/>
+                            <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RecognizesAccessKey="True"/>
                         </Viewbox>
                     </Grid>
                     <Border Name="FocusBorder" IsVisible="False" BorderBrush="#30C9BC" BorderThickness="2" CornerRadius="4" Margin="3,3,3,7"/>
@@ -76,9 +77,19 @@
     <Style Selector="Window.pirate Button:pressed"><Setter Property="Opacity" Value="0.75"/></Style>
     <Style Selector="Window.pirate Button:focus-visible /template/ Border#FocusBorder"><Setter Property="IsVisible" Value="True"/></Style>
     <Style Selector="Window.pirate Button:disabled"><Setter Property="Opacity" Value="0.55"/></Style>
-    <Style Selector="TextBlock.brandTitle"><Setter Property="Text" Value="Stopwatch Overlay"/><Setter Property="FontSize" Value="18"/></Style>
+    <Style Selector="Window.pirate Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#29170D"/>
+    </Style>
+    <Style Selector="Window.pirate Button:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#29170D"/>
+    </Style>
+    <Style Selector="TextBlock.brandTitle"><Setter Property="Text" Value="Stopwatch Overlay"/><Setter Property="FontSize" Value="18"/><Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}"/></Style>
     <Style Selector="Window.pirate TextBlock.brandTitle"><Setter Property="FontSize" Value="35"/><Setter Property="Text" Value="Stopwatch Controller"/><Setter Property="Foreground" Value="#F6E6BF"/></Style>
+    <Style Selector="Window.pirate.compact TextBlock.brandTitle"><Setter Property="FontSize" Value="28"/></Style>
     <Style Selector="Window.pirate Grid.controllerBody"><Setter Property="Margin" Value="24,0,24,20"/></Style>
+    <Style Selector="Window.pirate Border.status TextBlock"><Setter Property="Foreground" Value="#F3D8A4"/><Setter Property="Opacity" Value="1"/></Style>
     <Style Selector="TextBlock.railSummary"><Setter Property="FontSize" Value="12"/><Setter Property="Opacity" Value="0.75"/><Setter Property="FontFamily" Value="Consolas, monospace"/></Style>
     <Style Selector="Window.pirate TextBlock.railName"><Setter Property="FontSize" Value="25"/></Style>
     <Style Selector="Window.pirate TextBlock.railSummary"><Setter Property="FontSize" Value="16"/><Setter Property="Opacity" Value="1"/><Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Barlow Condensed"/></Style>
