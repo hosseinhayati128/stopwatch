@@ -7,6 +7,11 @@ $projectRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\', '/') + [IO.Pat
 
 Get-Command dotnet -ErrorAction Stop | Out-Null
 
+$startupKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+# Preserve the user's current startup choice, including entries for older builds.
+$startupEnabled = $null -ne (Get-ItemPropertyValue -LiteralPath $startupKey `
+    -Name 'StopwatchOverlay' -ErrorAction SilentlyContinue)
+
 # Close this project's legacy and Desktop instances to release output locks
 # and avoid running two applications against the same timer workspace.
 $running = Get-Process -Name StopwatchOverlay, StopwatchOverlay.Desktop -ErrorAction SilentlyContinue
@@ -29,6 +34,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 if (-not (Test-Path -LiteralPath $publishExe -PathType Leaf)) {
     throw "Publish did not produce $publishExe."
+}
+
+if ($startupEnabled) {
+    Set-ItemProperty -LiteralPath $startupKey -Name 'StopwatchOverlay' `
+        -Value ('"' + $publishExe + '"') -Type String
+    Write-Host "Windows startup updated to $publishExe" -ForegroundColor Green
 }
 
 Write-Host "`nPublish succeeded! Starting StopwatchOverlay Desktop..." -ForegroundColor Green

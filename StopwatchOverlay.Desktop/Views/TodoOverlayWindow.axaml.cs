@@ -59,6 +59,7 @@ public partial class TodoOverlayWindow : Window
     public TodoOverlayWindow(AppSettings settings)
     {
         InitializeComponent();
+        if (OperatingSystem.IsWindows()) SizeChanged += (_, _) => UpdateExpandedVisibility();
         WindowsTopmostGuard.Attach(this);
         OverlayScreenConstraint.Attach(this);
         _settings = settings;
@@ -161,7 +162,7 @@ public partial class TodoOverlayWindow : Window
         _dragMoved = false;
         Width = IsExpanded ? 400 : 88;
         Height = IsExpanded ? 500 : 88;
-        TodoPanel.IsVisible = ExpandedHeading.IsVisible = HeadingSurface.IsVisible = IsExpanded;
+        UpdateExpandedVisibility();
         AutomationProperties.SetName(LauncherButton, IsExpanded ? "Collapse todos" : "Expand todos");
         ToolTip.SetTip(LauncherButton, IsExpanded ? "Click to collapse todos · Drag to move" : "Click to expand todos · Drag to move");
         if (IsExpanded)
@@ -179,6 +180,15 @@ public partial class TodoOverlayWindow : Window
             _snapshot = null;
         }
         KeepOnScreen();
+    }
+
+    private void UpdateExpandedVisibility()
+    {
+        // Windows delivers its native resize asynchronously. Do not measure the
+        // expanded controls inside the launcher's 88px client area while it resizes.
+        bool visible = IsExpanded && (!OperatingSystem.IsWindows() ||
+            (ClientSize.Width >= Width - 1 && Bounds.Width >= Width - 1));
+        TodoPanel.IsVisible = ExpandedHeading.IsVisible = HeadingSurface.IsVisible = visible;
     }
 
     public void ReloadTodos()

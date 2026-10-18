@@ -32,6 +32,10 @@ jobs:
       - name: Check Desktop shortcuts and UI contrast
         run: dotnet run --project tools/DesktopRegressionChecks -c Release
 
+      - name: Check publish startup registration
+        shell: pwsh
+        run: ./tools/Test-PublishStartup.ps1
+
       - name: Publish Avalonia Desktop (win-x64)
         shell: pwsh
         run: |
