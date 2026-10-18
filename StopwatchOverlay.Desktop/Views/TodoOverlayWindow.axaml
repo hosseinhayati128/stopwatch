@@ -71,8 +71,7 @@
                     </StackPanel>
                     <CheckBox x:Name="ShowCompletedToggle" Grid.Row="1" Content="Show completed"
                               Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
-                    <Button x:Name="EditTodosButton" Grid.Column="1" Grid.Row="1" Content="Edit" Classes="modern" Height="28"
-                            Padding="10,0" FontSize="12" Click="EditTodosClicked" AutomationProperties.Name="Edit todo actions"/>
+
                 </Grid>
                 <ScrollViewer x:Name="TodoScrollViewer" Grid.Row="1" ClipToBounds="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>

@@ -10,7 +10,7 @@ using Avalonia.VisualTree;
 
 namespace StopwatchOverlay.Desktop.Controls;
 
-/// <summary>A todo checkbox whose user input requires an uninterrupted one-second hold.</summary>
+/// <summary>Hold for completion; a short double-click requests an independent progress toggle.</summary>
 public class HoldToCompleteCheckBox : CheckBox
 {
     public static readonly StyledProperty<double> HoldProgressProperty =
@@ -23,6 +23,9 @@ public class HoldToCompleteCheckBox : CheckBox
     private IPointer? _pointer;
     private bool _spaceDown;
     private bool _allowClick;
+    private bool _doubleClickPress;
+
+    public event EventHandler? ProgressToggleRequested;
 
     public HoldToCompleteCheckBox()
     {
@@ -54,6 +57,7 @@ public class HoldToCompleteCheckBox : CheckBox
         _pointer = e.Pointer;
         _pointer.Capture(this);
         PseudoClasses.Set(":pressed", true);
+        _doubleClickPress = e.ClickCount == 2 && IsChecked != true;
         BeginHold();
         e.Handled = true;
     }
@@ -63,8 +67,10 @@ public class HoldToCompleteCheckBox : CheckBox
         if (e.Pointer != _pointer || e.InitialPressMouseButton != MouseButton.Left) return;
         // The final input event may arrive before the next timer tick.
         if (new Rect(Bounds.Size).Contains(e.GetPosition(this))) UpdateHold();
+        bool toggleProgress = _doubleClickPress && IsHolding && IsChecked != true && CanHold() && new Rect(Bounds.Size).Contains(e.GetPosition(this));
         CancelHold();
         e.Handled = true;
+        if (toggleProgress) ProgressToggleRequested?.Invoke(this, EventArgs.Empty);
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -147,6 +153,7 @@ public class HoldToCompleteCheckBox : CheckBox
     {
         if (resetKeyboard) _spaceDown = false;
         IsHolding = false;
+        _doubleClickPress = false;
         _timer?.Stop();
         _elapsed.Reset();
         HoldProgress = 0;

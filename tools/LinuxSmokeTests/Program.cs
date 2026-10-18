@@ -15,7 +15,7 @@ using StopwatchOverlay.Desktop.Views;
 var checkDirectory = Path.Combine(Path.GetTempPath(), "stopwatch-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(checkDirectory);
 Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", checkDirectory);
-if (args.Contains("--todo-editing-only")) { TodoEditingChecks.Run(checkDirectory); Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editing and due times"); return; }
+if (args.Contains("--todo-editing-only")) { TodoEditingChecks.Run(checkDirectory); Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editing and due times"); Environment.Exit(0); }
 var structuredVault=Path.Combine(checkDirectory,"structured");
 var structuredText="Installed and restarted.\n\n- **Edit** reveals Link/Delete; **Done** hides them.\n- **Delete** asks for confirmation.\n\nTests passed. See [documentation](https://example.com/docs).";
 var structuredTime=new DateTime(2026,10,15,10,0,0);
@@ -58,12 +58,14 @@ fallbackStartup.SetEnabled(true);
 if(!fallbackStartup.IsEnabled() || !File.ReadAllText(startupFile).Contains("%%name"))throw new Exception("Fallback startup executable was not safely quoted.");
 fallbackStartup.SetEnabled(false);
 TodoOrganizationChecks.Run(checkDirectory);
+TodoProgressChecks.Core(checkDirectory);
 TodoEditingChecks.Run(checkDirectory);
 TodoTelegramChecks.Run(checkDirectory);
 TodoDeletionChecks.Run(checkDirectory);
 AppBuilder.Configure<App>().UsePlatformDetect().With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } }).WithInterFont().SetupWithoutStarting();
 TodoEditorUiChecks.Run(checkDirectory);
-if (args.Contains("--todo-ui-only")) { Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editor and deadline UI"); return; }
+TodoProgressChecks.Ui(checkDirectory);
+if (args.Contains("--todo-ui-only")) { Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editor and deadline UI"); Environment.Exit(0); }
 var formattedView=TodoRichText.Create(structuredText,false);
 var formattedRuns=formattedView.Inlines!.OfType<Avalonia.Controls.Documents.Run>().ToArray();
 if(!formattedRuns.Any(run=>run.Text=="Edit" && run.FontWeight==FontWeight.Bold) ||
@@ -220,27 +222,21 @@ sortSelector.SelectedItem="Priority";Dispatcher.UIThread.RunJobs();
 sortSelector.SelectedItem="Manual";Dispatcher.UIThread.RunJobs();
 if(!todoRows.Children.OfType<Grid>().Select(row=>((NoteEntry)row.Tag!).Timestamp).SequenceEqual(expectedManual))throw new Exception("Switching sorts lost manual order.");
 sortSelector.SelectedItem="Priority";Dispatcher.UIThread.RunJobs();
-var editButton=todoWindow.FindControl<Button>("EditTodosButton") ?? throw new Exception("Todo Edit mode is missing.");
-if(todoWindow.FindControl<StackPanel>("TodoRows")!.GetVisualDescendants().OfType<Button>().Any(button=>button.Content is string && button.IsEffectivelyVisible))
-    throw new Exception("Task actions are visible outside Edit mode.");
-editButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-Dispatcher.UIThread.RunJobs();
-if(!todoRows.GetVisualDescendants().OfType<Button>().Any(button=>button.Content?.ToString()=="Delete" && button.IsEffectivelyVisible))
-    throw new Exception("Delete controls did not appear in Edit mode.");
-// Opening Delete must not change a file until its task-specific confirmation is accepted.
-var firstDelete=todoRows.GetVisualDescendants().OfType<Button>().First(button=>button.Content?.ToString()=="Delete");
+if(todoWindow.FindControl<Button>("EditTodosButton")!=null)throw new Exception("Inline Edit mode remains instead of right-click task actions.");
+if(todoRows.GetVisualDescendants().OfType<Button>().Any(button=>button.Content is string && button.IsEffectivelyVisible))
+    throw new Exception("Task actions are visible inline.");
+var contextRow=todoRows.Children.OfType<Grid>().First();
+var taskMenu=contextRow.ContextMenu ?? throw new Exception("Task context menu is missing.");
+taskMenu.Open(contextRow);Dispatcher.UIThread.RunJobs();
+var firstDelete=taskMenu.Items.OfType<MenuItem>().Single(item=>item.Header?.ToString()=="Delete");
 var beforeCancel=File.ReadAllText(todoPath);
-firstDelete.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+firstDelete.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
 Dispatcher.UIThread.RunJobs();
 var confirmation=(Window?)todoType.GetField("_deleteDialog",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(todoWindow);
-if(confirmation==null || File.ReadAllText(todoPath)!=beforeCancel)throw new Exception("Delete did not wait for confirmation.");
+if(confirmation==null || File.ReadAllText(todoPath)!=beforeCancel)throw new Exception("Context-menu Delete did not wait for confirmation.");
 confirmation.GetVisualDescendants().OfType<Button>().First(button=>button.Content?.ToString()=="Cancel").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 Dispatcher.UIThread.RunJobs();
-if(File.ReadAllText(todoPath)!=beforeCancel)throw new Exception("Cancelling confirmation changed the todo file.");
-editButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-Dispatcher.UIThread.RunJobs();
-if(todoRows.GetVisualDescendants().OfType<Button>().Any(button=>button.Content is string && button.IsEffectivelyVisible))
-    throw new Exception("Done did not hide task actions.");
+if(File.ReadAllText(todoPath)!=beforeCancel)throw new Exception("Cancelling context-menu deletion changed the todo file.");
 
 var checkbox = todoRows.GetVisualDescendants().OfType<CheckBox>().First();
 checkbox.IsChecked = true;
@@ -525,7 +521,7 @@ var portalType = typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.Platform
 var trigger = portalType.GetMethod("FormatTrigger", BindingFlags.Static | BindingFlags.NonPublic)!;
 if ((string?)trigger.Invoke(null, new object[] { Shortcut.MOD_WIN, (uint)0x71 }) != "LOGO+F2") throw new Exception("Portal leader trigger is incorrect.");
 if ((string?)trigger.Invoke(null, new object[] { Shortcut.MOD_WIN | Shortcut.MOD_SHIFT, (uint)0x76 }) != "SHIFT+LOGO+F7") throw new Exception("Portal direct trigger is incorrect.");
-Console.WriteLine("PASS: Four priorities, persistent Priority/Manual modes, keyboard and pointer reordering, outside-drop rejection, and one-second hold completion verified; Native always-on-top survives hide/show and window switching without stealing focus; F3→O hides/restores expanded todos and collapsed logo; F3→Space reveals hidden todos; Hover/scroll inline text remains visible before the queued layout pass and across width changes; Linux login startup enable/disable, system-state checkbox, failed registration rollback, proxy preservation and disabled entries verified; Structured todos preserve paragraphs, lists, bold and links through storage, completion, deletion, native rendering and Telegram edits; Edit/Done hides actions, delete confirmation cancellation and coordinated Telegram/Obsidian deletion are safe; shortcut menus focus and route N/Space; multi-monitor corners and DPI hold position; Telegram completion edits, restore, retries, old links, account/destination isolation and receipt recovery; completed filter persists and polling stays active when collapsed; floating todos start collapsed, toggle by Space, keep theme and save checkboxes safely; Ctrl+Enter saves all three note types, plain Enter inserts a newline, focused editor follows three themes; note letters, leader repeats, menu labels and timeout verified; settings persisted, HH:MM:SS applied, all palettes loaded, controller artwork switches, clock geometry and preview match, independent opacity layers apply, portal triggers formatted.");
+Console.WriteLine("PASS: Four priorities, persistent Priority/Manual modes, keyboard and pointer reordering, outside-drop rejection, and one-second hold completion verified; Native always-on-top survives hide/show and window switching without stealing focus; F3→O hides/restores expanded todos and collapsed logo; F3→Space reveals hidden todos; Hover/scroll inline text remains visible before the queued layout pass and across width changes; Linux login startup enable/disable, system-state checkbox, failed registration rollback, proxy preservation and disabled entries verified; Structured todos preserve paragraphs, lists, bold and links through storage, completion, deletion, native rendering and Telegram edits; Right-click menus expose task actions, delete confirmation cancellation and coordinated Telegram/Obsidian deletion are safe; shortcut menus focus and route N/Space; multi-monitor corners and DPI hold position; Telegram completion edits, restore, retries, old links, account/destination isolation and receipt recovery; completed filter persists and polling stays active when collapsed; floating todos start collapsed, toggle by Space, keep theme and save checkboxes safely; Ctrl+Enter saves all three note types, plain Enter inserts a newline, focused editor follows three themes; note letters, leader repeats, menu labels and timeout verified; settings persisted, HH:MM:SS applied, all palettes loaded, controller artwork switches, clock geometry and preview match, independent opacity layers apply, portal triggers formatted.");
 
 Directory.Delete(checkDirectory, recursive: true);
 Environment.Exit(0);

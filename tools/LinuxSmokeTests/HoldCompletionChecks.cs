@@ -35,6 +35,12 @@ internal static class HoldCompletionChecks
             box.Press(); Pump(1100); box.Release();
             Check(box.IsChecked == false, "Unchecking did not require and accept its own hold.");
 
+            int progressRequests = 0;
+            box.ProgressToggleRequested += (_, _) => progressRequests++;
+            box.Press(); box.Release(); box.Press(clickCount: 2); Pump(1100); box.Release();
+            Check(box.IsChecked == true && progressRequests == 0, "Long second press requested progress instead of completion.");
+            box.IsChecked = false;
+
             Cancelled(() => box.MoveOutside(), "pointer leaving");
             Cancelled(() => box.Wheel(), "scrolling");
             Cancelled(() => box.LoseCapture(), "pointer capture loss");
@@ -99,8 +105,8 @@ internal static class HoldCompletionChecks
         private readonly PointerPointProperties _down = new(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed);
         private readonly PointerPointProperties _up = new(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased);
         public void InvokeClick() => OnClick();
-        public void Press(bool handled = false) => OnPointerPressed(new PointerPressedEventArgs(this, _pointer, this,
-            new Point(10, 10), 0, _down, KeyModifiers.None, 1) { Handled = handled });
+        public void Press(bool handled = false, int clickCount = 1) => OnPointerPressed(new PointerPressedEventArgs(this, _pointer, this,
+            new Point(10, 10), 0, _down, KeyModifiers.None, clickCount) { Handled = handled });
         public void Release() => OnPointerReleased(new PointerReleasedEventArgs(this, _pointer, this,
             new Point(10, 10), 0, _up, KeyModifiers.None, MouseButton.Left));
         public void MoveOutside() => OnPointerMoved(new PointerEventArgs(InputElement.PointerMovedEvent, this,

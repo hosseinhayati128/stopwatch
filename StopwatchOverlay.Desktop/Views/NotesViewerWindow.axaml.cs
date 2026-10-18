@@ -19,6 +19,7 @@ public partial class NotesViewerWindow : Window
     private readonly DispatcherTimer _autoCloseTimer;
     private int _countdownSeconds = 30;
     private List<NoteEntry> _allEntries = new();
+    private TodoOrganization? _organization;
     private NoteType? _currentFilter = null;
 
     public NotesViewerWindow() : this(new AppSettings())
@@ -77,6 +78,7 @@ public partial class NotesViewerWindow : Window
         try
         {
             _allEntries = ObsidianNotesSync.LoadAllNotes(vaultFolder, _settings.NotesSubfolder).ToList();
+            _organization = TodoOrganizationStore.Load(vaultFolder, _settings.NotesSubfolder);
             RenderEntries();
         }
         catch (Exception ex)
@@ -241,8 +243,39 @@ public partial class NotesViewerWindow : Window
             contentText.TextDecorations = TextDecorations.Strikethrough;
         }
 
-        Grid.SetColumn(contentText, 2);
-        grid.Children.Add(contentText);
+        void ToggleProgress()
+        {
+            CrashLogger.RecordUiAction("Toggle note viewer todo progress");
+            var organization = TodoOrganizationStore.Load(_settings.ObsidianVaultFolder, _settings.NotesSubfolder);
+            var result = TodoOrganizationStore.SetInProgress(_settings.ObsidianVaultFolder, entry, !organization.IsInProgress(entry), _settings.NotesSubfolder);
+            if (!result.Success) { ToolTip.SetTip(border, result.Message ?? "Could not save In progress."); return; }
+            LoadNotes();
+        }
+        if (entry.Type == NoteType.Todo && !entry.IsCompleted)
+        {
+            ToolTip.SetTip(contentText, "Double-click to toggle In progress");
+            contentText.AddHandler(PointerPressedEvent, (_, e) =>
+            {
+                if (e.Handled || e.ClickCount != 2 || !e.GetCurrentPoint(contentText).Properties.IsLeftButtonPressed) return;
+                e.Handled = true; ToggleProgress();
+            }, RoutingStrategies.Bubble);
+        }
+        if (entry.Type == NoteType.Todo)
+        {
+            var content = new Grid { ColumnDefinitions = new ColumnDefinitions("*,20") };
+            content.Children.Add(contentText);
+            if (_organization?.IsInProgress(entry) == true)
+            {
+                var progressIcon = Controls.TodoProgressBadge.Create(ToggleProgress);
+                progressIcon.Margin = new Thickness(0, 1, 0, 0);
+                Grid.SetColumn(progressIcon, 1); content.Children.Add(progressIcon);
+            }
+            Grid.SetColumn(content, 2); grid.Children.Add(content);
+        }
+        else
+        {
+            Grid.SetColumn(contentText, 2); grid.Children.Add(contentText);
+        }
 
         border.Child = grid;
         return border;

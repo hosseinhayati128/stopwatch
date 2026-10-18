@@ -16,7 +16,7 @@ internal static class TodoEditorUiChecks
         var settings=new AppSettings {ObsidianVaultFolder=vault,ThemeMode=AppThemeCatalog.Pirate,TodoOverlayShowCompleted=true};
         var editor=new NoteEntryWindow(NoteType.Todo,settings);editor.Show();Pump();
         Check(editor.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked!=true && !editor.FindControl<StackPanel>("DueFields")!.IsVisible,"Due time is not optional by default.");
-        editor.FindControl<TextBox>("NoteInputBox")!.Text="Deadline **task**\n\n- first";
+        editor.FindControl<TextBox>("NoteInputBox")!.Text="Deadline **task**\n\n- first [Reference](https://example.com)";
         editor.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked=true;
         editor.FindControl<DatePicker>("TodoDueDate")!.SelectedDate=DateTimeOffset.Now.Date;
         var due=DateTime.Now.AddHours(1);due=new DateTime(due.Year,due.Month,due.Day,due.Hour,due.Minute,0);
@@ -30,8 +30,23 @@ internal static class TodoEditorUiChecks
         var rows=overlay.FindControl<StackPanel>("TodoRows")!;
         Check(rows.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Name=="TodoDueLabel" && t.Text!.StartsWith("Due ·")),"Overlay has no due-time label.");
         var soon=rows.GetVisualDescendants().OfType<Border>().Single(b=>b.Name=="DeadlineSurface").Background;
-        overlay.FindControl<Button>("EditTodosButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
-        rows.GetVisualDescendants().OfType<Button>().Single(b=>b.Content?.ToString()=="Edit task").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+        Check(overlay.FindControl<Button>("EditTodosButton")==null,"Inline Edit/Done button remains.");
+        var targetRow=rows.Children.OfType<Grid>().Single();
+        var menu=targetRow.ContextMenu ?? throw new Exception("Task right-click menu is missing.");
+        var taskCheck=targetRow.GetVisualDescendants().OfType<StopwatchOverlay.Desktop.Controls.HoldToCompleteCheckBox>().Single();
+        var text=(TextBlock)taskCheck.Content!;
+        Check(text.ContextMenu!.Items.OfType<MenuItem>().Any(item=>item.Header?.ToString()=="Open Reference") && text.ContextMenu.Items.OfType<MenuItem>().Any(item=>item.Header?.ToString()=="Edit task"),"Task context actions replaced the formatted-text link actions.");
+        text.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent=Control.ContextRequestedEvent });Pump();
+        Check(text.ContextMenu.IsOpen,"Right-click/context request on task text did not open its actions.");
+        text.ContextMenu.Close();Pump();
+
+        Check(menu.Items.OfType<MenuItem>().Select(item=>item.Header?.ToString()).SequenceEqual(new[]{"Edit task","Delete"}),"Telegram-disabled context menu has incorrect actions.");
+        menu.Open(targetRow);Pump();
+        TodoOrganizationStore.SetSortMode(vault,"Manual");overlay.ReloadTodos();
+        Check(ReferenceEquals(targetRow,rows.Children.Single()),"Polling rebuilt a task with its context menu open.");
+        menu.Close();Pump();
+        targetRow=rows.Children.OfType<Grid>().Single();menu=targetRow.ContextMenu!;menu.Open(targetRow);Pump();
+        menu.Items.OfType<MenuItem>().Single(item=>item.Header?.ToString()=="Edit task").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));Pump();
         var editing=(NoteEntryWindow?)typeof(TodoOverlayWindow).GetField("_taskEditor",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(overlay);
         Check(editing!=null && editing.FindControl<TextBox>("NoteInputBox")!.Text==entry.Text && editing.FindControl<ComboBox>("TodoPriorityCombo")!.SelectedIndex==1 && editing!.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked==true,"Edit task did not open the prefilled editor.");
         editing!.FindControl<TextBox>("NoteInputBox")!.Text="Edited **task**\n\n- second";
@@ -52,6 +67,25 @@ internal static class TodoEditorUiChecks
         stale.FindControl<TextBox>("NoteInputBox")!.Text="Stale overwrite";Save(stale);
         Check(stale.IsVisible && stale.FindControl<TextBlock>("SaveError")!.IsVisible && ObsidianNotesSync.LoadAllNotes(vault).Single().Text=="Changed externally","Stale editor overwrote a changed task or hid its error.");
         stale.Close();
+        TelegramOutboxStore.SetCustomFilePath(Path.Combine(directory,"context-menu-outbox.json"));
+        settings.TelegramEnabled=true; // Empty token: no HTTP can run in this fixture.
+        var linkedOverlay=new TodoOverlayWindow(settings);linkedOverlay.Show();linkedOverlay.ToggleExpanded();Pump();
+        try
+        {
+            var linkedRows=linkedOverlay.FindControl<StackPanel>("TodoRows")!;
+            var linkedRow=linkedRows.Children.OfType<Grid>().Single();
+            Check(linkedRow.ContextMenu!.Items.OfType<MenuItem>().Any(item=>item.Header?.ToString()=="Link"),"Unlinked Telegram task has no Link action.");
+            var latest=ObsidianNotesSync.LoadAllNotes(vault).Single();
+            TelegramOutboxStore.MarkSent(NoteType.Todo,latest.Text,latest.Timestamp,42,"-100456",TelegramNotesSync.GetBotIdentity(settings),TelegramNotesSync.GetTodoVaultKey(settings));
+            linkedOverlay.ReloadTodos();Pump();
+            linkedRow=linkedRows.Children.OfType<Grid>().Single();var linkedMenu=linkedRow.ContextMenu!;
+            Check(linkedMenu.Items.OfType<MenuItem>().Any(item=>item.Header?.ToString()=="Relink"),"Linked Telegram task has no Relink action.");
+            linkedMenu.Open(linkedRow);Pump();
+            linkedMenu.Items.OfType<MenuItem>().Single(item=>item.Header?.ToString()=="Relink").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));Pump();
+            Check(linkedOverlay.FindControl<Border>("TelegramLinkPanel")!.IsVisible,"Context-menu Relink did not open the link editor.");
+        }
+        finally {linkedOverlay.Close();TelegramOutboxStore.SetCustomFilePath(null);}
+
     }
     static void Save(NoteEntryWindow editor) {editor.FindControl<TextBox>("NoteInputBox")!.RaiseEvent(new KeyEventArgs {RoutedEvent=InputElement.KeyDownEvent,Key=Key.Enter,KeyModifiers=KeyModifiers.Control});Dispatcher.UIThread.RunJobs();}
     static void Pump() {using var cancel=new CancellationTokenSource();DispatcherTimer.RunOnce(cancel.Cancel,TimeSpan.FromMilliseconds(180));Dispatcher.UIThread.MainLoop(cancel.Token);Dispatcher.UIThread.RunJobs();}

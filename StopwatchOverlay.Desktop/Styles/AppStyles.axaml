@@ -76,6 +76,14 @@
         <Setter Property="Foreground" Value="{DynamicResource OnActionTextBrush}"/>
     </Style>
 
+    <Style Selector="Border.todoInProgress">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Border.todoInProgress Path">
+        <Setter Property="Stroke" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+
     <!-- TextBlock Helpers -->
     <Style Selector="TextBlock.heading">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayHeadingFontFamily}"/>

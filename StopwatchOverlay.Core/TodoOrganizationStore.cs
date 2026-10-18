@@ -12,19 +12,22 @@ public sealed class TodoOrganization
     private readonly Dictionary<string, int> positions;
     private readonly Dictionary<string, DateTime> dueTimes;
     private readonly Dictionary<string, string> aliases;
+    private readonly HashSet<string> inProgress;
     public string SortMode { get; }
 
-    internal TodoOrganization(string sortMode, Dictionary<string, int> priorities, List<string> manualOrder, Dictionary<string, DateTime>? dueTimes = null, Dictionary<string, string>? aliases = null)
+    internal TodoOrganization(string sortMode, Dictionary<string, int> priorities, List<string> manualOrder, Dictionary<string, DateTime>? dueTimes = null, Dictionary<string, string>? aliases = null, HashSet<string>? inProgress = null)
     {
         SortMode = sortMode;
         this.priorities = priorities;
         this.dueTimes = dueTimes ?? new();
         this.aliases = aliases ?? new();
+        this.inProgress = inProgress ?? new();
         positions = manualOrder.Select((key, index) => (key, index)).ToDictionary(p => p.key, p => p.index);
     }
 
     public int GetPriority(NoteEntry entry) => priorities.GetValueOrDefault(ResolveKey(TodoOrganizationStore.GetKey(entry)), 3);
     public DateTime? GetDueAt(NoteEntry entry) => dueTimes.TryGetValue(ResolveKey(TodoOrganizationStore.GetKey(entry)), out var due) ? due : null;
+    public bool IsInProgress(NoteEntry entry) => entry.Type == NoteType.Todo && !entry.IsCompleted && inProgress.Contains(ResolveKey(TodoOrganizationStore.GetKey(entry)));
     public string ResolveKey(string key) => aliases.GetValueOrDefault(key, key);
 
     public NoteEntry[] Arrange(IEnumerable<NoteEntry> entries)
@@ -53,6 +56,7 @@ public static class TodoOrganizationStore
         public List<string> ManualOrder { get; set; } = new();
         public Dictionary<string, DateTime> DueTimes { get; set; } = new();
         public Dictionary<string, string> Aliases { get; set; } = new();
+        public HashSet<string> InProgress { get; set; } = new();
     }
 
     public static TodoOrganization Load(string vaultFolder, string? notesSubfolder = null)
@@ -62,7 +66,7 @@ public static class TodoOrganizationStore
             try
             {
                 var preferences = Read(GetPath(vaultFolder, notesSubfolder));
-                return new(preferences.SortMode, preferences.Priorities, preferences.ManualOrder, preferences.DueTimes, preferences.Aliases);
+                return new(preferences.SortMode, preferences.Priorities, preferences.ManualOrder, preferences.DueTimes, preferences.Aliases, preferences.InProgress);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
             {
@@ -85,6 +89,20 @@ public static class TodoOrganizationStore
         if (entry.Type != NoteType.Todo || priority is < 1 or > 4)
             return new(false, "", "Choose a todo priority from P1 to P4.");
         return Update(vaultFolder, notesSubfolder, preferences => preferences.Priorities[preferences.Aliases.GetValueOrDefault(GetKey(entry), GetKey(entry))] = priority);
+    }
+
+    public static NoteSyncResult SetInProgress(string vaultFolder, NoteEntry entry, bool inProgress, string? notesSubfolder = null)
+    {
+        if (entry.Type != NoteType.Todo || (inProgress && entry.IsCompleted))
+            return new(false, "", "Only unfinished todos can be marked in progress.");
+        var valid = ObsidianNotesSync.ValidateTodoForDeletion(vaultFolder, entry, notesSubfolder);
+        if (!valid.Success) return valid;
+        return Update(vaultFolder, notesSubfolder, preferences =>
+        {
+            string key = preferences.Aliases.GetValueOrDefault(GetKey(entry), GetKey(entry));
+            if (inProgress) preferences.InProgress.Add(key);
+            else preferences.InProgress.Remove(key);
+        }, () => ObsidianNotesSync.ValidateTodoForDeletion(vaultFolder, entry, notesSubfolder));
     }
 
     public static NoteSyncResult SetSortMode(string vaultFolder, string sortMode, string? notesSubfolder = null)
@@ -133,6 +151,9 @@ public static class TodoOrganizationStore
                     (preferences.Aliases.ContainsKey(candidate) || preferences.Aliases.Values.Contains(candidate)))
                     throw new IdentityConflictException("This title and time belong to another task's edit history. Choose a different title to preserve Telegram links.");
             var previousKeys = preferences.Aliases.Where(pair => pair.Value == canonical).Select(pair => pair.Key).Append(canonical).Append(oldKey).Append(GetKey(entry with { Text = TelegramNotesSync.NormalizeTodoText(entry.Text) })).ToArray();
+            bool wasInProgress = preferences.InProgress.Contains(canonical);
+            foreach (string key in previousKeys) preferences.InProgress.Remove(key);
+            if (wasInProgress) preferences.InProgress.Add(newKey);
             preferences.Aliases.Remove(newKey);
             foreach (string key in previousKeys)
                 if (key != newKey) preferences.Aliases[key] = newKey;
@@ -167,7 +188,8 @@ public static class TodoOrganizationStore
             !root.TryGetProperty("SortMode", out _) || !root.TryGetProperty("Priorities", out _) || !root.TryGetProperty("ManualOrder", out _))
             throw new JsonException("Unrecognized todo organization metadata.");
         var result = JsonSerializer.Deserialize<Preferences>(json) ?? throw new JsonException("Missing metadata.");
-        if (result.SortMode is not ("Priority" or "Manual") || result.Priorities == null || result.ManualOrder == null || result.DueTimes == null || result.Aliases == null ||
+        if (result.SortMode is not ("Priority" or "Manual") || result.Priorities == null || result.ManualOrder == null || result.DueTimes == null || result.Aliases == null || result.InProgress == null ||
+            result.InProgress.Any(string.IsNullOrWhiteSpace) ||
             result.Aliases.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value) || pair.Key == pair.Value || result.Aliases.ContainsKey(pair.Value)) ||
             result.DueTimes.Any(pair => string.IsNullOrWhiteSpace(pair.Key)) ||
             result.Priorities.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value is < 1 or > 4) ||
