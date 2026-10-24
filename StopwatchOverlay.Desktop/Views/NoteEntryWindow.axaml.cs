@@ -28,6 +28,7 @@ public partial class NoteEntryWindow : Window
     private bool _closed;
     private readonly HabiticaSubtaskEditor _subtaskEditor = new();
     private bool _savedWithWarning;
+    private Func<string, NoteSyncResult>? _saveDetail;
 
     public NoteEntryWindow() : this(NoteType.Note, new AppSettings())
     {
@@ -36,6 +37,7 @@ public partial class NoteEntryWindow : Window
     public NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry = null)
     {
         InitializeComponent();
+        AutoTextDirection.Attach(NoteInputBox);
         OverlayScreenConstraint.Attach(this);
         _noteType = noteType;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -85,6 +87,16 @@ public partial class NoteEntryWindow : Window
         // Handle shortcuts before the multiline TextBox consumes Enter.
         AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => NoteInputBox.Focus();
+    }
+
+    public static NoteEntryWindow ForTodoDetail(AppSettings settings, string title, string text, Func<string, NoteSyncResult> save)
+    {
+        var editor = new NoteEntryWindow(NoteType.Note, settings);
+        editor._saveDetail = save;
+        editor.Title = editor.HeadingText.Text = title;
+        editor.NoteInputBox.Text = text;
+        editor.NoteInputBox.Watermark = "Enter the details…";
+        return editor;
     }
 
     private void ConfigureMode(NoteType noteType)
@@ -181,6 +193,16 @@ public partial class NoteEntryWindow : Window
         SaveError.IsVisible = false;
         try
         {
+            if (_saveDetail != null)
+            {
+                if (_openedVault != _settings.ObsidianVaultFolder || _openedSubfolder != _settings.NotesSubfolder ||
+                    _openedHabiticaAccount != _settings.HabiticaUserId || _openedHabiticaClient != _settings.HabiticaClientId ||
+                    _openedHabiticaEnabled != _settings.HabiticaEnabled)
+                { ShowSaveError("Your sync account or notes folder changed. Reopen the task and try again."); return; }
+                var result = _saveDetail(text);
+                if (!result.Success) { ShowSaveError(result.Message ?? "Could not save the detail."); return; }
+                Close(); return;
+            }
             if (_isEditing && (_openedVault != _settings.ObsidianVaultFolder || _openedSubfolder != _settings.NotesSubfolder))
             { ShowSaveError("The notes folder changed. Close this editor and open the task again."); return; }
             if (_isEditing && (_openedHabiticaAccount != _settings.HabiticaUserId || _openedHabiticaClient != _settings.HabiticaClientId || _openedHabiticaEnabled != _settings.HabiticaEnabled))

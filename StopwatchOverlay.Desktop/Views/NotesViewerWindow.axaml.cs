@@ -252,6 +252,7 @@ public partial class NotesViewerWindow : Window
         var contentText = entry.Type == NoteType.Todo
             ? Controls.TodoRichText.Create(entry.Text, entry.IsCompleted)
             : new TextBlock { Text = entry.Text, TextWrapping = TextWrapping.Wrap };
+        Controls.AutoTextDirection.Apply(contentText, entry.Type == NoteType.Todo ? string.Concat(FormattedTodoText.Parse(entry.Text).Select(part => part.Text)) : entry.Text);
         contentText.FontSize = 13;
         contentText.VerticalAlignment = VerticalAlignment.Top;
         string textBrushKey = entry.IsCompleted ? "SecondaryTextBrush" : "PrimaryTextBrush";

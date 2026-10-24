@@ -136,7 +136,7 @@ public static partial class TelegramNotesSync
     {
         try
         {
-            string safe = FormattedTodoText.ToTelegramHtml(entry.Text.Trim());
+            string safe = FormattedTodoText.ToTelegramHtml(entry.Text.Trim(), strikeCompletedSubtasks: !entry.IsCompleted);
             string text = $"☑️ <b>Todo</b> ({entry.Timestamp:HH:mm})\n" + (entry.IsCompleted ? $"<s>{safe}</s>" : safe);
             if (dueAt.HasValue) text += $"\n<b>Due:</b> {dueAt:yyyy-MM-dd HH:mm}";
             var payload = new Dictionary<string, object?> { ["chat_id"] = record.ChatId, ["message_id"] = record.MessageId, ["text"] = text, ["parse_mode"] = "HTML" };

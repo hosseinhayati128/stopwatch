@@ -57,12 +57,14 @@ var fallbackStartup=new StopwatchOverlay.Platform.Linux.LinuxStartupService(star
 fallbackStartup.SetEnabled(true);
 if(!fallbackStartup.IsEnabled() || !File.ReadAllText(startupFile).Contains("%%name"))throw new Exception("Fallback startup executable was not safely quoted.");
 fallbackStartup.SetEnabled(false);
+TodoDetailsChecks.Run(checkDirectory);
 TodoOrganizationChecks.Run(checkDirectory);
 TodoProgressChecks.Core(checkDirectory);
 TodoEditingChecks.Run(checkDirectory);
 TodoTelegramChecks.Run(checkDirectory);
 TodoDeletionChecks.Run(checkDirectory);
 AppBuilder.Configure<App>().UsePlatformDetect().With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } }).WithInterFont().SetupWithoutStarting();
+TodoDetailsChecks.Ui(checkDirectory);
 TodoEditorUiChecks.Run(checkDirectory);
 TodoProgressChecks.Ui(checkDirectory);
 if (args.Contains("--todo-ui-only")) { Directory.Delete(checkDirectory, true); Console.WriteLine("PASS todo editor and deadline UI"); Environment.Exit(0); }

@@ -43,7 +43,16 @@ public static class FormattedTodoText
         return parts;
     }
 
-    public static string ToTelegramHtml(string markdown) => string.Concat(Parse(markdown).Select(part =>
+    public static string ToTelegramHtml(string markdown, bool strikeCompletedSubtasks = true)
+    {
+        var document = TodoDetails.Parse(markdown);
+        if (document.Items.Count == 0) return InlineHtml(markdown);
+        return InlineHtml(document.Body) + string.Concat(document.Items.Select(item => "\n\n" +
+            (item.Kind == TodoDetailKind.Note ? InlineHtml(item.Text) :
+                (item.IsCompleted ? "☑ " + (strikeCompletedSubtasks ? "<s>" + InlineHtml(item.Text) + "</s>" : InlineHtml(item.Text)) : "☐ " + InlineHtml(item.Text)))));
+    }
+
+    private static string InlineHtml(string markdown) => string.Concat(Parse(markdown).Select(part =>
     {
         string value = WebUtility.HtmlEncode(part.Text);
         if (part.Code) value = "<code>" + value + "</code>";

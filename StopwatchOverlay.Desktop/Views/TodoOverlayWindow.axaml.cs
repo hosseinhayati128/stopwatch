@@ -217,7 +217,7 @@ public partial class TodoOverlayWindow : Window
             var visible = entries.Where(entry => _settings.TodoOverlayShowCompleted || !entry.IsCompleted).ToArray();
             var taskDetails = new Dictionary<NoteEntry, HabiticaTaskDetails>();
             foreach (var entry in entries) taskDetails[entry] = HabiticaIntegration.Current.GetDetails(_settings, entry);
-            string snapshot = (_organization?.SortMode ?? "Priority") + "|" + configured + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
+            string snapshot = _settings.ObsidianVaultFolder + "|" + _settings.NotesSubfolder + "|" + DetailAccount() + "|" + (_organization?.SortMode ?? "Priority") + "|" + configured + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
                 string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{_organization?.GetPriority(entry) ?? 3}|{_organization?.IsInProgress(entry)}|{_organization?.GetDueAt(entry):O}|{TodoDeadlines.GetState(entry, _organization?.GetDueAt(entry), DateTime.Now)}|{entry.Text}"));
             snapshot += System.Text.Json.JsonSerializer.Serialize(taskDetails.Values.Select(details => details.Children));
             if (_snapshot == snapshot) return;
@@ -231,7 +231,7 @@ public partial class TodoOverlayWindow : Window
                 : entries.Length == 0 ? "No todos yet. Add your first task below." : "All done. Turn on Show completed to see finished tasks.";
             foreach (var entry in visible)
             {
-                var text = Controls.TodoRichText.Create(entry.Text, entry.IsCompleted);
+                var text = Controls.TodoRichText.Create(TodoDetails.Parse(entry.Text).Body, entry.IsCompleted);
                 text.MaxWidth = _organization?.SortMode == "Manual" ? 210 : 230;
                 text.Margin = new Thickness(7, 0, 0, 0);
                 var row = new HoldToCompleteCheckBox { Content = text, IsChecked = entry.IsCompleted, IsEnabled = !_deleteInProgress };
@@ -251,7 +251,7 @@ public partial class TodoOverlayWindow : Window
                     _snapshot = null;
                     Dispatcher.UIThread.Post(() => { ReloadTodos(); _nextSyncUtc = DateTime.MinValue; _ = SynchronizeTelegramAsync(); });
                 };
-                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,20"), Margin = new Thickness(0, 0, 0, 6) };
+                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,20"), Margin = new Thickness(0, 0, 0, 6) };
                 DateTime? dueAt = _organization?.GetDueAt(entry);
                 var dueState = TodoDeadlines.GetState(entry, dueAt, DateTime.Now);
                 if (dueState is TodoDueState.Soon or TodoDueState.Overdue)
@@ -262,7 +262,7 @@ public partial class TodoOverlayWindow : Window
                         Background = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#30F08080" : "#20C42635") : (dark ? "#32D5972C" : "#25B87816"))),
                         BorderBrush = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#806E4343" : "#607E3030") : (dark ? "#807D622A" : "#60865F24"))),
                         BorderThickness = new Thickness(1), Margin = new Thickness(-4, 0, -4, 0), IsHitTestVisible = false };
-                    Grid.SetRowSpan(deadlineSurface, 4); Grid.SetColumnSpan(deadlineSurface, 4);
+                    Grid.SetRowSpan(deadlineSurface, 5); Grid.SetColumnSpan(deadlineSurface, 4);
                     container.Children.Add(deadlineSurface);
                 }
                 if (dueAt.HasValue)
@@ -299,26 +299,7 @@ public partial class TodoOverlayWindow : Window
                 row.ContextMenu = CreateTaskContextMenu(entry, Linked(entry));
                 text.ContextMenu = CreateTaskContextMenu(entry, Linked(entry), text.ContextMenu);
                 container.Children.Add(row);
-                var childRows = new StackPanel { Margin = new Thickness(18, 0, 0, 5), Spacing = 2 };
-                foreach (var child in taskDetails[entry].Children)
-                {
-                    var childCheck = new CheckBox { IsChecked = child.Completed, IsEnabled = !_deleteInProgress,
-                        Content = new TextBlock { Text = child.Text, TextWrapping = TextWrapping.Wrap, MaxWidth = 210 } };
-                    AutomationProperties.SetName(childCheck, "Subtask: " + child.Text);
-                    childCheck.IsCheckedChanged += (_, _) =>
-                    {
-                        var current = HabiticaIntegration.Current.GetDetails(_settings, entry);
-                        var changed = current.Children.Select(item => item.Id == child.Id ? item with { Completed = childCheck.IsChecked == true } : item).ToArray();
-                        var result = HabiticaIntegration.Current.SetChildren(_settings, entry, changed);
-                        ErrorMessage.IsVisible = !result.LocalResult.Success || result.SyncWarning != null;
-                        if (!result.LocalResult.Success) ShowError(result.LocalResult.Message ?? "Could not save the subtask.");
-                        else if (result.SyncWarning != null) ShowError(result.SyncWarning);
-                        _snapshot = null;
-                        Dispatcher.UIThread.Post(ReloadTodos);
-                    };
-                    childRows.Children.Add(childCheck);
-                }
-                Grid.SetColumn(childRows, 2); Grid.SetRow(childRows, 3); container.Children.Add(childRows);
+                AddDetailControls(container, entry, TodoDetails.Parse(entry.Text), taskDetails[entry].Children);
                 TodoRows.Children.Add(container);
             }
             TodoScrollViewer.Offset = scrollOffset;
@@ -488,6 +469,23 @@ public partial class TodoOverlayWindow : Window
         AutomationProperties.SetName(edit, "Edit todo " + entry.Text);
         edit.Click += async (_, e) => { e.Handled = true; menu.Close(); await EditTaskAsync(entry); };
         menu.Items.Add(edit);
+        string detailVault = _settings.ObsidianVaultFolder;
+        string? detailSubfolder = _settings.NotesSubfolder;
+        string detailAccount = DetailAccount();
+        var add = new MenuItem { Header = "Add" };
+        foreach (var kind in new[] { TodoDetailKind.Note, TodoDetailKind.Subtask })
+        {
+            var item = new MenuItem { Header = kind.ToString() };
+            item.Click += async (_, e) =>
+            {
+                e.Handled = true; menu.Close();
+                if (detailVault != _settings.ObsidianVaultFolder || detailSubfolder != _settings.NotesSubfolder || detailAccount != DetailAccount())
+                { DetailConflict(); return; }
+                await EditDetailAsync(entry, kind);
+            };
+            add.Items.Add(item);
+        }
+        menu.Items.Add(add);
         if (_settings.TelegramEnabled)
         {
             var link = new MenuItem { Header = linked ? "Relink" : "Link" };

@@ -37,6 +37,7 @@ public sealed class HabiticaSubtaskEditor : StackPanel
         AutomationProperties.SetName(check, "Subtask completed");
         row.Children.Add(check);
         var input = new TextBox { Text = child.Text, Watermark = "Subtask", Margin = new Thickness(5, 0) };
+        AutoTextDirection.Attach(input);
         AutomationProperties.SetName(input, "Subtask text");
         Grid.SetColumn(input, 1); row.Children.Add(input);
         void AddButton(string title, int column, string name, Action action)

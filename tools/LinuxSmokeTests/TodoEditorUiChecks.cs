@@ -40,7 +40,7 @@ internal static class TodoEditorUiChecks
         Check(text.ContextMenu.IsOpen,"Right-click/context request on task text did not open its actions.");
         text.ContextMenu.Close();Pump();
 
-        Check(menu.Items.OfType<MenuItem>().Select(item=>item.Header?.ToString()).SequenceEqual(new[]{"Edit task","Delete"}),"Telegram-disabled context menu has incorrect actions.");
+        Check(menu.Items.OfType<MenuItem>().Select(item=>item.Header?.ToString()).SequenceEqual(new[]{"Edit task","Add","Delete"}),"Telegram-disabled context menu has incorrect actions.");
         menu.Open(targetRow);Pump();
         TodoOrganizationStore.SetSortMode(vault,"Manual");overlay.ReloadTodos();
         Check(ReferenceEquals(targetRow,rows.Children.Single()),"Polling rebuilt a task with its context menu open.");

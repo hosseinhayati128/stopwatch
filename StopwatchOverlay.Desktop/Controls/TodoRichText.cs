@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Input;
@@ -37,6 +38,7 @@ public static class TodoRichText
             text.Inlines!.Add(run);
             offset += part.Text.Length;
         }
+        AutoTextDirection.Apply(text, string.Concat(text.Inlines!.OfType<Run>().Select(run => run.Text)));
         if (links.Count > 0)
         {
             text.ContextMenu = menu;
@@ -76,7 +78,19 @@ public static class TodoRichText
                 }
                 _textRuns = runs;
             }
-            return base.CreateTextLayout(text);
+            if (_textRuns == null) return base.CreateTextLayout(text);
+
+            // TextBlock 11.2.4 temporarily forces Left alignment while measure is invalid.
+            // Pointer hit testing can request that interim layout, making RTL tasks jump.
+            // Keep the configured alignment and the last constraint through that interval.
+            var defaults = new GenericTextRunProperties(
+                new Typeface(FontFamily, FontStyle, FontWeight, FontStretch),
+                FontFeatures, FontSize, TextDecorations, Foreground);
+            var paragraph = new GenericTextParagraphProperties(FlowDirection, TextAlignment, true, false,
+                defaults, TextWrapping, LineHeight, 0, LetterSpacing);
+            return new TextLayout(new InlinesTextSource(_textRuns), paragraph, TextTrimming,
+                double.IsNaN(_constraint.Width) ? 0 : _constraint.Width,
+                double.IsNaN(_constraint.Height) ? 0 : _constraint.Height, MaxLines);
         }
     }
 
