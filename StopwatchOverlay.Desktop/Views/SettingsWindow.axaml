@@ -134,6 +134,7 @@
                     <ListBoxItem Content="Application" Tag="Application"/>
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian"/>
                     <ListBoxItem Content="Telegram" Tag="Telegram"/>
+                    <ListBoxItem Content="Habitica" Tag="Habitica"/>
                     <ListBoxItem Content="ActivityWatch" Tag="ActivityWatch"/>
                     <ListBoxItem Content="Internet &amp; Network" Tag="Internet"/>
                 </ListBox>
@@ -516,6 +517,8 @@
                             </StackPanel>
                         </Border>
                     </StackPanel>
+
+                    <controls:HabiticaSettingsPanel x:Name="HabiticaPanel" IsVisible="False"/>
 
                     <!-- Panel 7: Obsidian / Markdown -->
                     <StackPanel x:Name="ObsidianPanel" Spacing="6" IsVisible="False">

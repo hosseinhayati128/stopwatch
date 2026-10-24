@@ -34,6 +34,7 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 📝 **Quick capture & notes (Win+F3)** — Quickly capture Todos, Notes, and Reminders from any application; automatically synced to your Obsidian vault grouped by date
 - 📊 **Obsidian Analytics Dashboard, ActivityWatch Sync & Internet Monitoring** — Automated activity logging with ActivityWatch, background internet connection & Wi-Fi speed monitoring, and an interactive DataviewJS dashboard for Obsidian featuring dual synchronized timelines, project drill-downs, and per-project distraction rules (see [obsidian/](obsidian/))
 - ✈️ **Telegram note integration** — Forward quick notes, todos, and reminders directly to distinct forum topics in your Telegram supergroup via Telegram Bot API
+- ⚔️ **Optional Habitica sync** — Send todos, reminders and structured subtasks to Habitica independently of Telegram, including simultaneous Windows/Ubuntu clients with separate local vaults; preserve pending changes and retry rate limits automatically ([setup](docs/habitica.md)).
 - 📋 **Floating notes viewer** — Floating popup (Win+F3 → 4) with tabs for All, Todos, Notes, and Reminders, auto-close countdown, and keyboard dismissal
 - 🔤 **Custom typography & UI scaling** — Granular text scaling (75%–175%), colors, and panel overrides via Settings → Fonts & colors, plus whole-page UI scaling (70%–125%)
 - 🧵 **Tiled background library** — Choose from nine bundled seamless patterns or import a JPG, PNG, or BMP; the selection, strength, and managed custom copy survive restarts

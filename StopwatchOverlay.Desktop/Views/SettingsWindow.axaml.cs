@@ -59,6 +59,7 @@ public partial class SettingsWindow : Window
 
         LoadControls();
         WireChanges();
+        HabiticaPanel.Bind(_settings, () => SettingsChanged?.Invoke(SettingsChangeKind.None));
         UpdatePreviewSafely();
         TelegramOutboxStore.OutboxChanged += OnOutboxChanged;
     }
@@ -69,6 +70,7 @@ public partial class SettingsWindow : Window
             return;
 
         LoadControls();
+        HabiticaPanel.Reload();
         SchedulePreviewFromAppliedSettings();
     }
 
@@ -780,6 +782,7 @@ public partial class SettingsWindow : Window
         ApplicationPanel.IsVisible = tag == "Application";
         ObsidianPanel.IsVisible = tag == "Obsidian";
         TelegramPanel.IsVisible = tag == "Telegram";
+        HabiticaPanel.IsVisible = tag == "Habitica";
         ActivityWatchPanel.IsVisible = tag == "ActivityWatch";
         InternetPanel.IsVisible = tag == "Internet";
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);

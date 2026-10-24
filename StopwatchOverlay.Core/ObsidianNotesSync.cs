@@ -128,31 +128,45 @@ public static class ObsidianNotesSync
     public static NoteSyncResult UpdateTodoText(string vaultFolder, NoteEntry entry, string text, string? notesSubfolder = null, bool validateOnly = false)
         => ChangeTodo(vaultFolder, entry, entry.IsCompleted, notesSubfolder, validateOnly, text);
 
+    public static NoteSyncResult SetEntryCompleted(string vaultFolder, NoteEntry entry, bool completed, string? notesSubfolder = null)
+        => ChangeTask(vaultFolder, entry, completed, notesSubfolder);
+
+    public static NoteSyncResult DeleteEntry(string vaultFolder, NoteEntry entry, string? notesSubfolder = null)
+        => ChangeTask(vaultFolder, entry, null, notesSubfolder);
+
+    public static NoteSyncResult UpdateEntryText(string vaultFolder, NoteEntry entry, string text, string? notesSubfolder = null, bool validateOnly = false)
+        => ChangeTask(vaultFolder, entry, entry.IsCompleted, notesSubfolder, validateOnly, text);
+
     private static NoteSyncResult ChangeTodo(string vaultFolder, NoteEntry entry, bool? completed, string? notesSubfolder, bool validateOnly = false, string? replacementText = null)
+        => entry.Type == NoteType.Todo
+            ? ChangeTask(vaultFolder, entry, completed, notesSubfolder, validateOnly, replacementText)
+            : new(false, "", "Only todos can be changed with this operation.");
+
+    private static NoteSyncResult ChangeTask(string vaultFolder, NoteEntry entry, bool? completed, string? notesSubfolder, bool validateOnly = false, string? replacementText = null)
     {
         string folder = string.IsNullOrWhiteSpace(notesSubfolder) ? DefaultNotesFolder : notesSubfolder.Trim();
-        string path = Path.Combine(vaultFolder, folder, TodosFileName);
+        string path = Path.Combine(vaultFolder, folder, GetFileName(entry.Type));
         string? temporary = null;
         try
         {
-            if (entry.Type != NoteType.Todo || string.IsNullOrWhiteSpace(vaultFolder) || !File.Exists(path))
-                return new(false, path, "Todo file is unavailable. Check your notes folder in Settings.");
+            if (entry.Type is not (NoteType.Todo or NoteType.Reminder) || string.IsNullOrWhiteSpace(vaultFolder) || !File.Exists(path))
+                return new(false, path, "Task file is unavailable. Check your notes folder in Settings.");
             string original = File.ReadAllText(path, Encoding.UTF8);
-            var candidates = ReadTaskBlocks(original, NoteType.Todo)
+            var candidates = ReadTaskBlocks(original, entry.Type)
                 .Where(block => block.Entry.Timestamp == entry.Timestamp && block.Entry.Text == entry.Text)
                 .Select(block => (Index: block.CheckboxIndex, Completed: block.Entry.IsCompleted,
                     LineStart: block.Start, LineLength: block.Length)).ToList();
             if (candidates.Count != 1)
-                return new(false, path, candidates.Count == 0 ? "This todo changed. Refresh and try again." : "Identical todos share this time. Rename one in your notes file, then refresh.");
+                return new(false, path, candidates.Count == 0 ? "This task changed. Refresh and try again." : "Identical tasks share this time. Rename one in your notes file, then refresh.");
             var target = candidates[0];
             if (target.Completed != entry.IsCompleted)
-                return new(false, path, "This todo changed. Refresh and try again.");
+                return new(false, path, "This task changed. Refresh and try again.");
             if (replacementText != null)
             {
-                if (string.IsNullOrWhiteSpace(replacementText)) return new(false, path, "Todo text cannot be empty.");
-                if (ReadTaskBlocks(original, NoteType.Todo).Any(block => block.Start != target.LineStart &&
+                if (string.IsNullOrWhiteSpace(replacementText)) return new(false, path, "Task text cannot be empty.");
+                if (ReadTaskBlocks(original, entry.Type).Any(block => block.Start != target.LineStart &&
                     block.Entry.Timestamp == entry.Timestamp && TelegramNotesSync.NormalizeTodoText(block.Entry.Text) == TelegramNotesSync.NormalizeTodoText(replacementText)))
-                    return new(false, path, "Another todo already has this text and time. Choose a different title.");
+                    return new(false, path, "Another task already has this text and time. Choose a different title.");
             }
             if (validateOnly || replacementText == entry.Text) return new(true, path);
             string updated;
@@ -160,7 +174,7 @@ public static class ObsidianNotesSync
             {
                 string oldBlock = original.Substring(target.LineStart, target.LineLength);
                 string newline = original.Contains("\r\n") ? "\r\n" : "\n";
-                string replacement = FormatEntry(NoteType.Todo, replacementText, entry.Timestamp).Replace("\n", newline);
+                string replacement = FormatEntry(entry.Type, replacementText, entry.Timestamp).Replace("\n", newline);
                 if (entry.IsCompleted) replacement = replacement.Remove(3, 1).Insert(3, "x");
                 if (oldBlock.EndsWith("\n") || oldBlock.EndsWith("\r")) replacement += newline;
                 updated = original.Remove(target.LineStart, target.LineLength).Insert(target.LineStart, replacement);

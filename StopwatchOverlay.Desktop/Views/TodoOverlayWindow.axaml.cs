@@ -16,6 +16,7 @@ using StopwatchOverlay.Desktop.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StopwatchOverlay.Desktop.Platform;
+using StopwatchOverlay.Habitica;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -214,8 +215,11 @@ public partial class TodoOverlayWindow : Window
             TelegramSyncStatus.Text = _syncError ?? (_syncRunning ? "Updating Telegram…" :
                 entries.Any(entry => !Linked(entry)) ? "Right-click a task → Link to connect older Telegram messages." : "Completion sync is up to date.");
             var visible = entries.Where(entry => _settings.TodoOverlayShowCompleted || !entry.IsCompleted).ToArray();
+            var taskDetails = new Dictionary<NoteEntry, HabiticaTaskDetails>();
+            foreach (var entry in entries) taskDetails[entry] = HabiticaIntegration.Current.GetDetails(_settings, entry);
             string snapshot = (_organization?.SortMode ?? "Priority") + "|" + configured + "|" + _deleteInProgress + "|" + _settings.TodoOverlayShowCompleted + "|" + _settings.TelegramEnabled +
                 string.Join("\n", entries.Select(entry => $"{entry.Timestamp:O}|{entry.IsCompleted}|{Linked(entry)}|{_organization?.GetPriority(entry) ?? 3}|{_organization?.IsInProgress(entry)}|{_organization?.GetDueAt(entry):O}|{TodoDeadlines.GetState(entry, _organization?.GetDueAt(entry), DateTime.Now)}|{entry.Text}"));
+            snapshot += System.Text.Json.JsonSerializer.Serialize(taskDetails.Values.Select(details => details.Children));
             if (_snapshot == snapshot) return;
             _snapshot = snapshot;
             var scrollOffset = TodoScrollViewer.Offset;
@@ -237,13 +241,17 @@ public partial class TodoOverlayWindow : Window
                 ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") + (entry.IsCompleted ? " · " : " · Double-click to toggle In progress · ") + entry.Timestamp.ToString("g"));
                 row.IsCheckedChanged += (_, _) =>
                 {
-                    var result = ObsidianNotesSync.SetTodoCompleted(_settings.ObsidianVaultFolder, entry, row.IsChecked == true, _settings.NotesSubfolder);
-                    ErrorMessage.IsVisible = !result.Success;
-                    if (!result.Success) ShowError(result.Message ?? "Could not save this todo. Try again.");
+                    bool completed = row.IsChecked == true;
+                    var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry with { IsCompleted = completed },
+                        _organization?.GetDueAt(entry), null, false,
+                        () => ObsidianNotesSync.SetTodoCompleted(_settings.ObsidianVaultFolder, entry, completed, _settings.NotesSubfolder));
+                    ErrorMessage.IsVisible = !mutation.LocalResult.Success || mutation.SyncWarning != null;
+                    if (!mutation.LocalResult.Success) ShowError(mutation.LocalResult.Message ?? "Could not save this todo. Try again.");
+                    else if (mutation.SyncWarning != null) ShowError(mutation.SyncWarning);
                     _snapshot = null;
                     Dispatcher.UIThread.Post(() => { ReloadTodos(); _nextSyncUtc = DateTime.MinValue; _ = SynchronizeTelegramAsync(); });
                 };
-                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,20"), Margin = new Thickness(0, 0, 0, 6) };
+                var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,20"), Margin = new Thickness(0, 0, 0, 6) };
                 DateTime? dueAt = _organization?.GetDueAt(entry);
                 var dueState = TodoDeadlines.GetState(entry, dueAt, DateTime.Now);
                 if (dueState is TodoDueState.Soon or TodoDueState.Overdue)
@@ -254,7 +262,7 @@ public partial class TodoOverlayWindow : Window
                         Background = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#30F08080" : "#20C42635") : (dark ? "#32D5972C" : "#25B87816"))),
                         BorderBrush = new SolidColorBrush(Color.Parse(overdue ? (dark ? "#806E4343" : "#607E3030") : (dark ? "#807D622A" : "#60865F24"))),
                         BorderThickness = new Thickness(1), Margin = new Thickness(-4, 0, -4, 0), IsHitTestVisible = false };
-                    Grid.SetRowSpan(deadlineSurface, 3); Grid.SetColumnSpan(deadlineSurface, 4);
+                    Grid.SetRowSpan(deadlineSurface, 4); Grid.SetColumnSpan(deadlineSurface, 4);
                     container.Children.Add(deadlineSurface);
                 }
                 if (dueAt.HasValue)
@@ -291,6 +299,26 @@ public partial class TodoOverlayWindow : Window
                 row.ContextMenu = CreateTaskContextMenu(entry, Linked(entry));
                 text.ContextMenu = CreateTaskContextMenu(entry, Linked(entry), text.ContextMenu);
                 container.Children.Add(row);
+                var childRows = new StackPanel { Margin = new Thickness(18, 0, 0, 5), Spacing = 2 };
+                foreach (var child in taskDetails[entry].Children)
+                {
+                    var childCheck = new CheckBox { IsChecked = child.Completed, IsEnabled = !_deleteInProgress,
+                        Content = new TextBlock { Text = child.Text, TextWrapping = TextWrapping.Wrap, MaxWidth = 210 } };
+                    AutomationProperties.SetName(childCheck, "Subtask: " + child.Text);
+                    childCheck.IsCheckedChanged += (_, _) =>
+                    {
+                        var current = HabiticaIntegration.Current.GetDetails(_settings, entry);
+                        var changed = current.Children.Select(item => item.Id == child.Id ? item with { Completed = childCheck.IsChecked == true } : item).ToArray();
+                        var result = HabiticaIntegration.Current.SetChildren(_settings, entry, changed);
+                        ErrorMessage.IsVisible = !result.LocalResult.Success || result.SyncWarning != null;
+                        if (!result.LocalResult.Success) ShowError(result.LocalResult.Message ?? "Could not save the subtask.");
+                        else if (result.SyncWarning != null) ShowError(result.SyncWarning);
+                        _snapshot = null;
+                        Dispatcher.UIThread.Post(ReloadTodos);
+                    };
+                    childRows.Children.Add(childCheck);
+                }
+                Grid.SetColumn(childRows, 2); Grid.SetRow(childRows, 3); container.Children.Add(childRows);
                 TodoRows.Children.Add(container);
             }
             TodoScrollViewer.Offset = scrollOffset;
@@ -519,7 +547,8 @@ public partial class TodoOverlayWindow : Window
             var settings = new AppSettings {
                 TelegramEnabled = _settings.TelegramEnabled, TelegramBotToken = _settings.TelegramBotToken,
                 TelegramChatId = _settings.TelegramChatId, TelegramTodosTopicId = _settings.TelegramTodosTopicId,
-                ObsidianVaultFolder = _settings.ObsidianVaultFolder, NotesSubfolder = _settings.NotesSubfolder
+                ObsidianVaultFolder = _settings.ObsidianVaultFolder, NotesSubfolder = _settings.NotesSubfolder,
+                HabiticaEnabled = _settings.HabiticaEnabled, HabiticaUserId = _settings.HabiticaUserId, HabiticaClientId = _settings.HabiticaClientId
             };
             bool linked = TelegramNotesSync.HasTodoMessageLink(settings, entry);
             string effects = linked
@@ -531,17 +560,20 @@ public partial class TodoOverlayWindow : Window
             _deleteDialog = null;
             if (!confirmed || _closed) return;
             if (settings.TelegramBotToken != _settings.TelegramBotToken ||
-                TelegramNotesSync.GetTodoVaultKey(settings) != TelegramNotesSync.GetTodoVaultKey(_settings))
+                TelegramNotesSync.GetTodoVaultKey(settings) != TelegramNotesSync.GetTodoVaultKey(_settings) ||
+                settings.HabiticaUserId != _settings.HabiticaUserId || settings.HabiticaClientId != _settings.HabiticaClientId ||
+                settings.HabiticaEnabled != _settings.HabiticaEnabled)
             {
-                ShowError("Your Telegram account or notes folder changed. Review the todo and choose Delete again.");
+                ShowError("Your sync account or notes folder changed. Review the todo and choose Delete again.");
                 return;
             }
             _snapshot = null;
             ReloadTodos();
             var result = await Task.Run(() => TelegramNotesSync.DeleteTodoEverywhereAsync(settings, entry));
             if (_closed) return;
-            ErrorMessage.IsVisible = !result.Success;
+            ErrorMessage.IsVisible = !result.Success || result.ErrorMessage != null;
             if (!result.Success) ShowError(result.ErrorMessage ?? "Could not finish deleting the todo. Try again.");
+            else if (result.ErrorMessage != null) ShowError(result.ErrorMessage);
             _nextSyncUtc = DateTime.MinValue;
         }
         catch (Exception)

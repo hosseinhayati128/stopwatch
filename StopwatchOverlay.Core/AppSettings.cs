@@ -245,6 +245,13 @@ namespace StopwatchOverlay
         public bool ObsidianLogUnnamedTimers { get; set; } = true;
         public string NotesSubfolder { get; set; } = "Notes";
 
+        // Habitica task synchronization
+        // The coordinator also checks installation-local ownership before starting sync.
+        // API tokens must never be serialized in application settings.
+        public bool HabiticaEnabled { get; set; } = false;
+        public string HabiticaUserId { get; set; } = "";
+        public string HabiticaClientId { get; set; } = "";
+
         // Telegram Notes Forwarding
         public bool TelegramEnabled { get; set; } = false;
         public string TelegramBotToken { get; set; } = "";
@@ -592,6 +599,8 @@ namespace StopwatchOverlay
             EnsureCommandModeKeys();
 
             NotesSubfolder = string.IsNullOrWhiteSpace(NotesSubfolder) ? "Notes" : NotesSubfolder.Trim();
+            HabiticaUserId = HabiticaUserId?.Trim() ?? "";
+            HabiticaClientId = HabiticaClientId?.Trim() ?? "";
 
             ThemeMode = AppThemeCatalog.Normalize(ThemeMode);
             UiScalePercent = AppUiScale.Normalize(UiScalePercent);

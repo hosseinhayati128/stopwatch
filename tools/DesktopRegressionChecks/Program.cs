@@ -90,6 +90,11 @@ AppBuilder.Configure<App>().UsePlatformDetect()
     .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if (args.Contains("--timer-editor-only"))
+{
+    Check("timer editor opens with a hidden controller", TimerEditorChecks.HiddenOwner);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
 if (args.Contains("--todo-add-only"))
 {
     Check("todo add icon and label are centered", ThemeAndBoundsChecks.TodoAddAlignment);
@@ -128,6 +133,7 @@ Check("clock and both notes overlays stay topmost together without stealing focu
 Check("close-to-tray dialog uses the One Piece buttons", ThemeAndBoundsChecks.CloseDialogTheme);
 Check("clock cannot remain outside the left or right screen edge", ThemeAndBoundsChecks.ClockBounds);
 Check("overlay bounds preserve negative monitors and mixed DPI", ThemeAndBoundsChecks.MonitorBounds);
+Check("timer editor opens with a hidden controller", TimerEditorChecks.HiddenOwner);
 Check("todo add icon and label are centered", ThemeAndBoundsChecks.TodoAddAlignment);
 Check("narrow controller gives action labels a full row", () => {
     var panel = new PirateActionPanel { Pirate = true };

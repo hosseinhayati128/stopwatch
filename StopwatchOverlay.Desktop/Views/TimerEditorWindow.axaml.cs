@@ -191,6 +191,27 @@ public partial class TimerEditorWindow : Window
         };
     }
 
+    public async Task ShowForOwnerAsync(Window owner)
+    {
+        if (owner.IsVisible)
+        {
+            await ShowDialog(owner);
+            return;
+        }
+
+        // Shortcut edits must also work while the controller is hidden in the
+        // tray. Avalonia requires a visible owner for ShowDialog.
+        var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler onClosed = (_, _) => closed.TrySetResult(true);
+        Closed += onClosed;
+        try
+        {
+            Show();
+            await closed.Task;
+        }
+        finally { Closed -= onClosed; }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _liveRefreshTimer.Stop();

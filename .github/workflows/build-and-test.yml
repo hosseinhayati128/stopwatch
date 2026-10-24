@@ -32,6 +32,12 @@ jobs:
       - name: Check Desktop shortcuts and UI contrast
         run: dotnet run --project tools/DesktopRegressionChecks -c Release
 
+      - name: Check Habitica transport, recovery and task UI without live requests
+        run: |
+          dotnet run --project tools/HabiticaHttpChecks -c Release
+          dotnet run --project tools/HabiticaChecks -c Release
+          dotnet run --project tools/HabiticaTaskUiChecks -c Release
+
       - name: Check publish startup registration
         shell: pwsh
         run: ./tools/Test-PublishStartup.ps1
@@ -76,6 +82,12 @@ jobs:
 
       - name: Check Desktop shortcuts and UI contrast on Linux
         run: xvfb-run -a dotnet run --project tools/DesktopRegressionChecks -c Release
+
+      - name: Check Habitica transport, recovery and task UI without live requests
+        run: |
+          dotnet run --project tools/HabiticaHttpChecks -c Release
+          dotnet run --project tools/HabiticaChecks -c Release
+          xvfb-run -a dotnet run --project tools/HabiticaTaskUiChecks -c Release
 
       - name: Publish Avalonia Desktop (linux-x64 self-contained)
         run: |

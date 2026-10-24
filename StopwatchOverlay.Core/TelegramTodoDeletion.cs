@@ -14,6 +14,7 @@ public static partial class TelegramNotesSync
     /// <summary>Call only after user confirmation. Stop on remote refusal; never silently delete just one side.</summary>
     public static async Task<TelegramSyncResult> DeleteTodoEverywhereAsync(AppSettings settings, NoteEntry entry, HttpClient? httpClient = null)
     {
+        var habiticaSettings = settings;
         settings = SnapshotTelegramSettings(settings);
         await CompletionGate.WaitAsync().ConfigureAwait(false);
         try
@@ -66,11 +67,15 @@ public static partial class TelegramNotesSync
                 if (!TelegramOutboxStore.RecordTodoDeleted(entry, bot, vault, link))
                     return new(false, "Telegram deletion finished, but its status could not be saved. The local todo was kept; try again.");
                 // Revalidate after HTTP: Obsidian may have changed while Telegram was responding.
-                var removed = ObsidianNotesSync.DeleteTodo(settings.ObsidianVaultFolder, entry, settings.NotesSubfolder);
+                var habitica = Habitica.HabiticaIntegration.Current;
+                var mutation = habitica.Apply(habiticaSettings, entry, entry,
+                    habitica.GetDetails(habiticaSettings, entry).DueAt, null, true,
+                    () => ObsidianNotesSync.DeleteTodo(settings.ObsidianVaultFolder, entry, settings.NotesSubfolder));
+                var removed = mutation.LocalResult;
                 if (!removed.Success) return new(false, (link != null ? "The Telegram message is deleted. " : "") + removed.Message + " Review the todo and try Delete again.");
                 if (!TelegramOutboxStore.CancelPendingTodo(entry, bot, vault))
                     return new(false, "The todo was deleted, but its cancelled queue entry could not be cleaned up. It will not be sent again.");
-                return new(true);
+                return new(true, mutation.SyncWarning);
             }
             finally { FlushGate.Release(); }
         }

@@ -24,7 +24,7 @@
             Padding="16"
             Margin="10"
             BoxShadow="0 8 28 0 #77000000">
-        <Grid RowDefinitions="Auto,*,Auto,Auto">
+        <Grid RowDefinitions="Auto,*,Auto">
             <!-- Header (Draggable) -->
             <Grid Grid.Row="0" Margin="0,0,0,12" PointerPressed="OnHeaderPointerPressed" Background="Transparent">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -44,7 +44,9 @@
             </Grid>
 
             <!-- Note Input Body -->
-            <Border Grid.Row="1"
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+            <Border
                     Background="{DynamicResource DialogSurfaceBrush}"
                     BorderBrush="{DynamicResource BorderSoftBrush}"
                     BorderThickness="1"
@@ -64,8 +66,8 @@
                          VerticalAlignment="Stretch"/>
             </Border>
 
-            <StackPanel x:Name="TodoDetailsPanel" Grid.Row="2" IsVisible="False" Margin="0,12,0,0" Spacing="10">
-                <Grid ColumnDefinitions="Auto,12,*">
+            <StackPanel x:Name="TodoDetailsPanel" IsVisible="False" Margin="0,12,0,0" Spacing="10">
+                <Grid x:Name="TodoPriorityRow" ColumnDefinitions="Auto,12,*">
                     <TextBlock Text="Priority" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                     <ComboBox x:Name="TodoPriorityCombo" Grid.Column="2" HorizontalAlignment="Stretch" MinHeight="32" FontSize="13" AutomationProperties.Name="Todo priority"/>
                 </Grid>
@@ -76,12 +78,15 @@
                         <TimePicker x:Name="TodoDueTime" ClockIdentifier="24HourClock" HorizontalAlignment="Left" AutomationProperties.Name="Todo due time"/>
                         <Button Grid.Column="1" Content="Clear" Classes="modern" Height="32" Padding="12,0" Click="OnClearDueClicked" ToolTip.Tip="Remove the due date and time"/>
                     </Grid>
-                    <TextBlock Text="Local time · Amber within 24 hours · Red when overdue" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <TextBlock Text="Local time" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </StackPanel>
+                <ContentControl x:Name="SubtaskEditorHost"/>
             </StackPanel>
+            </StackPanel>
+            </ScrollViewer>
 
             <!-- Footer: Buttons & Shortcut Hint -->
-            <StackPanel Grid.Row="3" Margin="0,12,0,0" Spacing="8">
+            <StackPanel Grid.Row="2" Margin="0,12,0,0" Spacing="8">
                 <TextBlock x:Name="SaveError" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource DangerTextBrush}" FontSize="12"/>
                 <Grid ColumnDefinitions="*,14,*">
                     <Button Grid.Column="0"

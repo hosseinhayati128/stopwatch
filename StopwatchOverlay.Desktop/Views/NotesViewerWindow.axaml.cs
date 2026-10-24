@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,6 +11,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using StopwatchOverlay.Desktop.Platform;
+using StopwatchOverlay.Habitica;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -213,7 +215,25 @@ public partial class NotesViewerWindow : Window
         if (Application.Current?.TryFindResource(iconBrushKey, out var ib) == true && ib is IBrush iBrush)
             iconText.Foreground = iBrush;
         Grid.SetColumn(iconText, 0);
-        grid.Children.Add(iconText);
+        if (entry.Type is NoteType.Todo or NoteType.Reminder)
+        {
+            var completed = new CheckBox { IsChecked = entry.IsCompleted, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, -5, 7, 0) };
+            Avalonia.Automation.AutomationProperties.SetName(completed, "Complete " + entry.Text);
+            completed.IsCheckedChanged += (_, _) =>
+            {
+                bool value = completed.IsChecked == true;
+                var details = HabiticaIntegration.Current.GetDetails(_settings, entry);
+                var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry with { IsCompleted = value },
+                    entry.Type == NoteType.Todo ? _organization?.GetDueAt(entry) : details.DueAt, null, false,
+                    () => ObsidianNotesSync.SetEntryCompleted(_settings.ObsidianVaultFolder, entry, value, _settings.NotesSubfolder));
+                LoadNotes();
+                ShowMutationStatus(mutation);
+                if (mutation.LocalResult.Success && entry.Type == NoteType.Todo && _settings.TelegramEnabled)
+                    _ = TelegramNotesSync.SyncTodoCompletionsAsync(_settings);
+            };
+            Grid.SetColumn(completed, 0); grid.Children.Add(completed);
+        }
+        else grid.Children.Add(iconText);
 
         // Timestamp
         var timeText = new TextBlock
@@ -278,7 +298,57 @@ public partial class NotesViewerWindow : Window
         }
 
         border.Child = grid;
+        if (entry.Type is NoteType.Todo or NoteType.Reminder)
+        {
+            var menu = new ContextMenu();
+            var edit = new MenuItem { Header = entry.Type == NoteType.Reminder ? "Edit reminder…" : "Edit todo…" };
+            edit.Click += async (_, _) =>
+            {
+                menu.Close(); _autoCloseTimer.Stop();
+                var editor = new NoteEntryWindow(entry.Type, _settings, entry);
+                await editor.ShowDialog(this);
+                LoadNotes();
+            };
+            menu.Items.Add(edit);
+            if (entry.Type == NoteType.Reminder)
+            {
+                var delete = new MenuItem { Header = "Delete reminder…" };
+                delete.Click += async (_, _) => { menu.Close(); await DeleteReminderAsync(entry); };
+                menu.Items.Add(delete);
+                var due = HabiticaIntegration.Current.GetDetails(_settings, entry).DueAt;
+                if (due.HasValue) ToolTip.SetTip(border, "Due " + due.Value.ToString("g") + " · Right-click to edit or delete");
+                else ToolTip.SetTip(border, "Right-click to edit or delete");
+            }
+            menu.Opened += (_, _) => _autoCloseTimer.Stop();
+            border.ContextMenu = menu;
+        }
         return border;
+    }
+
+    private void ShowMutationStatus(HabiticaMutationResult result)
+    {
+        string? message = !result.LocalResult.Success ? result.LocalResult.Message ?? "Could not change the task." : result.SyncWarning;
+        if (message == null) return;
+        _autoCloseTimer.Stop();
+        CountdownText.Text = message;
+        CountdownText.TextWrapping = TextWrapping.Wrap;
+    }
+
+    private async Task DeleteReminderAsync(NoteEntry entry)
+    {
+        _autoCloseTimer.Stop();
+        string vault = _settings.ObsidianVaultFolder, folder = _settings.NotesSubfolder;
+        string account = _settings.HabiticaUserId, client = _settings.HabiticaClientId;
+        bool enabled = _settings.HabiticaEnabled;
+        var dialog = new ConfirmationDialogWindow("Delete reminder", "Delete this reminder?",
+            entry.Text + "\n\nRemoves the local reminder and its linked Habitica task. Existing Telegram reminders remain unchanged.", "Delete", destructive: true);
+        if (!await dialog.ShowDialog<bool>(this)) return;
+        if (vault != _settings.ObsidianVaultFolder || folder != _settings.NotesSubfolder || account != _settings.HabiticaUserId || client != _settings.HabiticaClientId || enabled != _settings.HabiticaEnabled)
+        { ShowMutationStatus(new(new(false, "", "The notes folder or Habitica settings changed. Refresh and try again."))); return; }
+        var details = HabiticaIntegration.Current.GetDetails(_settings, entry);
+        var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry, details.DueAt, null, true,
+            () => ObsidianNotesSync.DeleteEntry(vault, entry, folder));
+        LoadNotes(); ShowMutationStatus(mutation);
     }
 
     private void OnFilterChanged(object? sender, RoutedEventArgs e)

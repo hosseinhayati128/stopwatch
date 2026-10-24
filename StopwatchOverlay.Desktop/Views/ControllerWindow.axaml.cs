@@ -108,6 +108,7 @@ public partial class ControllerWindow : Window
     private void OnOpened(object? sender, EventArgs e)
     {
         InitializePlatformServices();
+        StartHabiticaSync();
         EnsureTodoOverlay();
         UpdateOverlayStates();
         UpdateLightRing();
@@ -982,7 +983,7 @@ public partial class ControllerWindow : Window
         var projectNames = _projectHistory.ProjectNames.ToList();
         var intervals = Array.Empty<ProjectWorkIntervalView>();
         var editor = new TimerEditorWindow(session, projectNames, intervals, canUndo: false, settings: _settings);
-        await editor.ShowDialog(this);
+        await editor.ShowForOwnerAsync(this);
         if (editor.WasSaved)
         {
             session.RestoreElapsed(editor.NewTimeValue, editor.NewIsRunning);
@@ -1318,6 +1319,7 @@ public partial class ControllerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        StopHabiticaSync();
         _todoOverlayWindow?.Close();
         _todoOverlayWindow = null;
         _timer.Stop();
