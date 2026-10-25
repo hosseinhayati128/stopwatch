@@ -4,6 +4,7 @@ internal static class TodoOrganizationChecks
 {
     public static void Run(string directory)
     {
+        CheckPlacement(directory);
         string vault = Path.Combine(directory, "organization-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(vault);
         try
@@ -13,6 +14,9 @@ internal static class TodoOrganizationChecks
             var urgent = normal with { Text = "Urgent", Timestamp = time.AddMinutes(1) };
             var low = normal with { Text = "Low", Timestamp = time.AddMinutes(2) };
             var done = normal with { Text = "Done", IsCompleted = true };
+            Success(TodoOrganizationStore.SetPriority(vault, low, 10));
+            Check(TodoOrganizationStore.Load(vault).GetPriority(low) == 10, "Priority 10 did not survive reload.");
+            Check(!TodoOrganizationStore.SetPriority(vault, low, 11).Success, "Priority 11 was accepted.");
             var initial = TodoOrganizationStore.Load(vault);
             Check(initial.SortMode == "Priority" && initial.GetPriority(normal) == 3, "Defaults are not Priority/P3.");
             Success(TodoOrganizationStore.SetPriority(vault, urgent, 1));
@@ -60,6 +64,51 @@ internal static class TodoOrganizationChecks
             Check(!Directory.EnumerateFiles(vault, "*.md", SearchOption.AllDirectories).Any(), "Organization wrote Markdown.");
         }
         finally { Directory.Delete(vault, recursive: true); }
+    }
+
+    private static void CheckPlacement(string directory)
+    {
+        string vault = Path.Combine(directory, "placement-" + Guid.NewGuid().ToString("N"));
+        var time = new DateTime(2026, 10, 25, 10, 0, 0);
+        NoteEntry Add(string text, int minute)
+        {
+            Success(ObsidianNotesSync.AppendEntry(vault, NoteType.Todo, text, timestamp: time.AddMinutes(minute)));
+            return ObsidianNotesSync.LoadAllNotes(vault).Single(e => e.Text == text);
+        }
+        try
+        {
+            var a = Add("A", 0); var b = Add("B", 1);
+            Success(TodoOrganizationStore.SetPriority(vault, a, 2));
+            string file = Path.Combine(vault, "Notes", TodoOrganizationStore.FileName);
+            File.WriteAllText(file, File.ReadAllText(file).Replace("\"Version\": 2", "\"Version\": 1"));
+            Check(TodoOrganizationStore.Load(vault).GetPriority(a) == 2, "Legacy priorities changed on load.");
+            Success(TodoOrganizationStore.SetPriority(vault, b, 10));
+            Check(TodoOrganizationStore.Load(vault).GetPriority(a) == 2 && TodoOrganizationStore.Load(vault).GetPriority(b) == 10, "Legacy upgrade lost priorities.");
+            Success(TodoOrganizationStore.SetManualOrder(vault, new[] { a, b }));
+            Success(TodoOrganizationStore.SetSortMode(vault, "Manual"));
+            var top = Add("Top", 2);
+            Success(TodoOrganizationStore.SaveTodo(vault, top, top.Text, 10, null, insertAtTop: true));
+            Order(TodoOrganizationStore.Load(vault).Arrange(new[] { b, a, top }), top, a, b);
+            var bottom = Add("Bottom", 3);
+            Success(TodoOrganizationStore.SaveTodo(vault, bottom, bottom.Text, 1, null, insertAtTop: false));
+            Order(TodoOrganizationStore.Load(vault).Arrange(new[] { bottom, b, a, top }), top, a, b, bottom);
+            Success(TodoOrganizationStore.SaveTodo(vault, a, "Edited A", 9, null));
+            a = a with { Text = "Edited A" };
+            Order(TodoOrganizationStore.Load(vault).Arrange(new[] { bottom, b, a, top }), top, a, b, bottom);
+            Success(TodoOrganizationStore.SetSortMode(vault, "Priority"));
+            Order(TodoOrganizationStore.Load(vault).Arrange(new[] { top, b, a, bottom }), bottom, a, top, b);
+            // With no prior manual metadata, seed every existing task rather than
+            // putting a bottom insertion ahead of tasks with no saved position.
+            string fresh = Path.Combine(vault, "fresh");
+            Success(ObsidianNotesSync.AppendEntry(fresh, NoteType.Todo, "Existing", timestamp: time));
+            Success(ObsidianNotesSync.AppendEntry(fresh, NoteType.Todo, "New", timestamp: time.AddMinutes(1)));
+            var entries = ObsidianNotesSync.LoadAllNotes(fresh);
+            var added = entries.Single(e => e.Text == "New");
+            Success(TodoOrganizationStore.SaveTodo(fresh, added, added.Text, 3, null, insertAtTop: false));
+            Success(TodoOrganizationStore.SetSortMode(fresh, "Manual"));
+            Check(TodoOrganizationStore.Load(fresh).Arrange(entries).Last().Text == "New", "Bottom insertion did not seed existing tasks.");
+        }
+        finally { Directory.Delete(vault, true); }
     }
 
     private static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }

@@ -50,7 +50,7 @@ public static class TodoOrganizationStore
 
     private sealed class Preferences
     {
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = 2;
         public string SortMode { get; set; } = "Priority";
         public Dictionary<string, int> Priorities { get; set; } = new();
         public List<string> ManualOrder { get; set; } = new();
@@ -86,8 +86,8 @@ public static class TodoOrganizationStore
 
     public static NoteSyncResult SetPriority(string vaultFolder, NoteEntry entry, int priority, string? notesSubfolder = null)
     {
-        if (entry.Type != NoteType.Todo || priority is < 1 or > 4)
-            return new(false, "", "Choose a todo priority from P1 to P4.");
+        if (entry.Type != NoteType.Todo || priority is < 1 or > 10)
+            return new(false, "", "Choose a todo priority from 1 to 10.");
         return Update(vaultFolder, notesSubfolder, preferences => preferences.Priorities[preferences.Aliases.GetValueOrDefault(GetKey(entry), GetKey(entry))] = priority);
     }
 
@@ -133,10 +133,10 @@ public static class TodoOrganizationStore
         => Load(Path.GetDirectoryName(folder) ?? folder, Path.GetFileName(folder));
 
     /// <summary>Keep former text identities as aliases so existing Telegram receipts and queues survive edits.</summary>
-    public static NoteSyncResult SaveTodo(string vaultFolder, NoteEntry entry, string text, int priority, DateTime? dueAt, string? notesSubfolder = null)
+    public static NoteSyncResult SaveTodo(string vaultFolder, NoteEntry entry, string text, int priority, DateTime? dueAt, string? notesSubfolder = null, bool? insertAtTop = null)
     {
         text = text.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
-        if (entry.Type != NoteType.Todo || string.IsNullOrWhiteSpace(text) || priority is < 1 or > 4)
+        if (entry.Type != NoteType.Todo || string.IsNullOrWhiteSpace(text) || priority is < 1 or > 10)
             return new(false, "", "Enter todo text and choose a valid priority.");
         var validation = ObsidianNotesSync.UpdateTodoText(vaultFolder, entry, text, notesSubfolder, validateOnly: true);
         if (!validation.Success) return validation;
@@ -166,6 +166,18 @@ public static class TodoOrganizationStore
             for (int index = 0; index < preferences.ManualOrder.Count; index++)
                 if (previousKeys.Contains(preferences.ManualOrder[index])) preferences.ManualOrder[index] = newKey;
             preferences.ManualOrder = preferences.ManualOrder.Distinct(StringComparer.Ordinal).ToList();
+            if (insertAtTop.HasValue)
+            {
+                // Give previously unseen Markdown tasks positions before inserting the new one.
+                foreach (var task in ObsidianNotesSync.LoadAllNotes(vaultFolder, notesSubfolder).Where(e => e.Type == NoteType.Todo))
+                {
+                    string key = preferences.Aliases.GetValueOrDefault(GetKey(task), GetKey(task));
+                    if (key != newKey && !preferences.ManualOrder.Contains(key)) preferences.ManualOrder.Add(key);
+                }
+                preferences.ManualOrder.Remove(newKey);
+                if (insertAtTop.Value) preferences.ManualOrder.Insert(0, newKey);
+                else preferences.ManualOrder.Add(newKey);
+            }
         }, () => ObsidianNotesSync.UpdateTodoText(vaultFolder, entry, text, notesSubfolder));
     }
 
@@ -184,7 +196,7 @@ public static class TodoOrganizationStore
         var root = document.RootElement;
         // Require the complete known schema, so damaged or newer files cannot be replaced silently.
         if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("Version", out var version) ||
-            version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out int number) || number != 1 ||
+            version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out int number) || number is not (1 or 2) ||
             !root.TryGetProperty("SortMode", out _) || !root.TryGetProperty("Priorities", out _) || !root.TryGetProperty("ManualOrder", out _))
             throw new JsonException("Unrecognized todo organization metadata.");
         var result = JsonSerializer.Deserialize<Preferences>(json) ?? throw new JsonException("Missing metadata.");
@@ -192,9 +204,10 @@ public static class TodoOrganizationStore
             result.InProgress.Any(string.IsNullOrWhiteSpace) ||
             result.Aliases.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value) || pair.Key == pair.Value || result.Aliases.ContainsKey(pair.Value)) ||
             result.DueTimes.Any(pair => string.IsNullOrWhiteSpace(pair.Key)) ||
-            result.Priorities.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value is < 1 or > 4) ||
+            result.Priorities.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value < 1 || pair.Value > (number == 1 ? 4 : 10)) ||
             result.ManualOrder.Any(string.IsNullOrWhiteSpace) || result.ManualOrder.Distinct(StringComparer.Ordinal).Count() != result.ManualOrder.Count)
             throw new JsonException("Invalid todo organization metadata.");
+        result.Version = 2;
         return result;
     }
 

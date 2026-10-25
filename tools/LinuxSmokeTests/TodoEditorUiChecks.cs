@@ -12,9 +12,12 @@ internal static class TodoEditorUiChecks
 {
     public static void Run(string directory)
     {
+        CheckPlacementUi(directory);
         string vault=Path.Combine(directory,"todo-editor-ui");Directory.CreateDirectory(vault);
         var settings=new AppSettings {ObsidianVaultFolder=vault,ThemeMode=AppThemeCatalog.Pirate,TodoOverlayShowCompleted=true};
         var editor=new NoteEntryWindow(NoteType.Todo,settings);editor.Show();Pump();
+        Check(editor.FindControl<ComboBox>("TodoPriorityCombo")!.Items.Count == 10, "Editor does not offer ten priorities.");
+        Check(editor.FindControl<Grid>("TodoPlacementRow")!.IsVisible && editor.FindControl<Button>("TodoPlacementButton")!.Content?.ToString() == "↑ Top", "New todo placement does not default to Top.");
         Check(editor.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked!=true && !editor.FindControl<StackPanel>("DueFields")!.IsVisible,"Due time is not optional by default.");
         editor.FindControl<TextBox>("NoteInputBox")!.Text="Deadline **task**\n\n- first [Reference](https://example.com)";
         editor.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked=true;
@@ -49,6 +52,7 @@ internal static class TodoEditorUiChecks
         menu.Items.OfType<MenuItem>().Single(item=>item.Header?.ToString()=="Edit task").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));Pump();
         var editing=(NoteEntryWindow?)typeof(TodoOverlayWindow).GetField("_taskEditor",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(overlay);
         Check(editing!=null && editing.FindControl<TextBox>("NoteInputBox")!.Text==entry.Text && editing.FindControl<ComboBox>("TodoPriorityCombo")!.SelectedIndex==1 && editing!.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked==true,"Edit task did not open the prefilled editor.");
+        Check(!editing!.FindControl<Grid>("TodoPlacementRow")!.IsVisible, "Editing exposes creation-only placement.");
         editing!.FindControl<TextBox>("NoteInputBox")!.Text="Edited **task**\n\n- second";
         editing!.FindControl<CheckBox>("DueEnabledToggle")!.IsChecked=false;
         Save(editing!);Pump();
@@ -87,6 +91,42 @@ internal static class TodoEditorUiChecks
         finally {linkedOverlay.Close();TelegramOutboxStore.SetCustomFilePath(null);}
 
     }
+    static void CheckPlacementUi(string directory)
+    {
+        string vault = Path.Combine(directory, "placement-ui");
+        ObsidianNotesSync.AppendEntry(vault, NoteType.Todo, "Existing", timestamp: new DateTime(2026, 10, 25, 9, 0, 0));
+        TodoOrganizationStore.SetSortMode(vault, "Priority");
+        var settings = new AppSettings { ObsidianVaultFolder = vault };
+        var overlay = new TodoOverlayWindow(settings); overlay.Show(); overlay.ToggleExpanded(); Pump();
+        var bottom = new NoteEntryWindow(NoteType.Todo, settings); bottom.Show(); Pump();
+        bottom.FindControl<TextBox>("NoteInputBox")!.Text = "Bottom";
+        bottom.FindControl<ComboBox>("TodoPriorityCombo")!.SelectedIndex = 9;
+        var placement = bottom.FindControl<Button>("TodoPlacementButton")!;
+        placement.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(placement.Content?.ToString() == "↓ Bottom", "Placement click did not switch to Bottom.");
+        placement.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(placement.Content?.ToString() == "↑ Top", "Placement second click did not switch back to Top.");
+        placement.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Save(bottom); Pump();
+        Check(!bottom.IsVisible, "Bottom todo was not saved.");
+        overlay.ReloadTodos();
+        overlay.FindControl<ComboBox>("TodoSortCombo")!.SelectedItem = "Manual"; Pump();
+        var entries = ObsidianNotesSync.LoadAllNotes(vault);
+        Check(TodoOrganizationStore.Load(vault).Arrange(entries).Last().Text == "Bottom", "Editor ignored Bottom placement.");
+        Check(TodoOrganizationStore.Load(vault).GetPriority(entries.Single(e => e.Text == "Bottom")) == 10, "Editor did not save priority 10.");
+        overlay.FindControl<ComboBox>("TodoSortCombo")!.SelectedItem = "Priority"; Pump();
+        var top = new NoteEntryWindow(NoteType.Todo, settings); top.Show(); Pump();
+        Check(top.FindControl<Button>("TodoPlacementButton")!.Content?.ToString() == "↑ Top", "Placement did not reset to Top for the next todo.");
+        top.FindControl<TextBox>("NoteInputBox")!.Text = "Top"; Save(top); Pump();
+        Check(!top.IsVisible, "Top todo was not saved.");
+        overlay.ReloadTodos();
+        overlay.FindControl<ComboBox>("TodoSortCombo")!.SelectedItem = "Manual"; Pump();
+        entries = ObsidianNotesSync.LoadAllNotes(vault);
+        Check(TodoOrganizationStore.Load(vault).Arrange(entries).Select(e => e.Text).SequenceEqual(new[] { "Top", "Existing", "Bottom" }), "Editor ignored Top placement or changed existing positions.");
+        Check(((NoteEntry)overlay.FindControl<StackPanel>("TodoRows")!.Children.OfType<Grid>().First().Tag!).Text == "Top", "Priority-to-Manual overlay lost Top placement.");
+        overlay.Close();
+    }
+
     static void Save(NoteEntryWindow editor) {editor.FindControl<TextBox>("NoteInputBox")!.RaiseEvent(new KeyEventArgs {RoutedEvent=InputElement.KeyDownEvent,Key=Key.Enter,KeyModifiers=KeyModifiers.Control});Dispatcher.UIThread.RunJobs();}
     static void Pump() {using var cancel=new CancellationTokenSource();DispatcherTimer.RunOnce(cancel.Cancel,TimeSpan.FromMilliseconds(180));Dispatcher.UIThread.MainLoop(cancel.Token);Dispatcher.UIThread.RunJobs();}
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);}

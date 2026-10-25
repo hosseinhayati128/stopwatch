@@ -311,15 +311,15 @@ public partial class TodoOverlayWindow : Window
         }
     }
 
-    private static readonly string[] PriorityTitles = { "Urgent", "High", "Normal", "Low" };
+    private static readonly string[] PriorityTitles = Enumerable.Range(1, 10).Select(level => level.ToString()).ToArray();
 
     private IBrush PriorityBrush(int priority)
     {
         bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
         string[] colors = dark
-            ? new[] { "#FF8A83", "#FFBC75", "#91C1FF", "#BBC2CD" }
-            : new[] { "#A6202D", "#944900", "#245BA6", "#4C535C" };
-        return new SolidColorBrush(Color.Parse(colors[Math.Clamp(priority, 1, 4) - 1]));
+            ? new[] { "#FF8A83", "#FFA279", "#FFBC75", "#E0CC7C", "#A6D59A", "#86D4CB", "#91C1FF", "#B0B7F0", "#C4B3DA", "#BBC2CD" }
+            : new[] { "#A6202D", "#A13C20", "#944900", "#776000", "#3C7136", "#216F69", "#245BA6", "#5258A0", "#72538B", "#4C535C" };
+        return new SolidColorBrush(Color.Parse(colors[Math.Clamp(priority, 1, 10) - 1]));
     }
 
     private Button CreatePriorityBadge(NoteEntry entry)
@@ -327,12 +327,12 @@ public partial class TodoOverlayWindow : Window
         int priority = _organization?.GetPriority(entry) ?? 3;
         var color = PriorityBrush(priority);
         var label = new TextBlock { Text = PriorityTitles[priority - 1], FontSize = 11, FontWeight = FontWeight.SemiBold, Foreground = color, HorizontalAlignment = HorizontalAlignment.Center };
-        var badge = new Button { IsEnabled = !_deleteInProgress, Content = label, Width = 52, Height = 26, MinHeight = 26, Padding = new Thickness(3, 1), Margin = new Thickness(0, 3, 7, 0), VerticalAlignment = VerticalAlignment.Top };
+        var badge = new Button { IsEnabled = !_deleteInProgress, Content = label, Width = 30, Height = 26, MinHeight = 26, Padding = new Thickness(3, 1), Margin = new Thickness(0, 3, 7, 0), VerticalAlignment = VerticalAlignment.Top };
         badge.Classes.Add("modern"); badge.Classes.Add("priorityBadge");
         AutomationProperties.SetName(badge, "Priority " + priority + ": " + PriorityTitles[priority - 1] + ". Change priority for " + entry.Text);
-        ToolTip.SetTip(badge, "Change priority");
+        ToolTip.SetTip(badge, "Priority " + priority + " · 1 is highest · Click to change");
         var menu = new ContextMenu();
-        for (int level = 1; level <= 4; level++)
+        for (int level = 1; level <= 10; level++)
         {
             int selected = level;
             var item = new MenuItem { Header = PriorityTitles[level - 1], Foreground = PriorityBrush(level) };

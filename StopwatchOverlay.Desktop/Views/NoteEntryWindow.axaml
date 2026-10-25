@@ -71,6 +71,13 @@
                     <TextBlock Text="Priority" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                     <ComboBox x:Name="TodoPriorityCombo" Grid.Column="2" HorizontalAlignment="Stretch" MinHeight="32" FontSize="13" AutomationProperties.Name="Todo priority"/>
                 </Grid>
+                <Grid x:Name="TodoPlacementRow" ColumnDefinitions="Auto,12,*">
+                    <TextBlock Text="Manual position" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Button x:Name="TodoPlacementButton" Grid.Column="2" Content="↑ Top" Classes="modern" HorizontalAlignment="Left"
+                            MinWidth="100" MinHeight="32" FontSize="13" HorizontalContentAlignment="Center"
+                            AutomationProperties.Name="New todo position: Top. Click to switch to Bottom"
+                            ToolTip.Tip="Click to switch between Top and Bottom in manual order"/>
+                </Grid>
                 <CheckBox x:Name="DueEnabledToggle" Content="Due date &amp; time (optional)" AutomationProperties.Name="Set a due date and time"/>
                 <StackPanel x:Name="DueFields" IsVisible="False" Spacing="6">
                     <DatePicker x:Name="TodoDueDate" HorizontalAlignment="Stretch" DayFormat="dd" MonthFormat="MMM" YearFormat="yyyy" AutomationProperties.Name="Todo due date"/>

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -24,6 +25,7 @@ public partial class NoteEntryWindow : Window
     private readonly string _openedHabiticaClient;
     private readonly bool _openedHabiticaEnabled;
     private readonly bool _isEditing;
+    private bool _insertAtTop = true;
     private bool _saving;
     private bool _closed;
     private readonly HabiticaSubtaskEditor _subtaskEditor = new();
@@ -54,7 +56,15 @@ public partial class NoteEntryWindow : Window
         TodoPriorityRow.IsVisible = noteType == NoteType.Todo;
         SubtaskEditorHost.Content = _subtaskEditor;
         SubtaskEditorHost.IsVisible = noteType == NoteType.Todo;
-        TodoPriorityCombo.ItemsSource = new[] { "Urgent", "High", "Normal", "Low" };
+        TodoPriorityCombo.ItemsSource = Enumerable.Range(1, 10).Select(level => level.ToString()).ToArray();
+        TodoPlacementRow.IsVisible = noteType == NoteType.Todo && editingEntry == null;
+        TodoPlacementButton.Click += (_, _) =>
+        {
+            _insertAtTop = !_insertAtTop;
+            TodoPlacementButton.Content = _insertAtTop ? "↑ Top" : "↓ Bottom";
+            Avalonia.Automation.AutomationProperties.SetName(TodoPlacementButton,
+                _insertAtTop ? "New todo position: Top. Click to switch to Bottom" : "New todo position: Bottom. Click to switch to Top");
+        };
         TodoPriorityCombo.SelectedIndex = 2;
         TodoDueDate.SelectedDate = DateTimeOffset.Now.Date;
         TodoDueTime.SelectedTime = new TimeSpan(DateTime.Now.AddHours(1).Hour, DateTime.Now.Minute, 0);
@@ -239,7 +249,7 @@ public partial class NoteEntryWindow : Window
                         _originalEntry = after; // Keep retries from appending a second local copy.
                     }
                     if (_noteType == NoteType.Todo)
-                        return TodoOrganizationStore.SaveTodo(vaultFolder, before ?? after, text, priority, dueAt, _settings.NotesSubfolder);
+                        return TodoOrganizationStore.SaveTodo(vaultFolder, before ?? after, text, priority, dueAt, _settings.NotesSubfolder, insertAtTop: wasEditing ? null : _insertAtTop);
                     if (before != null)
                         return ObsidianNotesSync.UpdateEntryText(vaultFolder, before, text, _settings.NotesSubfolder);
                     return new NoteSyncResult(true, "");
