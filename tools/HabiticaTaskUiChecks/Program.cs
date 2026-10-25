@@ -252,4 +252,5 @@ Check("independent computers are supported and copied-vault transfer is advanced
     var advanced = content.Children.OfType<Expander>().SingleOrDefault(e => e.Name == "HabiticaCopiedVaultOptions");
     Require(advanced != null && !advanced.IsExpanded, "Copied-vault migration must be collapsed by default");
 });
+Check("bulk import confirmation, progress, request waits and completion", HabiticaImportUiChecks.Run);
 Environment.Exit(failures == 0 ? 0 : 1);

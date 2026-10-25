@@ -38,8 +38,10 @@ public sealed partial class HabiticaIntegration
             var l = ReadLocal(); var delay = retry ?? TimeSpan.Zero;
             if (error is HabiticaErrorKind.RateLimited or HabiticaErrorKind.Network or HabiticaErrorKind.Server or HabiticaErrorKind.InvalidResponse)
             {
-                int failures = Math.Min(l.Failures.GetValueOrDefault(account) + 1, 5); l.Failures[account] = failures;
-                var backoff = TimeSpan.FromSeconds(error == HabiticaErrorKind.RateLimited ? 60 : Math.Min(900, 60 * (1 << (failures - 1))) + Random.Shared.Next(1, 6));
+                int failures = Math.Min(l.Failures.GetValueOrDefault(account) + 1, 6); l.Failures[account] = failures;
+                var backoff = error == HabiticaErrorKind.RateLimited
+                    ? retry ?? TimeSpan.FromSeconds(60)
+                    : TimeSpan.FromSeconds(Math.Min(900, 30 * (1 << (failures - 1))) + Random.Shared.Next(1, 6));
                 delay = delay < backoff ? backoff : delay;
             }
             var next = clock() + delay;
@@ -54,7 +56,7 @@ public sealed partial class HabiticaIntegration
     {
         HabiticaErrorKind.Authentication => "Habitica rejected the credentials. Update the user ID and API token.",
         HabiticaErrorKind.Configuration => "Enter your Habitica user ID, API token and author client ID.",
-        HabiticaErrorKind.RateLimited => "Habitica rate limit reached. Changes are saved and will retry after the server delay (at least one minute).",
+        HabiticaErrorKind.RateLimited => "Habitica rate limit reached. Changes are saved and will retry after the server delay.",
         HabiticaErrorKind.InvalidInput => "Habitica rejected this task. Review its text and due date.",
         _ => "Habitica is unavailable. Changes are saved; retry is scheduled."
     };
@@ -95,6 +97,7 @@ public sealed partial class HabiticaIntegration
     }
     private async Task TickCore(AppSettings s, CancellationToken ct)
     {
+        if (await TryCreateBatch(s, ct)) return;
         string path = VaultPath(s), account = Account(s), cacheKey;
         Vault v; Item item; Target target; HabiticaRemoteTask? remote; string operation; Guid childId = Guid.Empty; string? remoteChild = null;
         string clientId = s.HabiticaClientId.Trim();
@@ -214,7 +217,7 @@ public sealed partial class HabiticaIntegration
                 if (returned != null)
                 {
                     current.RemoteId = returned.Id;
-                    if (operation == "lookup") snapshots[cacheKey] = returned;
+                    snapshots[cacheKey] = returned;
                     if (operation == "create" && returned.Checklist.Count == target.Children.Count)
                     {
                         for (int n = 0; n < target.Children.Count; n++) current.ChildIds[target.Children[n].Id] = returned.Checklist[n].Id;
@@ -236,4 +239,101 @@ public sealed partial class HabiticaIntegration
             Write(path, latest);
         }
     }
+    // Only pristine, unlinked targets may bypass alias reconciliation. The durable
+    // attempted marker sends interrupted or uncertain batches through normal lookup.
+    private async Task<bool> TryCreateBatch(AppSettings s, CancellationToken ct)
+    {
+        string path = VaultPath(s), account = Account(s);
+        List<(Guid Id, Target Target)> batch = [];
+        Guid vaultId;
+        lock (StoreGate)
+        {
+            var v = ReadVault(path); var local = ReadLocal();
+            if (v.Owners.GetValueOrDefault(account) != local.Installation || !local.Active.Contains($"{v.Id}:{account}") || v.Intents.Count != 0) return false;
+            vaultId = v.Id;
+            var candidates = v.Items.Where(i => i.Targets.TryGetValue(account, out var t) && t.Revision > t.Ack && !t.Deleted && !t.Attempted && t.RemoteId == null && t.Block == null)
+                .Take(HabiticaApiClient.MaxCreateBatchSize).ToArray();
+            if (candidates.Length < 2) return false;
+            if (local.Next.GetValueOrDefault(account) > clock() || v.Next.GetValueOrDefault(account) > clock()) return true;
+            var entries = ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder);
+            foreach (var item in candidates)
+            {
+                var t = item.Targets[account];
+                string source = Path.Combine(Path.GetDirectoryName(path)!, ObsidianNotesSync.GetFileName(t.Entry!.Type));
+                if (!File.Exists(source)) return false;
+                _ = File.ReadAllText(source);
+                if (entries.Count(e => Key(e) == Key(t.Entry) && e.IsCompleted == t.Entry.IsCompleted) != 1) return false;
+                batch.Add((item.Id, t));
+            }
+        }
+        var token = await Task.Run(() => secrets.Read(account), ct);
+        if (string.IsNullOrWhiteSpace(token)) { message = Describe(HabiticaErrorKind.Configuration); return true; }
+        ct.ThrowIfCancellationRequested();
+        lock (StoreGate)
+        {
+            var latest = ReadVault(path); var local = ReadLocal();
+            if (latest.Id != vaultId || latest.Owners.GetValueOrDefault(account) != local.Installation || !local.Active.Contains($"{latest.Id}:{account}")) return true;
+            // Revalidate after the keyring wait: edits must never be acknowledged as
+            // though they were part of an earlier payload.
+            foreach (var sent in batch)
+            {
+                var current = latest.Items.SingleOrDefault(i => i.Id == sent.Id)?.Targets.GetValueOrDefault(account);
+                if (current == null || current.Revision != sent.Target.Revision || current.Attempted || current.RemoteId != null || current.Deleted || current.Block != null) return true;
+            }
+            var entries = ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder);
+            foreach (var sent in batch)
+            {
+                string source = Path.Combine(Path.GetDirectoryName(path)!, ObsidianNotesSync.GetFileName(sent.Target.Entry!.Type));
+                if (!File.Exists(source)) return true;
+                _ = File.ReadAllText(source);
+                if (entries.Count(e => Key(e) == Key(sent.Target.Entry) && e.IsCompleted == sent.Target.Entry.IsCompleted) != 1) return true;
+            }
+            if (!Reserve(account, latest)) return true;
+            foreach (var sent in batch)
+            {
+                var current = latest.Items.Single(i => i.Id == sent.Id).Targets[account];
+                current.Attempted = true; current.ChildIds.Clear(); current.CreatingChildren = current.Children.ToList();
+            }
+            Write(path, latest);
+        }
+        var payloads = batch.Select(b => Payload(new Item { Id = b.Id }, b.Target, true)).ToArray();
+        var result = await api.CreateTasksAsync(new HabiticaCredentials(account, token, s.HabiticaClientId.Trim()), payloads, ct);
+        // Even a syntactically valid partial response cannot establish which writes
+        // happened. Preserve every alias for reconciliation instead of retrying POST.
+        var returned = result.Data;
+        bool complete = result.Success && returned != null && returned.Count == batch.Count
+            && returned.All(t => !string.IsNullOrWhiteSpace(t.Id) && !string.IsNullOrWhiteSpace(t.Alias))
+            && returned.Select(t => t.Id).Distinct().Count() == batch.Count
+            && returned.Select(t => t.Alias).Distinct().Count() == batch.Count
+            && batch.All(b => returned.Any(t => t.Alias == $"stopwatch-{b.Id:N}"));
+        var error = result.Success && !complete ? HabiticaErrorKind.InvalidResponse : result.Error;
+        FinishRequest(account, error, result.RetryAfter, path);
+        lock (StoreGate)
+        {
+            var latest = ReadVault(path); var local = ReadLocal();
+            if (latest.Id != vaultId || latest.Owners.GetValueOrDefault(account) != local.Installation || !local.Active.Contains($"{latest.Id}:{account}")) return true;
+            foreach (var sent in batch)
+            {
+                var current = latest.Items.Single(i => i.Id == sent.Id).Targets[account];
+                if (complete)
+                {
+                    var task = returned!.Single(t => t.Alias == $"stopwatch-{sent.Id:N}");
+                    current.RemoteId = task.Id;
+                    snapshots[$"{vaultId}:{account}:{sent.Id}"] = task;
+                    // The normal snapshot comparison reconciles children and latest
+                    // revisions, and scores completed parents in a separate request.
+                }
+                else if (!result.OutcomeUnknown && error == HabiticaErrorKind.RateLimited)
+                {
+                    current.Attempted = false; current.CreatingChildren = null;
+                }
+                else if (!result.OutcomeUnknown && !result.Success && error is HabiticaErrorKind.Authentication or HabiticaErrorKind.InvalidInput or HabiticaErrorKind.Configuration or HabiticaErrorKind.Conflict)
+                { current.Block = Describe(error); current.BlockKind = error; }
+            }
+            Write(path, latest);
+        }
+        message = complete ? "Habitica sync is progressing." : Describe(error);
+        return true;
+    }
+
 }

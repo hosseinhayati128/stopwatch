@@ -7,7 +7,9 @@ namespace StopwatchOverlay.Habitica;
 public sealed record HabiticaSubtask(Guid Id, string Text, bool Completed);
 public sealed record HabiticaTaskDetails(Guid Id, DateTime? DueAt, IReadOnlyList<HabiticaSubtask> Children);
 public sealed record HabiticaMutationResult(NoteSyncResult LocalResult, string? SyncWarning = null);
-public sealed record HabiticaSyncStatus(string Message, int PendingCount, DateTime? LastSuccessUtc, bool IsOwner);
+public sealed record HabiticaImportProgress(int Total, int Queued, int Completed, int Blocked, bool IsQueuing, string? Error = null);
+public sealed record HabiticaSyncStatus(string Message, int PendingCount, DateTime? LastSuccessUtc, bool IsOwner,
+    HabiticaImportProgress? ImportProgress = null, DateTime? NextRequestUtc = null, bool IsRequestRunning = false);
 
 // Metadata belongs to the vault; credentials and request deadlines belong to this installation.
 public sealed partial class HabiticaIntegration
@@ -20,7 +22,7 @@ public sealed partial class HabiticaIntegration
     private readonly Func<DateTimeOffset> clock;
     private readonly string localPath;
     private CancellationTokenSource cancellation = new();
-    private string configuration = "", message = "Habitica sync is disabled.";
+    private string configuration = "", message = "Waiting for the next Habitica sync check.";
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
     public HabiticaIntegration(HabiticaApiClient? api = null, IHabiticaSecretStore? secrets = null,
         string? statePath = null, Func<DateTimeOffset>? clock = null)
@@ -72,7 +74,8 @@ public sealed partial class HabiticaIntegration
     private static Vault ReadVault(string path)
     {
         var v = Read<Vault>(path);
-        if (v.Version != 1 || v.Id == Guid.Empty || v.Items == null || v.Intents == null || v.Owners == null || v.Next == null ||
+        if (v.Version != 1 || v.Id == Guid.Empty || v.Items == null || v.Intents == null || v.Owners == null || v.Next == null || v.Imports == null ||
+            v.Imports.Values.Any(b => b == null || b.Items == null || b.Items.Any(m => m.ItemId == Guid.Empty || (m.Queued && m.Revision < 1))) ||
             v.Items.GroupBy(i => i.Id).Any(g => g.Key == Guid.Empty || g.Count() != 1) ||
             v.Items.Any(i => i.Keys == null || i.Children == null || i.Targets == null || i.Targets.Values.Any(t => t.Children == null || t.ChildIds == null || t.Revision < t.Ack)))
             throw new IOException("Unsupported sync metadata.");
@@ -172,14 +175,100 @@ public sealed partial class HabiticaIntegration
         }
     }
     public int CountExisting(AppSettings s) => ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder).Count(x => x.Type != NoteType.Note);
+    private readonly HashSet<string> activeImports = [];
+    private readonly Dictionary<string, string> importErrors = [];
     public void ImportExisting(AppSettings s)
     {
         if (!s.HabiticaEnabled || !GetStatus(s).IsOwner) throw new InvalidOperationException("Enable Habitica sync on this computer before queuing existing items.");
-        foreach (var e in ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder).Where(x => x.Type != NoteType.Note))
+        string path = VaultPath(s), account = Account(s), key = path + "|" + account;
+        ImportBatch batch;
+        lock (StoreGate)
         {
-            var d = GetDetails(s, e); var r = Apply(s, e, e, d.DueAt, d.Children, false, () => new(true, ""));
-            if (r.SyncWarning != null) throw new InvalidOperationException(r.SyncWarning);
+            if (!activeImports.Add(key)) throw new InvalidOperationException("Existing items are already being queued.");
+            importErrors.Remove(key);
         }
+        try
+        {
+            var entries = ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder).Where(x => x.Type != NoteType.Note).ToArray();
+            lock (StoreGate)
+            {
+                var v = ReadVault(path); Recover(v, s);
+                batch = new() { IsQueuing = true };
+                foreach (var entry in entries)
+                {
+                    var item = Find(v, entry);
+                    if (item == null) { item = new() { Entry = entry }; item.Keys.Add(Key(entry)); v.Items.Add(item); }
+                    batch.Items.Add(new() { ItemId = item.Id });
+                }
+                v.Imports[account] = batch; Write(path, v);
+            }
+            for (int n = 0; n < entries.Length; n++)
+            {
+                // Commit each enrollment separately so status reads and the worker can interleave.
+                lock (StoreGate)
+                {
+                    var v = ReadVault(path); Recover(v, s);
+                    var member = v.Imports[account].Items[n];
+                    var item = v.Items.Single(i => i.Id == member.ItemId);
+                    var entry = entries[n];
+                    // The UI may edit or remove a task while this batch is being prepared.
+                    // Never let the earlier source snapshot replace its newer desired state.
+                    string source = Path.Combine(Path.GetDirectoryName(path)!, ObsidianNotesSync.GetFileName(entry.Type));
+                    if (item.Entry == null || Key(item.Entry) != Key(entry) || item.Entry.IsCompleted != entry.IsCompleted
+                        || item.Targets.GetValueOrDefault(account)?.Deleted == true || !File.Exists(source))
+                        throw new IOException("Import source changed.");
+                    _ = File.ReadAllText(source);
+                    if (ObsidianNotesSync.LoadAllNotes(s.ObsidianVaultFolder, s.NotesSubfolder)
+                        .Count(e => Key(e) == Key(entry) && e.IsCompleted == entry.IsCompleted) != 1)
+                        throw new IOException("Import source changed or is ambiguous.");
+                    var due = item.Due?.ToLocalTime() ?? (entry.Type == NoteType.Todo
+                        ? TodoOrganizationStore.Load(s.ObsidianVaultFolder, s.NotesSubfolder).GetDueAt(entry) : null);
+                    Commit(v, new() { ItemId = item.Id, Before = entry, After = entry, Due = due,
+                        Account = account, Enroll = true });
+                    member.Revision = item.Targets[account].Revision;
+                    member.Queued = true;
+                    Write(path, v);
+                }
+            }
+            lock (StoreGate)
+            {
+                var v = ReadVault(path); v.Imports[account].IsQueuing = false; Write(path, v);
+                message = "Existing items queued. Habitica sync continues in the background.";
+            }
+        }
+        catch
+        {
+            const string error = "Some existing items could not be queued. Queued changes are saved; check the vault and try again.";
+            lock (StoreGate)
+            {
+                importErrors[key] = error;
+                try
+                {
+                    var v = ReadVault(path);
+                    if (v.Imports.TryGetValue(account, out var saved)) { saved.IsQueuing = false; saved.Error = error; Write(path, v); }
+                }
+                catch { /* Keep the original metadata and expose a safe session error. */ }
+            }
+            throw new InvalidOperationException(error);
+        }
+        finally { lock (StoreGate) activeImports.Remove(key); }
+    }
+    private HabiticaImportProgress? ImportStatus(Vault v, string account, string path)
+    {
+        if (!v.Imports.TryGetValue(account, out var batch)) return null;
+        int completed = 0, blocked = 0, queued = 0;
+        foreach (var member in batch.Items.Where(i => i.Queued))
+        {
+            var target = v.Items.FirstOrDefault(i => i.Id == member.ItemId)?.Targets.GetValueOrDefault(account);
+            if (target != null && target.Ack >= member.Revision) completed++;
+            else if (target == null || target.Block != null) blocked++;
+            else queued++;
+        }
+        string key = path + "|" + account;
+        bool preparing = activeImports.Contains(key);
+        string? error = importErrors.GetValueOrDefault(key) ?? batch.Error;
+        if (batch.IsQueuing && !preparing) error ??= "Queuing was interrupted. Queued changes are saved; sync existing items again to finish.";
+        return new(batch.Items.Count, queued, completed, blocked, preparing, error);
     }
     public int CountMissing(AppSettings s)
     {
@@ -204,16 +293,20 @@ public sealed partial class HabiticaIntegration
         {
             lock (StoreGate)
             {
-                var v = ReadVault(VaultPath(s)); var l = ReadLocal(); string a = Account(s);
+                string path = VaultPath(s); var v = ReadVault(path); var l = ReadLocal(); string a = Account(s);
                 var targets = v.Items.Where(i => i.Targets.ContainsKey(a)).Select(i => i.Targets[a]).ToArray();
                 string status = !s.HabiticaEnabled ? "Habitica sync is paused; pending changes are saved." : targets.FirstOrDefault(t => t.Block != null)?.Block ?? message;
                 return new(status, targets.Count(t => t.Revision > t.Ack), l.LastSuccess?.UtcDateTime,
-                    v.Owners.GetValueOrDefault(a) == l.Installation && l.Active.Contains($"{v.Id}:{a}"));
+                    v.Owners.GetValueOrDefault(a) == l.Installation && l.Active.Contains($"{v.Id}:{a}"), ImportStatus(v, a, path),
+                    new[] { l.Next.GetValueOrDefault(a), v.Next.GetValueOrDefault(a) }.Max() is var next && next != default ? next.UtcDateTime : null,
+                    requestGate.CurrentCount == 0);
             }
         }
         catch { return new("Habitica metadata is unavailable or invalid. Check the vault before syncing.", 0, null, false); }
     }
-    public sealed class Vault { public int Version { get; set; } = 1; public Guid Id { get; set; } = Guid.NewGuid(); public Dictionary<string, Guid> Owners { get; set; } = []; public Dictionary<string, DateTimeOffset> Next { get; set; } = []; public List<Item> Items { get; set; } = []; public List<Intent> Intents { get; set; } = []; }
+    public sealed class Vault { public int Version { get; set; } = 1; public Guid Id { get; set; } = Guid.NewGuid(); public Dictionary<string, Guid> Owners { get; set; } = []; public Dictionary<string, DateTimeOffset> Next { get; set; } = []; public List<Item> Items { get; set; } = []; public List<Intent> Intents { get; set; } = []; public Dictionary<string, ImportBatch> Imports { get; set; } = []; }
+    public sealed class ImportBatch { public List<ImportMember> Items { get; set; } = []; public bool IsQueuing { get; set; } public string? Error { get; set; } }
+    public sealed class ImportMember { public Guid ItemId { get; set; } public long Revision { get; set; } public bool Queued { get; set; } }
     public sealed class Item { public Guid Id { get; set; } = Guid.NewGuid(); public HashSet<string> Keys { get; set; } = []; public NoteEntry? Entry { get; set; } public DateTime? Due { get; set; } public List<HabiticaSubtask> Children { get; set; } = []; public Dictionary<string, Target> Targets { get; set; } = []; }
     public sealed class Target
     {

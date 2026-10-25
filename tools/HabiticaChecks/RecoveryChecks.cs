@@ -9,6 +9,9 @@ internal static class RecoveryChecks
 {
     public static async Task Run()
     {
+        await ImportProgressSurvivesRestart();
+        await ImportTracksBlockedAndInterruptedItems();
+        ImportDoesNotOverwriteNewerLocalIntent();
         await UnknownCreateAcrossRestart();
         await UnknownCompletion();
         await UnknownDelete();
@@ -22,6 +25,80 @@ internal static class RecoveryChecks
         await InvalidInputEditUnblocks();
         await MissingRemoteRequiresExplicitRecreation();
         await MissingOrCorruptVaultDoesNotDelete();
+    }
+
+    private static async Task ImportProgressSurvivesRestart()
+    {
+        using var f = new Fixture();
+        f.Add();
+        f.Sync.ImportExisting(f.Settings);
+        object Progress() => typeof(HabiticaSyncStatus).GetProperty("ImportProgress")?.GetValue(f.Sync.GetStatus(f.Settings))
+            ?? throw new InvalidOperationException("Existing-item import must expose persisted batch progress");
+        int Count(string name) => (int)Progress().GetType().GetProperty(name)!.GetValue(Progress())!;
+        Require(Count("Total") == 1 && Count("Queued") == 1 && Count("Completed") == 0,
+            "Import should report queued items before remote acknowledgement");
+        f.Restart();
+        Require(Count("Total") == 1 && Count("Completed") == 0, "Import progress was lost across restart");
+        await f.Drain();
+        Require(Count("Completed") == 1 && Count("Queued") == 0, "Acknowledgement did not complete imported item");
+        var unrelated = f.Entry with { Timestamp = f.Entry.Timestamp.AddHours(1), Text = "unrelated later item" };
+        f.Sync.Apply(f.Settings, null, unrelated, null, null, false,
+            () => ObsidianNotesSync.AppendEntry(f.Root, unrelated.Type, unrelated.Text, "Notes", unrelated.Timestamp));
+        Require(Count("Total") == 1 && Count("Completed") == 1, "Unrelated work changed the import denominator");
+        string originalAccount = f.Settings.HabiticaUserId;
+        f.Settings.HabiticaUserId = "33333333-3333-4333-8333-333333333333";
+        Require(typeof(HabiticaSyncStatus).GetProperty("ImportProgress")!.GetValue(f.Sync.GetStatus(f.Settings)) == null,
+            "Another account inherited import progress");
+        f.Settings.HabiticaUserId = originalAccount;
+        f.Sync.ImportExisting(f.Settings);
+        Require(f.Server.Creates == 1 && Count("Total") == 2, "Repeat import should preserve remote identities");
+        Console.WriteLine("PASS import batch progress persists and excludes unrelated work/accounts");
+    }
+
+    private static async Task ImportTracksBlockedAndInterruptedItems()
+    {
+        using var f = new Fixture();
+        f.Add();
+        f.Sync.ImportExisting(f.Settings);
+        await f.Drain();
+        f.ChangeText("superseding revision awaiting acknowledgement");
+        f.Sync.ImportExisting(f.Settings);
+        Require(f.Sync.GetStatus(f.Settings).ImportProgress is { Total: 1, Completed: 0, Queued: 1 },
+            "Earlier acknowledgements must not complete the newly captured import revision");
+        f.Server.RejectNextUpdate = true;
+        await f.Until(() => f.Server.RejectedUpdates == 1);
+        Require(f.Sync.GetStatus(f.Settings).ImportProgress is { Total: 1, Completed: 0, Blocked: 1, Queued: 0 },
+            "Rejected imported revisions must remain visibly blocked");
+        var v = JsonSerializer.Deserialize<HabiticaIntegration.Vault>(File.ReadAllText(f.Metadata))!;
+        v.Imports[f.Settings.HabiticaUserId].IsQueuing = true;
+        v.Imports[f.Settings.HabiticaUserId].Items.Add(new() { ItemId = Guid.NewGuid() });
+        File.WriteAllText(f.Metadata, JsonSerializer.Serialize(v));
+        f.Restart();
+        Require(f.Sync.GetStatus(f.Settings).ImportProgress is { Total: 2, Blocked: 1, Completed: 0,
+            IsQueuing: false, Error: not null }, "An interrupted partial enrollment must preserve its batch and show recovery guidance");
+        Console.WriteLine("PASS import tracks captured revisions, blocked tasks and interrupted preparation");
+    }
+
+    private static void ImportDoesNotOverwriteNewerLocalIntent()
+    {
+        using var f = new Fixture();
+        f.Add();
+        // Model the state an importer sees when its old source snapshot races a local edit:
+        // the journal has advanced but the import candidate still contains the earlier entry.
+        var newer = f.Entry with { Text = "newer local desired text" };
+        var v = JsonSerializer.Deserialize<HabiticaIntegration.Vault>(File.ReadAllText(f.Metadata))!;
+        var item = v.Items.Single();
+        item.Entry = newer;
+        item.Targets[f.Settings.HabiticaUserId].Entry = newer;
+        item.Targets[f.Settings.HabiticaUserId].Revision++;
+        File.WriteAllText(f.Metadata, JsonSerializer.Serialize(v));
+        bool rejected = false;
+        try { f.Sync.ImportExisting(f.Settings); } catch (InvalidOperationException) { rejected = true; }
+        var saved = JsonSerializer.Deserialize<HabiticaIntegration.Vault>(File.ReadAllText(f.Metadata))!;
+        Require(rejected && saved.Items.Single().Targets[f.Settings.HabiticaUserId].Entry!.Text == newer.Text
+            && f.Sync.GetStatus(f.Settings).ImportProgress is { Total: 1, Queued: 0, Error: not null },
+            "A stale import candidate must preserve newer local intent and report incomplete preparation");
+        Console.WriteLine("PASS stale import candidate preserves newer local intent");
     }
 
     private static async Task UnknownCreateAcrossRestart()
@@ -129,6 +206,9 @@ internal static class RecoveryChecks
         await f.Sync.TickAsync(f.Settings);
         Require(f.Server.Calls == 1, "Expected one rate limited lookup");
         f.Restart();
+        var deadline = typeof(HabiticaSyncStatus).GetProperty("NextRequestUtc")?.GetValue(f.Sync.GetStatus(f.Settings));
+        Require(deadline is DateTime next && next == f.Now.AddSeconds(120).UtcDateTime,
+            "Status must expose the persisted server retry deadline");
         f.Now = f.Now.AddSeconds(119);
         await f.Sync.TickAsync(f.Settings);
         Require(f.Server.Calls == 1, "Restart ignored the longer Retry-After deadline");

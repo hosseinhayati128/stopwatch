@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -20,7 +21,16 @@ public sealed class HabiticaSettingsPanel : Border
     private readonly TextBlock _credentials = Label("");
     private readonly TextBlock _feedback = Label("");
     private readonly TextBlock _confirmation = Label("");
-    private readonly StackPanel _confirmPanel = new() { Spacing = 8, IsVisible = false };
+    private readonly StackPanel _confirmPanel = new() { Name = "HabiticaImportConfirmation", Spacing = 8, IsVisible = false };
+    private readonly StackPanel _importProgress = new() { Name = "HabiticaImportProgressPanel", Spacing = 6, Margin = new Thickness(0, 4, 0, 8), IsVisible = false };
+    private readonly TextBlock _importProgressText = Label("");
+    private readonly TextBlock _importProgressDetail = Label("");
+    private readonly ProgressBar _importProgressBar = new() { Name = "HabiticaImportProgressBar", Height = 5, Minimum = 0, Maximum = 1 };
+    private readonly HabiticaIntegration _integration;
+    private readonly Button _syncExisting;
+    private bool _queueing;
+    private string _importScope = "";
+    private string? _importError;
     private readonly DispatcherTimer _refresh = new() { Interval = TimeSpan.FromSeconds(2) };
     private readonly Button _test;
     private AppSettings? _settings;
@@ -33,8 +43,9 @@ public sealed class HabiticaSettingsPanel : Border
 
     public HabiticaSettingsPanel() : this(null) { }
 
-    public HabiticaSettingsPanel(Func<Task<string?>>? readTokenClipboard)
+    public HabiticaSettingsPanel(Func<Task<string?>>? readTokenClipboard, HabiticaIntegration? integration = null)
     {
+        _integration = integration ?? HabiticaIntegration.Current;
         _readTokenClipboard = readTokenClipboard ?? (() => TopLevel.GetTopLevel(this)?.Clipboard?.GetTextAsync() ?? Task.FromResult<string?>(null));
         _token.PastingFromClipboard += async (_, args) =>
         {
@@ -77,27 +88,37 @@ public sealed class HabiticaSettingsPanel : Border
                 if (enable)
                 {
                     SaveConnection();
-                    if (!HabiticaIntegration.Current.EnableHere(_settings))
+                    if (!_integration.EnableHere(_settings))
                         throw new InvalidOperationException("This vault contains Habitica links owned by another installation. Separate local vaults can sync together. If you copied this linked vault, use the advanced move option after stopping its old copy.");
                 }
-                else HabiticaIntegration.Current.Disable(_settings);
+                else _integration.Disable(_settings);
                 _save?.Invoke();
             });
             RefreshStatus();
         };
         _test = ActionButton("Test connection", async () => await TestAsync());
         content.Children.Add(_test);
-        content.Children.Add(ActionButton("Sync existing items…", () => Run(() =>
+        _syncExisting = ActionButton("Sync existing items…", () => Run(() =>
         {
-            if (_settings == null) return;
+            if (_settings == null || _queueing) return;
             SaveConnection();
-            int count = HabiticaIntegration.Current.CountExisting(_settings);
-            Confirm($"Queue {count} existing local todos and reminders for this account? Existing Habitica tasks are not imported or matched by title.", () =>
-            {
-                HabiticaIntegration.Current.ImportExisting(_settings);
-                _feedback.Text = "Existing items queued. Delivery follows Habitica's request limits.";
-            });
-        })));
+            if (!_settings.HabiticaEnabled || !_integration.GetStatus(_settings).IsOwner)
+                throw new InvalidOperationException("Enable Habitica sync on this computer before queuing existing items.");
+            int count = _integration.CountExisting(_settings);
+            Confirm($"Sync {count} existing local todos and reminders to this Habitica account? Already linked items will be updated; existing Habitica tasks are not imported or matched by title.",
+                () => { _ = QueueExistingAsync(); });
+        }));
+        _syncExisting.Name = "SyncExistingHabiticaButton";
+        content.Children.Add(_syncExisting);
+        content.Children.Add(_confirmPanel);
+        _importProgressText.Name = "HabiticaImportProgressText";
+        _importProgressText.FontWeight = FontWeight.SemiBold;
+        _importProgressDetail.Name = "HabiticaImportProgressDetail";
+        _importProgressDetail.FontSize = 12;
+        _importProgress.Children.Add(_importProgressText);
+        _importProgress.Children.Add(_importProgressBar);
+        _importProgress.Children.Add(_importProgressDetail);
+        content.Children.Add(_importProgress);
         var copiedVaultOptions = new Expander { Name = "HabiticaCopiedVaultOptions", Header = "Copied or shared vault (advanced)", IsExpanded = false };
         var copiedVaultContent = new StackPanel { Spacing = 8 };
         copiedVaultContent.Children.Add(Label("Use this only when moving an existing linked vault to another computer. Independent local vaults do not need a transfer. Do not run two writers against the same copied/shared Habitica metadata."));
@@ -107,7 +128,7 @@ public sealed class HabiticaSettingsPanel : Border
             Confirm("For this copied/shared vault only: disable sync or close its old Stopwatch installation and finish copying the vault before moving these links here. Other computers with separate local vaults may keep syncing.", () =>
             {
                 if (_settings == null) return;
-                if (!HabiticaIntegration.Current.EnableHere(_settings, takeOver: true))
+                if (!_integration.EnableHere(_settings, takeOver: true))
                     throw new InvalidOperationException("Unable to move this linked vault to this installation.");
                 _save?.Invoke();
                 _feedback.Text = "This linked vault now syncs from this installation. Separate local vaults are unaffected.";
@@ -118,23 +139,26 @@ public sealed class HabiticaSettingsPanel : Border
         content.Children.Add(ActionButton("Recreate missing linked tasks…", () => Run(() =>
         {
             if (_settings == null) return;
-            int count = HabiticaIntegration.Current.CountMissing(_settings);
+            int count = _integration.CountMissing(_settings);
             if (count == 0) { _feedback.Text = "No missing linked tasks need recreation."; return; }
             Confirm($"Recreate {count} previously linked tasks that Habitica reported missing? Their current local text and checklist will be used. Review Habitica first to avoid recreating deliberately deleted tasks.", () =>
             {
-                HabiticaIntegration.Current.RecreateMissing(_settings);
+                _integration.RecreateMissing(_settings);
                 _feedback.Text = "Missing tasks queued for explicit recreation.";
             });
         })));
         _confirmPanel.Children.Add(_confirmation);
-        _confirmPanel.Children.Add(ActionButton("Confirm", () => Run(() =>
+        var confirmationActions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+        var confirmButton = ActionButton("Confirm sync", () => Run(() =>
         {
             var action = _confirmed;
             ClearConfirmation();
             action?.Invoke();
-        })));
-        _confirmPanel.Children.Add(ActionButton("Cancel", ClearConfirmation));
-        content.Children.Add(_confirmPanel);
+        }));
+        confirmButton.Name = "ConfirmHabiticaActionButton";
+        confirmationActions.Children.Add(confirmButton);
+        confirmationActions.Children.Add(ActionButton("Cancel", ClearConfirmation));
+        _confirmPanel.Children.Add(confirmationActions);
         content.Children.Add(_feedback);
         content.Children.Add(_status);
         Child = content;
@@ -202,7 +226,7 @@ public sealed class HabiticaSettingsPanel : Border
         string client = _client.Text?.Trim() ?? "";
         string? configurationError = HabiticaApiClient.ConfigurationError(account, client);
         if (configurationError != null) throw new InvalidOperationException(configurationError);
-        var integration = HabiticaIntegration.Current;
+        var integration = _integration;
         if (_settings.HabiticaUserId != account || _settings.HabiticaClientId != client)
         {
             _testCancellation?.Cancel();
@@ -240,7 +264,7 @@ public sealed class HabiticaSettingsPanel : Border
             using var cancellation = new CancellationTokenSource();
             _testCancellation = cancellation;
             _feedback.Text = "Testing connection…";
-            var result = await HabiticaIntegration.Current.TestConnectionAsync(_settings, cancellation.Token);
+            var result = await _integration.TestConnectionAsync(_settings, cancellation.Token);
             if (!cancellation.IsCancellationRequested)
                 _feedback.Text = ConnectionTestMessage(result);
         }
@@ -274,9 +298,10 @@ public sealed class HabiticaSettingsPanel : Border
         if (_settings == null) return;
         try
         {
-            var status = HabiticaIntegration.Current.GetStatus(_settings);
+            var status = _integration.GetStatus(_settings);
             _status.Text = $"{status.Message}\nPending changes: {status.PendingCount}\nLast successful sync: {(status.LastSuccessUtc?.ToLocalTime().ToString("g") ?? "Never")}";
-            _credentials.Text = HabiticaIntegration.Current.CredentialStatus;
+            _credentials.Text = _integration.CredentialStatus;
+            UpdateImportProgress(status);
             _loading = true;
             _enabled.IsChecked = _settings.HabiticaEnabled && status.IsOwner;
         }
@@ -284,11 +309,82 @@ public sealed class HabiticaSettingsPanel : Border
         finally { _loading = false; }
     }
 
+    private static string ImportScope(AppSettings settings) => $"{settings.HabiticaUserId}|{settings.HabiticaClientId}|{settings.ObsidianVaultFolder}|{settings.NotesSubfolder}";
+
+    private async Task QueueExistingAsync()
+    {
+        if (_settings == null || _queueing) return;
+        var source = _settings;
+        var snapshot = new AppSettings { HabiticaEnabled = source.HabiticaEnabled,
+            HabiticaUserId = source.HabiticaUserId, HabiticaClientId = source.HabiticaClientId,
+            ObsidianVaultFolder = source.ObsidianVaultFolder, NotesSubfolder = source.NotesSubfolder };
+        _importScope = ImportScope(snapshot);
+        _importError = null;
+        _queueing = true;
+        _syncExisting.IsEnabled = false;
+        UpdateImportProgress(_integration.GetStatus(snapshot));
+        Reveal(_importProgress);
+        try
+        {
+            await Task.Run(() => _integration.ImportExisting(snapshot));
+            if (_settings != null && ImportScope(_settings) == _importScope)
+                _feedback.Text = "Existing items queued. Progress counts items confirmed by Habitica.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (_settings != null && ImportScope(_settings) == _importScope) _importError = ex.Message;
+        }
+        catch
+        {
+            if (_settings != null && ImportScope(_settings) == _importScope)
+                _importError = "Could not queue all items. Check the notes folder and try again; queued items are kept.";
+        }
+        finally { _queueing = false; _syncExisting.IsEnabled = true; RefreshStatus(); }
+    }
+
+    private void UpdateImportProgress(HabiticaSyncStatus status)
+    {
+        bool sameScope = _settings != null && ImportScope(_settings) == _importScope;
+        bool preparing = (_queueing && sameScope) || status.ImportProgress?.IsQueuing == true;
+        string? error = sameScope ? _importError : null;
+        var progress = status.ImportProgress;
+        _importProgress.IsVisible = preparing || progress != null || error != null;
+        if (!_importProgress.IsVisible) return;
+        _importProgressBar.IsVisible = preparing || progress is { Total: > 0 };
+        if (!_queueing) _syncExisting.IsEnabled = progress?.IsQueuing != true;
+        _importProgressBar.IsIndeterminate = preparing;
+        _importProgressBar.Maximum = Math.Max(1, progress?.Total ?? 1);
+        _importProgressBar.Value = progress?.Completed ?? 0;
+        _importProgressText.Text = preparing ? "Preparing existing items…" : progress == null ? "Could not start existing-item sync"
+            : progress.Total == 0 ? "No existing todos or reminders to sync" : $"{progress.Completed} / {progress.Total} items synced";
+        if (preparing) _importProgressDetail.Text = "Queuing your local todos and reminders. You can keep using Stopwatch.";
+        else if (error != null || progress?.Error != null) _importProgressDetail.Text = error ?? progress!.Error;
+        else if (progress?.Total == 0) _importProgressDetail.Text = "New local tasks will sync automatically while Habitica sync is enabled.";
+        else if (_settings?.HabiticaEnabled != true) _importProgressDetail.Text = "Paused — enable Habitica sync on this computer to continue. Queued items are kept.";
+        else if (!status.IsOwner) _importProgressDetail.Text = "Sync is waiting for this vault to be enabled on this computer.";
+        else if (progress != null && progress.Completed >= progress.Total) _importProgressDetail.Text = "Sync complete. All items in this batch were confirmed by Habitica.";
+        else
+        {
+            string waiting = progress == null ? "" : $"{progress.Queued} waiting" + (progress.Blocked > 0 ? $" · {progress.Blocked} need attention. {status.Message}" : "");
+            if (progress?.Queued > 0 && status.IsRequestRunning) _importProgressDetail.Text = waiting + " · Syncing with Habitica…";
+            else if (progress?.Queued > 0 && status.NextRequestUtc is DateTime next && next > DateTime.UtcNow)
+                _importProgressDetail.Text = waiting + $" · Next request in {Math.Max(1, (int)Math.Ceiling((next.ToUniversalTime() - DateTime.UtcNow).TotalSeconds))}s. Habitica requests are spaced apart.";
+            else _importProgressDetail.Text = waiting + (progress?.Queued == 0 && progress.Blocked > 0 ? "" : " · Waiting for the next sync check.");
+        }
+        // Connection failures (for example a session-only token lost on restart) may
+        // pause the whole worker without blocking an individual task target.
+        if (!preparing && error == null && progress?.Error == null && _settings?.HabiticaEnabled == true &&
+            status.IsOwner && progress is { Total: > 0 } && progress.Completed < progress.Total &&
+            progress.Blocked == 0 && !string.IsNullOrWhiteSpace(status.Message))
+            _importProgressDetail.Text += "\n" + status.Message;
+        Avalonia.Automation.AutomationProperties.SetName(_importProgressBar, _importProgressText.Text);
+    }
+
     private void Run(Action action)
     {
         try { action(); }
-        catch (InvalidOperationException ex) { _feedback.Text = ex.Message; }
-        catch { _feedback.Text = "Unable to save Habitica changes. Check configuration and storage access."; }
+        catch (InvalidOperationException ex) { _feedback.Text = ex.Message; Reveal(_feedback); }
+        catch { _feedback.Text = "Unable to save Habitica changes. Check configuration and storage access."; Reveal(_feedback); }
         RefreshStatus();
     }
 
@@ -303,7 +399,15 @@ public sealed class HabiticaSettingsPanel : Border
             action();
         };
         _confirmPanel.IsVisible = true;
+        Reveal(_confirmPanel);
     }
+
+    private static void Reveal(Control control) => Dispatcher.UIThread.Post(() =>
+    {
+        if (!control.IsVisible) return;
+        control.UpdateLayout();
+        control.BringIntoView();
+    }, DispatcherPriority.Background);
 
     private void ClearConfirmation() { _confirmed = null; _confirmPanel.IsVisible = false; }
     private static TextBlock Label(string text)

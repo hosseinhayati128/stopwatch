@@ -20,6 +20,23 @@ public sealed class HabiticaApiClient : IDisposable
     private static bool ValidId(string value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 250 && !value.Any(char.IsControl);
     public Task<HabiticaApiResult<HabiticaRemoteTask>> GetTaskAsync(HabiticaCredentials c, string id, CancellationToken ct = default) => TaskRequest(c,HttpMethod.Get,$"tasks/{Id(id)}",null,ValidId(id),ct);
     public Task<HabiticaApiResult<HabiticaRemoteTask>> CreateTaskAsync(HabiticaCredentials c, HabiticaTaskPayload payload, CancellationToken ct = default) => TaskRequest(c,HttpMethod.Post,"tasks/user",Payload(payload,true),!string.IsNullOrWhiteSpace(payload.Text),ct);
+    public const int MaxCreateBatchSize = 20;
+    public async Task<HabiticaApiResult<IReadOnlyList<HabiticaRemoteTask>>> CreateTasksAsync(HabiticaCredentials c,
+        IReadOnlyList<HabiticaTaskPayload> payloads, CancellationToken ct = default)
+    {
+        bool valid = payloads.Count > 0 && payloads.Count <= MaxCreateBatchSize && payloads.All(p => !string.IsNullOrWhiteSpace(p.Text));
+        var result = await Send<IReadOnlyList<HabiticaRemoteTask>>(c, HttpMethod.Post, "tasks/user",
+            valid ? payloads.Select(p => Payload(p, true)).ToArray() : null, valid, d =>
+            {
+                var tasks = d.ValueKind == JsonValueKind.Array ? d.EnumerateArray().Select(ParseTask).ToArray()
+                    : d.ValueKind == JsonValueKind.Object ? new[] { ParseTask(d) } : throw new JsonException();
+                if (tasks.Length == 0 || tasks.Length > MaxCreateBatchSize || tasks.Select(t => t.Id).Distinct().Count() != tasks.Length)
+                    throw new JsonException();
+                return tasks;
+            }, ct);
+        // Bulk validation may fail after some tasks were created: reconcile aliases before retrying.
+        return !result.Success && result.HttpStatus is 400 or 422 ? result with { OutcomeUnknown = true } : result;
+    }
     public Task<HabiticaApiResult<HabiticaRemoteTask>> UpdateTaskAsync(HabiticaCredentials c,string id,HabiticaTaskPayload payload,CancellationToken ct = default) => TaskRequest(c,HttpMethod.Put,$"tasks/{Id(id)}",Payload(payload,false),ValidId(id)&&!string.IsNullOrWhiteSpace(payload.Text),ct);
     public Task<HabiticaApiResult<HabiticaRemoteTask>> AddChecklistItemAsync(HabiticaCredentials c,string taskId,string text,bool completed,CancellationToken ct=default) => TaskRequest(c,HttpMethod.Post,$"tasks/{Id(taskId)}/checklist",new {text,completed},ValidId(taskId)&&!string.IsNullOrWhiteSpace(text),ct);
     public Task<HabiticaApiResult<HabiticaRemoteTask>> UpdateChecklistItemAsync(HabiticaCredentials c,string taskId,string itemId,string text,bool completed,CancellationToken ct=default) => TaskRequest(c,HttpMethod.Put,$"tasks/{Id(taskId)}/checklist/{Id(itemId)}",new {text,completed},ValidId(taskId)&&ValidId(itemId)&&!string.IsNullOrWhiteSpace(text),ct);
@@ -81,16 +98,42 @@ public sealed class HabiticaApiClient : IDisposable
     }
     private static TimeSpan? RetryDelay(HttpResponseMessage response)
     {
-        TimeSpan? retry=response.Headers.RetryAfter?.Delta;
-        if(response.Headers.RetryAfter?.Date is { } date) retry=date-DateTimeOffset.UtcNow;
-        if(response.Headers.TryGetValues("X-RateLimit-Remaining",out var values)&&values.FirstOrDefault()=="0")
+        var now = DateTimeOffset.UtcNow;
+        TimeSpan? retry = null;
+        if (response.Headers.TryGetValues("Retry-After", out var retryValues))
         {
-            var delay=TimeSpan.FromSeconds(60);
-            if(response.Headers.TryGetValues("X-RateLimit-Reset",out var reset)&&long.TryParse(reset.FirstOrDefault(),out var epoch))
-            { try { var remaining=DateTimeOffset.FromUnixTimeSeconds(epoch)-DateTimeOffset.UtcNow; if(remaining>delay) delay=remaining; } catch(ArgumentOutOfRangeException) {} }
-            if(retry is null||retry<delay) retry=delay;
+            string raw = retryValues.FirstOrDefault() ?? "";
+            if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) &&
+                double.IsFinite(seconds) && seconds >= 0 && seconds < TimeSpan.MaxValue.TotalSeconds - 1)
+                retry = TimeSpan.FromSeconds(Math.Ceiling(seconds));
+            else if (TryResetDate(raw, out var date)) retry = date - now;
         }
-        return retry is null ? null : retry<TimeSpan.Zero ? TimeSpan.Zero : retry;
+        if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var values) &&
+            int.TryParse(values.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int remaining) && remaining <= 0)
+        {
+            TimeSpan? resetDelay = null;
+            if (response.Headers.TryGetValues("X-RateLimit-Reset", out var reset) && TryResetDate(reset.FirstOrDefault() ?? "", out var date))
+                resetDelay = date - now + TimeSpan.FromSeconds(1);
+            if (resetDelay.HasValue && (retry == null || resetDelay > retry)) retry = resetDelay;
+            if (retry == null) retry = TimeSpan.FromSeconds(60);
+        }
+        return retry == null ? null : retry < TimeSpan.Zero ? TimeSpan.Zero : retry;
+    }
+
+    private static bool TryResetDate(string raw, out DateTimeOffset date)
+    {
+        if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var epoch))
+        {
+            try { date = epoch > 100_000_000_000 ? DateTimeOffset.FromUnixTimeMilliseconds(epoch) : DateTimeOffset.FromUnixTimeSeconds(epoch); return true; }
+            catch (ArgumentOutOfRangeException) { date = default; return false; }
+        }
+        // Express serializes Habitica's Date header as a JS date, including GMT offset and zone label.
+        string normalized = Regex.Replace(raw, @"\s+\([^)]*\)\s*$", "");
+        normalized = Regex.Replace(normalized, @"GMT([+-]\d{2})(\d{2})", "$1:$2");
+        return DateTimeOffset.TryParse(normalized, CultureInfo.InvariantCulture,
+            DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal, out date) ||
+            DateTimeOffset.TryParseExact(normalized, new[] { "ddd MMM dd yyyy HH:mm:ss zzz", "ddd MMM d yyyy HH:mm:ss zzz" },
+                CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out date);
     }
     private static string String(JsonElement d,string key,string fallback="") => d.TryGetProperty(key,out var v)&&v.ValueKind==JsonValueKind.String ? v.GetString()! : fallback;
     private static HabiticaRemoteTask ParseTask(JsonElement d)

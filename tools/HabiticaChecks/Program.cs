@@ -61,6 +61,7 @@ try
     File.WriteAllText(metadata, "broken json");
     var local = otherMachine.Apply(settings, null, second, null, null, false, () => new(true, ""));
     Check(local.LocalResult.Success && local.SyncWarning != null && File.ReadAllText(metadata) == "broken json", "corrupt metadata preserved and local save warning visible");
+    await BatchChecks.Run();
     await RecoveryChecks.Run();
     await MultiComputerChecks.Run();
     Console.WriteLine("Worker checks passed; no live requests.");
