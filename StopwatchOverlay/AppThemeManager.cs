@@ -19,7 +19,8 @@ public static class AppThemeManager
     public static bool IsPixelDeckDay => _currentTheme == AppThemeCatalog.PixelDeckDay;
     public static bool IsDaylight => _currentTheme == AppThemeCatalog.Daylight;
     public static bool IsAcanthus => _currentTheme == AppThemeCatalog.Acanthus;
-    public static bool IsPirate => _currentTheme == AppThemeCatalog.Pirate;
+    public static bool IsNika => _currentTheme == AppThemeCatalog.Nika;
+    public static bool IsPirate => AppThemeCatalog.IsOnePiece(_currentTheme);
     public static bool UsesThemedOverlayChrome => _currentTheme != AppThemeCatalog.Midnight;
 
     public static event EventHandler? ThemeChanged;
@@ -113,7 +114,9 @@ public static class AppThemeManager
         _currentTheme = theme;
         _appliedApplication = application;
         // Shared artwork opt-in for the themed application pages.
-        application.Resources["PirateControllerEnabled"] = theme == AppThemeCatalog.Pirate;
+        application.Resources["PirateControllerEnabled"] = AppThemeCatalog.IsOnePiece(theme);
+        application.Resources["NikaControllerEnabled"] = theme == AppThemeCatalog.Nika;
+        application.Resources["NikaOptionsVisibility"] = theme == AppThemeCatalog.Nika ? Visibility.Visible : Visibility.Collapsed;
         ThemeChanged?.Invoke(null, EventArgs.Empty);
     }
 
@@ -130,6 +133,7 @@ public static class AppThemeManager
                     AppThemeCatalog.Daylight =>
                         "/StopwatchOverlay;component/Themes/Daylight.xaml",
                     AppThemeCatalog.Pirate => "/StopwatchOverlay;component/Themes/Pirate.xaml",
+                    AppThemeCatalog.Nika => "/StopwatchOverlay;component/Themes/Pirate.xaml",
                     AppThemeCatalog.Acanthus =>
                         "/StopwatchOverlay;component/Themes/Acanthus.xaml",
                     _ => "/StopwatchOverlay;component/Themes/Midnight.xaml"

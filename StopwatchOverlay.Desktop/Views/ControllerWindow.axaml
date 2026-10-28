@@ -8,9 +8,21 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBackgroundBrush}">
 
+    <Window.Resources>
+        <controls:NikaTimePartsConverter x:Key="NikaTimeParts"/>
+        <x:Double x:Key="NikaTimerWidth">840</x:Double>
+        <x:String x:Key="ControllerProjectAction">Set Project</x:String>
+        <x:Int32 x:Key="ControllerMenuRow">1</x:Int32>
+        <x:Double x:Key="ControllerModeSpacing">12</x:Double>
+        <Thickness x:Key="ControllerModeMargin">0,0,0,16</Thickness>
+        <Thickness x:Key="ControllerRailHeadingMargin">0,0,0,10</Thickness>
+        <x:Double x:Key="ControllerLapHeadingFontSize">13</x:Double>
+    </Window.Resources>
     <Window.Styles>
         <StyleInclude Source="/Styles/PirateControllerStyles.axaml"/>
+        <StyleInclude Source="/Styles/NikaControllerStyles.axaml"/>
     </Window.Styles>
+    <Viewbox x:Name="ControllerLayoutHost" Stretch="Uniform">
     <Grid x:Name="ControllerFrame" RowDefinitions="Auto,Auto,*">
         <controls:PirateArtwork Classes="pirateLayer" Part="Wood" Grid.RowSpan="3"/>
         <controls:PirateArtwork Classes="pirateLayer" Part="Header" Grid.Row="0"/>
@@ -41,9 +53,38 @@
             </WrapPanel>
         </Border>
 
+        <Border x:Name="NikaHeader" Classes="nikaOnly nikaHeader" Grid.Row="0" PointerPressed="NikaHeader_PointerPressed" Background="#032437" BorderBrush="#D0AC68" BorderThickness="0,0,0,1.5" Height="96" Padding="30,10,145,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:NikaArtwork Part="Header" Grid.ColumnSpan="3" Margin="-30,-10,-145,-10"/>
+                <StackPanel Classes="nikaWindowControls" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-10,-130,0">
+                    <Border BorderBrush="#748991" BorderThickness="1,0,0,0" Height="32" Margin="0,6,14,0"/>
+                    <Button Classes="nikaWindowControl" Content="−" AutomationProperties.Name="Minimize" Click="NikaMinimize_Click"/>
+                    <Button Classes="nikaWindowControl" Content="□" AutomationProperties.Name="Maximize or restore" Click="NikaMaximize_Click"/>
+                    <Button Classes="nikaWindowControl" Content="×" AutomationProperties.Name="Close" Click="NikaClose_Click"/>
+                </StackPanel>
+                <controls:NikaArtwork Part="Crest" Width="92" Height="76"/>
+                <StackPanel Classes="nikaHeaderBrand" Grid.Column="1" Margin="18,4,0,0" VerticalAlignment="Center">
+                    <TextBlock Classes="nikaHeaderTitle" Text="Stopwatch Controller" FontFamily="{DynamicResource NikaDisplayFont}" FontWeight="ExtraBold" Foreground="#FFF1D9"/>
+                    <TextBlock Classes="nikaHeaderCaption" Text="GRAND LINE  ·  NAVIGATOR EDITION" Foreground="#D9B76E" FontSize="11" LetterSpacing="3"/>
+                </StackPanel>
+                <StackPanel Classes="nikaHeaderNav" Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Classes="topAction" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
+                    <Button Classes="topAction" Content="Settings" Click="SettingsButton_Click"/>
+                    <Button Classes="topAction" Content="Shortcuts" Click="ShortcutsButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Menu Bar -->
-        <Menu Classes="controllerMenu" Grid.Row="1" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
+        <Menu Classes="controllerMenu" Grid.Row="{DynamicResource ControllerMenuRow}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
             <MenuItem Header="_Timers">
+                <MenuItem Classes="nikaOnly" Header="Start / Pause" Click="StartStopButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Add lap" Click="LapButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Reset" Click="ResetButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Show / Hide overlay" Click="ToggleOverlayButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Records &amp; Analytics" Click="DashboardButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Settings" Click="SettingsButton_Click"/>
+                <MenuItem Classes="nikaOnly" Header="Shortcuts" Click="ShortcutsButton_Click"/>
                 <MenuItem Header="_New timer" Click="NewTimerMenuItem_Click"/>
                 <MenuItem Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
                 <MenuItem x:Name="ToggleCombinedMenuItem" Header="_Combine overlays" Click="ToggleCombinedOverlayMenuItem_Click"/>
@@ -52,24 +93,32 @@
                 <MenuItem Header="Set _project..." Click="RenameTimerMenuItem_Click"/>
                 <MenuItem Header="_Close active timer" Click="CloseTimerMenuItem_Click"/>
             </MenuItem>
-            <MenuItem Header="_Dashboard" Click="DashboardButton_Click"/>
-            <MenuItem Header="_Shortcuts" Click="ShortcutsButton_Click"/>
-            <MenuItem Header="_Settings" Click="SettingsButton_Click"/>
+            <MenuItem Classes="legacyMenu" Header="_Dashboard" Click="DashboardButton_Click"/>
+            <MenuItem Classes="legacyMenu" Header="_Shortcuts" Click="ShortcutsButton_Click"/>
+            <MenuItem Classes="legacyMenu" Header="_Settings" Click="SettingsButton_Click"/>
         </Menu>
 
         <!-- Main Body -->
-        <Grid Grid.Row="2" ColumnDefinitions="260,*" x:Name="ControllerBody" Classes="controllerBody">
+        <Grid Grid.Row="2" RowDefinitions="*,Auto" ColumnDefinitions="260,*" x:Name="ControllerBody" Classes="controllerBody">
             <controls:PirateArtwork Classes="pirateLayer" Part="Rail"/>
             <controls:PirateArtwork Classes="pirateLayer" Part="Map" Grid.Column="1" Margin="8,4,0,0"/>
 
+            <Border Classes="nikaOnly" Grid.RowSpan="2" Background="#032437"/>
+            <controls:NikaArtwork Classes="nikaOnly" Grid.RowSpan="2" Part="Navy"/>
+            <controls:NikaArtwork x:Name="NikaMural" Classes="nikaOnly" Grid.RowSpan="2" Part="Mural" Margin="4,435,4,112" Opacity="0.56"/>
+            <controls:NikaArtwork x:Name="NikaMap" Classes="nikaOnly" Grid.Column="1" Grid.RowSpan="2" Part="Map"/>
             <!-- Left Rail: Timers List -->
-            <Border Classes="rail" Grid.Column="0"
+            <Border Classes="rail" Grid.Column="0" Grid.RowSpan="2"
 
                     BorderBrush="{DynamicResource SubtleDividerBrush}"
 
                    >
                 <Grid RowDefinitions="Auto,*,Auto">
-                    <TextBlock Classes="railHeading" Grid.Row="0" Text="Timers" Margin="0,0,0,10"/>
+                    <Grid Classes="railHeadingRow" Grid.Row="0" Margin="{DynamicResource ControllerRailHeadingMargin}" ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="railHeading" Text="Timers"/>
+                        <TextBlock x:Name="NikaTimerCount" Classes="nikaOnly" Grid.Column="1" Foreground="#C5D3DC" FontSize="16" VerticalAlignment="Center"/>
+                        <Border Classes="nikaOnly" Height="1" Background="#476574" VerticalAlignment="Bottom" Grid.ColumnSpan="2"/>
+                    </Grid>
 
                     <ListBox Grid.Row="1" x:Name="TimerRailList"
                              Background="Transparent" BorderThickness="0"
@@ -81,12 +130,14 @@
 
                                         CornerRadius="6"
                                         Margin="0,2">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <StackPanel Grid.Column="0" Spacing="2">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <controls:NikaRailIcon Classes="nikaOnly" NameText="{Binding DisplayName}" Width="38" Height="38" Margin="0,0,18,0" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Spacing="2">
                                             <TextBlock Classes="railName" Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Classes="railSummary" Text="{Binding DisplaySummary}"/>
                                         </StackPanel>
-                                        <Ellipse Grid.Column="1" Width="8" Height="8"
+                                        <Button Classes="nikaOnly nikaRailMenuButton" Grid.Column="2" Content="···" AutomationProperties.Name="Timer actions" ToolTip.Tip="Timer actions" Click="NikaRailMenu_Click"/>
+                                        <Ellipse Grid.Column="2" Width="8" Height="8"
                                                  Fill="{DynamicResource AccentBrush}"
                                                  IsVisible="{Binding IsRunning}"
                                                  VerticalAlignment="Center"/>
@@ -108,21 +159,27 @@
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Classes="workspace">
 
                     <!-- Title and New Timer Button -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
-                        <StackPanel Grid.Column="0" Classes="workspaceTitlePanel" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14" Classes="workspaceTitleRow">
+                        <controls:NikaArtwork Classes="nikaOnly nikaLogPose" Part="LogPose" Grid.ColumnSpan="2" HorizontalAlignment="Right" Width="220" Height="156" Margin="0,-18,215,-14"/>
+                        <StackPanel Grid.Column="0" Classes="workspaceTitlePanel" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Classes="nikaOnly nikaEyebrow" Text="ACTIVE TIMER"/>
+                            <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading workspaceTitle" Text="Active Timer" VerticalAlignment="Center"/>
-                            <Button Content="Set Project" Classes="modern renameProject" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
+                            <Button Content="{DynamicResource ControllerProjectAction}" Classes="modern renameProject" Margin="10,0,0,0" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
+                            </StackPanel>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="+ New timer" Classes="modern" Click="NewTimerMenuItem_Click"/>
+                        <Button x:Name="WorkspaceNewTimerButton" Grid.Column="1" Content="+ New timer" Classes="modern" VerticalAlignment="Top" Click="NewTimerMenuItem_Click"/>
                     </Grid>
 
                     <!-- Mode Selector -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12" Margin="0,0,0,16">
+                    <Border Classes="modeFrame" Grid.Row="1" HorizontalAlignment="Center" Margin="{DynamicResource ControllerModeMargin}">
+                    <StackPanel Classes="modeSelector" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="{DynamicResource ControllerModeSpacing}">
                         <RadioButton x:Name="StopwatchModeRadio" Content="Stopwatch" IsChecked="True" GroupName="Mode" Checked="ModeRadio_Checked"/>
                         <RadioButton x:Name="ClockModeRadio" Content="Clock" GroupName="Mode" Checked="ModeRadio_Checked"/>
                         <RadioButton x:Name="CountdownModeRadio" Content="Countdown" GroupName="Mode" Checked="ModeRadio_Checked"/>
                         <RadioButton x:Name="TimecodeModeRadio" Content="Timecode" GroupName="Mode" Checked="ModeRadio_Checked"/>
                     </StackPanel>
+                    </Border>
 
                     <!-- Countdown Options (Visible only in Countdown mode) -->
                     <Border Grid.Row="2" x:Name="CountdownPanel"
@@ -172,7 +229,15 @@
 
 
                             HorizontalAlignment="Stretch">
+                        <Grid>
+                        <controls:NikaArtwork Classes="nikaOnly" Part="Dial"/>
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Classes="nikaOnly nikaStateBadge" HorizontalAlignment="Center" BorderBrush="#B78337" BorderThickness="1" CornerRadius="18" Width="160" Height="36" Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse Width="13" Height="13" Fill="{Binding Fill, ElementName=StatusDot}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Text, ElementName=StatusText}" FontSize="18"/>
+                                </StackPanel>
+                            </Border>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
                                 <Ellipse x:Name="RecIndicator" Width="18" Height="18" Fill="#EF4444" IsVisible="False" VerticalAlignment="Center"/>
                                 <TextBlock Classes="timeDisplay" x:Name="TimeDisplay"
@@ -187,8 +252,17 @@
                             <Viewbox Classes="pirateOnly" MaxHeight="112" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,4">
                                 <controls:PirateTimerText Text="{Binding Text, ElementName=TimeDisplay}"/>
                             </Viewbox>
+                            <Viewbox Classes="nikaOnly nikaTimer" Width="{DynamicResource NikaTimerWidth}" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,0,0,6">
+                                <TextBlock x:Name="NikaTimeDisplay" FontFamily="{DynamicResource NikaDigitsFont}" FontSize="216" FontWeight="{DynamicResource NikaTimerWeight}" Foreground="#032437"><Run Text="{Binding Text, ElementName=TimeDisplay, Converter={StaticResource NikaTimeParts}}"/><Run FontSize="118" Text="{Binding Text, ElementName=TimeDisplay, Converter={StaticResource NikaTimeParts}, ConverterParameter=fraction}"/></TextBlock>
+                            </Viewbox>
+                            <Grid Classes="nikaOnly" ColumnDefinitions="*,*,*" Width="730" Margin="0,0,110,0" HorizontalAlignment="Center">
+                                <TextBlock Text="HOURS" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
+                                <TextBlock Text="MINUTES" Grid.Column="1" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
+                                <TextBlock Text="SECONDS" Grid.Column="2" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
+                            </Grid>
                             <TextBlock x:Name="ProjectSubtitle" Text="" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0" IsVisible="False"/>
                         </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- Control Buttons -->
@@ -210,14 +284,35 @@
 
                            >
                         <Grid RowDefinitions="Auto,*">
-                            <TextBlock Grid.Row="0" Text="Lap times" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
-                            <ListBox Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
+                            <TextBlock Classes="lapHeading" Grid.Row="0" Text="Lap times" FontWeight="Bold" FontSize="{DynamicResource ControllerLapHeadingFontSize}" Margin="0,0,0,6"/>
+                            <TextBlock Classes="nikaOnly" x:Name="NikaLapCount" Grid.Row="0" Margin="145,13,0,0" FontSize="14"/>
+                            <ListBox Classes="originalLaps" Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="13" Margin="0,1"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+                            <Grid Classes="nikaOnly nikaLapTable" Grid.Row="1" RowDefinitions="30,*">
+                                <Grid ColumnDefinitions="100,*,*" Height="30">
+                                    <TextBlock Text="L A P" Margin="30,0,0,0" FontSize="11"/>
+                                    <TextBlock Grid.Column="1" Text="S P L I T" HorizontalAlignment="Center" FontSize="11"/>
+                                    <TextBlock Grid.Column="2" Text="T O T A L" HorizontalAlignment="Center" FontSize="11"/>
+                                </Grid>
+                                <ItemsControl Grid.Row="1" x:Name="NikaLapTable">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="views:NikaLapRow">
+                                            <Border Background="{Binding Background}" BorderBrush="#509D7B46" BorderThickness="0,0,0,1" CornerRadius="5" Height="43">
+                                                <Grid ColumnDefinitions="100,*,*">
+                                                    <TextBlock Text="{Binding Number}" Margin="30,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="29" FontWeight="SemiBold"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Split}" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="34" FontWeight="SemiBold" LetterSpacing="1.2"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Total}" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="34" FontWeight="SemiBold" LetterSpacing="1.2"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
                             <TextBlock Classes="lapPlaceholder" x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
@@ -238,6 +333,21 @@
 
                 </Grid>
             </ScrollViewer>
+            <Border Classes="nikaOnly nikaFooter" Grid.Row="1" Grid.Column="1" Background="#032437" Padding="24,12" Height="55">
+                <Grid ColumnDefinitions="Auto,*">
+                    <controls:NikaArtwork Part="Navy" Grid.ColumnSpan="2" Margin="-24,-12"/>
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Ellipse Width="13" Height="13" Fill="#12B768" VerticalAlignment="Center"/>
+                        <TextBlock Text="Ready" Foreground="#FFF1D9" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Border BorderBrush="#65808B" BorderThickness="1" CornerRadius="4" Padding="10,4"><TextBlock Text="Win+F2 → Space" Foreground="#FFF1D9" FontSize="14"/></Border>
+                        <TextBlock Text="Start / Pause" Foreground="#D5E0E5" VerticalAlignment="Center" FontSize="14"/>
+                        <Border BorderBrush="#65808B" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="12,0,0,0"><TextBlock Text="Win+F2 → R" Foreground="#FFF1D9" FontSize="14"/></Border>
+                        <TextBlock Text="Reset" Foreground="#D5E0E5" VerticalAlignment="Center" FontSize="14"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
         <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Right" VerticalAlignment="Top" RenderTransformOrigin="50%,50%">
@@ -249,5 +359,7 @@
         <controls:PirateArtwork Classes="pirateLayer" Part="Corner" Grid.RowSpan="3" Width="95" Height="85" HorizontalAlignment="Right" VerticalAlignment="Bottom" RenderTransformOrigin="50%,50%">
             <controls:PirateArtwork.RenderTransform><ScaleTransform ScaleX="-1" ScaleY="-1"/></controls:PirateArtwork.RenderTransform>
         </controls:PirateArtwork>
+        <Border Classes="nikaOnly nikaFrame" Grid.RowSpan="3" BorderBrush="#385260" BorderThickness="1" IsHitTestVisible="False"/>
     </Grid>
+    </Viewbox>
 </Window>

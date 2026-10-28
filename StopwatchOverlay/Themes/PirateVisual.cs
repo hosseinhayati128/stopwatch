@@ -35,8 +35,17 @@ public static class PirateVisual
 /// <summary>Preserves the original wrapping layout outside Pirate.</summary>
 public sealed class ControllerActionPanel : WrapPanel
 {
+    private static readonly double[] NikaActionFractions = [ .224, .197, .179, .246, .154 ];
     protected override Size MeasureOverride(Size constraint)
     {
+        if (NikaVisual.GetEnabled(this))
+        {
+            double available = double.IsFinite(constraint.Width) ? constraint.Width : 897;
+            bool compact = available < 700;
+            for (int i = 0; i < InternalChildren.Count; i++)
+                InternalChildren[i].Measure(new Size(compact ? Math.Max(0, (available - 10) / 2) : available * NikaActionFractions[i] - 8, 60));
+            return new Size(available, compact ? 202 : 60);
+        }
         if (!PirateVisual.GetEnabled(this)) return base.MeasureOverride(constraint);
         double width = double.IsFinite(constraint.Width) ? constraint.Width : 680;
         foreach (UIElement child in InternalChildren)
@@ -46,6 +55,19 @@ public sealed class ControllerActionPanel : WrapPanel
 
     protected override Size ArrangeOverride(Size finalSize)
     {
+        if (NikaVisual.GetEnabled(this))
+        {
+            bool compact = finalSize.Width < 700;
+            double left = 0;
+            for (int i = 0; i < InternalChildren.Count; i++)
+            {
+                double cell = compact ? (finalSize.Width - 10) / 2 : finalSize.Width * NikaActionFractions[i] - 8;
+                InternalChildren[i].Arrange(new Rect(compact ? i % 2 * (cell + 10) : left,
+                    compact ? i / 2 * 71 : 0, cell, 60));
+                left += cell + 10;
+            }
+            return finalSize;
+        }
         if (!PirateVisual.GetEnabled(this)) return base.ArrangeOverride(finalSize);
         double width = Math.Max(0, (finalSize.Width - 14) / 2);
         // Existing child and keyboard order: Start, Lap, Reset, Overlay.
@@ -66,24 +88,35 @@ public sealed class ControllerHeaderPanel : Panel
     private bool _stacked;
     protected override Size MeasureOverride(Size availableSize)
     {
-        if (InternalChildren.Count != 2) return new Size();
-        double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 1100;
-        InternalChildren[1].Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        if (InternalChildren.Count < 2) return new Size();
+        double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 1456;
+        bool nika = NikaVisual.GetEnabled(this);
+        _stacked = nika ? width < 1040 : PirateVisual.GetEnabled(this) && width < 900;
+        foreach (UIElement child in InternalChildren) child.Measure(new Size(width, double.PositiveInfinity));
         double actions = InternalChildren[1].DesiredSize.Width;
-        _stacked = PirateVisual.GetEnabled(this) && width < 900;
-        if (_stacked)
-            InternalChildren[1].Measure(new Size(width, 52));
-        InternalChildren[0].Measure(new Size(Math.Max(0, _stacked ? width : width - actions - 16), 56));
-        return new Size(width, _stacked ? 118 : PirateVisual.GetEnabled(this) ? 86 : 52);
+        double overflow = InternalChildren.Count > 2 ? InternalChildren[2].DesiredSize.Width : 0;
+        double chrome = InternalChildren.Count > 3 ? InternalChildren[3].DesiredSize.Width : 0;
+        if (nika && _stacked)
+            InternalChildren[1].Measure(new Size(Math.Max(0, width - overflow - 12), 52));
+        InternalChildren[0].Measure(new Size(Math.Max(0, _stacked ? width - chrome : width - actions - (nika ? overflow + chrome + 16 : 16)), 80));
+        if (nika) return new Size(width, _stacked ? 134 : 94);
+        return new Size(width, (_stacked ? 118 : PirateVisual.GetEnabled(this) ? 86 : 52) + (InternalChildren.Count > 2 ? InternalChildren[2].DesiredSize.Height : 0));
     }
-
     protected override Size ArrangeOverride(Size finalSize)
     {
-        if (InternalChildren.Count != 2) return finalSize;
+        if (InternalChildren.Count < 2) return finalSize;
+        bool nika = NikaVisual.GetEnabled(this);
         double actions = Math.Min(finalSize.Width, InternalChildren[1].DesiredSize.Width);
-        InternalChildren[0].Arrange(new Rect(0, 0, Math.Max(0, _stacked ? finalSize.Width : finalSize.Width - actions - 16), _stacked ? 60 : finalSize.Height));
-        InternalChildren[1].Arrange(new Rect(_stacked ? 0 : finalSize.Width - actions, _stacked ? 62 : 0,
-            _stacked ? finalSize.Width : actions, _stacked ? 52 : finalSize.Height));
+        double overflow = InternalChildren.Count > 2 ? InternalChildren[2].DesiredSize.Width : 0;
+        double chrome = InternalChildren.Count > 3 ? InternalChildren[3].DesiredSize.Width : 0;
+        double headerHeight = nika ? finalSize.Height : finalSize.Height - (InternalChildren.Count > 2 ? InternalChildren[2].DesiredSize.Height : 0);
+        InternalChildren[0].Arrange(new Rect(0, 0, Math.Max(0, _stacked ? finalSize.Width - chrome : finalSize.Width - actions - (nika ? overflow + chrome + 16 : 16)), _stacked ? nika ? 74 : 60 : headerHeight));
+        InternalChildren[1].Arrange(new Rect(_stacked ? 0 : finalSize.Width - actions - (nika ? overflow + chrome : 0), _stacked ? nika ? 76 : 62 : 0,
+            _stacked ? Math.Max(0, finalSize.Width - overflow - (nika ? 12 : 0)) : actions, _stacked ? 52 : headerHeight));
+        if (InternalChildren.Count > 2) InternalChildren[2].Arrange(nika
+            ? new Rect(finalSize.Width - overflow - (_stacked ? 0 : chrome), _stacked ? 76 : 0, overflow, _stacked ? 52 : headerHeight)
+            : new Rect(0, headerHeight, finalSize.Width, Math.Max(0, finalSize.Height - headerHeight)));
+        if (InternalChildren.Count > 3) InternalChildren[3].Arrange(new Rect(Math.Max(0, finalSize.Width - chrome), 0, chrome, headerHeight));
         return finalSize;
     }
 }

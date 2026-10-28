@@ -11,14 +11,21 @@ public static class AppThemeCatalog
     public const string PixelDeckDay = "Pixel Deck Day";
     public const string Acanthus = "Acanthus";
     public const string Pirate = "one piece";
+    public const string Nika = "Nika's Chronicle";
     public const string PixelDeck = PixelDeckNight;
 
     public static IReadOnlyList<string> All { get; } =
-        [Midnight, Daylight, PixelDeckNight, PixelDeckDay, Acanthus, Pirate];
+        [Midnight, Daylight, PixelDeckNight, PixelDeckDay, Acanthus, Pirate, Nika];
+
+    /// <summary>Nika refines the controller while retaining One Piece for the rest of the app.</summary>
+    public static bool IsOnePiece(string? value) => Normalize(value) is Pirate or Nika;
 
     public static string Normalize(string? value)
     {
         string candidate = value?.Trim() ?? string.Empty;
+        if (candidate.Equals(Nika, StringComparison.OrdinalIgnoreCase)
+            || candidate.Equals("Nika", StringComparison.OrdinalIgnoreCase))
+            return Nika;
         if (candidate.Equals(Pirate, StringComparison.OrdinalIgnoreCase)
             || candidate.Equals("Pirate", StringComparison.OrdinalIgnoreCase))
             return Pirate;

@@ -66,6 +66,8 @@ public static class OverlayThemeCatalog
         {
             AppThemeCatalog.Acanthus => AcanthusLight,
             AppThemeCatalog.Pirate => Pirate,
+            // Only the controller is redesigned; the rest of Nika follows One Piece.
+            AppThemeCatalog.Nika => Pirate,
             _ => panel
         };
     }

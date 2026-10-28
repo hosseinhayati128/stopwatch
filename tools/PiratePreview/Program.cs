@@ -42,6 +42,11 @@ internal static class Program
         foreach (XAttribute ns in application.Root!.Attributes().Where(a => a.IsNamespaceDeclaration))
             dictionary.SetAttributeValue(ns.Name, ns.Value);
         app.Resources = (ResourceDictionary)XamlReader.Parse(Prepare(dictionary.ToString()));
+        if (args.Contains("--nika-only"))
+        {
+            CaptureNika(repo);
+            return;
+        }
         AppThemeManager.Apply(AppThemeCatalog.Pirate);
         if (args.Contains("--records-review-only"))
         {
@@ -161,6 +166,151 @@ internal static class Program
         CaptureSecondaryPages(output);
         CaptureNotes(output);
         Console.WriteLine("Rendered production-XAML previews; theme round-trip, minimum-size scrolling and scale interaction checks passed. User stores were not opened.");
+    }
+
+    private static Window ReadSyntheticWindow(string repo, string filename)
+    {
+        XDocument markup = XDocument.Load(Path.Combine(repo, "StopwatchOverlay", filename));
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        markup.Root!.Attribute(x + "Class")!.Remove();
+        foreach (XElement node in markup.Root.DescendantsAndSelf())
+        {
+            Type? type = typeof(Window).Assembly.GetType("System.Windows." + node.Name.LocalName)
+                ?? typeof(Window).Assembly.GetType("System.Windows.Controls." + node.Name.LocalName)
+                ?? typeof(Window).Assembly.GetType("System.Windows.Shapes." + node.Name.LocalName);
+            foreach (XAttribute attribute in node.Attributes().ToArray())
+                if (type?.GetEvent(attribute.Name.LocalName) != null) attribute.Remove();
+        }
+        return (Window)XamlReader.Parse(Prepare(markup.ToString()).Replace("clr-namespace:StopwatchOverlay\"", "clr-namespace:StopwatchOverlay;assembly=StopwatchOverlay\""));
+    }
+
+    private static void CaptureNika(string repo)
+    {
+        string output = Path.Combine(repo, "design", "one-piece-v2", "implemented-wpf");
+        Directory.CreateDirectory(output);
+        var fields = new NikaLapFieldConverter();
+        var elapsedRows = new[] { "Lap 2: 25:44:27.8", "Lap 1: 23:44:27.3" };
+        string split = (string)fields.Convert([elapsedRows[0], elapsedRows], typeof(string), "1", System.Globalization.CultureInfo.InvariantCulture);
+        if (split != "02:00:00.5") throw new InvalidOperationException("Long-hour lap split failed: " + split);
+        var malformedRows = new[] { "Lap 2: 25:44:27", "Lap 1: invalid" };
+        if ((string)fields.Convert([malformedRows[0], malformedRows], typeof(string), "1", System.Globalization.CultureInfo.InvariantCulture) != "—") throw new InvalidOperationException("Malformed laps must not be shown as valid cumulative splits.");
+        foreach (string unsupported in new[] { "01:30", "-00:01:30", "00:01:30:15", "malformed" })
+        {
+            var rows = new[] { "Lap 1: " + unsupported };
+            if ((string)fields.Convert([rows[0], rows], typeof(string), "1", System.Globalization.CultureInfo.InvariantCulture) != "—"
+                || (string)fields.Convert([rows[0], rows], typeof(string), "2", System.Globalization.CultureInfo.InvariantCulture) != unsupported)
+                throw new InvalidOperationException("Unsupported lap format must preserve raw total with unknown split: " + unsupported);
+        }
+        AppThemeManager.Apply(AppThemeCatalog.Nika);
+        var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika };
+        NikaVisual.ApplyChoices(settings);
+        AppUiScale.Apply(100);
+        var window = ReadSyntheticWindow(repo, "ControllerWindow.xaml");
+        Node<ListBox>(window, "TimerRailList").ItemsSource = new[]
+        {
+            new { DisplayName = "Navigation", DisplaySummary = "00:00:00  ·  Paused" },
+            new { DisplayName = "Reading", DisplaySummary = "00:00:00  ·  Paused" },
+            new { DisplayName = "Illustration", DisplaySummary = "00:44:27  ·  Paused" },
+            new { DisplayName = "Research", DisplaySummary = "00:00:00  ·  Paused" },
+            new { DisplayName = "Programming", DisplaySummary = "00:00:00  ·  Paused" }
+        };
+        Node<ListBox>(window, "TimerRailList").SelectedIndex = 2;
+        Node<TextBlock>(window, "ActiveWorkspaceTitle").Text = "Illustration";
+        Node<TextBlock>(window, "TimeDisplay").Text = "00:44:27.0";
+        Node<Button>(window, "StartStopButton").Content = "▶  Start";
+        Node<Button>(window, "LapButton").Content = "☷  Add lap";
+        Node<Button>(window, "ResetButton").Content = "⟳  Reset";
+        Node<Button>(window, "ToggleOverlayButton").Content = "◉  Hide overlay";
+        Node<ListBox>(window, "LapListBox").ItemsSource = new[]
+        { "03                    00:15:09                    00:44:27", "02                    00:14:42                    00:29:18", "01                    00:14:36                    00:14:36" };
+        Node<TextBlock>(window, "LapPlaceholder").Visibility = Visibility.Collapsed;
+        Node<ListBox>(window, "LapListBox").SelectedIndex = 0;
+        Node<ColumnDefinition>(window, "TimerRailColumn").Width = new GridLength(360);
+        Capture(window, output, "controller-paused", 1536, 1024);
+        if (PirateVisual.GetEnabled(window)) throw new InvalidOperationException("Nika controller must opt out of inherited one piece decorations.");
+        var lap = Node<Button>(window, "LapButton");
+        lap.Template = (ControlTemplate)window.FindResource("NikaButtonTemplate");
+        lap.ApplyTemplate();
+        var surface = (Border)lap.Template.FindName("Surface", lap);
+        var originalBackground = surface.Background;
+        surface.SetCurrentValue(Border.BackgroundProperty, new SolidColorBrush(Color.FromRgb(33, 83, 103)));
+        Capture(window, output, "controller-hover-synthetic", 1536, 1024);
+        surface.SetCurrentValue(Border.BackgroundProperty, originalBackground);
+        var focus = (Border)lap.Template.FindName("Focus", lap);
+        focus.SetCurrentValue(Border.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(214, 155, 49)));
+        Capture(window, output, "controller-focus-synthetic", 1536, 1024);
+        focus.SetCurrentValue(Border.BorderBrushProperty, Brushes.Transparent);
+        lap.ClearValue(Control.TemplateProperty);
+        Node<TextBlock>(window, "NikaStateText").Text = "Running";
+        Node<System.Windows.Shapes.Ellipse>(window, "NikaStateIndicator").Fill = Brushes.MediumSeaGreen;
+        Node<Button>(window, "StartStopButton").Content = "Ⅱ  Pause";
+        Node<TextBlock>(window, "TimeDisplay").Text = "00:44:32.8";
+        Capture(window, output, "controller-running", 1536, 1024);
+        Node<ColumnDefinition>(window, "TimerRailColumn").Width = new GridLength(0);
+        Node<Border>(window, "TimerRail").Visibility = Visibility.Collapsed;
+        NikaVisual.SetCompact(window, true);
+        AppUiScale.Apply(125);
+        Capture(window, output, "controller-compact-125", 560, 520);
+        var scroll = Node<ScrollViewer>(window, "ControllerScrollViewer");
+        scroll.ScrollToBottom();
+        Capture(window, output, "controller-compact-125-scrolled", 560, 520);
+        if (scroll.VerticalOffset <= 0) throw new InvalidOperationException("Nika compact controller must scroll.");
+        scroll.ScrollToTop();
+        AppUiScale.Apply(100);
+        NikaVisual.SetCompact(window, false);
+        Node<ColumnDefinition>(window, "TimerRailColumn").Width = new GridLength(360);
+        Node<Border>(window, "TimerRail").Visibility = Visibility.Visible;
+        foreach (var option in NikaThemeCatalog.Typography)
+        {
+            settings.NikaTypography = option.Id;
+            NikaVisual.ApplyChoices(settings);
+            Capture(window, output, "typography-" + option.Id, 1536, 1024);
+        }
+        settings.NikaBackground = "amber-atlas";
+        NikaVisual.ApplyChoices(settings);
+        Capture(window, output, "background-amber-atlas", 1536, 1024);
+        settings.NikaBackground = "original-map";
+        foreach (var option in NikaThemeCatalog.Artworks)
+        {
+            settings.NikaSidebarArtwork = option.Id;
+            NikaVisual.ApplyChoices(settings);
+            if (Application.Current.Resources["NikaMuralBrush"] is not ImageBrush)
+                throw new InvalidOperationException("Mural did not resolve " + option.Id);
+        }
+        AppThemeManager.Apply(AppThemeCatalog.Midnight);
+        Node<ColumnDefinition>(window, "TimerRailColumn").Width = new GridLength(260);
+        Capture(window, output, "controller-midnight-roundtrip", 1040, 720);
+        if (NikaVisual.GetEnabled(window) || Node<TextBlock>(window, "TimeDisplay").Visibility != Visibility.Visible)
+            throw new InvalidOperationException("Nika theme did not reverse.");
+        AppThemeManager.Apply(AppThemeCatalog.Pirate);
+        if (!PirateVisual.GetEnabled(window) || NikaVisual.GetEnabled(window))
+            throw new InvalidOperationException("The earlier one piece theme changed identity.");
+        Node<ColumnDefinition>(window, "TimerRailColumn").Width = new GridLength(348);
+        Capture(window, output, "controller-one-piece-roundtrip", 1200, 896);
+        AppThemeManager.Apply(AppThemeCatalog.Nika);
+        settings.NikaTypography = "original-classic";
+        settings.NikaSidebarArtwork = "sun-warrior";
+        NikaVisual.ApplyChoices(settings);
+        var inspector = ReadSyntheticWindow(repo, "SettingsWindow.xaml");
+        Node<StackPanel>(inspector, "OverlayPanel").Visibility = Visibility.Collapsed;
+        Node<StackPanel>(inspector, "AppearancePanel").Visibility = Visibility.Visible;
+        Node<ComboBox>(inspector, "ThemeCombo").ItemsSource = AppThemeCatalog.All;
+        Node<ComboBox>(inspector, "ThemeCombo").SelectedItem = AppThemeCatalog.Nika;
+        foreach (var (name, options, selected) in new[]
+        {
+            ("NikaBackgroundCombo", NikaThemeCatalog.Backgrounds, settings.NikaBackground),
+            ("NikaTypographyCombo", NikaThemeCatalog.Typography, settings.NikaTypography),
+            ("NikaArtworkCombo", NikaThemeCatalog.Artworks, settings.NikaSidebarArtwork)
+        })
+        {
+            var combo = Node<ComboBox>(inspector, name);
+            combo.ItemsSource = options; combo.SelectedValue = selected;
+        }
+        Node<Slider>(inspector, "UiScaleSlider").Value = 100;
+        Node<ComboBox>(inspector, "OverlayThemeCombo").ItemsSource = OverlayThemeCatalog.All;
+        Node<ComboBox>(inspector, "OverlayThemeCombo").SelectedItem = OverlayThemeCatalog.FollowApplicationTheme;
+        Capture(inspector, output, "settings-appearance", 1100, 850);
+        Console.WriteLine("Nika production XAML: both themes round-trip, all typography/mural resources resolve, compact 125% scrolling passes. No app startup or user stores opened.");
     }
 
     private static void CaptureRecordsAndReview(string output)

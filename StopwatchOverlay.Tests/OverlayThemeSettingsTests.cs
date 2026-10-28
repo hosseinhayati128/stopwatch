@@ -60,6 +60,7 @@ public sealed class OverlayThemeSettingsTests
                 {
                     AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
                     AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
+                    AppThemeCatalog.Nika => OverlayThemeCatalog.Pirate,
                     _ => panel
                 }
                 : overlay,
@@ -117,6 +118,7 @@ public sealed class OverlayThemeSettingsTests
                     {
                         AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
                         AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
+                        AppThemeCatalog.Nika => OverlayThemeCatalog.Pirate,
                         _ => nextPanel
                     }
                     : overlay,

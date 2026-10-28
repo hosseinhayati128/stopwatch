@@ -165,6 +165,9 @@ namespace StopwatchOverlay
         // Application chrome theme. Stable display names are kept in JSON for
         // backwards compatibility with the legacy "Dark" setting.
         public string ThemeMode { get; set; } = AppThemeCatalog.Midnight;
+        public string NikaBackground { get; set; } = NikaThemeCatalog.DefaultBackground;
+        public string NikaTypography { get; set; } = "original-classic";
+        public string NikaSidebarArtwork { get; set; } = "sun-warrior";
         public double UiScalePercent { get; set; } = 90;
         public TypographySettings Typography { get; set; } = new();
         public string CloseAction { get; set; } = CloseActionChoice.Ask;
@@ -603,6 +606,9 @@ namespace StopwatchOverlay
             HabiticaClientId = HabiticaClientId?.Trim() ?? "";
 
             ThemeMode = AppThemeCatalog.Normalize(ThemeMode);
+            NikaBackground = NikaThemeCatalog.NormalizeBackground(NikaBackground);
+            NikaTypography = NikaThemeCatalog.NormalizeTypography(NikaTypography);
+            NikaSidebarArtwork = NikaThemeCatalog.NormalizeArtwork(NikaSidebarArtwork);
             UiScalePercent = AppUiScale.Normalize(UiScalePercent);
             Typography ??= new();
             Typography.Normalize();

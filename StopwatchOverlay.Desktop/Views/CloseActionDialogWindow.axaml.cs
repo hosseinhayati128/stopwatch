@@ -15,7 +15,7 @@ public partial class CloseActionDialogWindow : Window
     public CloseActionDialogWindow(string? themeMode)
     {
         InitializeComponent();
-        Classes.Set("pirate", AppThemeCatalog.Normalize(themeMode) == AppThemeCatalog.Pirate);
+        Classes.Set("pirate", AppThemeCatalog.Normalize(themeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika);
     }
 
     public static async Task<(CloseDialogResult Action, bool RememberChoice)> ShowAsync(Window? owner, string? themeMode = null)

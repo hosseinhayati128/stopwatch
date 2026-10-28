@@ -21,7 +21,7 @@ public partial class TimerPickerWindow : Window
     public TimerPickerWindow(IReadOnlyList<TimerSession> timers, TimerSession? activeTimer)
     {
         InitializeComponent();
-        _pirate = AppThemeManager.CurrentTheme == AppThemeCatalog.Pirate;
+        _pirate = AppThemeManager.IsPirate;
         Themes.PirateVisual.SetEnabled(this, _pirate);
         if (_pirate)
         {

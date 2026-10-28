@@ -27,6 +27,25 @@ public sealed class OverlayThemeResourcesTests
     ];
 
     [Fact]
+    public void NikaUsesOnePieceForSharedPagesAndFollowingClock()
+    {
+        RunSta(() =>
+        {
+            var load = typeof(AppThemeManager).GetMethod("LoadPalette",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+            var nika = (ResourceDictionary)load.Invoke(null, new object[] { AppThemeCatalog.Nika })!;
+            var pirate = (ResourceDictionary)load.Invoke(null, new object[] { AppThemeCatalog.Pirate })!;
+            Assert.Equal(pirate.Source, nika.Source);
+            foreach (string key in new[] { "SurfaceBrush", "PrimaryTextBrush", "PrimaryActionBrush", "ThemeTimerFontFamily" })
+                AssertResourceEqual(pirate[key], nika[key]);
+            Assert.Equal(OverlayThemeCatalog.Pirate,
+                OverlayThemeCatalog.Resolve(OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Nika));
+            Assert.Equal(OverlayThemeCatalog.Daylight,
+                OverlayThemeCatalog.Resolve(OverlayThemeCatalog.Daylight, AppThemeCatalog.Nika));
+        });
+    }
+
+    [Fact]
     public void PirateOverlay_UsesLocalPaintedArtAndBundledTypographyWithoutChangingCustomFonts()
     {
         RunSta(() =>
@@ -246,7 +265,9 @@ public sealed class OverlayThemeResourcesTests
         RunSta(() =>
         {
             int combinations = 0;
-            foreach ((string panelTheme, string file) in PanelPalettes.Append((AppThemeCatalog.Pirate, "Pirate.xaml")))
+            foreach ((string panelTheme, string file) in PanelPalettes
+                .Append((AppThemeCatalog.Pirate, "Pirate.xaml"))
+                .Append((AppThemeCatalog.Nika, "Pirate.xaml")))
             {
                 // This tree models inherited panel resources without starting App,
                 // touching Application.Resources, or loading stored user settings.

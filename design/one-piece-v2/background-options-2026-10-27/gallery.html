@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nika's Chronicle · 10 background choices</title>
+<style>
+:root{color-scheme:dark;--ink:#efdfbd;--muted:#a9b4b8;--navy:#061d29;--gold:#d7b574}
+*{box-sizing:border-box}body{margin:0;background:var(--navy);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+header,main,footer{max-width:1480px;margin:auto;padding:28px 32px}header{padding-bottom:14px}
+.eyebrow{color:var(--gold);font-size:11px;letter-spacing:3px;text-transform:uppercase}h1{font:500 clamp(28px,4vw,44px)/1.1 Georgia,serif;margin:12px 0}
+header p{color:var(--muted);max-width:700px;margin-bottom:12px}.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+button,a{touch-action:manipulation}button{font:inherit;color:var(--ink);background:#123344;border:1px solid #38525d;border-radius:8px;cursor:pointer;padding:9px 15px}
+button:hover{background:#1a4357}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}
+article{background:#0c2836;border:1px solid #2b414b;border-radius:12px;overflow:hidden;transition:border-color .15s}
+article.selected{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.preview{display:block;width:100%;padding:0;border:0;border-radius:0;position:relative;background:#d9b880}
+.preview img{width:100%;height:auto;display:block;aspect-ratio:3/2}
+.number{position:absolute;top:12px;left:12px;display:grid;place-items:center;width:34px;height:34px;border:1px solid #b99c69;border-radius:50%;background:#072331ed;color:#f2dba8;font-weight:700}
+.caption{padding:15px 18px;display:flex;gap:14px;align-items:start;justify-content:space-between}
+h2{font:500 22px/1.2 Georgia,serif;margin:0 0 7px}.caption p{color:var(--muted);font-size:13px;margin:0}
+label{display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap;font-size:13px;padding:3px 0}input{accent-color:var(--gold);width:17px;height:17px}
+footer{position:sticky;bottom:0;max-width:none;background:#061d29f5;border-top:1px solid #354955;padding:14px 32px;backdrop-filter:blur(12px);display:flex;gap:18px;justify-content:space-between;align-items:center}
+#selection{color:var(--gold)}footer p{margin:0;font-size:13px;color:var(--muted)}
+dialog{max-width:min(1500px,96vw);max-height:96vh;padding:0;border:1px solid #66716b;border-radius:12px;background:var(--navy);color:var(--ink)}
+dialog::backdrop{background:#001018e8}dialog img{display:block;width:100%;max-height:79vh;object-fit:contain}
+.dialogbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px}.dialogbar h2{margin:0}.dialogbar a{color:var(--gold)}
+.compact .grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.compact .caption{padding:10px;display:block}.compact h2{font-size:17px}.compact .caption p{display:none}.compact label{margin-top:8px}.compact .number{width:26px;height:26px;top:7px;left:7px;font-size:12px}
+@media(max-width:900px){.compact .grid{grid-template-columns:repeat(2,minmax(0,1fr))}header,main{padding-left:18px;padding-right:18px}.caption{display:block}.caption label{margin-top:10px}footer{padding:12px 18px}}
+@media(max-width:550px){.grid{grid-template-columns:1fr;gap:18px}.compact .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.compact h2{font-size:15px}footer{flex-wrap:wrap}}
+</style></head>
+<body class="compact">
+<header><div class="eyebrow">Nika's Chronicle · Background collection</div><h1>Choose your next voyage.</h1>
+<p>Ten warm parchment maps, refined with softer details along the left and bottom. Tap a background to inspect it.</p>
+<div class="toolbar"><button id="layout" aria-pressed="true">Show larger cards</button><span id="selection" aria-live="polite">No favorites selected</span></div></header>
+<main><div class="grid">
+<article id="option-1"><button class="preview" data-number="1" aria-label="Enlarge option 1: Grand Line Vellum"><img src="refined/01-grand-line-vellum.png" alt="Closest to the original, with finer coastal drawing." width="1536" height="1024"><span class="number">1</span></button><div class="caption"><div><h2>Grand Line Vellum</h2><p>Closest to the original, with finer coastal drawing.</p></div><label><input type="checkbox" value="1"> Favorite</label></div></article>
+<article id="option-2"><button class="preview" data-number="2" aria-label="Enlarge option 2: Amber Voyage"><img src="refined/02-amber-voyage.png" alt="Deeper honey parchment and antique bronze ink." width="1536" height="1024"><span class="number">2</span></button><div class="caption"><div><h2>Amber Voyage</h2><p>Deeper honey parchment and antique bronze ink.</p></div><label><input type="checkbox" value="2"> Favorite</label></div></article>
+<article id="option-3"><button class="preview" data-number="3" aria-label="Enlarge option 3: Sky Island Chart"><img src="refined/03-sky-island-chart.png" alt="Cloud islands and airy, faded contours." width="1536" height="1024"><span class="number">3</span></button><div class="caption"><div><h2>Sky Island Chart</h2><p>Cloud islands and airy, faded contours.</p></div><label><input type="checkbox" value="3"> Favorite</label></div></article>
+<article id="option-4"><button class="preview" data-number="4" aria-label="Enlarge option 4: Lagoon Cartography"><img src="refined/04-lagoon-cartography.png" alt="Warm sand with a restrained sea-glass wash." width="1536" height="1024"><span class="number">4</span></button><div class="caption"><div><h2>Lagoon Cartography</h2><p>Warm sand with a restrained sea-glass wash.</p></div><label><input type="checkbox" value="4"> Favorite</label></div></article>
+<article id="option-5"><button class="preview" data-number="5" aria-label="Enlarge option 5: Wano Ink Atlas"><img src="refined/05-wano-ink-atlas.png" alt="Soft woodblock waves and mountain contours." width="1536" height="1024"><span class="number">5</span></button><div class="caption"><div><h2>Wano Ink Atlas</h2><p>Soft woodblock waves and mountain contours.</p></div><label><input type="checkbox" value="5"> Favorite</label></div></article>
+<article id="option-6"><button class="preview" data-number="6" aria-label="Enlarge option 6: Desert Kingdom"><img src="refined/06-desert-kingdom.png" alt="Saffron sand, ancient coastlines, distant ruins." width="1536" height="1024"><span class="number">6</span></button><div class="caption"><div><h2>Desert Kingdom</h2><p>Saffron sand, ancient coastlines, distant ruins.</p></div><label><input type="checkbox" value="6"> Favorite</label></div></article>
+<article id="option-7"><button class="preview" data-number="7" aria-label="Enlarge option 7: Lost Golden City"><img src="refined/07-lost-golden-city.png" alt="Faded jungle islands with antique gold detail." width="1536" height="1024"><span class="number">7</span></button><div class="caption"><div><h2>Lost Golden City</h2><p>Faded jungle islands with antique gold detail.</p></div><label><input type="checkbox" value="7"> Favorite</label></div></article>
+<article id="option-8"><button class="preview" data-number="8" aria-label="Enlarge option 8: Winter Island Log"><img src="refined/08-winter-island-log.png" alt="Muted stone-blue islands on warm biscuit paper." width="1536" height="1024"><span class="number">8</span></button><div class="caption"><div><h2>Winter Island Log</h2><p>Muted stone-blue islands on warm biscuit paper.</p></div><label><input type="checkbox" value="8"> Favorite</label></div></article>
+<article id="option-9"><button class="preview" data-number="9" aria-label="Enlarge option 9: Dawn Sea Chart"><img src="refined/09-dawn-sea-chart.png" alt="Rose-honey warmth and soft coastal ink." width="1536" height="1024"><span class="number">9</span></button><div class="caption"><div><h2>Dawn Sea Chart</h2><p>Rose-honey warmth and soft coastal ink.</p></div><label><input type="checkbox" value="9"> Favorite</label></div></article>
+<article id="option-10"><button class="preview" data-number="10" aria-label="Enlarge option 10: Navigator's Masterwork"><img src="refined/10-navigator-masterwork.png" alt="The most precise and understated nautical chart." width="1536" height="1024"><span class="number">10</span></button><div class="caption"><div><h2>Navigator's Masterwork</h2><p>The most precise and understated nautical chart.</p></div><label><input type="checkbox" value="10"> Favorite</label></div></article>
+</div></main>
+<footer><p>All ten selected for Nika's Chronicle. Original Map and Amber Atlas remain available too.</p><button id="copy" disabled>Copy favorite numbers</button></footer>
+<dialog id="detail"><div class="dialogbar"><h2 id="detail-title"></h2><div><a id="full" target="_blank" rel="noopener">Open original</a> <button id="close" aria-label="Close enlarged background">Close</button></div></div><img id="detail-image" alt=""></dialog>
+<script>
+const options=[{"number":1,"name":"Grand Line Vellum","description":"Closest to the original, with finer coastal drawing.","file":"refined/01-grand-line-vellum.png"},{"number":2,"name":"Amber Voyage","description":"Deeper honey parchment and antique bronze ink.","file":"refined/02-amber-voyage.png"},{"number":3,"name":"Sky Island Chart","description":"Cloud islands and airy, faded contours.","file":"refined/03-sky-island-chart.png"},{"number":4,"name":"Lagoon Cartography","description":"Warm sand with a restrained sea-glass wash.","file":"refined/04-lagoon-cartography.png"},{"number":5,"name":"Wano Ink Atlas","description":"Soft woodblock waves and mountain contours.","file":"refined/05-wano-ink-atlas.png"},{"number":6,"name":"Desert Kingdom","description":"Saffron sand, ancient coastlines, distant ruins.","file":"refined/06-desert-kingdom.png"},{"number":7,"name":"Lost Golden City","description":"Faded jungle islands with antique gold detail.","file":"refined/07-lost-golden-city.png"},{"number":8,"name":"Winter Island Log","description":"Muted stone-blue islands on warm biscuit paper.","file":"refined/08-winter-island-log.png"},{"number":9,"name":"Dawn Sea Chart","description":"Rose-honey warmth and soft coastal ink.","file":"refined/09-dawn-sea-chart.png"},{"number":10,"name":"Navigator's Masterwork","description":"The most precise and understated nautical chart.","file":"refined/10-navigator-masterwork.png"}];
+const dialog=document.getElementById('detail');
+document.querySelectorAll('.preview').forEach(button=>button.addEventListener('click',()=>{
+ const item=options.find(x=>x.number===Number(button.dataset.number));
+ document.getElementById('detail-title').textContent=item.number+' · '+item.name;
+ document.getElementById('detail-image').src=item.file;document.getElementById('detail-image').alt=item.description;
+ document.getElementById('full').href=item.file;dialog.showModal();
+}));
+document.getElementById('close').onclick=()=>dialog.close();
+dialog.addEventListener('click',event=>{if(event.target===dialog){const bounds=dialog.getBoundingClientRect();if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)dialog.close()}});
+const chosen=()=>Array.from(document.querySelectorAll('input:checked')).map(x=>x.value);
+document.querySelectorAll('input').forEach(input=>input.addEventListener('change',()=>{
+ input.closest('article').classList.toggle('selected',input.checked);
+ const ids=chosen();document.getElementById('selection').textContent=ids.length?'Favorites: '+ids.join(', '):'No favorites selected';
+ document.getElementById('copy').disabled=!ids.length;document.getElementById('copy').textContent='Copy favorite numbers';
+}));
+document.getElementById('layout').onclick=()=>{const compact=document.body.classList.toggle('compact');document.getElementById('layout').textContent=compact?'Show larger cards':'Show all 10 together';document.getElementById('layout').setAttribute('aria-pressed',String(compact))};
+document.getElementById('copy').onclick=async()=>{
+ const text='Please add background options '+chosen().join(', ')+' to the app.';
+ try{await navigator.clipboard.writeText(text);document.getElementById('copy').textContent='Copied — paste in chat'}catch{window.prompt('Copy your selection:',text)}
+};
+</script></body></html>

@@ -83,6 +83,14 @@ public partial class SettingsWindow : Window
             _previewTimer.Start();
     }
 
+    private static void LoadNikaChoice(ComboBox combo, IReadOnlyList<NikaThemeOption> options, string id)
+    {
+        combo.ItemsSource = options;
+        combo.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<NikaThemeOption>((option, _) =>
+            new TextBlock { Text = option?.Name ?? "" });
+        combo.SelectedItem = options.First(option => option.Id == id);
+    }
+
     private void LoadControls()
     {
         _loading = true;
@@ -90,6 +98,9 @@ public partial class SettingsWindow : Window
         {
             ThemeCombo.ItemsSource = AppThemeCatalog.All;
             ThemeCombo.SelectedItem = AppThemeCatalog.Normalize(_settings.ThemeMode);
+            LoadNikaChoice(NikaBackgroundCombo, NikaThemeCatalog.Backgrounds, NikaThemeCatalog.NormalizeBackground(_settings.NikaBackground));
+            LoadNikaChoice(NikaTypographyCombo, NikaThemeCatalog.Typography, NikaThemeCatalog.NormalizeTypography(_settings.NikaTypography));
+            LoadNikaChoice(NikaArtworkCombo, NikaThemeCatalog.Artworks, NikaThemeCatalog.NormalizeArtwork(_settings.NikaSidebarArtwork));
             OverlayThemeCombo.ItemsSource = OverlayThemeCatalog.All;
             OverlayThemeCombo.SelectedItem = OverlayThemeCatalog.Normalize(_settings.OverlayTheme);
 
@@ -203,6 +214,9 @@ public partial class SettingsWindow : Window
     private void WireChanges()
     {
         ThemeCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaBackgroundCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaTypographyCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaArtworkCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
         OverlayThemeCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayTheme);
         ScreenCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayScreen);
         PositionCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayPosition);
@@ -379,7 +393,12 @@ public partial class SettingsWindow : Window
             if ((change & SettingsChangeKind.ApplicationScale) != 0)
                 _settings.UiScalePercent = AppUiScale.Normalize(UiScaleSlider.Value);
             if ((change & SettingsChangeKind.Theme) != 0)
+            {
                 _settings.ThemeMode = AppThemeCatalog.Normalize(ThemeCombo.SelectedItem?.ToString());
+                _settings.NikaBackground = NikaThemeCatalog.NormalizeBackground((NikaBackgroundCombo.SelectedItem as NikaThemeOption)?.Id);
+                _settings.NikaTypography = NikaThemeCatalog.NormalizeTypography((NikaTypographyCombo.SelectedItem as NikaThemeOption)?.Id);
+                _settings.NikaSidebarArtwork = NikaThemeCatalog.NormalizeArtwork((NikaArtworkCombo.SelectedItem as NikaThemeOption)?.Id);
+            }
 
             if ((change & SettingsChangeKind.OverlayTheme) != 0)
                 _settings.OverlayTheme = OverlayThemeCatalog.Normalize(OverlayThemeCombo.SelectedItem?.ToString());
@@ -564,6 +583,7 @@ public partial class SettingsWindow : Window
 
     private void UpdateDependentControlStates()
     {
+        NikaOptionsPanel.IsVisible = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;
         TransparencyDetailsExpander.IsVisible =
             OverlayThemeCatalog.Resolve(_settings.OverlayTheme, _settings.ThemeMode) == OverlayThemeCatalog.Pirate;
 
@@ -583,7 +603,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            if (AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Pirate)
+            if (AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika)
                 SettingsHeaderSurface.Resources["PrimaryTextBrush"] = new SolidColorBrush(Color.Parse("#F6E6BF"));
             else
                 SettingsHeaderSurface.Resources.Remove("PrimaryTextBrush");
@@ -1551,4 +1571,3 @@ public sealed class ProjectCategoryItemViewModel
     public string Description { get; init; } = "";
     public bool CanDelete { get; init; }
 }
-

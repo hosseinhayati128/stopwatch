@@ -72,11 +72,20 @@ public sealed class PirateArtwork : Control
 /// <summary>Keeps normal wrapping, with the Windows two-column action order in One Piece.</summary>
 public sealed class PirateActionPanel : WrapPanel
 {
+    public static readonly StyledProperty<bool> NikaProperty = AvaloniaProperty.Register<PirateActionPanel, bool>(nameof(Nika));
+    public bool Nika { get => GetValue(NikaProperty); set => SetValue(NikaProperty, value); }
     public static readonly StyledProperty<bool> PirateProperty = AvaloniaProperty.Register<PirateActionPanel, bool>(nameof(Pirate));
     public bool Pirate { get => GetValue(PirateProperty); set => SetValue(PirateProperty, value); }
-    static PirateActionPanel() => AffectsMeasure<PirateActionPanel>(PirateProperty);
+    static PirateActionPanel() => AffectsMeasure<PirateActionPanel>(PirateProperty, NikaProperty);
     protected override Size MeasureOverride(Size availableSize)
     {
+        if (Nika)
+        {
+            double usable = double.IsFinite(availableSize.Width) ? availableSize.Width : 880;
+            int nikaColumns = usable < 600 ? 2 : 5;
+            foreach (var child in Children) child.Measure(new Size(usable / nikaColumns, 60));
+            return new Size(usable, nikaColumns == 5 ? 60 : 204);
+        }
         if (!Pirate) return base.MeasureOverride(availableSize);
         double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 680;
         int columns = width < 500 ? 1 : 2;
@@ -87,6 +96,19 @@ public sealed class PirateActionPanel : WrapPanel
     }
     protected override Size ArrangeOverride(Size finalSize)
     {
+        if (Nika)
+        {
+            double[] widths = [.227, .199, .182, .254, .138];
+            bool narrow = finalSize.Width < 600;
+            double x = 0;
+            for (int index = 0; index < Children.Count; index++)
+            {
+                double nikaWidth = narrow ? (finalSize.Width - 12) / 2 : (finalSize.Width - 48) * widths[index];
+                Children[index].Arrange(new Rect(narrow ? index % 2 * (nikaWidth + 12) : x, narrow ? index / 2 * 72 : 0, nikaWidth, 60));
+                x += nikaWidth + 12;
+            }
+            return finalSize;
+        }
         if (!Pirate) return base.ArrangeOverride(finalSize);
         int columns = finalSize.Width < 500 ? 1 : 2;
         double width = Math.Max(0, (finalSize.Width - (columns - 1) * 14) / columns);

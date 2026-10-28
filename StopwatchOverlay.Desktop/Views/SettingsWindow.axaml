@@ -199,6 +199,15 @@
                             <StackPanel Spacing="10">
                                 <TextBlock Text="Application theme" Classes="sectionHeader"/>
                                 <ComboBox x:Name="ThemeCombo" HorizontalAlignment="Stretch"/>
+                                <StackPanel x:Name="NikaOptionsPanel" Spacing="8" IsVisible="False">
+                                    <TextBlock Text="Nika's Chronicle" Classes="sectionHeader"/>
+                                    <TextBlock Text="Background" Classes="subheading"/>
+                                    <ComboBox x:Name="NikaBackgroundCombo" HorizontalAlignment="Stretch"/>
+                                    <TextBlock Text="Typography" Classes="subheading"/>
+                                    <ComboBox x:Name="NikaTypographyCombo" HorizontalAlignment="Stretch"/>
+                                    <TextBlock Text="Sidebar artwork" Classes="subheading"/>
+                                    <ComboBox x:Name="NikaArtworkCombo" HorizontalAlignment="Stretch"/>
+                                </StackPanel>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                                     <TextBlock Text="Page scale" Classes="sectionHeader" VerticalAlignment="Center"/>

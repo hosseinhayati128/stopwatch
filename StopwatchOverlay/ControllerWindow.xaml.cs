@@ -198,6 +198,7 @@ namespace StopwatchOverlay
             // created so startup never flashes the other theme.
             _settings = SettingsStore.Load();
             AppThemeManager.Apply(_settings.ThemeMode);
+            Themes.NikaVisual.ApplyChoices(_settings);
             AppUiScale.Apply(_settings.UiScalePercent);
             TypographyManager.Apply(_settings.Typography);
             _settings.ThemeMode = AppThemeManager.CurrentTheme;
@@ -1488,8 +1489,9 @@ namespace StopwatchOverlay
             if (TimerRailColumn == null || TimerRail == null)
                 return;
             bool compact = ControllerLayoutPolicy.UseCompactLayout(width);
+            Themes.NikaVisual.SetCompact(this, compact);
             TimerRailColumn.Width = compact ? new GridLength(0)
-                : new GridLength(AppThemeManager.IsPirate ? Math.Clamp(width * 0.29, 260, 348) : 260);
+                : new GridLength(AppThemeManager.IsNika ? Math.Clamp(width * 0.235, 250, 360) : AppThemeManager.IsPirate ? Math.Clamp(width * 0.29, 260, 348) : 260);
             TimerRail.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         }
 
@@ -2283,6 +2285,7 @@ namespace StopwatchOverlay
 
             _backgroundApplyTimer.Stop();
             AppThemeManager.Apply(theme);
+            Themes.NikaVisual.ApplyChoices(_settings);
             TypographyManager.Apply(_settings.Typography);
             AppBackgroundManager.Apply(_settings, out string? backgroundWarning);
             _backgroundWarning = backgroundWarning;
@@ -5796,9 +5799,9 @@ namespace StopwatchOverlay
             ToggleCombinedOverlayMenuItem.IsEnabled = workspaceMutable
                 && (_combinedOverlayMode || hasTimer);
             StartStopButton.Style = (Style)FindResource(
-                AppThemeManager.IsPirate ? "PiratePrimaryAction"
+                AppThemeManager.IsNika ? "ControllerStart" : AppThemeManager.IsPirate ? "PiratePrimaryAction"
                     : Themes.AcanthusVisual.PrimaryActionStyleKey(hasTimer, _isRunning));
-            if (!AppThemeManager.IsPirate)
+            if (!AppThemeManager.IsPirate && !AppThemeManager.IsNika)
             {
                 StartStopButton.Width = 150;
                 StartStopButton.Margin = new Thickness(0, 0, 10, 0);
@@ -5808,6 +5811,7 @@ namespace StopwatchOverlay
                 StartStopButton.ClearValue(WidthProperty);
                 StartStopButton.ClearValue(MarginProperty);
             }
+            UpdateShortcutLabels();
             ApplyResponsiveLayout(ActualWidth);
             RecIndicator.Visibility = _activeTimer?.RecBlinkVisible == true
                 ? Visibility.Visible : Visibility.Collapsed;
@@ -5831,6 +5835,53 @@ namespace StopwatchOverlay
                     : "Separate overlays";
             if (ActiveWorkspaceTitle != null)
                 ActiveWorkspaceTitle.Text = _activeTimer?.DisplayName ?? "No active timer";
+        }
+
+        private void UpdateNikaState()
+        {
+            if (NikaStateText == null) return;
+            NikaStateText.Text = _activeTimer == null ? "Ready" : _isRunning ? "Running" : "Paused";
+            NikaStateIndicator.Fill = new SolidColorBrush(_isRunning ? Color.FromRgb(18, 179, 106) : Color.FromRgb(186, 133, 52));
+        }
+
+        private void NikaMinimize_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+        private void NikaMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            if (WindowState == WindowState.Maximized) SystemCommands.RestoreWindow(this);
+            else SystemCommands.MaximizeWindow(this);
+        }
+        private void NikaClose_Click(object sender, RoutedEventArgs e) => Close();
+        private void NikaHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!AppThemeManager.IsNika || e.OriginalSource is not System.Windows.Shapes.Rectangle and not TextBlock and not Border) return;
+            if (e.ClickCount == 2) NikaMaximize_Click(sender, e);
+            else if (e.LeftButton == MouseButtonState.Pressed) DragMove();
+        }
+        private void NikaRailOverflow_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Button button || button.Tag is not TimerSession timer) return;
+            ActivateTimer(timer);
+            var menu = new System.Windows.Controls.ContextMenu { PlacementTarget = button };
+            void Add(string title, RoutedEventHandler handler, bool enabled)
+            {
+                var item = new System.Windows.Controls.MenuItem { Header = title, IsEnabled = enabled };
+                item.Click += handler; menu.Items.Add(item);
+            }
+            Add("Set project…", RenameTimerMenuItem_Click, RenameTimerMenuItem.IsEnabled);
+            Add("Edit timer…", EditTimerMenuItem_Click, EditTimerMenuItem.IsEnabled);
+            Add(ActiveOverlayIsVisible() ? "Hide overlay" : "Show overlay", ToggleOverlayButton_Click, ToggleOverlayButton.IsEnabled);
+            menu.Items.Add(new System.Windows.Controls.Separator());
+            Add("Close timer", CloseTimerMenuItem_Click, CloseTimerMenuItem.IsEnabled);
+            menu.IsOpen = true;
+        }
+
+        private void UpdateNikaActionCaptions()
+        {
+            if (!AppThemeManager.IsNika) return;
+            StartStopButton.Content = _isRunning ? "Ⅱ  Pause" : "▶  Start";
+            LapButton.Content = "☷  Add lap";
+            ResetButton.Content = "⟳  Reset";
+            ToggleOverlayButton.Content = ActiveOverlayIsVisible() ? "◉  Hide overlay" : "◉  Show overlay";
         }
 
         private void UpdateStatus(string text, Brush color)
@@ -5884,6 +5935,11 @@ namespace StopwatchOverlay
             ToggleOverlayButton.Content = (ActiveOverlayIsVisible() ? "Hide overlay" : "Show overlay")
                 + (string.IsNullOrEmpty(prefix) ? "" : $"  \u00b7  {prefix}O");
             LapButton.Content = "Add lap" + (string.IsNullOrEmpty(prefix) ? "" : $"  \u00b7  {prefix}L");
+
+            UpdateNikaState();
+            UpdateNikaActionCaptions();
+            if (NikaStartShortcut != null) NikaStartShortcut.Text = string.IsNullOrEmpty(prefix) ? "Unbound" : $"{prefix}Space";
+            if (NikaResetShortcut != null) NikaResetShortcut.Text = string.IsNullOrEmpty(prefix) ? "Unbound" : $"{prefix}R";
 
             NewTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}N";
             NextTimerMenuItem.InputGestureText = string.IsNullOrEmpty(prefix) ? "" : $"{prefix}T";
@@ -6205,6 +6261,7 @@ namespace StopwatchOverlay
                 if (themeChanged)
                 {
                     AppThemeManager.Apply(_settings.ThemeMode);
+            Themes.NikaVisual.ApplyChoices(_settings);
                     if (!_settings.ThemeMode.Equals(
                             AppThemeManager.CurrentTheme,
                             StringComparison.OrdinalIgnoreCase))

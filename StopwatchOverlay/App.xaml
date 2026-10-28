@@ -12,6 +12,14 @@
 
             <ResourceDictionary Source="Themes/AcanthusOrnaments.xaml"/>
         </ResourceDictionary.MergedDictionaries>
+ <FontFamily x:Key="NikaHeadingFont">pack://application:,,,/StopwatchOverlay;component/Assets/Fonts/Acanthus/#Cormorant Garamond</FontFamily>
+ <FontFamily x:Key="NikaDigitFont">pack://application:,,,/StopwatchOverlay;component/Assets/Fonts/Pirate/#Barlow Condensed</FontFamily>
+ <SolidColorBrush x:Key="NikaMapBrush" Color="#E9D3A4"/>
+ <SolidColorBrush x:Key="NikaMuralBrush" Color="Transparent"/>
+
+        <sys:Boolean x:Key="NikaControllerEnabled">False</sys:Boolean>
+        <Visibility x:Key="NikaOptionsVisibility">Collapsed</Visibility>
+
         <ScaleTransform x:Key="ApplicationScaleTransform" ScaleX="0.9" ScaleY="0.9"/>
         <sys:Boolean x:Key="PirateControllerEnabled">False</sys:Boolean>
         <!-- Restrained neutral palette used throughout the controller. -->

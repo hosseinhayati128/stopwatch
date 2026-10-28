@@ -22,11 +22,12 @@ internal static class ThemeResources
             AppThemeCatalog.PixelDeckNight => "PixelDeck",
             AppThemeCatalog.PixelDeckDay => "PixelDeckDay",
             AppThemeCatalog.Pirate => "Pirate",
+            AppThemeCatalog.Nika => "Pirate",
             _ => normalized
         };
         app.Resources.MergedDictionaries.Clear();
         app.Resources.MergedDictionaries.Add(Load(file));
-        app.RequestedThemeVariant = normalized is AppThemeCatalog.Daylight or AppThemeCatalog.PixelDeckDay or AppThemeCatalog.Acanthus or AppThemeCatalog.Pirate
+        app.RequestedThemeVariant = normalized is AppThemeCatalog.Daylight or AppThemeCatalog.PixelDeckDay or AppThemeCatalog.Acanthus or AppThemeCatalog.Pirate or AppThemeCatalog.Nika
             ? ThemeVariant.Light : ThemeVariant.Dark;
     }
 

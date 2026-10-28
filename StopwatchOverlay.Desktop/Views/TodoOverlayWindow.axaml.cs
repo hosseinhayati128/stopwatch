@@ -144,7 +144,7 @@ public partial class TodoOverlayWindow : Window
 
     public void ApplySettings()
     {
-        bool pirate = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Pirate;
+        bool pirate = AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika;
         Classes.Set("pirate", pirate);
         SkullArtwork.IsVisible = pirate;
         PlainLauncher.IsVisible = !pirate;

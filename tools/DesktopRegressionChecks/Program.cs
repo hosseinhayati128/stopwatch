@@ -90,6 +90,17 @@ AppBuilder.Configure<App>().UsePlatformDetect()
     .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if (args.Contains("--nika-only"))
+{
+    Check("Nika scoped controller, resources and theme restoration", NikaThemeChecks.Run);
+    Check("controller mode selections survive refresh", ControllerModeChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--controller-modes-only"))
+{
+    Check("controller mode selections survive refresh", ControllerModeChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
 if (args.Contains("--bidi-only"))
 {
     Check("mixed Persian-English task text", BidiTextChecks.Run);

@@ -97,6 +97,13 @@ public static class TypographyManager
 
     internal static void ApplyElement(FrameworkElement element)
     {
+        if (element is Themes.NikaTimerText nikaTimer)
+        {
+            var timerStyle = _settings.Resolve(ResolveScope(nikaTimer));
+            nikaTimer.SetCurrentValue(Themes.NikaTimerText.TextScaleProperty, timerStyle.SizePercent / 100);
+            nikaTimer.SetCurrentValue(Themes.NikaTimerText.TextBrushProperty, ResolveBrush(nikaTimer, timerStyle.Color));
+            return;
+        }
         if (element is Themes.PirateTimerText timer)
         {
             var timerStyle = _settings.Resolve(ResolveScope(timer));

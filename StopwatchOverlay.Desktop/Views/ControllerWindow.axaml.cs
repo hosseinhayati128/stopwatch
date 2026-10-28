@@ -58,13 +58,41 @@ public partial class ControllerWindow : Window
     private TimerSession CurrentTimer => _timerManager.Active ?? _timerManager.Sessions.FirstOrDefault() ?? _emptyTimer;
     private readonly TimerSession _emptyTimer = new(1);
 
-    public ControllerWindow()
+    public ControllerWindow() : this(null)
+    {
+    }
+
+    // Explicit synthetic settings isolate visual regression previews from user data and services.
+    internal ControllerWindow(AppSettings? previewSettings)
     {
         InitializeComponent();
 
-        _settings = SettingsStore.Load();
+        _settings = previewSettings ?? SettingsStore.Load();
         ApplyControllerTheme();
         SizeChanged += (_, _) => UpdateControllerLayout();
+        if (previewSettings != null)
+        {
+            _timer = new DispatcherTimer();
+            _saveTimer = new DispatcherTimer();
+            _idleTimer = new DispatcherTimer();
+            foreach (string name in new[] { "Navigation", "Reading", "Illustration", "Research", "Programming" })
+            {
+                var timer = _timerManager.Create();
+                timer.Name = name;
+                timer.Category = "";
+                if (name == "Illustration")
+                {
+                    timer.RestoreElapsed(TimeSpan.FromSeconds(2667), false);
+                    timer.LapTimes.Add("Lap 3: 00:44:27.0");
+                    timer.LapTimes.Add("Lap 2: 00:29:18.0");
+                    timer.LapTimes.Add("Lap 1: 00:14:36.0");
+                }
+            }
+            _timerManager.Activate(_timerManager.Sessions[2]);
+            RefreshTimerRail();
+            UpdateActiveTimerDisplay();
+            return;
+        }
         if (PlatformServices.HotKey is PortalHotKeyService portal)
             portal.RegistrationStatusChanged += OnPortalRegistrationStatusChanged;
         if (_projectTimeStore.TryLoad(out var loadedHistory) && loadedHistory != null)
@@ -703,17 +731,18 @@ public partial class ControllerWindow : Window
 
         bool hasProject = !string.IsNullOrWhiteSpace(session.Name);
         string catBadge = !string.IsNullOrWhiteSpace(session.Category) ? $" [{session.Category}]" : "";
-        ProjectSubtitle.IsVisible = hasProject || !string.IsNullOrWhiteSpace(session.Category);
+        ProjectSubtitle.IsVisible = !Classes.Contains("nika") && (hasProject || !string.IsNullOrWhiteSpace(session.Category));
         ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}{catBadge}" : $"[{session.Category}]";
 
         StartStopButton.Content = session.IsRunning ? "Pause" : "Start";
-        RecIndicator.IsVisible = session.IsRunning && _settings.ShowRecIndicator;
+        RecIndicator.IsVisible = session.IsRunning && _settings.ShowRecIndicator && !Classes.Contains("nika");
 
-        StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Brushes.Gray;
+        StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;
         StatusText.Text = session.IsRunning ? "Running" : "Paused";
 
         LapListBox.ItemsSource = session.LapTimes;
         LapPlaceholder.IsVisible = session.LapTimes.Count == 0;
+        UpdateNikaDetails();
 
         UpdateModeRadios();
         ToggleCombinedMenuItem.Header = session.IsSeparated ? "Merge with herd overlay" : "Separate clock overlay";
@@ -1028,16 +1057,20 @@ public partial class ControllerWindow : Window
 
     private void ModeRadio_Checked(object? sender, RoutedEventArgs e)
     {
-        if (StopwatchModeRadio.IsChecked == true)
-            CurrentTimer.Mode = 0;
-        else if (ClockModeRadio.IsChecked == true)
-            CurrentTimer.Mode = 1;
-        else if (CountdownModeRadio.IsChecked == true)
-            CurrentTimer.Mode = 2;
-        else if (TimecodeModeRadio.IsChecked == true)
-            CurrentTimer.Mode = 3;
+        if (_updatingUi || sender is not RadioButton { IsChecked: true } selected) return;
 
-        CountdownPanel.IsVisible = CurrentTimer.Mode == 2;
+        // Checked can fire before the group unchecks its previous selection.
+        // Only the event's button identifies the user's requested mode reliably.
+        int mode = selected == StopwatchModeRadio ? 0
+            : selected == ClockModeRadio ? 1
+            : selected == CountdownModeRadio ? 2
+            : selected == TimecodeModeRadio ? 3 : -1;
+        if (mode < 0) return;
+
+        var session = CurrentTimer;
+        if (mode == 1 && session.Mode != 1) session.LastNonClockMode = session.Mode;
+        session.Mode = mode;
+        UpdateActiveTimerDisplay();
         RefreshTimerRail();
     }
 

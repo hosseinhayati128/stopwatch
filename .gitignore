@@ -60,6 +60,7 @@ TestResults/
 *.trx
 coverage.cobertura.xml
 *.dmp
+/design/one-piece-v2/background-options-2026-10-27/*cleanup-*.json
 
 ## Local credentials and environment overrides
 .env

@@ -82,6 +82,12 @@ public partial class SettingsWindow : Window
         {
             ThemeCombo.ItemsSource = AppThemeCatalog.All;
             ThemeCombo.SelectedItem = AppThemeCatalog.Normalize(_settings.ThemeMode);
+            NikaBackgroundCombo.ItemsSource = NikaThemeCatalog.Backgrounds;
+            NikaBackgroundCombo.SelectedValue = NikaThemeCatalog.NormalizeBackground(_settings.NikaBackground);
+            NikaTypographyCombo.ItemsSource = NikaThemeCatalog.Typography;
+            NikaTypographyCombo.SelectedValue = NikaThemeCatalog.NormalizeTypography(_settings.NikaTypography);
+            NikaArtworkCombo.ItemsSource = NikaThemeCatalog.Artworks;
+            NikaArtworkCombo.SelectedValue = NikaThemeCatalog.NormalizeArtwork(_settings.NikaSidebarArtwork);
             OverlayThemeCombo.ItemsSource = OverlayThemeCatalog.All;
             OverlayThemeCombo.SelectedItem = OverlayThemeCatalog.Normalize(_settings.OverlayTheme);
 
@@ -198,6 +204,9 @@ public partial class SettingsWindow : Window
     private void WireChanges()
     {
         ThemeCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaBackgroundCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaTypographyCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
+        NikaArtworkCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
         OverlayThemeCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayTheme);
         ScreenCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayScreen);
         PositionCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayPosition);
@@ -378,7 +387,12 @@ public partial class SettingsWindow : Window
             if ((change & SettingsChangeKind.ApplicationScale) != 0)
                 _settings.UiScalePercent = AppUiScale.Normalize(UiScaleSlider.Value);
             if ((change & SettingsChangeKind.Theme) != 0)
+            {
                 _settings.ThemeMode = AppThemeCatalog.Normalize(ThemeCombo.SelectedItem?.ToString());
+                _settings.NikaBackground = NikaThemeCatalog.NormalizeBackground(NikaBackgroundCombo.SelectedValue as string);
+                _settings.NikaTypography = NikaThemeCatalog.NormalizeTypography(NikaTypographyCombo.SelectedValue as string);
+                _settings.NikaSidebarArtwork = NikaThemeCatalog.NormalizeArtwork(NikaArtworkCombo.SelectedValue as string);
+            }
 
             if ((change & SettingsChangeKind.OverlayTheme) != 0)
                 _settings.OverlayTheme = OverlayThemeCatalog.Normalize(OverlayThemeCombo.SelectedItem?.ToString());

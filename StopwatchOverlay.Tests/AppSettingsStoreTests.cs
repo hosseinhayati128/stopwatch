@@ -59,7 +59,8 @@ public sealed class AppSettingsStoreTests
                 AppThemeCatalog.PixelDeckNight,
                 AppThemeCatalog.PixelDeckDay,
                 AppThemeCatalog.Acanthus,
-                AppThemeCatalog.Pirate
+                AppThemeCatalog.Pirate,
+                AppThemeCatalog.Nika
             ],
             AppThemeCatalog.All);
     }
