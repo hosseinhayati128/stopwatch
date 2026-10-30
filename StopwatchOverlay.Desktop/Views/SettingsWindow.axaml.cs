@@ -45,6 +45,7 @@ public partial class SettingsWindow : Window
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _historyProvider = historyProvider;
         InitializeComponent();
+        SizeChanged+=(_,_)=>UpdateTodoResponsiveLayout();
 
         _previewTimer = new DispatcherTimer
         {
@@ -197,6 +198,7 @@ public partial class SettingsWindow : Window
             UpdateTelegramOutboxUi();
             LoadIdleStopControls();
             LoadCategoryControls();
+            LoadTodoAppearance();
         }
         finally
         {
@@ -584,6 +586,7 @@ public partial class SettingsWindow : Window
     private void UpdateDependentControlStates()
     {
         NikaOptionsPanel.IsVisible = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;
+        if (TodoAppearancePanel != null && CurrentCategory == "TodoAppearance") LoadTodoAppearance();
         TransparencyDetailsExpander.IsVisible =
             OverlayThemeCatalog.Resolve(_settings.OverlayTheme, _settings.ThemeMode) == OverlayThemeCatalog.Pirate;
 
@@ -794,6 +797,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        UpdateTodoPreviewVisibility(tag);
         OverlayPanel.IsVisible = tag == "Overlay";
         AppearancePanel.IsVisible = tag == "Appearance";
         TypographyPanel.IsVisible = tag == "Typography";

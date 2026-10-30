@@ -1,0 +1,29 @@
+Use case: ui-mockup.
+Create ONE polished 2 by 2 UI comparison board for the TASK MENUS of the approved One Piece-themed Todo overlay. It compares matching Classic and Pixel Voyage treatments, not four unrelated themes.
+Reference 1 is the approved Classic panel: engraved navy, warm yellow-brown map parchment, warm ivory serif headers, thin aged-brass details, readable dark-navy sans-serif UI text.
+Reference 2 is Pixel Voyage: same illustrated palette and artwork, crisp stepped UI outlines and pixel accents, but normal readable typography.
+Do not copy the full panels. Create focused, large, readable close-ups of the requested menus on a clean midnight-navy presentation canvas. Compact beautiful game UI, restrained and professional, minimal decoration. No giant emblems, no heavy frames or metallic bevels.
+
+Four equal cells. Classic always LEFT, Pixel always RIGHT. Exact headings:
+top left "1  Classic · Task menu"
+top right "2  Pixel · Task menu"
+bottom left "3  Classic · Priority"
+bottom right "4  Pixel · Priority".
+
+TOP TWO CELLS:
+A narrow warm map task-row fragment, empty checkbox, priority 1, title "Finish illustration", with a context menu floating below it and a submenu visible to its right. The task row uses Classic's flat red circle in the left cell and Pixel Voyage's red stepped badge in the right cell.
+Context menu contents, vertically, exactly:
+"Edit task" with a tiny pencil icon
+"Add" with a tiny plus icon and right submenu chevron — this row is highlighted in navy with ivory text
+"Link" with a tiny chain icon
+thin divider
+"Delete" with a tiny trash icon and muted deep red text.
+The open Add submenu contains exactly two items: "Note" and "Subtask", each with a small simple corresponding line icon. Its first row aligns vertically to the highlighted Add row. No extra menu actions. Below the menu example, a small unobtrusive presentation caption "Link appears when Telegram is enabled".
+Classic menus: warm lightly textured parchment surface, thin brass edge, gently rounded corners, subtle short shadow. Pixel menus: same parchment surface and geometry but sharp small stepped corners, thin navy/brass pixel outlines, crisp pixel icons. Not chunky.
+Do not add a separate popup frame around the whole example.
+
+BOTTOM TWO CELLS:
+Each cell shows one elegant compact vertical priority picker. Small heading "Priority", small helper "1 is highest". It contains TEN items vertically, numerals "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", each exactly once, aligned. The third item is selected with a restrained amber highlight and small checkmark on the right. Number colors transition from deep red for 1 through orange/ochre, green/teal, blue, purple, to slate for 10. This color coding must not overwhelm the text. The list is tall and narrow, balanced within its cell, no enormous unused whitespace.
+Classic priority menu has the gently rounded parchment surface and slender brass frame. Pixel priority menu has stepped corners and pixel checkmark. No sliders, star ratings, status toggles, drag controls, or five-level priority scales.
+
+Maintain high legibility, beautiful spacing, strong but calm hierarchy. Map texture may appear very faintly at the edges of parchment surfaces; keep the text area quiet. No gradients crossing text, no busy scenery, no embedded development labels or code. This is one finished design comparison sheet, not an application implementation.

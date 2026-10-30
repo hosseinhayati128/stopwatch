@@ -1,0 +1,21 @@
+Use case: ui-mockup.
+Create ONE polished desktop emblem-picker dialog for the One Piece Todo appearance settings, consistent with the supplied references. This is a single complete selector, not a numbered comparison of layout alternatives. Landscape or slightly wide rectangle, a clear 4 by 4 grid of 16 icon options, every name legible.
+
+Input image roles:
+1: approved Classic panel for navy/ivory/brass and warm map identity.
+2: Pixel Voyage panel for overall family consistency only; this shared settings picker uses the readable Classic host styling.
+3: four backgrounds board only as general palette context.
+4: source crew-emblem board. Match the identities and silhouettes of ALL SIXTEEN emblems in this source. These are custom design references; do not invent other crews or replace the emblems with portraits.
+
+Dialog header: elegant navy engraved-map bar, ivory serif title "Choose header emblem", simple close X far right. Below, small helper "16 emblems" and a quiet line "Select a logo for the Todo header."
+Body: a neat 4 by 4 grid on a dark midnight-navy surface. Modest gutters, warm ivory readable names. Each icon is a standalone cutout logo with clean surrounding navy negative space. No enclosing decorative circular medallion, background tile artwork, giant numbered badge, frame baked into the emblem, or extra icon layers. The picker can use subtle rectangular cell boundaries solely as UI hit areas, not as part of the logo.
+Grid exact row order:
+Row 1: "Luffy", "Zoro", "Nami", "Usopp"
+Row 2: "Sanji", "Chopper", "Robin", "Franky"
+Row 3: "Brook", "Jinbe", "Law", "Whitebeard"
+Row 4: "Ace", "Buggy", "Shanks", "Roger".
+Use the matching icon from source image 4 above each name. Keep illustrations equal visual size, preserve the circle of Law's emblem rather than stretching it, allow long Whitebeard label to fit cleanly. Select Luffy with one thin brass rectangular focus outline and a small check in the cell corner. All other cells are quiet.
+The exact 16 identities are important. No missing or duplicated names, no numbering under the icons.
+
+Footer on muted parchment or navy with a fine brass divider: small label "Selected: Luffy", neutral "Cancel" button, navy/brass primary "Use emblem". Buttons are aligned right. This selector applies ONLY the header emblem; the same layout is reused when the user opens the separate launcher-emblem selector. Do not draw another control to switch target inside the picker.
+Tasteful professional game settings aesthetic, clean hierarchy, small texture only at the perimeter, no parchment cards behind the cutout logos, no explanation paragraphs, no private user information. The actual dialog background is navy, but the emblem artwork must look like separate transparent logos placed on it.

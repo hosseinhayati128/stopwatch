@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../StopwatchOverlay.Desktop/StopwatchOverlay.Desktop.csproj" />
+    <ProjectReference Include="../../StopwatchOverlay.Desktop/StopwatchOverlay.Desktop.csproj">
+      <Private Condition="'$(UseSharedDesktopRuntime)' == 'true'">false</Private>
+    </ProjectReference>
   </ItemGroup>
 </Project>

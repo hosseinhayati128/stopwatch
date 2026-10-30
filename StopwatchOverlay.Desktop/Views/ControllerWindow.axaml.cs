@@ -1243,7 +1243,9 @@ public partial class ControllerWindow : Window
             ThemeResources.ApplyApplication(_settings.ThemeMode);
             ApplyControllerTheme();
         }
-        if (!SettingsStore.Save(_settings))
+        bool settingsSaved = SettingsStore.Save(_settings);
+        _settingsWindow?.ReportPersistenceResult(settingsSaved);
+        if (!settingsSaved)
         {
             CrashLogger.LogRecoverable(
                 new IOException("Unable to save application settings."),

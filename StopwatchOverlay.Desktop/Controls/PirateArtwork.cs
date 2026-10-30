@@ -20,9 +20,11 @@ public sealed class PirateArtwork : Control
     private static readonly Dictionary<string, Bitmap> Images = new();
     static PirateArtwork() => AffectsRender<PirateArtwork>(PartProperty);
     public PirateArtwork() { IsHitTestVisible = false; }
-    public override void Render(DrawingContext context)
+    public override void Render(DrawingContext context) => RenderPart(context, Part, Bounds.Size);
+
+    internal static void RenderPart(DrawingContext context, string part, Size bounds)
     {
-        var (file, crop, uniform) = Part switch
+        var (file, crop, uniform) = part switch
         {
             "Header" => ("controller-background.png", new Rect(.024,.035,.950,.103), false),
             "Rail" => ("controller-background.png", new Rect(.024,.198,.293,.770), false),
@@ -41,27 +43,27 @@ public sealed class PirateArtwork : Control
             "" => ("", default(Rect), false),
             _ => ("controller-background.png", new Rect(.42,.038,.47,.14), false)
         };
-        if (file.Length == 0 || Bounds.Width <= 0 || Bounds.Height <= 0) return;
+        if (file.Length == 0 || bounds.Width <= 0 || bounds.Height <= 0) return;
         if (!Images.TryGetValue(file, out var bitmap))
         {
             bitmap = new Bitmap(AssetLoader.Open(new Uri($"avares://StopwatchOverlay.Desktop/Assets/Pirate/{file}")));
             Images.Add(file, bitmap);
         }
         var source = new Rect(crop.X * bitmap.Size.Width, crop.Y * bitmap.Size.Height, crop.Width * bitmap.Size.Width, crop.Height * bitmap.Size.Height);
-        var destination = new Rect(Bounds.Size);
+        var destination = new Rect(bounds);
         if (uniform)
         {
             double scale = Math.Min(destination.Width / source.Width, destination.Height / source.Height);
             var size = new Size(source.Width * scale, source.Height * scale);
-            destination = new Rect((Bounds.Width - size.Width) / 2, (Bounds.Height - size.Height) / 2, size.Width, size.Height);
+            destination = new Rect((bounds.Width - size.Width) / 2, (bounds.Height - size.Height) / 2, size.Width, size.Height);
         }
-        if (Part == "Corner")
+        if (part == "Corner")
         {
             // The atlas corner is rectangular; retain only the brass arms so its
             // wood interior cannot cover header text or workspace controls.
-            using (context.PushClip(new Rect(0, 0, Bounds.Width, Bounds.Height * .28)))
+            using (context.PushClip(new Rect(0, 0, bounds.Width, bounds.Height * .28)))
                 context.DrawImage(bitmap, source, destination);
-            using (context.PushClip(new Rect(0, Bounds.Height * .28, Bounds.Width * .27, Bounds.Height * .72)))
+            using (context.PushClip(new Rect(0, bounds.Height * .28, bounds.Width * .27, bounds.Height * .72)))
                 context.DrawImage(bitmap, source, destination);
             return;
         }

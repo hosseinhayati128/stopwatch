@@ -1,0 +1,31 @@
+Use case: ui-mockup.
+Create ONE new high-resolution 2x2 comparison board of FOUR additional PRIORITY MARKER designs for the One Piece-themed Nika's Chronicle desktop Todo overlay. Number the options 5, 6, 7, 8 in reading order. This continues the supplied reference board, which contains priority styles 1-4.
+Reference role: preserve the reference's exact warm yellow-brown parchment map, elegant ivory-on-navy header, small colorful Luffy straw-hat skull emblem, plain Ship's Ledger ruled task rows and simple square COMPLETION checkboxes. All four new panels must use the same layout and same background. Only the little PRIORITY BADGES change. Do not repeat the old enamel circles, pennant flags, rectangular P-number stamps or pixel medallions.
+Board layout: dark navy backdrop, small centered "PRIORITY MARKERS" heading, four equal-size panels with comfortable even gutters, cream serif option labels above each, circled option numbers. Restrained fine brass frames. Entire panels fully visible, beautiful professional game interface, crisp typography. No large margins inside the frames, no white replacement for parchment.
+Fixed in each panel:
+- Navy header with Luffy emblem, "Todos", "3 open", right collapse chevron, faint engraved map detail and a fine brass separator.
+- Toolbar with "Priority" dropdown and checked "Show completed".
+- Four identical task rows with separate checkbox / priority badge / title / right chevron columns:
+  Unchecked ordinary navy square checkbox; priority 1 in muted burgundy/terracotta; "Finish illustration"; chevron.
+  Unchecked ordinary navy square checkbox; priority 3 in warm dark ochre; "Read 20 pages"; chevron.
+  Unchecked ordinary navy square checkbox; priority 6 in deep teal; "Review project notes"; chevron.
+  CHECKED navy square checkbox with ivory tick; priority 10 in slate gray; "Plan tomorrow" with a thin strikethrough and subdued readable text; chevron.
+- All four rows are directly on the parchment with faint horizontal rules. First row has the same gentle amber focus wash and tiny brass left accent.
+- Same deep-navy footer button "＋ Add todo".
+- Identical title positions, row heights, body font and control alignment in all four variants.
+The priority marker must NEVER replace the checkbox or contain a checkmark. Priorities are numeric 1-10, 1 highest. Show exactly 1, 3, 6, 10, with readable two-digit "10". Markers about 28-32px at actual UI size. Make the new shapes readable and uncluttered, not oversized collectibles.
+
+NEW FOUR OPTIONS:
+TOP LEFT label "5  Compass Dials":
+Small hollow nautical dial outline: thin muted brass outer circle, just four tiny cardinal tick marks at top/right/bottom/left, warm parchment center. NO compass needle, letters, clock hands, radiating rays or detailed compass rose. Large centered bold numeral in its priority color: burgundy 1, ochre 3, teal 6, slate 10. A quiet minimal maritime instrument, visibly an outlined ring with a numeral, not the filled enamel disc from the reference. No 3D bevel or glare.
+
+TOP RIGHT label "6  Crew Shields":
+Small clean heraldic shield badge, flat top with softly rounded upper corners, tapering to a shallow single point at the bottom. Colored matte fill for each priority, delicate brass keyline, centered warm ivory numeral. Burgundy shield 1, ochre shield 3, teal shield 6, slate shield 10. No crest illustration, sword, star, wings or crown. The silhouette must be a shield, not the swallowtail flag from the previous board. Refined officer insignia suitable for a restrained pirate game UI.
+
+BOTTOM LEFT label "7  Ink Ranks":
+The most minimal typography-led option: a clear bold colored number printed directly on the parchment, no enclosed badge, no border, no circle or shape behind it. Numbers 1, 3, 6, 10 in the same matching priority colors, each with one very short thin underline in that color. Precise equal-width number column and clean baseline alignment. Numbers are sized sufficiently large to click visually but have plenty of whitespace around them. Quiet elegant letterpress feel, crisp modern legibility, no distress and no handwritten scribbles. No P-prefix, no stars, no extra icons.
+
+BOTTOM RIGHT label "8  Vivre Cards":
+Small upright cream parchment card-shaped priority markers inspired by One Piece Vivre Cards. Each is a neat compact slightly vertical rectangle with a delicately irregular paper edge and a tiny folded top-right corner. Thin sepia outline, barely perceptible shadow. A short colored ink bar runs along the TOP edge in the task's priority color; a large centered matching colored numeral reads 1, 3, 6, 10. Keep the cards upright, not randomly rotated. No portraits, photographs, printed words, wanted poster typography, currency, big torn-paper debris, flames or hole punches. Cards are miniature understated UI badges, not giant bounty posters. Slightly taller than wide, distinct from the earlier horizontal P-number stamp labels.
+
+Ensure all four looks differ clearly: hollow compass rings, solid shields, bare underlined numbers, small cream paper cards. Keep all non-priority elements exactly consistent. Use the navy/brass/parchment palette and a mature refined visual standard. Strong readable text; gently subdued faded maps at the sides; no stretching of background compass geometry. No explanatory paragraphs inside the artwork and no watermark.

@@ -1,0 +1,56 @@
+Use case: ui-mockup.
+Create ONE large, high-resolution, polished full-panel preview of the One Piece-themed Nika's Chronicle TODO OVERLAY, combining the previously approved design layers. This is a SINGLE finished desktop UI concept, not a comparison sheet or mood board. One complete panel only, no numbered alternatives, no annotations, no collage, no device mockup, no page title outside the panel.
+Reference inputs and precise roles:
+1. Subtasks & Notes comparison: use ONLY the TOP LEFT "Margin Notes" panel. This is the source of truth for plain Ship's Ledger task rows, inline expanded subtasks and the note hierarchy. Do not use Foldout Card, Branch Ledger or Pixel Journal.
+2. Toolbar & Actions comparison: use ONLY the TOP LEFT "Classic Brass" panel. This is the source of truth for the parchment dropdown, checked Show completed control, full-width navy Add todo button, border weights and clean toolbar spacing.
+3. Crew Emblems sheet: use ONLY Luffy (01) as the header icon, preserving the cheerful white skull, yellow straw hat with red band and crossbones. Do NOT show other emblems, names or the comparison board.
+
+COMBINATION TO SHOW:
+Warm Navigator Parchment background + Luffy emblem + subtle engraved navy header + Ship's Ledger rows and square checkboxes + ORIGINAL flat colored circular priority badges + Margin Notes inline expanded details + Classic Brass toolbar and footer.
+Do not invent new components. This visual combines those existing selections faithfully. It should look professional, neat, mature and beautiful, like a polished in-game quest journal adapted for a practical desktop productivity overlay.
+
+COMPOSITION:
+Portrait canvas, roughly 3:4 aspect. One straight-on complete app panel fills almost the whole frame with only a very slim 20-30px deep navy backdrop margin for a restrained shadow. No excessive empty border region. Panel has one delicate muted antique-brass outer keyline and softly rounded modest corners. No double heavy frames, shiny yellow trim, flourishes outside the window, artificial perspective, desk, props or monitor.
+Virtual UI proportions approximately 480px wide by 630px tall; render at high resolution with very sharp type and consistent edge quality. Compact native-desktop spacing, not oversized mobile cards. The header, controls, expanded task, three other rows and footer must all fit naturally without cropping. Avoid enormous empty vertical spaces.
+
+PALETTE AND BACKGROUND:
+Deep midnight marine navy #06273A; warm honey-sand parchment, softly aged light golden-brown rather than orange or white; dark ink navy text; muted antique brass. Preserve the approved engraved map foundation. Fine faded coastlines, islands, mountainous silhouettes and an unobtrusive compass rose toward the RIGHT edge, light subtle map traces left and bottom, a quiet readable central field. Paper is refined and soft, not dirty or cracked. No strong cartography crossing letters. Background compass is geometrically circular, never stretched or squeezed.
+Header navy has barely visible engraved nautical map/coastline detail fading into the navy on the right, integrated into its material, not a pasted rectangular image. No big characters, ships, 3D Log Pose, Nika mural or added ornament. The Luffy icon is the only prominent figurative artwork.
+
+HEADER:
+Compact, balanced navy top bar. Small crisp full-color Luffy icon at the left, then large ivory elegant serif "Todos". Small ivory sans-serif "3 open" beside the title, and a simple upward ivory chevron at the far right. Do not add a subtitle or logo words. Thin restrained brass bottom rule, aligned cleanly to the outer frame. Good breathing room around the skull and title, no clipped bones or stretched symbol.
+
+TOOLBAR:
+Below header on parchment, one compact line:
+left a subtly rounded parchment dropdown with thin sepia outline reading exactly "Sort: Priority" plus a small down chevron;
+right a navy square containing an ivory check followed by "Show completed" in dark navy.
+Fine visual alignment, no unnecessary shadows, no second navy toolbar band.
+Do not show search, settings, filter icons, sorting menu contents or extra buttons.
+
+TASK CONTENT, EXACT:
+FIRST TASK EXPANDED:
+Empty square navy-outlined checkbox at far left, flat muted-terracotta circular priority marker "1" beside it, bold medium-weight dark navy task title "Finish illustration", small downward chevron at far right.
+Below title, small secondary summary exactly "1/3 subtasks · 1 note".
+Its inline details are indented and connected visually ONLY by a very fine short vertical sepia margin rule. No card, tree arrows, route dots or enclosing box.
+Three compact subtask lines:
+  small CHECKED navy square with ivory tick; "Sketch layout" subdued with a thin elegant strikethrough;
+  small empty navy-outlined square; "Add colors";
+  small empty navy-outlined square; "Export PNG".
+Subtask titles clearly smaller than main title, still readable.
+Then a small muted brass uppercase label "NOTE", and beneath it the one-line note "Warm palette; keep map subtle." in normal dark navy text, with one fine brass left rule. The note has NO checkbox and no priority badge.
+Separate the whole expanded task from following parent rows with one very faint horizontal sepia line.
+
+SECOND TASK:
+Empty square checkbox, small flat muted-ochre circular priority badge "3", "Read 20 pages", right chevron.
+THIRD TASK:
+Empty square checkbox, small flat deep-teal circular priority badge "6", "Review project notes", right chevron.
+FOURTH TASK COMPLETED:
+Filled navy square checkbox with ivory tick, small flat muted slate-gray circle "10", "Plan tomorrow" in subdued readable ink with thin strikethrough, right chevron.
+All parent rows align in the same columns and have fine understated separator rules directly over the parchment. Priorities show exactly 1, 3, 6, 10 and preserve clear two-digit 10. No enamel rims or gradients on badges. No extra tasks. Exactly three open parent tasks and one completed parent task; one of the three subtasks is completed.
+A completed child does not complete its parent, so the first parent checkbox must remain EMPTY.
+
+FOOTER:
+One full-width navy button with subtle small rounded corners, very fine muted brass edge, centered ivory plus sign and serif "Add todo". It sits close enough to the bottom frame for compact professional padding. No extra footer labels, shortcuts, status claims or branding. Button height comparable to the top toolbar, not a giant banner.
+
+TYPOGRAPHY AND FINISH:
+Beautiful robust ivory serif for Todos and Add todo, clean medium-weight humanist sans serif for task titles, crisp slightly smaller regular sans serif for subtask text and summaries. Strong readability at practical desktop size. Optical alignment, consistent baseline grid, no arbitrary centering of rows, no crowded overlapping labels. Text remains real readable English exactly as specified. Thin professional borders and quiet shadow. Do not alter any approved style or add visual features. No watermark. This should feel like the completed combined design we can review before implementation.

@@ -113,7 +113,7 @@
                             ToolTip.Tip="Save (Ctrl+Enter)"
                             Click="OnSaveClicked"/>
                 </Grid>
-                <TextBlock Text="Ctrl+Enter to Save  ·  Esc to Cancel"
+                <TextBlock x:Name="EditorShortcutHint" Text="Ctrl+Enter to Save  ·  Esc to Cancel"
                            HorizontalAlignment="Center"
                            FontSize="10.5"
                            Foreground="{DynamicResource SecondaryTextBrush}"/>

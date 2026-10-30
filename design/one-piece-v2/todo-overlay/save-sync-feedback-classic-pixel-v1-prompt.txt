@@ -1,0 +1,25 @@
+Use case: ui-mockup.
+Create one polished UI design comparison sheet for the approved One Piece Todo overlay. Reference 1 is the Classic expanded panel; reference 2 is Pixel Voyage; reference 3 is the approved Add/Edit dialog sheet. Reuse their warm amber parchment, subdued map engraving, navy header, small Luffy skull emblem, warm ivory serif headings, readable navy sans-serif body text, restrained brass details. Classic is always LEFT with gentle rounded corners; Pixel is always RIGHT with small crisp stepped corners and pixel accents but normal readable typography. Preserve illustrated artwork in both, not a pixelation filter. Use a dark blue-gray presentation canvas with modest equal gutters. Labels outside mockups identify examples, not controls. No boats, ropes, loot, character scenes, heavy bevels, loud gold glow, or large margins. Keep the parchment center quiet behind text. Legible text and balanced visual density matter most.
+This sheet is a 2 by 2 board of EDITOR FOOTER CLOSE-UPS, not four complete new dialogs. Outside heading at top of the board "SAVE & SYNC FEEDBACK". Four outside cell headings:
+"1  Classic · Save failed"
+"2  Pixel · Save failed"
+"3  Classic · Saved locally"
+"4  Pixel · Saved locally".
+Inside each cell show a clearly cropped lower editor area on parchment: the bottom of a multiline text input containing "Finish illustration", then its message area and bottom action buttons. Do not add a whole new form header or imply the other approved fields have been removed. These are close-up design specimens.
+
+TOP ROW — save failure, local changes were NOT successfully saved:
+Input text remains fully legible and looks editable.
+An inline pale muted-red message panel, slender brick-red edge, small warning-triangle outline, bold short title "Could not save".
+Body exactly: "Check the notes folder and try again."
+Below, ordinary outlined "Cancel" and navy primary "Save changes".
+Small helper "Ctrl+Enter to Save · Esc to Cancel".
+No checkmark, no "Saved" label, no Retry button, no dismiss-X on the error, no full-screen modal. The error remains in context beside the preserved user input.
+
+BOTTOM ROW — local save succeeded, sync needs attention:
+Input shows the same task text, subdued as read-only but still legible.
+An inline pale amber message panel, thin ochre edge, small amber information/warning icon, title "Saved locally".
+Body exactly: "Habitica sync needs attention." followed by "Your local changes are kept."
+Footer has ONE navy "Close" action aligned right. No Save, Retry, Undo or Cancel action that could imply reverting the already-saved data. Small helper "Esc to Close".
+Below each lower close-up, outside its frame, a small presentation caption "Overlay sync notice" and one narrow nonmodal inline amber notice specimen reading "Telegram sync will retry automatically." with a small simple sync icon. This notice is not a new button or dialog and should be visually secondary.
+
+Classic message panels have gentle corners, small conventional outline icons and thin borders. Pixel message panels have small stepped corners and pixel warning/sync icons; input and Close/Save button corners also match Pixel Voyage. Avoid alarming large red blocks, hiding input, vague status wording, mixed success/error colors, fake backend information, progress percentages and extra functionality. Small symbols and text carry meaning together. This comparison establishes appearance only, with example copy.

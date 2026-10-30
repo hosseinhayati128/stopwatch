@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Data;
+using Avalonia.Data.Converters;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -70,6 +72,7 @@ public partial class TodoOverlayWindow
                 try
                 {
                     _deleteDialog = new ConfirmationDialogWindow("Delete detail", "Delete this " + (detail.Kind == TodoDetailKind.Note ? "note?" : "subtask?"), detail.Text, "Delete", destructive: true) { Topmost = Topmost };
+                    _deleteDialog.ApplyTodoAppearance(_settings);
                     bool confirmed = await _deleteDialog.ShowDialog<bool>(this);
                     if (confirmed && !_closed)
                     {
@@ -94,8 +97,22 @@ public partial class TodoOverlayWindow
                     if (ContextCurrent()) ChangeDetail(entry, detail, detail.Text, checkbox.IsChecked == true);
                     else DetailConflict();
                 };
-                var progress = new ProgressBar { Minimum = 0, Maximum = 1, Height = 2, IsHitTestVisible = false, Background = Brushes.Transparent };
-                progress.Bind(ProgressBar.ValueProperty, checkbox.GetObservable(HoldToCompleteCheckBox.HoldProgressProperty));
+                Control progress;
+                if (IsNikaTodo && _settings.TodoAppearance.IsPixel)
+                {
+                    var meter = new TodoHoldMeter { Pixel = true, Ink = TodoVisuals.Ink(TodoLook), Height = 6,
+                        Margin = new Thickness(26, 2, 4, 0), IsHitTestVisible = false };
+                    meter.Bind(TodoHoldMeter.ValueProperty, checkbox.GetObservable(HoldToCompleteCheckBox.HoldProgressProperty));
+                    meter.Bind(IsVisibleProperty, new Binding(nameof(HoldToCompleteCheckBox.HoldProgress)) {
+                        Source = checkbox, Converter = new FuncValueConverter<double, bool>(value => value > 0) });
+                    progress = meter;
+                }
+                else
+                {
+                    var bar = new ProgressBar { Minimum = 0, Maximum = 1, Height = 2, IsHitTestVisible = false, Background = Brushes.Transparent };
+                    bar.Bind(ProgressBar.ValueProperty, checkbox.GetObservable(HoldToCompleteCheckBox.HoldProgressProperty));
+                    progress = bar;
+                }
                 var group = new StackPanel(); group.Children.Add(checkbox); group.Children.Add(progress);
                 checkbox.ContextMenu = menu;
                 control = group;

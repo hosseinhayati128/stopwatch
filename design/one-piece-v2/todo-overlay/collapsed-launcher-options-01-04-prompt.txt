@@ -1,0 +1,21 @@
+Use case: ui-mockup.
+Create a refined ONE PIECE-themed 2 by 2 comparison board of FOUR alternative collapsed floating Todo launchers. These are compact desktop launcher icons, not full panels. Professional game UI, crisp, beautifully drawn, restrained, readable at a 72 logical pixel button size.
+
+Input image 1 (combined Pixel Voyage panel) is the palette and craft reference: midnight navy, warm ivory, straw yellow and red, fine restrained brass, and the approved Luffy straw-hat skull.
+Input image 2 is the approved header reference. Use ONLY the Luffy skull of top-left option 1 as the emblem model. The compass, Nika figure and standalone hat in its other options are NOT launcher options. Every option on this new board must use the SAME recognizable Luffy skull-and-crossbones emblem, restyled only as described below. Preserve the straw hat red band, smiling ivory skull and diagonal crossed bones.
+
+Presentation: square canvas, four equal cells in a tidy 2 by 2 grid. Dark blue-gray matte background, subtle hairline separators, ivory serif headings with small restrained brass option numbers. Each cell contains one large centered icon and below it one much smaller duplicate for assessing its small-scale silhouette. Label the small duplicate "Small preview". Use equal visual size and identical scale for all four main icons. Give enough breathing room but keep the icons prominent. Top board title "COLLAPSED LAUNCHER". No app screenshots, no task lists, no desktop wallpaper, no browser window. This is a visual concept comparison, not a sprite sheet.
+
+Top-left heading "1  Crew Crest":
+The approved Luffy skull-and-crossbones floating freely with no enclosing circle, tile or backplate. Crisp warm ivory bones, subtle dark outline for desktop legibility, red-and-yellow straw hat, very soft short shadow only. Clean original classic silhouette.
+
+Top-right heading "2  Navy Seal":
+The same Luffy emblem, slightly inset within a deep midnight-navy circular medallion. A single delicate brushed-brass rim. Very restrained shading, flat polished UI icon, not a thick metallic coin. No extra compass ticks, ropes or decorative rings. Keep all bones inside the circular boundary and clearly readable.
+
+Bottom-left heading "3  Map Tile":
+The same Luffy emblem centered on a softly rounded square of warm amber parchment. Faded delicate map engraving only near the corners, quiet center, hairline aged-brass border. No white card, no curled paper corners, no extra symbols, no dark inset circle. More map-like material, still minimal and crisp.
+
+Bottom-right heading "4  Pixel Crest":
+A deliberately hand-designed pixel-art version of the same Luffy skull-and-crossbones with clearly stepped pixel contours, aligned coherent pixel grid, ivory skull and bones, mustard straw hat with red band. Place it on a navy square with small stepped corners and thin pixel-brass outline, matching Pixel Voyage's controls. Low-resolution sprite aesthetic rendered sharply at integer scale, not a blurred or randomly pixelated version of the illustration. The small duplicate should still read instantly as Luffy's flag emblem.
+
+All four launchers must be distinct in silhouette, equally polished, compact, and simple. No task count badge, no checkmark overlay, no miniature text on icons, no glow, no massive gold bevels, no scenery inside the emblem, no ships. Same visible emblem identity across choices, so the user is choosing the launcher treatment rather than a different crew. Exact headings and option numbering, no additional explanatory paragraphs.

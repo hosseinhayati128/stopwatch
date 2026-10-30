@@ -1,0 +1,34 @@
+Use case: ui-mockup.
+Create ONE high-resolution square 2x2 comparison board of FOUR TOOLBAR AND ADD-TODO BUTTON styles for the Nika's Chronicle One Piece desktop Todo overlay. This is a controlled visual exploration of the existing controls, not new features.
+Reference: use the TOP-LEFT "Margin Notes" panel only as the approved visual source. Preserve the elegant navy header, small colorful Luffy straw-hat skull emblem, warm amber parchment map, very thin brass perimeter and original flat colored priority circles. Use the same clean plain Ship's Ledger parent rows in ALL four new panels. The other three panels in the reference are NOT directions to copy.
+For this toolbar-focused comparison, show the first task's details COLLAPSED in all four panels, with the small summary "1/3 subtasks · 1 note" below its title; do not show the child checklist or note contents. This leaves room to inspect controls and does not change the approved details designs.
+Board: dark navy backdrop, small centered heading "TOOLBAR & ACTIONS". Four equal panels in a 2x2 grid, same geometry and even narrow gutters, ivory serif option labels above panels with circled brass numbers 1-4. Entire windows visible, compact internal margins. Professional restrained pirate-game UI; beautiful legible typography, not cluttered. No decorative ropes, wooden props, floating objects, skulls on each button, neon gold or thick frames.
+
+FIXED across ALL FOUR:
+Header: navy with subtle engraved cartography; same small classic Luffy skull logo, ivory serif "Todos", small "3 open" and upward chevron. Do not change the header.
+Warm golden-brown Navigator Parchment body, faded map details toward right and bottom, quiet central reading area. Preserve perfectly circular compass shapes; no stretching or white paper.
+Toolbar BELOW header, no taller than a normal compact desktop control row. It contains exactly TWO functions: a sort selector showing "Sort: Priority" with downward dropdown chevron (the menu can select Priority or Manual but is CLOSED in the image), and a CHECKED "Show completed" control. No filter icon, search field, edit button, settings cog, extra modes or unrelated toolbar controls.
+Identical plain parent task rows below toolbar:
+1. empty ordinary navy square checkbox, small flat terracotta circle "1", "Finish illustration", right chevron. Under its title, small "1/3 subtasks · 1 note".
+2. empty ordinary navy square checkbox, small flat ochre circle "3", "Read 20 pages", right chevron.
+3. empty ordinary navy square checkbox, small flat deep-teal circle "6", "Review project notes", right chevron.
+4. navy square checkbox with ivory checkmark, small flat slate circle "10", "Plan tomorrow" struck through and muted, right chevron.
+Subtle horizontal sepia row rules, same row heights, same medium-weight navy sans-serif task titles. A restrained amber focus wash on first row can appear, identically in all four. Priority and checkbox shapes are fixed and must NOT adopt the toolbar styling.
+Footer in every panel is one full-width standard-height "＋ Add todo" button at the same position, equal width and height. Button opens the existing add-task flow; do not show an input field, split-button menu, extra secondary action or new shortcut.
+Only toolbar surface/control styling and footer action styling differ.
+
+OPTION 1, TOP LEFT — "1  Classic Brass":
+Closest to the current approved direction. Sort dropdown: parchment fill, softly rounded small corners, thin sepia outline, navy "Sort: Priority" and navy down chevron. "Show completed": a simple navy filled square with ivory check and navy label directly on parchment. Footer Add todo: rich solid navy, elegant ivory serif label and clean plus sign, fine warm-brass outline and small rounded corners. No shadow except almost imperceptible depth. Calm and familiar.
+
+OPTION 2, TOP RIGHT — "2  Navigator Bar":
+A single very slim full-width navy toolbar strip immediately below the header with a narrow parchment breathing gap, softly rounded small corners and fine muted brass edge. The left sort area has ivory "Sort: Priority" and a small ivory down chevron, a fine short brass vertical divider separates the right Show completed control. The checked square is ivory outlined with ivory tick, label "Show completed" in ivory. Keep the bar compact, not a second giant header.
+Footer Add todo: refined muted amber-gold fill, dark-navy text and plus, thin dark-navy outline. Slight warm paper grain; no metallic shine or yellow glare. A warm gold action paired with a dark toolbar. Keep legibility excellent.
+
+OPTION 3, BOTTOM LEFT — "3  Ink & Paper":
+Minimal controls printed on parchment. Sort selector looks like a clear clickable text dropdown: navy "Sort: Priority", small down chevron and short thin navy underline, no enclosing rounded rectangle. Checked Show completed is a tiny crisp navy square and navy label, same size as other controls. A fine long sepia rule below the toolbar separates it from tasks.
+Footer Add todo: transparent warm parchment fill, crisp 1px navy outline, navy serif label and navy plus, small understated corners. No shadow or raised effect. Clearly a full-width button, not just floating text. Most quiet and spacious, aesthetically lighter but NOT white.
+
+OPTION 4, BOTTOM RIGHT — "4  Pixel Controls":
+ONLY toolbar and Add todo button receive deliberate restrained pixel-style geometry. Sort dropdown has warm parchment fill, a thin navy stepped-corner outline, clean readable "Sort: Priority", pixel-style small down chevron. Show completed: small pixel-stepped navy checked square with an ivory pixel tick, ordinary legible navy label. Footer Add todo: rich navy with precise stepped corners, thin muted brass pixel outline and tiny brass corner accents, ivory clean serif label and a crisp block-like plus. The text remains readable, not tiny pixel font. Keep parent checkboxes, rows, round priority badges, Luffy emblem and background NON-PIXEL and identical to the other panels. No sprites, coins, hearts or extra gaming ornaments.
+
+The options must be visibly distinct: classic outlined dropdown with navy action; compact dark toolbar with amber action; unboxed ink selector with outlined action; stepped pixel controls with navy action. Present all four as practical polished alternatives within the exact approved palette. No watermark, no descriptive paragraphs inside the image. All task titles, counts, summaries and button labels should be spelled correctly.

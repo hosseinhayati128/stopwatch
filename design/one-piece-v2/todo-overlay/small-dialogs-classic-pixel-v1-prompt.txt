@@ -1,0 +1,34 @@
+Use case: ui-mockup.
+Create one polished UI design comparison sheet for the approved One Piece Todo overlay. Reference 1 is the Classic expanded panel; reference 2 is Pixel Voyage; reference 3 is the approved Add/Edit dialog sheet. Reuse their warm amber parchment, subdued map engraving, navy header, small Luffy skull emblem, warm ivory serif headings, readable navy sans-serif body text, restrained brass details. Classic is always LEFT with gentle rounded corners; Pixel is always RIGHT with small crisp stepped corners and pixel accents but normal readable typography. Preserve illustrated artwork in both, not a pixelation filter. Use a dark blue-gray presentation canvas with modest equal gutters. Labels outside mockups identify examples, not controls. No boats, ropes, loot, character scenes, heavy bevels, loud gold glow, or large margins. Keep the parchment center quiet behind text. Legible text and balanced visual density matter most.
+This sheet is a portrait 2-column by 3-row comparison board of SMALL DIALOGS. Six cells, Classic on LEFT, Pixel on RIGHT. Each dialog fully visible, enough room for readable text, tight orderly spacing. Exact outside headings:
+row 1: "1  Classic · Delete" and "2  Pixel · Delete"
+row 2: "3  Classic · Note" and "4  Pixel · Note"
+row 3: "5  Classic · Subtask" and "6  Pixel · Subtask".
+The Delete row may be slightly taller than the two small editor rows. This is one coherent sheet. Each dialog uses the approved navy illustrated header, a small Luffy emblem and ivory serif title with a close X at the right, understated warm parchment body, fine brass trim. No huge logo, extra form sections or clutter.
+
+TOP ROW DELETE CONFIRMATIONS:
+Header title "Delete todo".
+Bold body question "Delete this todo?"
+A short quiet inset task excerpt "Finish illustration".
+Body text, verbatim, wrapped readably:
+"This removes the task from your Obsidian todo file and deletes its linked Telegram message."
+Separate short line "This cannot be undone."
+Footer two buttons: neutral outlined "Cancel", and muted deep brick-red filled "Delete" with ivory text. Delete is the only red primary action in this sheet. No checkbox, no dramatic skull art, no fake countdown, no permanent-delete toggle. Show the real scope clearly and do not claim it only hides the task. This example is a task with a linked Telegram message.
+
+MIDDLE ROW COMPACT NOTE EDITORS:
+Header title "Add note".
+One multiline input field, containing exactly "Warm palette; keep map subtle."
+No priority, due date, parent task checkbox, tabs or checklist controls.
+Footer outlined "Cancel" and navy primary "Save".
+Small hint "Ctrl+Enter to Save · Esc to Cancel".
+Keep it compact with two or three lines worth of input height, no giant blank form.
+
+BOTTOM ROW COMPACT SUBTASK EDITORS:
+Header title "Edit subtask".
+One multiline input field containing "Export PNG".
+No completion checkbox in this standalone text editor, no priority, due date, nested subtasks or extra fields.
+Footer outlined "Cancel" and navy primary "Save". Keep the label Save, not Save changes, because this is the existing compact detail editor mode.
+Small hint "Ctrl+Enter to Save · Esc to Cancel".
+Same compact form geometry as the note editors.
+
+Classic: slender smooth outlines, modest rounded corners, small ordinary X. Pixel: fine stepped corners on windows, inputs and buttons; crisp simple pixel X. Text remains readable, no pixel font for paragraphs. Keep the warning paragraph high contrast; illustrative paper grain and map edging must never obscure it. The same artwork treatment carries across all six without unnecessary embellishment.

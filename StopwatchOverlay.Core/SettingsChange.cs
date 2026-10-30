@@ -27,7 +27,8 @@ public enum SettingsChangeKind
     InternetMonitor = 1 << 18,
     IdleStop = 1 << 19,
     FocusTracking = 1 << 20,
-    PeriodicReview = 1 << 21
+    PeriodicReview = 1 << 21,
+    TodoAppearance = 1 << 22
 }
 
 public static class SettingsChangePolicy

@@ -1,0 +1,52 @@
+Use case: ui-mockup.
+Create ONE complete polished desktop Settings screen for the approved One Piece Todo overlay. This is a visual design preview, not a comparison collage. The screen must be beautiful, professional, neat and readable, with efficient spacing and no oversized margins. Landscape approximately 16:10, high-resolution.
+
+Input image roles:
+1: approved Classic Todo panel, use for the live preview and Classic visual identity.
+2: approved Pixel Voyage Todo panel, use only for the small Pixel Voyage style thumbnail.
+3: the four approved background options. Use them for FOUR real landscape swatches: Navigator Parchment, Amber Vellum, Midnight Chart, Quiet Atlas.
+4: the crew-emblem collection. Use only Luffy's logo for the currently selected header and launcher icons. Other emblems are chosen through a separate picker, not a giant grid on this screen.
+
+Host layout should follow the existing Settings & Overlay Inspector structure: full-width navy top header, then THREE columns: live preview LEFT, narrow category navigation MIDDLE, appearance controls RIGHT. The right column is the largest. This is a Todo appearance category within Settings, not a redesign of unrelated settings. Color language: warm muted amber parchment and pale sand surfaces with quiet texture, midnight navy, ivory serif headings, clean navy sans-serif text, delicate aged-brass dividers. Map illustrations only at outer edges or in the navy header. Avoid dense texture behind controls, thick metallic bevels, glowing gold or too many nested bordered cards.
+
+Top header exact title "Settings & Overlay Inspector", small settings icon, and "Done" button aligned far right. No Save or Apply button.
+LEFT column, about 30% width:
+Heading "Live Todo preview".
+A small line "Sample tasks" below it.
+Show the actual approved Classic overlay in a navy preview area, preserving its proportions: Luffy header, "Todos", "3 open", small Sort Priority/Show completed toolbar, four task rows with priorities 1,3,6,10. First row "Finish illustration" expanded with "1/3 subtasks · 1 note", checked "Sketch layout", unchecked "Add colors", unchecked "Export PNG", and note "Warm palette; keep map subtle." Three other rows "Read 20 pages", "Review project notes", struck-through completed "Plan tomorrow". Footer "＋ Add todo". Miniature preview must remain readable, not distorted or stretched. Keep first-task details compact.
+Beneath the overlay, label "Collapsed launcher" and the Luffy skull logo FLOATING FREELY on the navy preview surface, with no circle, tile, badge or frame behind the logo. Small caption "Transparent logo".
+
+MIDDLE column, about 15% width:
+Navy navigation rail with these readable entries:
+"Overlay & position"
+"Appearance"
+an indented SELECTED "Todo appearance"
+"Fonts & colors"
+"Light ring"
+"Behavior"
+"Application"
+"Obsidian / Markdown"
+"Telegram"
+"Habitica".
+Selected Todo appearance uses a restrained amber accent and clear ivory text. Do not fill the rail with decorative icons.
+
+RIGHT column, about 55% width:
+Heading "Todo appearance", small subtitle "Nika's Chronicle · Todo overlay only".
+Section "Theme style": two side-by-side selection cards with small visual swatches and exact names "Classic" and "Pixel Voyage". Classic SELECTED with thin brass outline and small checkmark; Pixel Voyage unselected. The Classic card suggests smooth ledger rows, the Pixel card stepped navy/brass row edges. These cards are compact, not full duplicate panels.
+Section "Background": FOUR small swatches in a single row, faithfully corresponding to reference 3; label each beneath with its exact name, wrapping the long names neatly. Navigator Parchment selected. The Midnight Chart swatch must actually be deep navy, the others warm paper variants.
+Section "Crew emblems": two aligned selector rows:
+"Header emblem" — small Luffy icon, value "Luffy", button "Choose…"
+"Launcher emblem" — small Luffy icon, value "Luffy", button "Choose…"
+A brief helper "16 emblems available". No framed launcher option or background toggle.
+Then a CHECKED checkbox "Engraved header".
+Section "Details": a clean vertically aligned label and dropdown grid containing exactly:
+"Task rows" → "Ship's Ledger"
+"Priority markers" → "Original circles"
+"Subtasks & notes" → "Margin Notes"
+"Toolbar & buttons" → "Classic Brass"
+Each selected-value field has a down chevron and modest pale parchment fill.
+Below these controls, a small quiet read-only line "Task feedback: Quiet Ledger" with helper "Matches the selected theme style".
+At bottom, unobtrusive "Changes apply immediately." No Reset all, no import/export buttons, no animation settings or extra unapproved controls.
+Right column has a subtle vertical scrollbar at the far edge, indicating the contents scroll on smaller windows, but all named choices should be visible in this broad layout.
+
+IMPORTANT: This screen is a proposal for the user's retained selections. Only TWO theme styles, FOUR backgrounds, TWO independently chosen emblem targets, and FOUR detail dropdowns. Don't invent more themes, fonts, privacy settings or task features. The live preview uses sample data and does not show real personal tasks. Preserve the mature One Piece game aesthetic, but make the settings controls clear and calm. No illustrations competing with labels, no square pasted artwork backgrounds behind logos.

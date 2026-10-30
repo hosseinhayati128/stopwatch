@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Todo overlay · Reference comparison</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#071e2d;color:#f6ead0;font:15px/1.5 system-ui,sans-serif}main{max-width:1320px;margin:auto}h1{font:600 30px Georgia,serif;margin:0 0 8px}p{color:#bac8ce;margin:0 0 26px}nav{display:flex;gap:10px;margin:20px 0}button{border:1px solid #927b49;border-radius:6px;background:#123448;color:#f6ead0;padding:9px 18px;cursor:pointer;font:inherit}button[aria-selected=true]{background:#e5bd65;color:#06263b}section{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}section[hidden]{display:none}figure{margin:0;background:#0b293a;padding:14px;border:1px solid #37505c;border-radius:10px}figcaption{color:#e5bd65;margin-bottom:12px;font-weight:600}img{display:block;width:100%;height:auto}small{display:block;color:#aabdc5;margin-top:20px}a{color:#e5bd65}@media(max-width:800px){section{grid-template-columns:1fr}body{padding:18px}figure{max-width:440px;margin:auto}}
+</style><main>
+<h1>Todo overlay · Reference comparison</h1>
+<p>Approved artwork beside the previous and refined native renders. The latest version restores the original Luffy emblem, aligns labels, and adds the fine gold outline.</p>
+<nav aria-label="Theme"><button aria-selected="true" onclick="select('classic',this)">Classic</button><button aria-selected="false" onclick="select('pixel',this)">Pixel Voyage</button><button aria-selected="false" onclick="select('editors',this)">Editors</button></nav>
+<section id="classic">
+<figure><figcaption>Approved reference</figcaption><img src="combined-classic-preview-v1.png" alt="Approved Classic Todo design"></figure>
+<figure><figcaption>Before</figcaption><img src="implemented/before-polish-2026-10-30/classic-overlay.png" alt="Previous native Classic overlay"></figure>
+<figure><figcaption>Refined native panel</figcaption><img src="implemented/classic-overlay.png" alt="Refined Classic overlay"></figure>
+</section>
+<section id="pixel" hidden>
+<figure><figcaption>Approved reference</figcaption><img src="combined-pixel-preview-v1.png" alt="Approved Pixel Todo design"></figure>
+<figure><figcaption>Before</figcaption><img src="implemented/before-polish-2026-10-30/pixel-overlay.png" alt="Previous native Pixel overlay"></figure>
+<figure><figcaption>Refined native panel</figcaption><img src="implemented/pixel-overlay.png" alt="Refined Pixel overlay"></figure>
+</section>
+<section id="editors" hidden>
+<figure><figcaption>Approved editor designs</figcaption><img src="task-editors-classic-pixel-v1.png" alt="Approved editor design board"></figure>
+<figure><figcaption>Classic editor</figcaption><img src="implemented/classic-editor.png" alt="Refined native Classic editor"></figure>
+<figure><figcaption>Pixel editor</figcaption><img src="implemented/pixel-editor.png" alt="Refined native Pixel editor"></figure>
+</section>
+<small>Native captures are 400 × 560 for the overlays and 520 × 550 for the editors. Images fit the comparison columns; open an image to inspect its original size. <a href="verification.md">Verification notes</a></small>
+</main><script>function select(id,button){document.querySelectorAll('section').forEach(s=>s.hidden=s.id!==id);document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b===button?'true':'false'))}</script></html>

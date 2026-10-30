@@ -24,7 +24,7 @@ int failures = 0;
 void Check(string name, Action test)
 {
     try { test(); Console.WriteLine("PASS " + name); }
-    catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + ": " + ex.GetBaseException().Message); }
+    catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + ": " + ex.GetBaseException().Message); if (args.Contains("--todo-appearance-only")) Console.WriteLine(ex); }
 }
 void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
 SharpHookHotKeyService Service() => (SharpHookHotKeyService)Activator.CreateInstance(
@@ -86,6 +86,12 @@ Check("only command keys are consumed on Windows", () => {
     Require(repeat.SuppressEvent == OperatingSystem.IsWindows(), "A held command leaked into the foreground app.");
 });
 
+if (args.Contains("--todo-settings-only"))
+{
+    Check("Todo appearance compatibility and independent persistence", TodoAppearanceChecks.Settings);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 AppBuilder.Configure<App>().UsePlatformDetect()
     .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
@@ -94,6 +100,35 @@ if (args.Contains("--nika-only"))
 {
     Check("Nika scoped controller, resources and theme restoration", NikaThemeChecks.Run);
     Check("controller mode selections survive refresh", ControllerModeChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--todo-appearance-only"))
+{
+    Check("Todo appearance settings", TodoAppearanceChecks.Settings);
+    Check("Todo appearance native overlay", TodoAppearanceChecks.Overlay);
+    Check("Todo appearance inspector and dialogs", TodoAppearanceChecks.InspectorAndDialogs);
+    Check("Todo appearance actual-size controls and isolated fixtures", TodoAppearanceUiChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--todo-reorder-only"))
+{
+    Check("Manual Todo card dragging and stationary edge scrolling", TodoReorderChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--todo-mural-only"))
+{
+    Check("Todo artwork settings compatibility", TodoAppearanceChecks.Settings);
+    Check("Todo sidebar artwork layers", () => TodoMuralChecks.Run());
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--todo-mural-audit"))
+{
+    Check("Todo mural visual audit", TodoMuralChecks.CaptureAudit);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--todo-mural-dropdown-only"))
+{
+    Check("Todo artwork dropdown recycling", () => TodoMuralChecks.Run(dropdownOnly:true));
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 if (args.Contains("--controller-modes-only"))

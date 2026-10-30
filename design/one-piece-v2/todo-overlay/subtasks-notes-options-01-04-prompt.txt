@@ -1,0 +1,42 @@
+Use case: ui-mockup.
+Create ONE professional high-resolution 2x2 comparison sheet showing four ways to display INLINE EXPANDED TASK DETAILS and SUBTASKS in the One Piece-themed Nika's Chronicle Todo overlay. This is the next visual design layer, not a new app or a new workflow.
+Reference image: previously approved row design options. Use ONLY the TOP-LEFT "Ship's Ledger" panel as the base for all four new panels: navy header, colorful small Luffy straw-hat skull emblem, ivory serif "Todos", warm golden-brown parchment map with faded details toward right and corners, thin brass window outline, plain ledger task rows, clean square parent checkboxes. Do not use the other row or checkbox variants in the reference.
+Keep top-level task rows and ORIGINAL FLAT COLORED CIRCULAR priority badges exactly consistent across all four mockups. No fancy enamel priority badges, flags, diamond checkboxes or new crew icons. Only the expanded content beneath the first task changes.
+Board: dark navy background, small centered heading "SUBTASKS & NOTES", four equal complete panels in a 2x2 grid. Clearly numbered option titles above panels in ivory serif, thin circled brass numbers. If necessary use a slightly taller canvas to keep details legible. Uniform narrow gutters, clean compact internal padding. Crisp professional game-inspired UI, warm parchment not white, restrained gold, no heavy frame, ropes, 3D props, character art or busy map behind text.
+
+FIXED CONTENT IN EVERY PANEL:
+Navy header with small colorful Luffy emblem, "Todos", "3 open", collapse chevron.
+Compact toolbar: "Priority" dropdown and checked "Show completed".
+First main task, EXPANDED:
+  empty square completion checkbox, small flat terracotta circle "1", bold dark-navy title "Finish illustration", downward chevron at far right.
+  Small summary underneath the title reading exactly "1/3 subtasks · 1 note".
+  The expanded details below this summary contain exactly THREE subtasks and ONE note:
+    CHECKED small square checkbox with ivory tick on navy; "Sketch layout" in muted navy with thin strikethrough.
+    empty small square checkbox; "Add colors".
+    empty small square checkbox; "Export PNG".
+    Note text: "Warm palette; keep map subtle."
+  The note is not a task: no checkbox or priority badge beside the note.
+  Do NOT give subtasks priority numbers or chevrons. Subtask typography smaller than parent task but plainly readable.
+  Entire expansion is indented under the parent title area, hierarchy clear, not flush with parent checkboxes.
+Below expanded content, keep three compact parent rows:
+  unchecked square, flat ochre circle "3", "Read 20 pages", right chevron.
+  unchecked square, flat teal circle "6", "Review project notes", right chevron.
+  checked navy square with ivory tick, flat slate-gray circle "10", struck-through "Plan tomorrow", right chevron.
+These make three open parent tasks and one completed parent task. Keep them fully visible in every panel.
+Footer: identical navy "＋ Add todo" button, thin brass edge.
+No extra Add subtask/Add note buttons, due-date controls, tabs, filters, progress bars, menus, status pills or fabricated actions. Keep the existing inline disclosure behavior; summary and chevron are the affordance. No explanatory copy inside the image.
+
+FOUR EXPANDED-DETAIL TREATMENTS:
+TOP LEFT "1  Margin Notes":
+Minimal integrated indentation. Expanded subtasks sit directly on the same map parchment with clean vertical spacing, no enclosing card. A single fine sepia vertical margin rule at the left of the indented group quietly relates the children to their parent. Three normal small square checkboxes. Note sits beneath them as a quiet one- or two-line quotation with a short muted brass left rule and a tiny "Note" label above. No background box. Airy, refined and legible.
+
+TOP RIGHT "2  Foldout Card":
+The expanded content ONLY is enclosed by a warm translucent amber-parchment card with softly rounded small corners, very thin sepia border and extremely subtle paper depth. Slightly darker tint than main parchment, never white. No fold curl or giant torn corner. Inside: a three-line checklist with small square checkboxes; a fine horizontal separator; tiny uppercase "NOTE" and the note text below. Summary remains above the card beside the parent title. Comfortable but compact inner padding, no nested cards.
+
+BOTTOM LEFT "3  Branch Ledger":
+Expanded subtasks sit directly on parchment, without a filled box. Use precise thin muted-brass TREE connectors: one vertical line with three short right-facing branch elbows leading to the three small square subtask checkboxes. This is an elegant hierarchy tree, not a dotted journey path, skill tree or flowchart. Checked child is muted, others dark navy. After three children, the note is a separate lower branch ending in a tiny outlined note-page icon and the note text, with no checkbox. Crisp aligned structure, minimal strokes, uncluttered cartographic drafting feel. Parent rows unchanged.
+
+BOTTOM RIGHT "4  Pixel Journal":
+Only the expanded detail container and CHILD checkboxes receive subtle pixel-inspired styling. A warm translucent parchment detail inset with a very thin navy outline and deliberately stepped corners, tiny restrained brass pixel corner accents. Three compact pixel-stepped square child checkboxes, checked one navy with clear ivory pixel tick. Ordinary highly readable sans-serif child text, not tiny pixel type. A thin stepped sepia separator before small "NOTE" and the note text. Parent rows, parent checkboxes, priority circles, header logo, typography and illustrated map all remain exactly as the non-pixel Ship's Ledger base. No game sprites or pixelated maps.
+
+The four options must clearly differ in HOW THE CHILD CONTENT IS GROUPED: plain margin indentation, soft parchment inset, fine tree connectors, stepped pixel inset. All show exactly the same task titles, three child tasks, one note and completion states, with no cropped footer or missing rows. Keep the whole design neat, understated and beautiful; readability and hierarchy take priority over decoration. Render one complete comparison image, no watermark.

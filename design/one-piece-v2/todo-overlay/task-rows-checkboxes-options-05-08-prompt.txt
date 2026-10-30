@@ -1,0 +1,33 @@
+Use case: ui-mockup.
+Generate ONE high-resolution square 2x2 comparison board showing FOUR MORE alternative task-row and checkbox designs for the One Piece-themed Nika's Chronicle Todo overlay. Number them 5, 6, 7, 8, not 1-4. This is the second comparison sheet in a step-by-step UI design conversation.
+REFERENCE IMAGE: the previous options 1-4 board. It is the source of truth for the warm yellow-brown map parchment, small full-color Luffy straw-hat skull logo, deep navy engraved top bar, ivory serif "Todos", subtle brass outlines, equal panel sizes and overall composition. Preserve those foundations consistently in all FOUR new panels. Change ONLY task row design and completion-checkbox treatment. Create NEW directions, not copies of the previous plain ruled squares, rounded parchment cards, dotted circular navigation route, or dark navy angular focused row.
+Keep everything professional and uncluttered: no ropes, dangling charms, wood planks, skulls on every task, portraits, cartoon objects, thick frames, neon gold, heavy fake metallic bevels, busy scene illustrations, or whitespace that turns the parchment white.
+Canvas: navy backdrop with a clean equal 2x2 grid and narrow consistent gutters. Same-size overlay panels. Large clearly readable cream option titles ABOVE each panel, number in small thin brass circle. No extra explanatory paragraphs or branding above the board.
+Fixed UI in all four panels:
+- Identical navy header with small classic Luffy flag emblem at left, ivory serif "Todos", small "3 open" and right collapse chevron. Faint cartographic engraving, thin brass separator.
+- Identical warm Navigator Parchment body with faded hand-engraved coastline/mountain details mostly on the right, quiet center, light detail on the bottom. Compass roses remain perfectly circular, no stretching.
+- Identical compact toolbar: "Priority" dropdown on left and checked "Show completed" on right.
+- FOUR task rows in the same order:
+   Unchecked "Finish illustration", priority circle "1" muted terracotta, chevron at right; this is the subtly focused row.
+   Unchecked "Read 20 pages", priority circle "2" muted amber, chevron at right.
+   Unchecked "Review project notes", priority circle "3" muted teal, chevron at right.
+   CHECKED "Plan tomorrow", priority circle "4" muted sage, thin elegant strikethrough, desaturated but legible text.
+- Fixed row order of controls: completion checkbox at far left, colored numbered priority circle next, title next, chevron far right. Match their columns carefully across rows. Only one checkbox per task. Same numbered circle treatment in all variants.
+- Same navy "＋ Add todo" footer button and thin brass frame. No new buttons, no progress bars or new workflows.
+- Comfortable compact rows, clear task titles, real desktop UI sizing. Never let labels overlap artwork.
+
+FOUR NEW DESIGNS:
+
+TOP LEFT — "5  Cartographer's Notes":
+A refined ink-on-map design, maximally quiet and airy. Rows have no card background and no full-width horizontal dividers. A very subtle short hand-engraved dash below the text column separates entries. The checkbox uses FOUR small L-shaped navy corner brackets defining a small square with deliberately open sides; unfinished centers are plain parchment. For the completed task, a single bold navy hand-inked checkmark sits inside those same open corner brackets. No filled completion tile. First row focus is indicated only by a short 2px brass underline below its task title, not a wide filled banner. Body typography elegant medium-weight humanist sans serif. Looks like tidy navigation notes written on an old chart, but the typesetting is precise and clean.
+
+TOP RIGHT — "6  Crew Seals":
+Refined stamped-seal checkboxes, compact circular ivory-parchment discs with a muted brass double-ring edge and tiny restrained scallops around the rim. Unfinished centers are EMPTY, no distracting logo. Completed disc is a flat muted burgundy wax-seal circle containing a clean small IVORY checkmark, barely any embossing, not 3D melted wax. Rows are warm translucent horizontal amber bands with feather-soft ends, integrated into the parchment; not outlined cards, no drop shadows. The first band is slightly more saturated amber to focus it. Keep seals about the same size as normal checkboxes, not huge medallions. A distinctive pirate correspondence mood that stays usable.
+
+BOTTOM LEFT — "7  Signal Ribbons":
+Slim elegant parchment strips with a tiny deep-navy rectangular ribbon tab at the left edge of EACH row, rounded at top and bottom and ending in a very shallow V-notch. The checkbox lives INSIDE that short navy tab: a small clean brass outlined rounded square. The completed checkbox shows a bright ivory checkmark; unfinished centers remain navy. The tab is only checkbox width plus padding, NOT a giant sidebar and NOT a connection between rows. Each row extends right as a restrained warm parchment strip with only a fine sepia bottom keyline. First strip gets a slender brass TOP rule. Priority circles and dark-navy text remain on the parchment to the right of the small navy checkbox tab. Refined uniform-inspired naval signal styling, neat and balanced, no all-navy focused row.
+
+BOTTOM RIGHT — "8  Pixel Voyage":
+Tasteful restrained pixel-art game UI treatment ONLY for row edges and checkboxes, while the established header, map and Luffy icon remain exactly the same high-quality illustrated style as the other panels. Checkboxes are pixel-stepped square navy outlines, visibly drawn in crisp deliberate blocks, not blurry or jagged accidents. The completed square is deep navy with a bold ivory PIXEL checkmark. Rows use extremely thin stepped-corner sepia outlines, warm transparent parchment fill, no shadows; first row has a muted brass pixel corner accent at each corner. Keep task titles in highly legible subtly squared sans-serif type, not tiny pixel text. The normal colored numbered priority circles stay circular. Nostalgic RPG inventory detail applied sparingly to this professional overlay. No pixelated background, no pixelated header text, no sprites, hearts, coins or character portraits.
+
+Show unchecked, focused and completed states clearly in each panel. The four designs MUST be visually distinct: open ink corner-brackets, restrained wax seals, short navy ribbon-checkbox tabs, and pixel-stepped checkboxes. Maintain the reference's beautiful map colors, clean margins and overall visual hierarchy. Produce the complete board with precisely four named numbered panels, all fully visible.

@@ -33,10 +33,10 @@
         </Border>
 
         <!-- Main Content Area: 3 Columns -->
-        <Grid ColumnDefinitions="340,190,*" Background="{DynamicResource SurfaceBrush}">
+        <Grid x:Name="SettingsColumns" ColumnDefinitions="340,190,*" Background="{DynamicResource SurfaceBrush}">
 
             <!-- Column 0: Live overlay preview -->
-            <Border Grid.Column="0"
+            <Border x:Name="ClockPreviewArea" Grid.Column="0"
                     Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource SubtleDividerBrush}"
                     BorderThickness="0,0,1,0"
@@ -105,6 +105,16 @@
             </Border>
 
             <!-- Column 1: Navigation Sidebar -->
+            <Border x:Name="TodoPreviewArea" Grid.Column="0" IsVisible="False" Padding="16"
+                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <TextBlock Text="Live Todo preview" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <ContentControl x:Name="TodoPreviewHost" Grid.Row="1" Margin="0,16"
+                                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                    <TextBlock Grid.Row="2" Text="Sample tasks · Transparent launcher below" FontSize="11"
+                               TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Grid>
+            </Border>
             <Border Grid.Column="1"
                     Background="{DynamicResource NavigationRailBrush}"
                     BorderBrush="{DynamicResource SubtleDividerBrush}"
@@ -128,6 +138,7 @@
                     </ListBox.Styles>
                     <ListBoxItem Content="Overlay &amp; position" Tag="Overlay"/>
                     <ListBoxItem Content="Appearance" Tag="Appearance"/>
+                    <ListBoxItem Content="Todo appearance" Tag="TodoAppearance"/>
                     <ListBoxItem Content="Fonts &amp; colors" Tag="Typography"/>
                     <ListBoxItem Content="Light ring" Tag="LightRing"/>
                     <ListBoxItem Content="Behavior" Tag="Behavior"/>
@@ -146,6 +157,7 @@
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <Grid Margin="24,20">
+                    <StackPanel x:Name="TodoAppearancePanel" IsVisible="False"/>
 
                     <!-- Panel 1: Overlay & Position -->
                     <StackPanel x:Name="OverlayPanel" Spacing="6">

@@ -97,6 +97,7 @@ public partial class NoteEntryWindow : Window
         // Handle shortcuts before the multiline TextBox consumes Enter.
         AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => NoteInputBox.Focus();
+        if (noteType == NoteType.Todo) ApplyTodoEditorAppearance();
     }
 
     public static NoteEntryWindow ForTodoDetail(AppSettings settings, string title, string text, Func<string, NoteSyncResult> save)
@@ -106,6 +107,7 @@ public partial class NoteEntryWindow : Window
         editor.Title = editor.HeadingText.Text = title;
         editor.NoteInputBox.Text = text;
         editor.NoteInputBox.Watermark = "Enter the details…";
+        editor.ApplyTodoEditorAppearance();
         return editor;
     }
 
@@ -262,10 +264,7 @@ public partial class NoteEntryWindow : Window
                 TelegramNotesSync.DispatchNoteInBackground(_settings, _noteType, text, entryTimestamp);
             if (syncWarning != null)
             {
-                _savedWithWarning = true;
-                NoteInputBox.IsEnabled = TodoDetailsPanel.IsEnabled = false;
-                SaveButton.Content = "Close";
-                ShowSaveError(syncWarning);
+                ShowSavedSyncWarning(syncWarning);
                 return;
             }
             Close();

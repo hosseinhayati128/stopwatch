@@ -1,0 +1,34 @@
+Use case: ui-mockup.
+Create ONE high-quality 2 by 2 comparison image with FOUR visual alternatives for task states and completion feedback in the approved One Piece Todo overlay. This is the next controlled design layer. It must feel like a beautiful, professional game interface, calm and legible.
+
+Reference image 1 is the accepted Classic overlay. Preserve its warm amber map parchment, engraved midnight-navy Luffy header, ivory serif title, thin brass borders, Ship's Ledger ruled rows, square checkboxes, and flat numbered priority circles.
+Reference image 2 is the accepted Pixel Voyage overlay. Use its pixel language ONLY for the small status markers and hold meter in option 4. Do not replace the common panel layout or row styles.
+
+Board: four equally sized panels in a neat 2 by 2 layout, on a dark blue-gray matte presentation background. Spacious enough for readable text, no excessive blank space. Simple numbered ivory serif headings above each panel. No large overall title. All four mini panels show the SAME sample tasks and content. Keep map details faint, concentrated at the right and bottom, behind no critical text. Do not add characters, ships, loot, ropes or decorative controls. These are actual desktop UI design concepts.
+
+Each mini panel:
+Navy Luffy skull header, title "Todos", "3 open", up chevron.
+Compact toolbar: "Sort: Priority" and checked "Show completed".
+Four task rows with left completion checkbox, fixed priority circle, task title, state/date information beneath the title, and right expansion chevron:
+- EMPTY checkbox, red priority circle "1", "Finish illustration". It is in progress with a future scheduled deadline. Under title, show "In progress" and, on its own small line, "Due · 31 Oct · 14:00". The future due line is neutral navy-gray.
+- EMPTY checkbox, ochre priority circle "3", "Read 20 pages". Under title show "Due · 29 Oct · 18:00". This is due soon, using a restrained amber cue.
+- EMPTY checkbox, blue-teal priority circle "6", "Review project notes". Under title show "Overdue · 28 Oct · 09:00". Use muted deep brick-red for overdue.
+- CHECKED navy checkbox, slate circle "10", muted struck-through "Plan tomorrow". No active status or urgency decoration.
+Bottom: simple navy "＋ Add todo" button matching the accepted classic panel.
+
+Under EACH mini panel, OUTSIDE its frame, include a narrow comparison-only magnified sample headed "HOLD FEEDBACK". It shows an EMPTY checkbox, the short task title "Finish illustration", the word "Holding…", and the option's hold-progress treatment at about 60 percent. This strip is an explanatory visual sample of transient feedback, NOT a new footer control. The checkbox remains UNCHECKED until holding is complete. Do not draw a tick on any holding sample.
+
+Four visual treatments:
+TOP LEFT — "1  Quiet Ledger"
+Minimal ink-like inline state indicators. A tiny teal play-in-circle beside "In progress". Small calendar outline before the neutral and amber due-date lines; tiny warning outline before the brick-red overdue text. No pill backgrounds or row tints. Hold feedback: one very slender navy horizontal progress line under the task title, filled about 60 percent over a faint brass track. Cleanest and lightest treatment.
+
+TOP RIGHT — "2  Soft Labels"
+Small refined rounded status labels: pale teal pill for "In progress"; pale amber pill around the soon due line; pale dusty-red pill around the overdue line. Keep the scheduled future due line neutral plain text. Soft low-opacity fills, thin quiet outlines, no chunky badges. Icons plus text ensure color is not the only signal. Hold feedback: a thin navy stroke traces about 60 percent around the OUTSIDE perimeter of the empty square checkbox, keeping the inside empty. No extra circular ring.
+
+BOTTOM LEFT — "3  Margin Signals"
+Use a slim short left-edge rule on each relevant task row: teal for the active first row, amber for due-soon second, muted brick-red for overdue third. Plain state/date text with tiny icons under the title; no pills. No large tinted card backgrounds. Hold feedback: the empty checkbox fills upward with translucent warm brass to around 60 percent, without a checkmark, keeping its crisp navy outline.
+
+BOTTOM RIGHT — "4  Pixel Signals"
+Small stepped pixel-outline label for "In progress" with a tiny pixel play symbol; stepped amber due-soon label and stepped brick-red overdue label, thin pixel borders and very subtle fills. Neutral scheduled date remains plain text. Normal readable task typography; no bitmap font for long text. Hold feedback: a short row of ten tiny rectangular segments beneath the title, six navy filled and four faint outlined. Keep the comparison checkbox empty.
+
+Important: task priorities stay 1,3,6,10 with their original flat circles in EVERY option. State cues must remain secondary to the task titles and distinct from priority. Avoid emoji, glow, large colored blocks, loud saturation, changing task content between options, a percentage-complete display for in-progress tasks, or a false checkmark before hold completion. Professional clear typography and restrained gold. All four options must be immediately distinguishable but harmonious with the same approved panel.

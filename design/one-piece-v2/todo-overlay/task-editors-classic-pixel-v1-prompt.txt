@@ -1,0 +1,46 @@
+Use case: ui-mockup.
+Create ONE polished portrait 2 by 2 UI design board showing the Add and Edit Todo dialogs for two approved One Piece visual themes. This is a matched two-theme design, not four different alternatives.
+Reference 1 establishes the Classic treatment: warm amber parchment, faint map edges, a dark engraved navy header with a small Luffy straw-hat skull, ivory serif title, restrained thin brass divider, elegant modestly rounded controls and clean dark-navy sans-serif body text.
+Reference 2 establishes Pixel Voyage: same rich illustrated artwork and palette, with fine stepped borders on window frame and primary controls, deliberate crisp pixel UI accents. Keep normal readable typography. Do not pixelate the entire image.
+
+Board layout: Classic LEFT, Pixel RIGHT; Add TOP, Edit BOTTOM. Dark blue-gray background, small equal gutters, strong legibility, all four dialogs completely visible. Exact presentation headings above cells:
+"1  Classic · Add"
+"2  Pixel · Add"
+"3  Classic · Edit"
+"4  Pixel · Edit".
+No overall oversized title. Each dialog should be a realistic compact desktop form with careful alignment, limited ornament, no huge margins.
+
+TOP ROW: two Add dialogs with identical content.
+Navy engraved header with small Luffy emblem, ivory serif title "Add Todo", and close X at far right.
+Warm parchment body with quiet center. One full-width multiline text field containing two lines:
+"Finish illustration"
+"Warm palette; keep map subtle."
+No separate title field or Notes tab.
+A row labeled "Priority" with dropdown showing "3" and a down chevron.
+A row labeled "Manual position" with a compact button "↑ Top".
+An UNCHECKED checkbox labeled "Due date & time (optional)". Since it is off, show NO date or time fields in these top dialogs.
+Section label "Checklist".
+Two editable checklist rows: an empty square checkbox, text field "Sketch layout", then three small buttons "↑" "↓" "×"; and an empty checkbox, text field "Add colors", then the same three buttons. Keep these small controls readable and evenly spaced.
+A quiet "+ Add subtask" button.
+Footer buttons "Cancel" (subtle outline) and "Save" (primary navy with ivory text).
+Small footer hint "Ctrl+Enter to Save · Esc to Cancel".
+
+BOTTOM ROW: two Edit dialogs with identical content.
+Same header treatment, title "Edit Todo", close X.
+Same multiline body text:
+"Finish illustration"
+"Warm palette; keep map subtle."
+"Priority" dropdown showing "1".
+NO Manual position row in either Edit dialog.
+A CHECKED checkbox labeled "Due date & time (optional)".
+Date controls clearly showing "31" "Oct" "2026" with compact dropdown affordances.
+Time control "14:00" and a separate small "Clear" button.
+Small note "Local time".
+Section label "Checklist".
+Two editable checklist rows: CHECKED "Sketch layout" and EMPTY "Add colors", each with text field and "↑" "↓" "×" buttons. These are editor controls, not the overlay's hold-to-complete presentation.
+Quiet "+ Add subtask" button.
+Footer "Cancel" and primary "Save changes".
+Hint "Ctrl+Enter to Save · Esc to Cancel".
+
+Classic inputs use thin navy or muted brass outlines, subtle corner radius, quiet parchment fill. Pixel inputs and buttons use tasteful little stepped corners; all text remains readable modern sans-serif except the serif header. Keep checklist editor internals consistent with the approved plain detail treatment: small normal square child checkboxes and simple input rows, no ornate pixel journal cards.
+The primary action is navy, not red. Red is reserved for destructive actions and need not appear in these forms. Do not add scheduling repeat options, assignees, tags, progress switches, reminder toggles, tabs, cloud logos, new feature controls, decorative boats, ropes, huge icons or thick gold bevels. Faint map engraving belongs only at outer edges and in the navy header, never under dense input text. Professional neat form design with readable labels and exact content.

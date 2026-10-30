@@ -25,14 +25,6 @@ public partial class TodoOverlayWindow : Window
     private readonly AppSettings _settings;
     private bool _loadingOrganization;
     private TodoOrganization? _organization;
-    private NoteEntry? _draggedEntry;
-    private Grid? _draggedRow;
-    private Grid? _dropRow;
-    private NoteEntry? _dropEntry;
-    private Point _dragOrigin;
-    private bool _reordering;
-    private bool _dropAfter;
-    private IPointer? _dragPointer;
 
     private readonly DispatcherTimer _refreshTimer;
     private readonly DispatcherTimer _positionTimer;
@@ -64,10 +56,12 @@ public partial class TodoOverlayWindow : Window
         WindowsTopmostGuard.Attach(this);
         OverlayScreenConstraint.Attach(this);
         _settings = settings;
+        _reorderScrollTimer.Tick += (_, _) => AutoScrollCardDrag();
         TodoSortCombo.ItemsSource = new[] { "Priority", "Manual" };
         TodoSortCombo.SelectionChanged += (_, _) =>
         {
             if (_loadingOrganization || TodoSortCombo.SelectedItem is not string mode) return;
+            CancelDrag();
             SaveOrganization(TodoOrganizationStore.SetSortMode(_settings.ObsidianVaultFolder, mode, _settings.NotesSubfolder));
             TodoScrollViewer.Offset = default;
         };
@@ -111,7 +105,8 @@ public partial class TodoOverlayWindow : Window
         _positionTimer.Tick += (_, _) => RememberDraggedPosition();
         AddHandler(KeyDownEvent, (_, e) =>
         {
-            if (e.Key == Key.Escape && IsExpanded) { e.Handled = true; ToggleExpanded(); }
+            if (e.Key == Key.Escape && _draggedEntry != null) { e.Handled = true; CancelDrag(); }
+            else if (e.Key == Key.Escape && IsExpanded) { e.Handled = true; ToggleExpanded(); }
         }, RoutingStrategies.Tunnel);
         // Observe the press before Button consumes it, without stealing a normal click.
         var header = this.FindControl<Grid>("OverlayHeader")!;
@@ -138,16 +133,18 @@ public partial class TodoOverlayWindow : Window
                 _positionTimer.Start();
             }
         };
-        Closed += (_, _) => { _closed = true; _openTaskMenu?.Close(); if (_taskEditor?.IsVisible == true) _taskEditor.Close(); if (_deleteDialog?.IsVisible == true) _deleteDialog.Close(false); _refreshTimer.Stop(); _positionTimer.Stop(); };
+        Closed += (_, _) => { _closed = true; CancelDrag(); _openTaskMenu?.Close(); if (_taskEditor?.IsVisible == true) _taskEditor.Close(); if (_deleteDialog?.IsVisible == true) _deleteDialog.Close(false); _refreshTimer.Stop(); _positionTimer.Stop(); };
         ApplySettings();
     }
 
     public void ApplySettings()
     {
+        CancelDrag();
         bool pirate = AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika;
         Classes.Set("pirate", pirate);
         SkullArtwork.IsVisible = pirate;
         PlainLauncher.IsVisible = !pirate;
+        ApplyTodoAppearance();
         ShortcutHint.Text = $"{(_settings.NoteLeaderShortcut ?? AppSettings.DefaultNoteLeaderShortcut()).Format()} → Space · Esc to collapse";
         _snapshot = null;
         ShowCompletedToggle.IsChecked = _settings.TodoOverlayShowCompleted;
@@ -162,7 +159,7 @@ public partial class TodoOverlayWindow : Window
         IsExpanded = !IsExpanded;
         _dragMoved = false;
         Width = IsExpanded ? 400 : 88;
-        Height = IsExpanded ? 500 : 88;
+        Height = IsExpanded ? (IsNikaTodo ? 560 : 500) : 88;
         UpdateExpandedVisibility();
         AutomationProperties.SetName(LauncherButton, IsExpanded ? "Collapse todos" : "Expand todos");
         ToolTip.SetTip(LauncherButton, IsExpanded ? "Click to collapse todos · Drag to move" : "Click to expand todos · Drag to move");
@@ -190,6 +187,7 @@ public partial class TodoOverlayWindow : Window
         bool visible = IsExpanded && (!OperatingSystem.IsWindows() ||
             (ClientSize.Width >= Width - 1 && Bounds.Width >= Width - 1));
         TodoPanel.IsVisible = ExpandedHeading.IsVisible = HeadingSurface.IsVisible = visible;
+        UpdateTodoAppearanceVisibility(visible);
     }
 
     public void ReloadTodos()
@@ -225,10 +223,11 @@ public partial class TodoOverlayWindow : Window
             var scrollOffset = TodoScrollViewer.Offset;
             TodoRows.Children.Clear();
             int remaining = entries.Count(entry => !entry.IsCompleted);
-            TodoCount.Text = remaining == 1 ? "1 task remaining" : $"{remaining} tasks remaining";
-            EmptyMessage.IsVisible = visible.Length == 0;
+            TodoCount.Text = IsNikaTodo ? $"{remaining} open" : remaining == 1 ? "1 task remaining" : $"{remaining} tasks remaining";
+            EmptyMessage.IsVisible = visible.Length == 0 && !IsNikaTodo;
             EmptyMessage.Text = !configured ? "Choose a notes folder in Settings to see your todos here."
                 : entries.Length == 0 ? "No todos yet. Add your first task below." : "All done. Turn on Show completed to see finished tasks.";
+            UpdateTodoEmptyState(configured,entries.Length,visible.Length);
             foreach (var entry in visible)
             {
                 var text = Controls.TodoRichText.Create(TodoDetails.Parse(entry.Text).Body, entry.IsCompleted);
@@ -254,7 +253,7 @@ public partial class TodoOverlayWindow : Window
                 var container = new Grid { Tag = entry, RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto"), ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,20"), Margin = new Thickness(0, 0, 0, 6) };
                 DateTime? dueAt = _organization?.GetDueAt(entry);
                 var dueState = TodoDeadlines.GetState(entry, dueAt, DateTime.Now);
-                if (dueState is TodoDueState.Soon or TodoDueState.Overdue)
+                if (!IsNikaTodo && (dueState is TodoDueState.Soon or TodoDueState.Overdue))
                 {
                     bool dark = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Midnight;
                     bool overdue = dueState == TodoDueState.Overdue;
@@ -265,7 +264,7 @@ public partial class TodoOverlayWindow : Window
                     Grid.SetRowSpan(deadlineSurface, 5); Grid.SetColumnSpan(deadlineSurface, 4);
                     container.Children.Add(deadlineSurface);
                 }
-                if (dueAt.HasValue)
+                if (dueAt.HasValue && (!IsNikaTodo || !entry.IsCompleted))
                 {
                     var dueLabel = new TextBlock { Name = "TodoDueLabel", Text = TodoDeadlines.Label(dueAt.Value, dueState), FontSize = 11,
                         TextWrapping = TextWrapping.Wrap, Margin = new Thickness(7, 0, 0, 7) };
@@ -300,6 +299,8 @@ public partial class TodoOverlayWindow : Window
                 text.ContextMenu = CreateTaskContextMenu(entry, Linked(entry), text.ContextMenu);
                 container.Children.Add(row);
                 AddDetailControls(container, entry, TodoDetails.Parse(entry.Text), taskDetails[entry].Children);
+                StyleTodoRow(container, row, text, badge, entry, dueState);
+                AttachCardDrag(container, row, text, entry);
                 TodoRows.Children.Add(container);
             }
             TodoScrollViewer.Offset = scrollOffset;
@@ -315,6 +316,7 @@ public partial class TodoOverlayWindow : Window
 
     private IBrush PriorityBrush(int priority)
     {
+        if (IsNikaTodo) return TodoVisuals.Priority(priority);
         bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
         string[] colors = dark
             ? new[] { "#FF8A83", "#FFA279", "#FFBC75", "#E0CC7C", "#A6D59A", "#86D4CB", "#91C1FF", "#B0B7F0", "#C4B3DA", "#BBC2CD" }
@@ -336,6 +338,11 @@ public partial class TodoOverlayWindow : Window
         {
             int selected = level;
             var item = new MenuItem { Header = PriorityTitles[level - 1], Foreground = PriorityBrush(level) };
+            if(IsNikaTodo)
+            {
+                var icon=new Button {IsHitTestVisible=false};TodoVisuals.PriorityBadge(icon,level,TodoLook);item.Icon=icon;
+                item.Foreground=TodoVisuals.Ink(TodoLook);item.Header=level==priority?$"{level}     ✓":level.ToString();
+            }
             item.Click += (_, _) => { menu.Close(); SaveOrganization(TodoOrganizationStore.SetPriority(_settings.ObsidianVaultFolder, entry, selected, _settings.NotesSubfolder)); };
             menu.Items.Add(item);
         }
@@ -362,76 +369,21 @@ public partial class TodoOverlayWindow : Window
         ReloadTodos();
     }
 
-    private Button CreateDragHandle(NoteEntry entry, Grid container)
-    {
-        var icon = new ShapePath { Data = Geometry.Parse("M2,2 L3,2 M7,2 L8,2 M2,7 L3,7 M7,7 L8,7 M2,12 L3,12 M7,12 L8,12"), StrokeThickness = 2, StrokeLineCap = PenLineCap.Round, Width = 9, Height = 14, Stretch = Stretch.Uniform };
-        icon.Stroke = PriorityBrush(4);
-        var handle = new Button { IsEnabled = !_deleteInProgress, Content = icon, Width = 18, Padding = new Thickness(3, 6), Margin = new Thickness(0, 5, 3, 0), Background = Brushes.Transparent, BorderThickness = new Thickness(0), VerticalAlignment = VerticalAlignment.Top };
-        handle.Classes.Add("todoDragHandle");
-        AutomationProperties.SetName(handle, "Reorder " + entry.Text);
-        ToolTip.SetTip(handle, "Drag to reorder · Up/Down also moves this task");
-        handle.AddHandler(PointerPressedEvent, (_, e) =>
-        {
-            if (!e.GetCurrentPoint(handle).Properties.IsLeftButtonPressed) return;
-            _dragPointer = e.Pointer; _draggedEntry = entry; _draggedRow = container; _dragOrigin = e.GetPosition(this);
-            _reordering = false;
-            e.Pointer.Capture(handle); e.Handled = true;
-        }, RoutingStrategies.Tunnel);
-        handle.AddHandler(PointerMovedEvent, (_, e) =>
-        {
-            if (_draggedEntry == null) return;
-            var delta = e.GetPosition(this) - _dragOrigin;
-            if (Math.Abs(delta.X) < 5 && Math.Abs(delta.Y) < 5 && !_reordering) return;
-            _reordering = true; container.Opacity = .55;
-            UpdateDropTarget(entry, container, e.GetPosition(TodoScrollViewer), e.GetPosition(TodoRows));
-            e.Handled = true;
-        }, RoutingStrategies.Tunnel);
-        handle.AddHandler(PointerReleasedEvent, (_, e) =>
-        {
-            if (_draggedEntry != null)
-                UpdateDropTarget(_draggedEntry, container, e.GetPosition(TodoScrollViewer), e.GetPosition(TodoRows));
-            var source = _draggedEntry; var target = _dropEntry; bool after = _dropAfter; bool moved = _reordering;
-            CancelDrag(); e.Pointer.Capture(null); e.Handled = true;
-            if (moved && source != null && target != null) MoveTodo(source, target, after);
-        }, RoutingStrategies.Tunnel);
-        handle.PointerCaptureLost += (_, _) => CancelDrag();
-        handle.KeyDown += (_, e) =>
-        {
-            if (e.Key != Key.Up && e.Key != Key.Down) return;
-            var group = TodoRows.Children.OfType<Grid>().Select(row => row.Tag).OfType<NoteEntry>().Where(item => item.IsCompleted == entry.IsCompleted).ToArray();
-            int current = Array.IndexOf(group, entry), target = current + (e.Key == Key.Up ? -1 : 1);
-            if (current >= 0 && target >= 0 && target < group.Length) MoveTodo(entry, group[target], e.Key == Key.Down);
-            e.Handled = true;
-        };
-        container.Tag = entry;
-        return handle;
-    }
-
-    private void UpdateDropTarget(NoteEntry source, Grid sourceRow, Point viewportPoint, Point rowPoint)
-    {
-        if (_dropRow != null) _dropRow.Background = Brushes.Transparent;
-        _dropRow = null; _dropEntry = null;
-        if (!new Rect(TodoScrollViewer.Bounds.Size).Contains(viewportPoint)) return;
-        foreach (var candidate in TodoRows.Children.OfType<Grid>())
-        {
-            if (candidate.Tag is not NoteEntry target || target.IsCompleted != source.IsCompleted || candidate == sourceRow) continue;
-            if (!candidate.Bounds.Contains(rowPoint)) continue;
-            _dropRow = candidate; _dropEntry = target; _dropAfter = rowPoint.Y > candidate.Bounds.Center.Y;
-            candidate.Background = new SolidColorBrush(Color.FromArgb(30, 85, 140, 190));
-            break;
-        }
-    }
-
     private void MoveTodo(NoteEntry source, NoteEntry target, bool after)
     {
         try
         {
             var entries = ObsidianNotesSync.LoadAllNotes(_settings.ObsidianVaultFolder, _settings.NotesSubfolder).Where(item => item.Type == NoteType.Todo);
-            var ordered = TodoOrganizationStore.Load(_settings.ObsidianVaultFolder, _settings.NotesSubfolder).Arrange(entries).ToList();
+            var organization = TodoOrganizationStore.Load(_settings.ObsidianVaultFolder, _settings.NotesSubfolder);
+            if (organization.SortMode != "Manual") { ShowError("The sort mode changed. Choose Manual and try again."); return; }
+            var ordered = organization.Arrange(entries).ToList();
             string sourceKey = TodoOrganizationStore.GetKey(source), targetKey = TodoOrganizationStore.GetKey(target);
             if (ordered.Count(item => TodoOrganizationStore.GetKey(item) == sourceKey) != 1 || ordered.Count(item => TodoOrganizationStore.GetKey(item) == targetKey) != 1)
             { ShowError("These tasks changed. Refresh and try reordering again."); return; }
             var moving = ordered.Single(item => TodoOrganizationStore.GetKey(item) == sourceKey);
+            var destination = ordered.Single(item => TodoOrganizationStore.GetKey(item) == targetKey);
+            if (moving.IsCompleted != source.IsCompleted || destination.IsCompleted != target.IsCompleted || moving.IsCompleted != destination.IsCompleted)
+            { ShowError("These tasks changed. Refresh and try reordering again."); return; }
             ordered.Remove(moving);
             int index = ordered.FindIndex(item => TodoOrganizationStore.GetKey(item) == targetKey);
             ordered.Insert(index + (after ? 1 : 0), moving);
@@ -444,15 +396,6 @@ public partial class TodoOverlayWindow : Window
             }
         }
         catch (Exception ex) { CrashLogger.LogRecoverable(ex, "TodoOverlayWindow.MoveTodo"); ShowError("Could not reorder todos. Check the notes folder and try again."); }
-    }
-
-    private void CancelDrag()
-    {
-        if (_draggedRow != null) _draggedRow.Opacity = 1;
-        if (_dropRow != null) _dropRow.Background = Brushes.Transparent;
-        _draggedEntry = null; _draggedRow = null; _dropRow = null; _dropEntry = null; _reordering = false;
-        var pointer = _dragPointer; _dragPointer = null;
-        pointer?.Capture(null);
     }
 
     private void CancelInteractions()
@@ -503,6 +446,7 @@ public partial class TodoOverlayWindow : Window
 
     private void TrackTaskMenu(ContextMenu menu)
     {
+        StyleTodoMenu(menu);
         menu.Opening += (_, e) =>
         {
             if (_closed || _deleteInProgress) { e.Cancel = true; return; }
@@ -554,6 +498,7 @@ public partial class TodoOverlayWindow : Window
                 : "This removes the task from your Obsidian todo file and cancels its unsent Telegram copy. There is no linked Telegram message to delete.";
             _deleteDialog = new ConfirmationDialogWindow("Delete todo", "Delete this todo?",
                 entry.Text + "\n\n" + effects + "\n\nThis cannot be undone.", "Delete", destructive: true) { Topmost = Topmost };
+            _deleteDialog.ApplyTodoAppearance(_settings);
             bool confirmed = await _deleteDialog.ShowDialog<bool>(this);
             _deleteDialog = null;
             if (!confirmed || _closed) return;
@@ -647,6 +592,7 @@ public partial class TodoOverlayWindow : Window
         _linkEntry = null;
         TodoContentGrid.RowDefinitions = new RowDefinitions("Auto,*,Auto,Auto,Auto,Auto");
         TodoScrollViewer.IsVisible = TodoOptionsRow.IsVisible = AddTodoButton.IsVisible = ShortcutHint.IsVisible = true;
+        ShortcutHint.IsVisible = !IsNikaTodo;
         TelegramSyncStatus.IsVisible = _settings.TelegramEnabled;
         if (IsExpanded) Focus();
     }

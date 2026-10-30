@@ -1,0 +1,31 @@
+Use case: ui-mockup.
+Create ONE polished square 2x2 comparison image showing FOUR PRIORITY MARKER designs for the One Piece Nika's Chronicle Todo overlay. The previous task-row design is already approved; this next board changes ONLY the little numbered priority badges beside tasks.
+REFERENCE: previous four task-row options board. Use ONLY its TOP LEFT "Ship's Ledger" panel as the identical layout, background, row and checkbox source for ALL FOUR new panels. Keep the warm amber parchment map, small full-color Luffy straw-hat skull logo, navy cartographic top bar, ivory serif title, plain ruled ledger rows, square completion checkboxes and footer consistent. Do not use the other three row designs in the reference. The first approved row style is used simply as a comparison baseline, not declared the final default.
+Board: dark navy backdrop, four same-size panels, even gutters, labels above panels numbered 1-4. Small board heading "PRIORITY MARKERS" to make clear these numbers identify priority-style options, not the prior task-row options. Premium professional game UI, legible and restrained, no thick gold frames or neon yellow. Avoid ornamental objects and character portraits. High-resolution crisp UI; entire panels fully visible.
+Fixed in EVERY panel:
+Header: small colorful Luffy emblem, "Todos", "3 open", collapse chevron on the right. Rich navy, faint map engraving and thin brass rule.
+Body: same Navigator Parchment warm yellow-brown map as reference; faded coastlines and mountains along right, center quiet, natural paper texture. No white replacement, no stretched compass circles.
+Toolbar: "Priority" dropdown and checked "Show completed".
+Four task rows, ONLY priority badge art varies:
+Row 1: empty ordinary navy square completion checkbox, priority 1 (muted burgundy/terracotta), "Finish illustration", right chevron. Tiny soft amber row highlight, identical in all panels.
+Row 2: empty ordinary navy square checkbox, priority 3 (warm ochre), "Read 20 pages", right chevron.
+Row 3: empty ordinary navy square checkbox, priority 6 (deep teal), "Review project notes", right chevron.
+Row 4: navy square checkbox with white check, priority 10 (slate gray), "Plan tomorrow" in muted navy-gray with a thin strikethrough, right chevron.
+Control order: checkbox, PRIORITY BADGE, task title, right chevron. Priority badges must never contain a checkmark, checkbox controls must never contain a priority number. All priority markers are compact around 26-30px rendered at true UI scale, safely readable, including 10. Keep same row height and title position across all four panels.
+Identical navy footer button "＋ Add todo".
+Same readable medium-weight sans serif task typography. Ivory serif titles. No change to features or semantics: priorities remain 1-10, 1 is highest. No high/medium/low replacements, no stars as priority levels, no bounty money, no extra controls.
+
+FOUR DISTINCT PRIORITY APPEARANCES:
+TOP LEFT label "1  Enamel Pins":
+Small flat circular enamel badge, subtly shaded color fill, ultra-fine muted brass edge, crisp ivory numeral centered. Row badges read exactly 1, 3, 6, 10. A refined version of the classic colored number circles. Keep "10" centered without squeezing. Not giant metal coins, no shine flare.
+
+TOP RIGHT label "2  Signal Flags":
+Small vertical nautical pennant with a shallow swallowtail notch at the bottom. Flat colored fill, hairline darker border, ivory numeral in upper central area. Burgundy flag 1, ochre flag 3, teal flag 6, slate flag 10. No mast, waving cloth, ropes or elaborate folds. Navy checkbox remains separate immediately left. Stylish compact pirate naval signal flags, clearly different silhouette from circles.
+
+BOTTOM LEFT label "3  Ledger Stamps":
+Small horizontal rectangular ink-stamp badge with softly clipped corners, parchment center, colored hairline border and text in matching deep color. Text reads "P1", "P3", "P6", "P10". A small solid colored square at its far left edge is optional if it fits cleanly; avoid extra decoration. Compact but wider than tall, about 34 by 22px; make room for P10 without collisions. No filled color disc. Refined letterpress character, clean enough for a professional desktop tool, almost no distress. Align task titles to same x-position as other panels.
+
+BOTTOM RIGHT label "4  Pixel Ranks":
+Small deliberately pixel-stepped square/octagonal badges, crisp 2-3 pixel corner steps. Flat muted color fill matching the same levels, subtly darker one-pixel outline, bold clean ivory numbers 1, 3, 6, 10. Numerals may be slightly blocky but must be legible at actual size. Only PRIORITY BADGES get pixel geometry: the completion checkboxes, rows, header, map, logo and text remain the identical non-pixel Ship's Ledger layout. No sprites, extra RPG props or mosaic background.
+
+At a glance, the four styles must show different silhouettes and fill treatments: colored circles, colored pennants, outlined parchment stamps, colored pixel badges. Keep all approved elements fixed. All four lists show three unchecked tasks and one completed task. Produce one beautiful complete 2x2 comparison board with no watermark and no explanatory paragraphs inside the image.

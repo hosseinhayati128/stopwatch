@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "theme": "nika-chronicle",
+  "surface": "todo-overlay",
+  "stage": "implemented-locally-verified",
+  "implemented": true,
+  "implementationTarget": "StopwatchOverlay.Desktop",
+  "fidelityRequirement": "Approved reference boards are authoritative for layout, typography, colors, borders, artwork placement and proportions. Preserve original boards and compare native captures against them.",
+  "nativeCaptures": "implemented/",
+  "implementationCorrections20261030": {
+    "luffyArtwork": "Reuse the original One Piece PirateArtwork Skull from Assets/Pirate/icons.png throughout the header, launcher, picker and preview.",
+    "launcherLink": "Per-profile LauncherMatchesHeader option. Linked launcher follows HeaderEmblem; unlinking restores the saved LauncherEmblem. Missing settings keep existing independent choices.",
+    "pixelSubtaskFeedback": "Use the square segmented Pixel hold meter for subtask completion, with the existing hold and cancellation behavior."
+  },
+  "generationTool": "built-in image_gen",
+  "backgrounds": {
+    "selection": "all-four-approved",
+    "default": "navigator-parchment",
+    "preview": "background-options-approved.png",
+    "options": [
+      {
+        "id": "navigator-parchment",
+        "number": 1,
+        "label": "Navigator Parchment"
+      },
+      {
+        "id": "amber-vellum",
+        "number": 2,
+        "label": "Amber Vellum"
+      },
+      {
+        "id": "midnight-chart",
+        "number": 3,
+        "label": "Midnight Chart"
+      },
+      {
+        "id": "quiet-atlas",
+        "number": 4,
+        "label": "Quiet Atlas"
+      }
+    ]
+  },
+  "header": {
+    "base": "navy",
+    "divider": "thin-brass",
+    "decoration": "subtle-engraved-map",
+    "initialPreview": "header-options-reference.png",
+    "approvedInitialIcon": 1,
+    "defaultEmblem": "luffy",
+    "defaultEmblemBasis": "retain the first approved header icon unless changed by user"
+  },
+  "emblems": {
+    "selection": "retain-all-as-settings-alternatives",
+    "preview": "crew-emblems-16-preview.png",
+    "previouslyApprovedPreview": "crew-emblems-first-four-approved.png",
+    "prompt": "emblem-board-prompt.txt",
+    "artworkStatus": "custom generated interpretations based on official emblem references; new sheet not yet individually approved",
+    "options": [
+      {
+        "id": "luffy",
+        "number": 1,
+        "label": "Luffy",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "zoro",
+        "number": 2,
+        "label": "Zoro",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "nami",
+        "number": 3,
+        "label": "Nami",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "usopp",
+        "number": 4,
+        "label": "Usopp",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "sanji",
+        "number": 5,
+        "label": "Sanji",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "chopper",
+        "number": 6,
+        "label": "Chopper",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "robin",
+        "number": 7,
+        "label": "Robin",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "franky",
+        "number": 8,
+        "label": "Franky",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "brook",
+        "number": 9,
+        "label": "Brook",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "jinbe",
+        "number": 10,
+        "label": "Jinbe",
+        "source": "https://one-piece.com/news/78909/index.html"
+      },
+      {
+        "id": "law",
+        "number": 11,
+        "label": "Law",
+        "source": "https://one-piece.com/news/o20141027_1501/index.html"
+      },
+      {
+        "id": "whitebeard",
+        "number": 12,
+        "label": "Whitebeard",
+        "source": "https://one-piece.com/news/o20141027_1501/index.html"
+      },
+      {
+        "id": "ace",
+        "number": 13,
+        "label": "Ace",
+        "source": "https://prtimes.jp/main/html/rd/p/000000067.000013812.html"
+      },
+      {
+        "id": "buggy",
+        "number": 14,
+        "label": "Buggy",
+        "source": "https://one-piece.com/news/o20160829_4431/index.html"
+      },
+      {
+        "id": "shanks",
+        "number": 15,
+        "label": "Shanks",
+        "source": "https://one-piece.com/news/o20141027_1501/index.html"
+      },
+      {
+        "id": "roger",
+        "number": 16,
+        "label": "Roger",
+        "source": "https://one-piece.com/news/o20221210_15299/index.html"
+      }
+    ]
+  },
+  "taskRows": {
+    "selection": "approved-options-1-2-5-8",
+    "default": "ships-ledger",
+    "options": [
+      { "id": "ships-ledger", "number": 1, "label": "Ship's Ledger", "preview": "task-rows-checkboxes-options-01-04.png" },
+      { "id": "parchment-cards", "number": 2, "label": "Parchment Cards", "preview": "task-rows-checkboxes-options-01-04.png" },
+      { "id": "cartographers-notes", "number": 5, "label": "Cartographer's Notes", "preview": "task-rows-checkboxes-options-05-08.png" },
+      { "id": "pixel-voyage", "number": 8, "label": "Pixel Voyage", "preview": "task-rows-checkboxes-options-05-08.png" }
+    ],
+    "notes": "User selected these four row and checkbox treatments and accepted the combined classic preview with Ship's Ledger as the default. Other task row previews remain as exploration history."
+  },
+  "priorityMarkerExploration": {
+    "selection": "approved-original-default-and-options-3-4",
+    "default": "original-circles",
+    "retainedOptions": [
+      { "id": "original-circles", "label": "Original circles", "preview": "task-rows-checkboxes-options-01-04.png", "notes": "Preserve the original flat colored number circles from the row previews as the default, distinct from the later Enamel Pins exploration." },
+      { "id": "ledger-stamps", "number": 3, "label": "Ledger Stamps", "preview": "priority-markers-options-01-04.png" },
+      { "id": "pixel-ranks", "number": 4, "label": "Pixel Ranks", "preview": "priority-markers-options-01-04.png" }
+    ],
+    "notes": "Only retainedOptions are planned Settings choices. The full options array below is exploration history, not a selected list.",
+    "preview": "priority-markers-options-01-04.png",
+    "prompt": "priority-markers-options-01-04-prompt.txt",
+    "additionalPreview": "priority-markers-options-05-08.png",
+    "additionalPrompt": "priority-markers-options-05-08-prompt.txt",
+    "comparisonRowStyle": "ships-ledger",
+    "levels": { "minimum": 1, "maximum": 10, "highest": 1 },
+    "options": [
+      { "number": 1, "id": "enamel-pins", "label": "Enamel Pins" },
+      { "number": 2, "id": "signal-flags", "label": "Signal Flags" },
+      { "number": 3, "id": "ledger-stamps", "label": "Ledger Stamps" },
+      { "number": 4, "id": "pixel-ranks", "label": "Pixel Ranks" },
+      { "number": 5, "id": "compass-dials", "label": "Compass Dials" },
+      { "number": 6, "id": "crew-shields", "label": "Crew Shields" },
+      { "number": 7, "id": "ink-ranks", "label": "Ink Ranks" },
+      { "number": 8, "id": "vivre-cards", "label": "Vivre Cards" }
+    ]
+  },
+  "taskDetailsExploration": {
+    "selection": "approved-options-1-2",
+    "default": "margin-notes",
+    "retainedOptions": [
+      { "number": 1, "id": "margin-notes", "label": "Margin Notes" },
+      { "number": 2, "id": "foldout-card", "label": "Foldout Card" }
+    ],
+    "preview": "subtasks-notes-options-01-04.png",
+    "prompt": "subtasks-notes-options-01-04-prompt.txt",
+    "comparisonRowStyle": "ships-ledger",
+    "comparisonPriorityMarker": "original-circles",
+    "options": [
+      { "number": 1, "id": "margin-notes", "label": "Margin Notes" },
+      { "number": 2, "id": "foldout-card", "label": "Foldout Card" },
+      { "number": 3, "id": "branch-ledger", "label": "Branch Ledger" },
+      { "number": 4, "id": "pixel-journal", "label": "Pixel Journal" }
+    ],
+    "behaviorToPreserve": [
+      "Inline expand/collapse with completed-subtask and note counts",
+      "Existing hold-to-complete behavior for subtasks",
+      "Notes have no completion checkbox",
+      "Existing context-menu editing/deletion and rich-text link actions"
+    ],
+    "notes": "After reviewing the combined panel, the user narrowed subtasks and notes to Margin Notes and Foldout Card, selectable in Settings. Margin Notes remains the default shown in the accepted preview. Pixel Journal and Branch Ledger are exploration history only. No runtime changes."
+  },
+  "toolbarActionsExploration": {
+    "selection": "approved-options-1-4",
+    "default": "classic-brass",
+    "retainedOptions": [
+      { "number": 1, "id": "classic-brass", "label": "Classic Brass" },
+      { "number": 4, "id": "pixel-controls", "label": "Pixel Controls" }
+    ],
+    "preview": "toolbar-actions-options-01-04.png",
+    "prompt": "toolbar-actions-options-01-04-prompt.txt",
+    "comparisonRowStyle": "ships-ledger",
+    "comparisonPriorityMarker": "original-circles",
+    "options": [
+      { "number": 1, "id": "classic-brass", "label": "Classic Brass" },
+      { "number": 2, "id": "navigator-bar", "label": "Navigator Bar" },
+      { "number": 3, "id": "ink-and-paper", "label": "Ink & Paper" },
+      { "number": 4, "id": "pixel-controls", "label": "Pixel Controls" }
+    ],
+    "behaviorToPreserve": [
+      "Priority/Manual sort selector",
+      "Show completed toggle",
+      "Existing Add todo flow"
+    ],
+    "notes": "User retained options 1 and 4 and accepted the combined classic preview with Classic Brass as the default. Only retainedOptions are planned choices; the full options array is exploration history. Toolbar and footer button appearance only; no runtime changes."
+  },
+  "combinedPreview": {
+    "status": "approved-classic-combination",
+    "preview": "combined-classic-preview-v1.png",
+    "prompt": "combined-classic-preview-v1-prompt.txt",
+    "combination": {
+      "background": "navigator-parchment",
+      "headerEmblem": "luffy",
+      "headerDecoration": "subtle-engraved-map",
+      "taskRowStyle": "ships-ledger",
+      "priorityMarkerStyle": "original-circles",
+      "taskDetailsStyle": "margin-notes",
+      "toolbarActionStyle": "classic-brass"
+    },
+    "notes": "User accepted the combined classic preview with the refinement that subtasks and notes offer only Margin Notes and Foldout Card. The preview's Margin Notes style remains the default. All other retained alternatives remain planned independent Settings choices. No runtime changes."
+  },
+  "combinedPixelPreview": {
+    "status": "approved-additional-pixel-combination",
+    "label": "Pixel Voyage",
+    "preview": "combined-pixel-preview-v1.png",
+    "prompt": "combined-pixel-preview-v1-prompt.txt",
+    "combination": {
+      "background": "navigator-parchment",
+      "headerEmblem": "luffy",
+      "headerDecoration": "subtle-engraved-map",
+      "taskRowStyle": "pixel-voyage",
+      "priorityMarkerStyle": "pixel-ranks",
+      "taskDetailsStyle": "foldout-card",
+      "toolbarActionStyle": "pixel-controls"
+    },
+    "notes": "User requested an additional full overlay combining the earlier pixel choices. This preview combines approved Pixel Voyage rows (8), Pixel Ranks (4) and Pixel Controls (4), with Foldout Card chosen for this preview from the two retained detail styles. Margin Notes remains an independent alternative and the classic default. Pixel Journal remains exploration history only. Illustrated parchment and header artwork remain consistent with the approved pixel boards. The classic combination and all Settings defaults are unchanged. No runtime changes."
+  },
+  "collapsedLauncherExploration": {
+    "selection": "superseded-by-transparent-crew-emblems",
+    "default": null,
+    "preview": "collapsed-launcher-options-01-04.png",
+    "prompt": "collapsed-launcher-options-01-04-prompt.txt",
+    "comparisonEmblem": "luffy",
+    "currentLogicalButtonSize": 72,
+    "options": [
+      { "number": 1, "id": "crew-crest", "label": "Crew Crest" },
+      { "number": 2, "id": "navy-seal", "label": "Navy Seal" },
+      { "number": 3, "id": "map-tile", "label": "Map Tile" },
+      { "number": 4, "id": "pixel-crest", "label": "Pixel Crest" }
+    ],
+    "behaviorToPreserve": [
+      "Click to expand or collapse the Todo overlay",
+      "Drag to move the overlay",
+      "Keyboard focus and accessible Expand todos / Collapse todos names"
+    ],
+    "notes": "Exploration history only. The user chose the earlier full crew-emblem collection as standalone transparent logos, matching the current launcher presentation, instead of these framed treatments. Navy Seal, Map Tile and the framed Pixel Crest are not selected launcher choices. Small views on this board are illustrative, not verified runtime-size renders."
+  },
+  "collapsedLauncher": {
+    "selection": "all-crew-emblems-transparent",
+    "defaultEmblem": "luffy",
+    "emblemOptionsSource": "emblems.options",
+    "referencePreview": "crew-emblems-16-preview.png",
+    "appearance": "standalone-logo",
+    "transparentBackground": true,
+    "backplate": "none",
+    "frame": "none",
+    "currentLogicalButtonSize": 72,
+    "settingsSelector": "launcherEmblem",
+    "notes": "User selected all sixteen previously retained crew emblems as Settings options for the collapsed launcher. Render only the emblem silhouette with genuine transparency, with no circle, tile, parchment, decorative frame or count badge. Preserve click-to-expand/collapse, dragging, keyboard focus and accessible naming. Keep Luffy as the existing default. Launcher emblem can be chosen independently of the header emblem. The earlier collection is a reference board; individual transparent assets and small-size verification remain implementation work. No runtime changes."
+  },
+  "taskStatesExploration": {
+    "selection": "approved-option-1-for-classic-and-4-for-pixel",
+    "default": "quiet-ledger",
+    "presetDefaults": {
+      "classic": "quiet-ledger",
+      "pixel-voyage": "pixel-signals"
+    },
+    "retainedOptions": [
+      { "number": 1, "id": "quiet-ledger", "label": "Quiet Ledger" },
+      { "number": 4, "id": "pixel-signals", "label": "Pixel Signals" }
+    ],
+    "preview": "task-states-feedback-options-01-04.png",
+    "prompt": "task-states-feedback-options-01-04-prompt.txt",
+    "comparisonRowStyle": "ships-ledger",
+    "comparisonPriorityMarker": "original-circles",
+    "options": [
+      { "number": 1, "id": "quiet-ledger", "label": "Quiet Ledger", "states": "Small inline icons and text", "holdFeedback": "Thin horizontal progress line" },
+      { "number": 2, "id": "soft-labels", "label": "Soft Labels", "states": "Subtle rounded labels", "holdFeedback": "Stroke tracing the checkbox perimeter" },
+      { "number": 3, "id": "margin-signals", "label": "Margin Signals", "states": "Slim colored margin rules with icon and text", "holdFeedback": "Brass fill rising inside the checkbox" },
+      { "number": 4, "id": "pixel-signals", "label": "Pixel Signals", "states": "Small stepped labels", "holdFeedback": "Segmented progress meter" }
+    ],
+    "behaviorToPreserve": [
+      "In progress is independent of completion and numeric priority; retain the existing short double-click toggle",
+      "Hold mouse or Space for one second to toggle completion; show no completed checkmark before the threshold",
+      "Cancel an incomplete hold on release, pointer exit, capture loss, scrolling, lost focus, hiding or disabling",
+      "Due soon means within 24 hours, overdue means at or before now, and later deadlines are scheduled",
+      "Completed tasks have no active due-warning state; keep their stored deadline information available",
+      "State labels and icons supplement color; preserve accessible task names and keyboard operation"
+    ],
+    "notes": "User selected option 1 Quiet Ledger for the normal Classic Todo theme and option 4 Pixel Signals for Pixel Voyage, including each option's matching hold feedback. Quiet Ledger uses inline status/date cues and a thin progress line; Pixel Signals uses stepped status labels and a segmented hold meter. Soft Labels and Margin Signals remain exploration history only. The lower HOLD FEEDBACK strips are explanatory snapshots, not permanent controls. Short dates are illustrative; implementation must retain the complete deadline including year and time through visible text or accessible detail. Existing behavior and approved row/priority defaults are unchanged. No runtime changes."
+  },
+  "taskMenusAndEditorsExploration": {
+    "selection": "approved-matched-classic-and-pixel",
+    "approvedPresets": ["classic", "pixel-voyage"],
+    "generationTool": "built-in image_gen",
+    "menus": {
+      "preview": "task-menus-classic-pixel-v1.png",
+      "prompt": "task-menus-classic-pixel-v1-prompt.txt",
+      "panels": [
+        { "number": 1, "preset": "classic", "surface": "task-context-menu" },
+        { "number": 2, "preset": "pixel-voyage", "surface": "task-context-menu" },
+        { "number": 3, "preset": "classic", "surface": "priority-menu" },
+        { "number": 4, "preset": "pixel-voyage", "surface": "priority-menu" }
+      ]
+    },
+    "editors": {
+      "preview": "task-editors-classic-pixel-v1.png",
+      "prompt": "task-editors-classic-pixel-v1-prompt.txt",
+      "panels": [
+        { "number": 1, "preset": "classic", "surface": "add-todo" },
+        { "number": 2, "preset": "pixel-voyage", "surface": "add-todo" },
+        { "number": 3, "preset": "classic", "surface": "edit-todo" },
+        { "number": 4, "preset": "pixel-voyage", "surface": "edit-todo" }
+      ]
+    },
+    "behaviorToPreserve": [
+      "Task context menu retains Edit task, Add > Note/Subtask, conditional Link/Relink, and Delete",
+      "Link/Relink appears only when Telegram is enabled; already-linked tasks use Relink",
+      "Priority menu keeps all ten levels, with 1 highest; selected-item styling must reflect the actual task value",
+      "Editor keeps one multiline task-body field, priority 1-10, and optional local due date/time with Clear",
+      "Manual position Top/Bottom appears only for new Todos, never while editing an existing Todo",
+      "Checklist editor retains completion, editable text, move up/down, remove, and Add subtask controls",
+      "Save versus Save changes, Ctrl+Enter, Escape, close, focus, scrolling and resizing remain functional",
+      "Preserve validation, save failures and sync warnings, and the existing task deletion confirmation and scope text",
+      "Standalone note/subtask editors retain their simpler text-only mode; do not add parent priority or deadline controls to them"
+    ],
+    "notes": "User approved both coordinated design sheets for their corresponding normal Classic and Pixel Voyage themes. Numbers identify surfaces rather than four competing styles. Approved Classic surfaces use quiet parchment, gently rounded corners and thin brass; Pixel surfaces use the same palette with small stepped outlines. The Add example has the optional deadline disabled; the Edit example shows it enabled, without changing either mode's capabilities. Menu examples show Add open and priority 3 selected. Artwork colors are illustrative; retain the existing priority palette and data. Standalone detail dialogs, deletion confirmations and error/empty states are not newly designed by these boards. No runtime implementation or new Settings defaults."
+  },
+  "supportingStatesAndDialogsExploration": {
+    "selection": "approved-matched-classic-and-pixel",
+    "approvedPresets": ["classic", "pixel-voyage"],
+    "generationTool": "built-in image_gen",
+    "boards": [
+      {
+        "id": "empty-completed",
+        "preview": "empty-completed-classic-pixel-v1.png",
+        "prompt": "empty-completed-classic-pixel-v1-prompt.txt",
+        "panels": [
+          { "number": 1, "preset": "classic", "surface": "empty-list" },
+          { "number": 2, "preset": "pixel-voyage", "surface": "empty-list" },
+          { "number": 3, "preset": "classic", "surface": "all-done" },
+          { "number": 4, "preset": "pixel-voyage", "surface": "all-done" }
+        ]
+      },
+      {
+        "id": "save-sync-feedback",
+        "preview": "save-sync-feedback-classic-pixel-v1.png",
+        "prompt": "save-sync-feedback-classic-pixel-v1-prompt.txt",
+        "panels": [
+          { "number": 1, "preset": "classic", "surface": "save-failure-footer" },
+          { "number": 2, "preset": "pixel-voyage", "surface": "save-failure-footer" },
+          { "number": 3, "preset": "classic", "surface": "saved-locally-sync-warning-footer" },
+          { "number": 4, "preset": "pixel-voyage", "surface": "saved-locally-sync-warning-footer" }
+        ],
+        "additionalSamples": "Classic and Pixel inline Telegram retry notices"
+      },
+      {
+        "id": "small-dialogs",
+        "preview": "small-dialogs-classic-pixel-v1.png",
+        "prompt": "small-dialogs-classic-pixel-v1-prompt.txt",
+        "panels": [
+          { "number": 1, "preset": "classic", "surface": "delete-linked-todo" },
+          { "number": 2, "preset": "pixel-voyage", "surface": "delete-linked-todo" },
+          { "number": 3, "preset": "classic", "surface": "add-note" },
+          { "number": 4, "preset": "pixel-voyage", "surface": "add-note" },
+          { "number": 5, "preset": "classic", "surface": "edit-subtask" },
+          { "number": 6, "preset": "pixel-voyage", "surface": "edit-subtask" }
+        ]
+      }
+    ],
+    "behaviorToPreserve": [
+      "Distinguish no saved todos from all tasks completed; the all-done sample has Show completed off",
+      "Unconfigured notes folders and read failures must retain their own messages, never masquerade as empty or completed lists",
+      "Save failures retain editable input and the existing Save action; do not show a saved-success state",
+      "Saved locally with a sync warning keeps the saved task and uses the existing Close action; do not save it again or imply undo",
+      "Show automatic Telegram retry text only for the existing retry state, not for every sync warning",
+      "Delete confirmation preserves the actual task excerpt, linked or unlinked deletion scope, and irreversible-action warning",
+      "Compact note/subtask editors remain multiline text-only forms with Save, Cancel, Ctrl+Enter and Escape",
+      "Keep real validation and service messages available and wrapped; mockup wording is illustrative, not a replacement for all errors"
+    ],
+    "approvedPresentationRefinement": "After a successful local save with a sync warning, show one Close action and Esc to Close instead of the redundant Cancel action and save-oriented hint. Reuse the existing saved-warning close behavior; no retry or undo feature is proposed.",
+    "notes": "User approved all three coordinated design sheets for the corresponding Classic and Pixel Voyage themes. The feedback sheet contains footer close-ups, not replacement editor forms; the rest of the approved fields remain. The delete example is for a task with a linked Telegram message; unlinked tasks and detail deletion retain their corresponding scope text. Compact Add subtask and Edit note use the same text-only form as the illustrated Add note and Edit subtask. These are approved design references, with no production code or Settings changes."
+  },
+  "appearanceSettingsExploration": {
+    "selection": "approved-for-implementation",
+    "generationTool": "built-in image_gen",
+    "preview": "appearance-settings-preview-v1.png",
+    "prompt": "appearance-settings-preview-v1-prompt.txt",
+    "emblemPickerPreview": "appearance-emblem-picker-v1.png",
+    "emblemPickerPrompt": "appearance-emblem-picker-v1-prompt.txt",
+    "layout": "existing-inspector-three-columns-preview-left-navigation-middle-controls-right",
+    "category": "Todo appearance",
+    "scope": "Todo overlay appearance only; other settings categories and application/clock appearance remain separate",
+    "choiceSources": {
+      "background": "backgrounds.options",
+      "headerEmblem": "emblems.options",
+      "launcherEmblem": "emblems.options",
+      "taskRowStyle": "taskRows.options",
+      "priorityMarkerStyle": "priorityMarkerExploration.retainedOptions",
+      "taskDetailsStyle": "taskDetailsExploration.retainedOptions",
+      "toolbarActionStyle": "toolbarActionsExploration.retainedOptions"
+    },
+    "styleProfiles": [
+      {
+        "id": "classic",
+        "label": "Classic",
+        "initialSelections": {
+          "background": "navigator-parchment",
+          "headerEmblem": "luffy",
+          "launcherEmblem": "luffy",
+          "headerDecoration": "subtle-engraved-map",
+          "taskRowStyle": "ships-ledger",
+          "priorityMarkerStyle": "original-circles",
+          "taskDetailsStyle": "margin-notes",
+          "toolbarActionStyle": "classic-brass"
+        },
+        "taskFeedbackStyle": "quiet-ledger"
+      },
+      {
+        "id": "pixel-voyage",
+        "label": "Pixel Voyage",
+        "initialSelections": {
+          "background": "navigator-parchment",
+          "headerEmblem": "luffy",
+          "launcherEmblem": "luffy",
+          "headerDecoration": "subtle-engraved-map",
+          "taskRowStyle": "pixel-voyage",
+          "priorityMarkerStyle": "pixel-ranks",
+          "taskDetailsStyle": "foldout-card",
+          "toolbarActionStyle": "pixel-controls"
+        },
+        "taskFeedbackStyle": "pixel-signals"
+      }
+    ],
+    "proposedBehavior": [
+      "Use the approved initial selections on first activation and remember later customizations separately for Classic and Pixel Voyage",
+      "Keep all retained row, priority, detail, toolbar, background and emblem alternatives available in either style",
+      "Keep task feedback tied to the user-selected theme mapping: Quiet Ledger for Classic, Pixel Signals for Pixel Voyage",
+      "Engraved header toggles only header map decoration, without changing the selected emblem or body background",
+      "Update sample-data preview and the Todo appearance immediately after applying a choice, following the existing Settings interaction model; Done closes Settings",
+      "Preview uses sample tasks and cannot modify real tasks, notes or synchronization data",
+      "Each emblem picker stages a choice; Use emblem applies only its invoking header or launcher target; Cancel and close discard the staged choice",
+      "Render the selected launcher emblem as a transparent standalone logo regardless of background selection",
+      "Keep the right-side controls scrollable at smaller window sizes; scale preview artwork uniformly and keep menu labels readable",
+      "Persistence failures must be visible and controls must reflect the actual applied state, without silent reversion"
+    ],
+    "notes": "Two raster design previews awaiting review, not interactive Settings implementation. The page shows Classic and Navigator Parchment selected. Four backgrounds are thumbnails, two emblem selectors open the shared sixteen-logo picker, and four dropdowns expose only the retained alternatives. The picker depicts the header target; the launcher target reuses the layout with appropriate title. Settings selection-cell outlines are not part of the emblem or launcher artwork. Source emblems remain custom reference interpretations; individual transparent assets still require production preparation and small-size review. The visible sample contains the approved Classic details and a separate transparent launcher preview. No changes to production settings or saved user preferences."
+  },
+  "settingsPlan": {
+    "independentSelectors": [
+      "background",
+      "headerEmblem",
+      "launcherEmblem",
+      "headerDecoration",
+      "taskRowStyle",
+      "priorityMarkerStyle",
+      "taskDetailsStyle",
+      "toolbarActionStyle"
+    ],
+    "notes": "Preserve all approved alternatives. No production Settings controls or runtime assets changed during this design step."
+  },
+  "nextDesignLayer": "Desktop implementation locally verified; publication not performed. Retain design-stage exploration notes as history."
+}

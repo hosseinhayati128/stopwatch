@@ -37,13 +37,15 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
     </Window.Styles>
-    <Grid Margin="8" RowDefinitions="72,*">
+    <Border x:Name="TodoOutline" Margin="8" CornerRadius="10" ClipToBounds="True">
+    <Grid x:Name="TodoRoot" RowDefinitions="72,*">
         <Grid x:Name="OverlayHeader" ColumnDefinitions="72,*" Background="Transparent">
             <Button x:Name="LauncherButton" Classes="todoLauncher" Width="72" Height="72"
                     Click="ToggleClicked" AutomationProperties.Name="Expand todos"
                     ToolTip.Tip="Click to expand todos · Drag to move">
-                <Grid Width="72" Height="72">
+                <Grid x:Name="LauncherArtworkHost" Width="72" Height="72">
                     <art:PirateArtwork x:Name="SkullArtwork" Part="Skull"/>
+                    <art:TodoArtwork x:Name="TodoEmblem" IsVisible="False"/>
                     <Border x:Name="PlainLauncher" Background="{DynamicResource SurfaceRaisedBrush}"
                             CornerRadius="{DynamicResource ThemePanelCornerRadius}" Padding="21"
                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
@@ -53,21 +55,33 @@
                 </Grid>
             </Button>
             <StackPanel x:Name="ExpandedHeading" Grid.Column="1" VerticalAlignment="Center" Margin="12,0,8,0" IsVisible="False">
-                <TextBlock Text="Todos" FontSize="25" FontFamily="{DynamicResource DisplayHeadingFontFamily}"
+                <TextBlock x:Name="TodoHeading" Text="Todos" FontSize="25" FontFamily="{DynamicResource DisplayHeadingFontFamily}"
                            FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
                 <TextBlock x:Name="TodoCount" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </StackPanel>
             <Border x:Name="HeadingSurface" Grid.ColumnSpan="2" IsHitTestVisible="False" IsVisible="False"
-                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource ThemePanelCornerRadius}" ZIndex="-1"/>
+                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource ThemePanelCornerRadius}" ZIndex="-1">
+                <art:TodoArtwork x:Name="TodoHeaderArt" Kind="Header" IsVisible="False"/>
+            </Border>
+            <Button x:Name="TodoCollapse" Grid.Column="1" IsVisible="False" Classes="todoLauncher"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0" Width="28" Height="30"
+                    AutomationProperties.Name="Collapse todos" Click="ToggleClicked">
+                <Path Data="M 2,12 L 10,4 L 18,12" Width="20" Height="16" Stroke="#FFF0D3" StrokeThickness="2.5"/>
+            </Button>
         </Grid>
         <Border x:Name="TodoPanel" Grid.Row="1" IsVisible="False" Margin="0,8,0,0"
                 Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1" CornerRadius="{DynamicResource ThemePanelCornerRadius}" Padding="16,14">
+            <Grid>
+            <art:TodoArtwork x:Name="TodoMap" Kind="Background" IsVisible="False"/>
+            <art:TodoMuralArtwork x:Name="TodoMural" IsVisible="False"/>
             <Grid x:Name="TodoContentGrid" RowDefinitions="Auto,*,Auto,Auto,Auto,Auto">
                 <Grid x:Name="TodoOptionsRow" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,0,8">
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,10" Grid.ColumnSpan="2">
                         <TextBlock Text="Sort" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        <ComboBox x:Name="TodoSortCombo" MinWidth="136" MinHeight="30" FontSize="12" AutomationProperties.Name="Todo sort order"/>
+                        <art:TodoFrame x:Name="TodoSortFrame" CornerRadius="4">
+                            <ComboBox x:Name="TodoSortCombo" MinWidth="136" MinHeight="30" FontSize="12" AutomationProperties.Name="Todo sort order"/>
+                        </art:TodoFrame>
                     </StackPanel>
                     <CheckBox x:Name="ShowCompletedToggle" Grid.Row="1" Content="Show completed"
                               Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
@@ -80,6 +94,16 @@
                         <StackPanel x:Name="TodoRows"/>
                     </StackPanel>
                 </ScrollViewer>
+                <Canvas x:Name="TodoDragLayer" Grid.Row="1" IsHitTestVisible="False" ClipToBounds="True" ZIndex="30">
+                    <Border x:Name="TodoDropLine" IsVisible="False" Height="3" CornerRadius="1.5" Background="#2E9EB7"/>
+                    <Border x:Name="TodoDragPreview" IsVisible="False" Width="240" Padding="10,8" CornerRadius="5"
+                            Background="#F003283E" BorderBrush="#E6BA50" BorderThickness="1" Opacity="0.94">
+                        <TextBlock x:Name="TodoDraggedTitle" Foreground="#FFF0D3" FontSize="13" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                    </Border>
+                </Canvas>
+                <ContentControl x:Name="TodoEmptyStateHost" Grid.Row="1" IsVisible="False" IsHitTestVisible="False"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
                 <StackPanel Grid.Row="2" Spacing="5">
                     <TextBlock x:Name="TelegramSyncStatus" TextWrapping="Wrap" FontSize="11" IsVisible="False" Margin="0,6,0,0"
                                Foreground="{DynamicResource SecondaryTextBrush}"/>
@@ -111,6 +135,10 @@
                 <TextBlock x:Name="ShortcutHint" Grid.Row="5" FontSize="11" Margin="0,10,0,0"
                            HorizontalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
             </Grid>
+            </Grid>
         </Border>
+        <art:TodoFrame x:Name="TodoShellTrim" Grid.RowSpan="2" IsVisible="False" IsHitTestVisible="False"
+                       ZIndex="20" CornerRadius="9" BorderThickness="1" BorderBrush="#E6BA50" InnerBorderBrush="#F6D77A"/>
     </Grid>
+    </Border>
 </Window>

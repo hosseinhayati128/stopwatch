@@ -1,0 +1,15 @@
+Use case: ui-mockup.
+Create one polished UI design comparison sheet for the approved One Piece Todo overlay. Reference 1 is the Classic expanded panel; reference 2 is Pixel Voyage; reference 3 is the approved Add/Edit dialog sheet. Reuse their warm amber parchment, subdued map engraving, navy header, small Luffy skull emblem, warm ivory serif headings, readable navy sans-serif body text, restrained brass details. Classic is always LEFT with gentle rounded corners; Pixel is always RIGHT with small crisp stepped corners and pixel accents but normal readable typography. Preserve illustrated artwork in both, not a pixelation filter. Use a dark blue-gray presentation canvas with modest equal gutters. Labels outside mockups identify examples, not controls. No boats, ropes, loot, character scenes, heavy bevels, loud gold glow, or large margins. Keep the parchment center quiet behind text. Legible text and balanced visual density matter most.
+This sheet is a 2 by 2 board. Exact outside headings:
+"1  Classic · Empty"
+"2  Pixel · Empty"
+"3  Classic · All done"
+"4  Pixel · All done".
+
+Each cell is a compact COMPLETE expanded Todo overlay, not just a blank card. Header: small approved Luffy skull, "Todos", "0 open", collapse-up chevron. Toolbar: "Sort: Priority" dropdown and an EMPTY unchecked "Show completed" checkbox. Thin brass dividing line. Body: warm parchment with fading mountain/coastline detail at right and bottom, quiet center, no task rows. Footer: full-width navy "＋ Add todo" button with matching Classic rounded or Pixel stepped treatment.
+
+TOP ROW empty state: In the center of the body, a small understated navy-and-brass outline of a blank checklist, then the headline "No todos yet." and the helper "Add your first task below." Keep the symbol modest, no gigantic artwork, and leave comfortable breathing space around the message.
+
+BOTTOM ROW all-done state: Same composition and size. A small calm checkmark inside a thin brass outlined circle for Classic, or a stepped outlined seal for Pixel, then headline "All done." Helper on two readable lines: "Turn on Show completed" and "to see finished tasks." The Show completed checkbox above is UNCHECKED in these examples. Do not show finished tasks while the filter is off. Do not add confetti, celebrations, reward counters, a second CTA, a new button or a motivational slogan.
+
+Use the typography and control hierarchy of the approved panel. The mini panels should look useful and calm, not abandoned or empty by accident. Decorative map detail must stay faint and merge into the paper, never like a pasted square. These are design previews of existing states.

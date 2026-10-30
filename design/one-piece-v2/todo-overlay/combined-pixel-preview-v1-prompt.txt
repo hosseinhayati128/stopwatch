@@ -1,0 +1,29 @@
+Use case: ui-mockup.
+Create ONE polished, complete One Piece-themed desktop Todo overlay concept called Pixel Voyage, combining the selected pixel interface designs from the supplied reference boards. This is a single full-size portrait UI preview, not a comparison board.
+
+Input roles:
+Image 1 is the full-panel layout and artwork reference: combined-classic-preview-v1. Retain its warm yellow-brown Navigator Parchment map, engraved deep-navy header, Luffy straw-hat skull emblem, ivory serif Todos title, overall proportions and exact content hierarchy.
+Image 2 is the parent task-row style reference: use ONLY bottom-right option 8 Pixel Voyage, with elegant stepped pixel corners, slender brass/navy outlines, pixel square parent checkboxes, and a slightly warmer highlighted first row.
+Image 3 is the priority badge style reference: use ONLY bottom-right option 4 Pixel Ranks, compact stepped octagonal badges with sharp white block numerals.
+Image 4 is the toolbar/footer style reference: use ONLY bottom-right option 4 Pixel Controls, stepped Sort dropdown, pixel Show completed checkbox and wide stepped navy Add todo button with thin brass corner accents.
+Image 5 is the expanded-detail reference: use ONLY top-right option 2 Foldout Card. It is an inset softly shaded parchment card with clipped corners, three SMALL normal square subtask checkboxes, a hairline divider and a note. Do not use Pixel Journal or branching connectors.
+
+Composition: front-on, entire panel visible, portrait approximately 3:4. Very narrow dark-navy surround, no huge outside margins. Professional compact game-menu craftsmanship, aligned columns, consistent spacing, crisp readable typography. One coherent panel, not pasted pieces. Make the pixel shapes deliberate and clearly visible but fine, not chunky or overdecorated. No blurry upscaling or pixelation filter over the whole image. Preserve the rich illustrated map and emblem, and the elegant readable serif header/sans-serif task typography. Only the selected UI shapes and badge numerals use the pixel treatment.
+
+Header: navy with faint engraved coastlines and mountains merging seamlessly into it; thin restrained brass divider. Luffy's recognizable straw-hat skull at left, exact title "Todos", then "3 open", collapse-up chevron at right.
+Toolbar: pixel-stepped outlined parchment dropdown "Sort: Priority" and dropdown arrow, then a navy pixel checked box and "Show completed".
+
+Content in order:
+1. Highlighted Pixel Voyage parent row: EMPTY pixel square checkbox, red Pixel Ranks badge "1", bold navy "Finish illustration", downward expand chevron. Subtitle beneath title exactly "1/3 subtasks · 1 note".
+Directly below, indented Foldout Card, softly shaded amber parchment, subtle narrow outline and clipped corners, no ornate pixel border. Inside:
+small normal navy checked box and muted struck-through "Sketch layout";
+small normal empty box and "Add colors";
+small normal empty box and "Export PNG".
+Thin divider, small "NOTE" caption, then "Warm palette; keep map subtle." No checkbox for the note.
+2. Separate stepped parent row, EMPTY pixel checkbox, ochre Pixel Ranks badge "3", "Read 20 pages", right chevron.
+3. Separate stepped parent row, EMPTY pixel checkbox, blue-teal Pixel Ranks badge "6", "Review project notes", right chevron.
+4. Separate stepped parent row, CHECKED navy pixel checkbox with white pixel tick, slate Pixel Ranks badge "10" with both digits clearly fitting, muted struck-through "Plan tomorrow", right chevron.
+
+Footer: wide deep-navy stepped Pixel Controls button with restrained thin brass trim, white plus and ivory serif "Add todo". Keep inset spacing compact and even.
+
+The map stays faded and subordinate to reading: quiet warm parchment behind text, fine coastlines at left and bottom, illustrated islands concentrated to the right and bottom. Circular compass detail must retain circular proportions, not stretched; let it remain partially visible in a quiet area without intersecting labels. Transparent warm row fills allow faint paper grain while ensuring legibility. First row outline has a modest amber emphasis, others thinner neutral brass. Avoid thick bevels, glowing gold, heavy outer double frames, sprawling empty spaces, excessive nested boxes, extra labels, extra controls, option numbers or presentation titles outside the panel. Maintain the approved tasteful One Piece illustrated-game aesthetic while combining the pixel rows, pixel badges and pixel controls.
