@@ -25,18 +25,18 @@
                            FontSize="12"
                            FontWeight="SemiBold"/>
             </StackPanel>
-            <TextBlock Text="Space Start/Stop · R Reset · O Overlay · L Lap · W Controller"
+            <TextBlock x:Name="TimerCommandsFirst"
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        FontSize="12"
                        FontWeight="Medium"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="C Clock · N New · T Next · X Close · P Project · D Dashboard · E Edit · V Review · A Record · S Sync"
+            <TextBlock x:Name="TimerCommandsSecond"
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        FontSize="12"
                        FontWeight="Medium"
                        HorizontalAlignment="Center"
                        Margin="0,3,0,0"/>
-            <TextBlock Text="B Separate · M Merge · J Switch · K Clocks · H Active"
+            <TextBlock x:Name="TimerCommandsThird"
                        Foreground="{DynamicResource AccentBrush}"
                        FontSize="12"
                        FontWeight="SemiBold"

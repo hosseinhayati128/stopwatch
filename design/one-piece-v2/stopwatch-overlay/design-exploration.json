@@ -1,0 +1,1956 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-31",
+  "createdOn": "2026-10-30",
+  "surface": "stopwatch-overlay",
+  "stage": "implementation-verified-with-documented-platform-limits",
+  "implementationTarget": "StopwatchOverlay.Desktop",
+  "generationTool": "built-in image_gen",
+  "referenceBoard": "appearance-settings-style-v1.png",
+  "prompt": "appearance-settings-style-v1-prompt.txt",
+  "boards": [
+    {
+      "image": "background-options-01-04-v1.png",
+      "layer": "background-surface",
+      "prompt": "background-options-01-04-v1-prompt.txt",
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "status": "retained-as-background-alternatives"
+    },
+    {
+      "image": "background-options-05-12-v1.png",
+      "layer": "background-surface",
+      "prompt": "background-options-05-12-v1-prompt.txt",
+      "optionNumbers": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "status": "retained-as-background-alternatives"
+    },
+    {
+      "image": "shape-frame-options-01-06-v1.png",
+      "layer": "shape-and-frame",
+      "prompt": "shape-frame-options-01-06-v1-prompt.txt",
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "status": "retained-as-frame-alternatives"
+    },
+    {
+      "image": "shape-frame-options-07-14-v1.png",
+      "layer": "shape-and-frame",
+      "prompt": "shape-frame-options-07-14-v1-prompt.txt",
+      "sourceReference": "shape-frame-options-01-06-v1.png",
+      "optionNumbers": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "status": "retained-as-frame-alternatives"
+    },
+    {
+      "image": "typography-options-01-08-v1.png",
+      "layer": "timer-and-project-typography",
+      "prompt": "typography-options-01-08-v1-prompt.txt",
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "status": "superseded-typewriter-zero-legibility-correction"
+    },
+    {
+      "image": "typography-options-01-08-v2.png",
+      "layer": "timer-and-project-typography",
+      "prompt": "typography-options-01-08-v2-prompt.txt",
+      "sourceReference": "typography-options-01-08-v1.png",
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "retainedOptionNumbers": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7
+      ],
+      "status": "selected-typography-alternatives-retained"
+    },
+    {
+      "image": "typography-options-09-16-v1.png",
+      "layer": "timer-and-project-typography",
+      "prompt": "typography-options-09-16-v1-prompt.txt",
+      "sourceReference": "typography-options-01-08-v2.png",
+      "optionNumbers": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "retainedOptionNumbers": [
+        9,
+        11,
+        14,
+        16
+      ],
+      "status": "selected-typography-alternatives-retained"
+    },
+    {
+      "image": "artwork-options-01-08-v1.png",
+      "layer": "optional-artwork",
+      "prompt": "artwork-options-01-08-v1-prompt.txt",
+      "sourceReferences": [
+        "typography-options-01-08-v2.png",
+        "../../../StopwatchOverlay.Desktop/Assets/Pirate/icons.png"
+      ],
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "retainedOptionNumbers": [
+        1,
+        5,
+        8
+      ],
+      "status": "selected-artwork-alternatives-retained"
+    },
+    {
+      "image": "hover-controls-options-01-06-v1.png",
+      "layer": "hover-controls",
+      "prompt": "hover-controls-options-01-06-v1-prompt.txt",
+      "sourceReferences": [
+        "artwork-options-01-08-v1.png",
+        "../../pirate/previews/clock-navigator-complete-100.png"
+      ],
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "retainedOptionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "status": "selected-hover-control-alternatives-retained"
+    },
+    {
+      "image": "hover-controls-options-07-12-v1.png",
+      "layer": "hover-controls",
+      "prompt": "hover-controls-options-07-12-v1-prompt.txt",
+      "sourceReference": "hover-controls-options-01-06-v1.png",
+      "optionNumbers": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "retainedOptionNumbers": [
+        7,
+        10,
+        12
+      ],
+      "status": "selected-hover-control-alternatives-retained"
+    },
+    {
+      "image": "hover-controls-matched-frames-01-06-v1.png",
+      "layer": "hover-controls-with-matched-frames",
+      "prompt": "hover-controls-matched-frames-01-06-v1-prompt.txt",
+      "sourceReferences": [
+        "hover-controls-options-01-06-v1.png",
+        "shape-frame-options-01-06-v1.png",
+        "shape-frame-options-07-14-v1.png"
+      ],
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "retainedOptionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "status": "selected-pairings-retained"
+    },
+    {
+      "image": "hover-controls-matched-frames-07-12-v1.png",
+      "layer": "hover-controls-with-matched-frames",
+      "prompt": "hover-controls-matched-frames-07-12-v1-prompt.txt",
+      "sourceReferences": [
+        "hover-controls-options-07-12-v1.png",
+        "shape-frame-options-01-06-v1.png",
+        "shape-frame-options-07-14-v1.png"
+      ],
+      "optionNumbers": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "retainedOptionNumbers": [
+        7,
+        10,
+        12
+      ],
+      "status": "selected-pairings-retained"
+    },
+    {
+      "image": "hover-controls-matched-frames-13-14-v1.png",
+      "layer": "hover-controls-with-matched-frames",
+      "prompt": "hover-controls-matched-frames-13-14-v1-prompt.txt",
+      "sourceReferences": [
+        "shape-frame-options-07-14-v1.png",
+        "hover-controls-matched-frames-07-12-v1.png"
+      ],
+      "optionNumbers": [
+        13,
+        14
+      ],
+      "retainedOptionNumbers": [
+        14
+      ],
+      "status": "selected-pairings-retained"
+    },
+    {
+      "image": "filigree-frame-controls-15-20-v1.png",
+      "layer": "filigree-frame-and-hover-control-variations",
+      "prompt": "filigree-frame-controls-15-20-v1-prompt.txt",
+      "sourceReference": "hover-controls-matched-frames-13-14-v1.png",
+      "sourceControlNumber": 14,
+      "optionNumbers": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "retainedOptionNumbers": [
+        15,
+        16
+      ],
+      "status": "selected-frame-and-control-alternatives-retained"
+    },
+    {
+      "image": "state-indicators-options-01-03-v1.png",
+      "layer": "running-paused-and-active-states",
+      "prompt": "state-indicators-options-01-03-v1-prompt.txt",
+      "sourceReference": "hover-controls-matched-frames-13-14-v1.png",
+      "sourceControlNumber": 14,
+      "optionNumbers": [
+        1,
+        2,
+        3
+      ],
+      "retainedComponents": [
+        {
+          "optionNumber": 1,
+          "component": "active-tab"
+        }
+      ],
+      "status": "component-source-for-revised-option-5"
+    },
+    {
+      "image": "state-indicators-options-04-06-v1.png",
+      "layer": "running-paused-and-active-states",
+      "prompt": "state-indicators-options-04-06-v1-prompt.txt",
+      "sourceReference": "state-indicators-options-01-03-v1.png",
+      "optionNumbers": [
+        4,
+        5,
+        6
+      ],
+      "retainedComponents": [
+        {
+          "optionNumber": 5,
+          "component": "project-name-running-paused-marker"
+        }
+      ],
+      "supersededComponents": [
+        {
+          "optionNumber": 5,
+          "component": "active-underline"
+        }
+      ],
+      "status": "exploration-history-with-option-5-revised"
+    },
+    {
+      "image": "state-indicator-05-project-markers-v2.png",
+      "layer": "running-paused-and-active-states",
+      "prompt": "state-indicator-05-project-markers-v2-prompt.txt",
+      "sourceReferences": [
+        "state-indicators-options-04-06-v1.png",
+        "state-indicators-options-01-03-v1.png"
+      ],
+      "optionNumbers": [
+        5
+      ],
+      "retainedOptionNumbers": [
+        5
+      ],
+      "revision": 2,
+      "status": "selected-state-direction-retained"
+    },
+    {
+      "image": "background-opacity-100-70-40-v1.png",
+      "layer": "transparency-and-appearance-settings",
+      "prompt": "background-opacity-100-70-40-v1-prompt.txt",
+      "sourceReferences": [
+        "state-indicator-05-project-markers-v2.png",
+        "hover-controls-matched-frames-13-14-v1.png"
+      ],
+      "sampleOpacityPercentages": [
+        100,
+        70,
+        40
+      ],
+      "backdrops": [
+        "light-desktop",
+        "dark-desktop"
+      ],
+      "selectedDefaultOpacityPercent": 70,
+      "status": "background-opacity-default-selected"
+    },
+    {
+      "image": "unselected-timer-opacity-100-70-40-v1.png",
+      "layer": "transparency-and-appearance-settings",
+      "prompt": "unselected-timer-opacity-100-70-40-v1-prompt.txt",
+      "sourceReferences": [
+        "background-opacity-100-70-40-v1.png",
+        "state-indicator-05-project-markers-v2.png"
+      ],
+      "optionNumbers": [
+        1,
+        2,
+        3
+      ],
+      "sampleUnselectedOpacityPercentages": [
+        100,
+        70,
+        40
+      ],
+      "backgroundOpacityPercent": 70,
+      "selectedOptionNumber": 3,
+      "selectedDefaultUnselectedOpacityPercent": 40,
+      "status": "unselected-opacity-default-selected"
+    },
+    {
+      "image": "appearance-settings-style-v1.png",
+      "layer": "transparency-and-appearance-settings",
+      "view": "style-tab",
+      "prompt": "appearance-settings-style-v1-prompt.txt",
+      "sourceReferences": [
+        "../todo-overlay/appearance-settings-preview-v1.png",
+        "state-indicator-05-project-markers-v2.png",
+        "background-opacity-100-70-40-v1.png",
+        "unselected-timer-opacity-100-70-40-v1.png"
+      ],
+      "status": "approved-settings-layout"
+    },
+    {
+      "image": "appearance-settings-transparency-v1.png",
+      "layer": "transparency-and-appearance-settings",
+      "view": "transparency-tab",
+      "prompt": "appearance-settings-transparency-v1-prompt.txt",
+      "sourceReferences": [
+        "../todo-overlay/appearance-settings-preview-v1.png",
+        "state-indicator-05-project-markers-v2.png",
+        "background-opacity-100-70-40-v1.png",
+        "unselected-timer-opacity-100-70-40-v1.png"
+      ],
+      "status": "approved-settings-layout-and-layer-opacity-controls"
+    }
+  ],
+  "sourceReferences": [
+    "background-options-01-04-v1.png",
+    "../approved-controller-concept.png",
+    "../todo-overlay/background-options-approved.png"
+  ],
+  "currentLayer": "implemented-native-stopwatch-appearance",
+  "nextLayer": null,
+  "options": [
+    {
+      "number": 1,
+      "id": "navigator-parchment",
+      "label": "Navigator Parchment"
+    },
+    {
+      "number": 2,
+      "id": "amber-vellum",
+      "label": "Amber Vellum"
+    },
+    {
+      "number": 3,
+      "id": "midnight-chart",
+      "label": "Midnight Chart"
+    },
+    {
+      "number": 4,
+      "id": "quiet-atlas",
+      "label": "Quiet Atlas"
+    },
+    {
+      "number": 5,
+      "id": "ships-timber",
+      "label": "Ship's Timber"
+    },
+    {
+      "number": 6,
+      "id": "sailcloth",
+      "label": "Sailcloth"
+    },
+    {
+      "number": 7,
+      "id": "captains-leather",
+      "label": "Captain's Leather"
+    },
+    {
+      "number": 8,
+      "id": "aged-bronze",
+      "label": "Aged Bronze"
+    },
+    {
+      "number": 9,
+      "id": "tideglass",
+      "label": "Tideglass"
+    },
+    {
+      "number": 10,
+      "id": "wano-waves",
+      "label": "Wano Waves"
+    },
+    {
+      "number": 11,
+      "id": "celestial-navigation",
+      "label": "Celestial Navigation"
+    },
+    {
+      "number": 12,
+      "id": "sky-island",
+      "label": "Sky Island"
+    }
+  ],
+  "selectedOptions": [
+    "navigator-parchment",
+    "amber-vellum",
+    "midnight-chart",
+    "quiet-atlas",
+    "ships-timber",
+    "sailcloth",
+    "captains-leather",
+    "aged-bronze",
+    "tideglass",
+    "wano-waves",
+    "celestial-navigation",
+    "sky-island"
+  ],
+  "backgroundSelection": {
+    "status": "all-shown-options-retained",
+    "count": 12,
+    "defaultId": "navigator-parchment",
+    "independentOfFrame": true,
+    "userWording": "good let's keep all ten",
+    "interpretation": "Retain the full twelve-option collection shown on both boards; the count correction was stated in chat. Navigator Parchment was subsequently approved as the default on 2026-10-31."
+  },
+  "frameSelection": {
+    "status": "selected-options-retained",
+    "count": 16,
+    "selectedOptionNumbers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "unselectedOptionNumbers": [
+      17,
+      18,
+      19,
+      20
+    ],
+    "additionalCandidateCount": 0,
+    "candidateOptionNumbers": [],
+    "candidateReferenceBoards": [],
+    "independentOfBackground": true,
+    "referenceBoard": "shape-frame-options-07-14-v1.png",
+    "referenceBoards": [
+      "shape-frame-options-01-06-v1.png",
+      "shape-frame-options-07-14-v1.png",
+      "filigree-frame-controls-15-20-v1.png"
+    ],
+    "prompt": "shape-frame-options-07-14-v1-prompt.txt",
+    "comparisonBackgroundId": "navigator-parchment",
+    "selectedOptions": [
+      "classic-brass",
+      "navy-bevel",
+      "walnut-rim",
+      "pixel-voyage",
+      "instrument-case",
+      "slim-capsule",
+      "rope-binding",
+      "chart-scroll",
+      "admiralty",
+      "bound-logbook",
+      "cloud-crest",
+      "tide-curve",
+      "engraved-filigree",
+      "open-corners",
+      "vine-filigree",
+      "royal-cartouche"
+    ],
+    "defaultId": "engraved-filigree",
+    "options": [
+      {
+        "number": 1,
+        "id": "classic-brass",
+        "label": "Classic Brass"
+      },
+      {
+        "number": 2,
+        "id": "navy-bevel",
+        "label": "Navy Bevel"
+      },
+      {
+        "number": 3,
+        "id": "walnut-rim",
+        "label": "Walnut Rim"
+      },
+      {
+        "number": 4,
+        "id": "pixel-voyage",
+        "label": "Pixel Voyage"
+      },
+      {
+        "number": 5,
+        "id": "instrument-case",
+        "label": "Instrument Case"
+      },
+      {
+        "number": 6,
+        "id": "slim-capsule",
+        "label": "Slim Capsule"
+      },
+      {
+        "number": 7,
+        "id": "rope-binding",
+        "label": "Rope Binding"
+      },
+      {
+        "number": 8,
+        "id": "chart-scroll",
+        "label": "Chart Scroll"
+      },
+      {
+        "number": 9,
+        "id": "admiralty",
+        "label": "Admiralty"
+      },
+      {
+        "number": 10,
+        "id": "bound-logbook",
+        "label": "Bound Logbook"
+      },
+      {
+        "number": 11,
+        "id": "cloud-crest",
+        "label": "Cloud Crest"
+      },
+      {
+        "number": 12,
+        "id": "tide-curve",
+        "label": "Tide Curve"
+      },
+      {
+        "number": 13,
+        "id": "engraved-filigree",
+        "label": "Engraved Filigree"
+      },
+      {
+        "number": 14,
+        "id": "open-corners",
+        "label": "Open Corners"
+      },
+      {
+        "number": 15,
+        "id": "vine-filigree",
+        "label": "Vine Filigree",
+        "status": "retained",
+        "treatment": "Thin gold rails with trailing S-curves and small botanical leaves."
+      },
+      {
+        "number": 16,
+        "id": "royal-cartouche",
+        "label": "Royal Cartouche",
+        "status": "retained",
+        "treatment": "Symmetrical baroque gold scrollwork with a sculpted center crest and layered acanthus corners."
+      },
+      {
+        "number": 17,
+        "id": "shell-rococo",
+        "label": "Shell Rococo",
+        "status": "exploration-history-only",
+        "treatment": "Soft scalloped outline with engraved fan shells and graceful C-scrolls."
+      },
+      {
+        "number": 18,
+        "id": "laurel-engraving",
+        "label": "Laurel Engraving",
+        "status": "exploration-history-only",
+        "treatment": "Narrow gold outline with mirrored pointed laurel-leaf sprigs around the sides."
+      },
+      {
+        "number": 19,
+        "id": "golden-lace",
+        "label": "Golden Lace",
+        "status": "exploration-history-only",
+        "treatment": "Fine open gold lacework with pierced loops and intertwined corner scrolls."
+      },
+      {
+        "number": 20,
+        "id": "wave-filigree",
+        "label": "Wave Filigree",
+        "status": "exploration-history-only",
+        "treatment": "Flowing gold wave-scroll ends and gently undulating frame rails."
+      }
+    ],
+    "notes": "The fourteen previously retained frames remain independently available. Selecting matched options 15 and 16 additionally retains Vine Filigree and Royal Cartouche, for sixteen frames total. Frame candidates 17-20 remain exploration history only. The current keep-list uses hover-control/pairing numbers, not the original frame-board numbers, and does not revoke the earlier keep-all frame decision. The default was subsequently selected on 2026-10-31."
+  },
+  "typographySelection": {
+    "status": "selected-options-retained",
+    "count": 10,
+    "referenceBoard": "typography-options-09-16-v1.png",
+    "referenceBoards": [
+      "typography-options-01-08-v2.png",
+      "typography-options-09-16-v1.png"
+    ],
+    "prompts": [
+      "typography-options-01-08-v1-prompt.txt",
+      "typography-options-01-08-v2-prompt.txt",
+      "typography-options-09-16-v1-prompt.txt"
+    ],
+    "comparisonBackgroundId": "navigator-parchment",
+    "comparisonFrameId": "classic-brass",
+    "selectedOptionNumbers": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      9,
+      11,
+      14,
+      16
+    ],
+    "selectedOptions": [
+      "navigator-bold",
+      "captains-serif",
+      "typewriter-log",
+      "instrument-digital",
+      "pixel-voyage",
+      "modern-deck",
+      "art-deco",
+      "rounded-deck",
+      "chart-plotter",
+      "compass-outline"
+    ],
+    "unselectedOptionNumbers": [
+      3,
+      8,
+      10,
+      12,
+      13,
+      15
+    ],
+    "userWording": "1و4و5و6و9و11و14و16 و 2و 7",
+    "defaultId": "navigator-bold",
+    "options": [
+      {
+        "number": 1,
+        "id": "navigator-bold",
+        "label": "Navigator Bold",
+        "fontIntent": "Condensed bold sans-serif digits with a classic bold serif name."
+      },
+      {
+        "number": 2,
+        "id": "captains-serif",
+        "label": "Captain's Serif",
+        "fontIntent": "High-contrast substantial Roman serif digits with a smaller refined serif name."
+      },
+      {
+        "number": 3,
+        "id": "chartmakers-script",
+        "label": "Chartmaker's Script",
+        "fontIntent": "Antique calligraphic serif digits with an italic calligraphic name."
+      },
+      {
+        "number": 4,
+        "id": "typewriter-log",
+        "label": "Typewriter Log",
+        "fontIntent": "Legible monospaced typewriter digits and matching name; zero has no horizontal crossbar."
+      },
+      {
+        "number": 5,
+        "id": "instrument-digital",
+        "label": "Instrument Digital",
+        "fontIntent": "Live seven-segment digits with a smaller condensed sans-serif name."
+      },
+      {
+        "number": 6,
+        "id": "pixel-voyage",
+        "label": "Pixel Voyage",
+        "fontIntent": "Square-pixel numeral style and compact blocky project lettering."
+      },
+      {
+        "number": 7,
+        "id": "modern-deck",
+        "label": "Modern Deck",
+        "fontIntent": "Broad geometric sans-serif digits with a smaller simple sans-serif name."
+      },
+      {
+        "number": 8,
+        "id": "naval-stencil",
+        "label": "Naval Stencil",
+        "fontIntent": "Legible stencil numerals with deliberate narrow cuts and a small uppercase stencil name."
+      },
+      {
+        "number": 9,
+        "id": "art-deco",
+        "label": "Art Deco",
+        "fontIntent": "Tall narrow geometric numerals with fine inline detailing and a matching Art Deco project name."
+      },
+      {
+        "number": 10,
+        "id": "harbor-slab",
+        "label": "Harbor Slab",
+        "fontIntent": "Robust broad slab-serif numerals with squared serifs and a smaller matching slab-serif name."
+      },
+      {
+        "number": 11,
+        "id": "rounded-deck",
+        "label": "Rounded Deck",
+        "fontIntent": "Soft rounded sans-serif numerals with open counters and a smaller rounded sans-serif name."
+      },
+      {
+        "number": 12,
+        "id": "fine-engraving",
+        "label": "Fine Engraving",
+        "fontIntent": "Fine high-contrast serif numerals with a restrained italic serif project name."
+      },
+      {
+        "number": 13,
+        "id": "racing-log",
+        "label": "Racing Log",
+        "fontIntent": "Forward-slanted bold sans-serif numerals with a smaller italic sans-serif name."
+      },
+      {
+        "number": 14,
+        "id": "chart-plotter",
+        "label": "Chart Plotter",
+        "fontIntent": "Narrow light-to-medium monospaced technical sans-serif numerals with a matching technical name."
+      },
+      {
+        "number": 15,
+        "id": "dot-matrix",
+        "label": "Dot Matrix",
+        "fontIntent": "Numerals and project lettering constructed from evenly spaced round dots with visible gaps."
+      },
+      {
+        "number": 16,
+        "id": "compass-outline",
+        "label": "Compass Outline",
+        "fontIntent": "Hollow geometric numerals with clean navy contours and a smaller single-stroke project name."
+      }
+    ],
+    "notes": "User retained ten typography profiles: 1, 2, 4, 5, 6, 7, 9, 11, 14 and 16. Other profiles remain exploration history only; the default was subsequently selected on 2026-10-31. Validate exact real font mappings or live digit rendering, numeric spacing, source licensing and small-overlay readability when implementing approved styles. Retained backgrounds and frames stay independently selectable. Version 2 of the first board corrects option 4's ambiguous leading zeros; its version 1 is preserved as revision history."
+  },
+  "artworkSelection": {
+    "status": "selected-options-retained",
+    "count": 3,
+    "referenceBoard": "artwork-options-01-08-v1.png",
+    "prompt": "artwork-options-01-08-v1-prompt.txt",
+    "comparisonBackgroundId": "navigator-parchment",
+    "comparisonFrameId": "classic-brass",
+    "comparisonTypographyId": "navigator-bold",
+    "comparisonEmblem": "existing-luffy-skull",
+    "selectedOptionNumbers": [
+      1,
+      5,
+      8
+    ],
+    "selectedOptions": [
+      "clean",
+      "corner-stamp",
+      "edge-engraving"
+    ],
+    "unselectedOptionNumbers": [
+      2,
+      3,
+      4,
+      6,
+      7
+    ],
+    "userWording": "1 و 5و 8",
+    "defaultId": "clean",
+    "options": [
+      {
+        "number": 1,
+        "id": "clean",
+        "label": "Clean",
+        "treatment": "No additional artwork beyond the chosen background."
+      },
+      {
+        "number": 2,
+        "id": "left-emblem",
+        "label": "Left Emblem",
+        "treatment": "Full-color emblem inside a reserved left area; text centered in the remaining space."
+      },
+      {
+        "number": 3,
+        "id": "right-emblem",
+        "label": "Right Emblem",
+        "treatment": "Full-color emblem inside a reserved right area; text centered in the remaining space."
+      },
+      {
+        "number": 4,
+        "id": "top-crest",
+        "label": "Top Crest",
+        "treatment": "Small full-color crest centered at the upper frame edge, partly above the body."
+      },
+      {
+        "number": 5,
+        "id": "corner-stamp",
+        "label": "Corner Stamp",
+        "treatment": "Small muted monochrome stamp in the inner upper-left corner."
+      },
+      {
+        "number": 6,
+        "id": "name-emblem",
+        "label": "Name Emblem",
+        "treatment": "Tiny full-color emblem before the project name, centered as one group."
+      },
+      {
+        "number": 7,
+        "id": "faded-watermark",
+        "label": "Faded Watermark",
+        "treatment": "Very faint central monochrome watermark behind fully opaque text."
+      },
+      {
+        "number": 8,
+        "id": "edge-engraving",
+        "label": "Edge Engraving",
+        "treatment": "Subdued monochrome emblem cropped and blended into the left edge."
+      }
+    ],
+    "sourceAsset": {
+      "path": "../../../StopwatchOverlay.Desktop/Assets/Pirate/icons.png",
+      "part": "Skull",
+      "normalizedCrop": {
+        "x": 0.25,
+        "y": 0.5,
+        "width": 0.25,
+        "height": 0.5
+      }
+    },
+    "implementationConstraints": [
+      "Reuse the existing original Luffy asset for live artwork; do not extract a new logo from the generated comparison board.",
+      "Keep the retained corner stamp and edge engraving outside live-text bounds at every supported size. Unselected artwork treatments remain exploration history only.",
+      "Stamp/engraving opacity applies only to the artwork, preserving live timer and project-name opacity.",
+      "Treat the emblem used in this sheet as a comparison motif; a final motif collection and default have not been selected."
+    ]
+  },
+  "hoverControlsSelection": {
+    "status": "selected-options-retained",
+    "count": 12,
+    "referenceBoard": "hover-controls-options-07-12-v1.png",
+    "referenceBoards": [
+      "hover-controls-options-01-06-v1.png",
+      "hover-controls-options-07-12-v1.png",
+      "hover-controls-matched-frames-13-14-v1.png",
+      "filigree-frame-controls-15-20-v1.png"
+    ],
+    "prompt": "hover-controls-options-07-12-v1-prompt.txt",
+    "comparisonBackgroundId": "navigator-parchment",
+    "comparisonFrameId": "classic-brass",
+    "comparisonTypographyId": "navigator-bold",
+    "comparisonArtworkId": "clean",
+    "selectedOptionNumbers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      12,
+      14,
+      15,
+      16
+    ],
+    "selectedOptions": [
+      "classic-brass",
+      "compass-dials",
+      "floating-buttons",
+      "pixel-controls",
+      "bronze-keys",
+      "quiet-glyphs",
+      "wooden-deck",
+      "porcelain-keys",
+      "glass-dock",
+      "filigree-keys",
+      "vine-filigree",
+      "royal-cartouche"
+    ],
+    "unselectedOptionNumbers": [
+      8,
+      9,
+      11,
+      13,
+      17,
+      18,
+      19,
+      20
+    ],
+    "userWording": "great, let's keep: 1, 2, 3, 4, 5, 6 ,7, 10, 12, 14, 15, 16,",
+    "defaultId": "filigree-keys",
+    "actionsInOrder": [
+      "close",
+      "pause-resume",
+      "reset"
+    ],
+    "sampleState": "running-with-hover-toolbar-visible",
+    "options": [
+      {
+        "number": 1,
+        "id": "classic-brass",
+        "label": "Classic Brass",
+        "treatment": "Rounded navy toolbar with fine brass trim and restrained button cells."
+      },
+      {
+        "number": 2,
+        "id": "compass-dials",
+        "label": "Compass Dials",
+        "treatment": "Compact antique-brass compass dials over a slim navy chart support."
+      },
+      {
+        "number": 3,
+        "id": "floating-buttons",
+        "label": "Floating Buttons",
+        "treatment": "Three separate circular action buttons without a shared backing plate."
+      },
+      {
+        "number": 4,
+        "id": "pixel-controls",
+        "label": "Pixel Controls",
+        "treatment": "Stepped navy/gold toolbar, square buttons and pixel action glyphs."
+      },
+      {
+        "number": 5,
+        "id": "bronze-keys",
+        "label": "Bronze Keys",
+        "treatment": "Small raised bronze keycaps on a compact dark base."
+      },
+      {
+        "number": 6,
+        "id": "quiet-glyphs",
+        "label": "Quiet Glyphs",
+        "treatment": "Simple ivory glyphs on a minimal navy strip with no visible button outlines."
+      },
+      {
+        "number": 7,
+        "id": "wooden-deck",
+        "label": "Wooden Deck",
+        "treatment": "Dark walnut toolbar with brass corners and recessed navy button wells."
+      },
+      {
+        "number": 8,
+        "id": "parchment-tabs",
+        "label": "Parchment Tabs",
+        "treatment": "Three warm paper tabs with folded corner details and navy glyphs."
+      },
+      {
+        "number": 9,
+        "id": "art-deco",
+        "label": "Art Deco",
+        "treatment": "Angular navy and brass toolbar with clipped corners, geometric cells and fan engraving."
+      },
+      {
+        "number": 10,
+        "id": "porcelain-keys",
+        "label": "Porcelain Keys",
+        "treatment": "Glazed ivory keys with navy glyphs and fine brass rims on a muted teal support."
+      },
+      {
+        "number": 11,
+        "id": "leather-strap",
+        "label": "Leather Strap",
+        "treatment": "Oxblood leather strap with saddle stitching, brass end studs and ivory action glyphs."
+      },
+      {
+        "number": 12,
+        "id": "glass-dock",
+        "label": "Glass Dock",
+        "treatment": "Smoky sea-teal translucent glass capsule with subtle dividers and ivory glyphs."
+      },
+      {
+        "number": 13,
+        "id": "rope-binding",
+        "label": "Rope Binding",
+        "treatment": "Navy fabric toolbar bound in tan braided rope with compact end knots, rope-ringed round buttons and ivory glyphs.",
+        "sourceBoard": "hover-controls-matched-frames-13-14-v1.png"
+      },
+      {
+        "number": 14,
+        "id": "filigree-keys",
+        "label": "Filigree Keys",
+        "treatment": "Slim navy cartouche with fine brass edges, engraved gold scrollwork ends and three outlined rounded button cells with ivory glyphs.",
+        "sourceBoard": "hover-controls-matched-frames-13-14-v1.png"
+      },
+      {
+        "number": 15,
+        "id": "vine-filigree",
+        "label": "Vine Filigree",
+        "treatment": "Slim navy toolbar with fine gold vine tendrils and three outlined rounded-square keys.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      },
+      {
+        "number": 16,
+        "id": "royal-cartouche",
+        "label": "Royal Cartouche",
+        "treatment": "Rich symmetrical gold cartouche with sculpted scrollwork surrounding three navy keys.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      },
+      {
+        "number": 17,
+        "id": "shell-rococo",
+        "label": "Shell Rococo",
+        "treatment": "Scalloped gold toolbar with shell flourishes and three oval navy button wells.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      },
+      {
+        "number": 18,
+        "id": "laurel-engraving",
+        "label": "Laurel Engraving",
+        "treatment": "Gold laurel sprays flanking a simple navy toolbar with three rounded-square keys.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      },
+      {
+        "number": 19,
+        "id": "golden-lace",
+        "label": "Golden Lace",
+        "treatment": "Open gold lacework wings and fine gold borders surrounding three rounded navy keys.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      },
+      {
+        "number": 20,
+        "id": "wave-filigree",
+        "label": "Wave Filigree",
+        "treatment": "Flowing gold wave-scroll toolbar ends with three navy button wells and ivory glyphs.",
+        "sourceBoard": "filigree-frame-controls-15-20-v1.png"
+      }
+    ],
+    "preservedBehavior": [
+      "The popup appears on pointer hover, stays open while the pointer moves onto the controls, and uses the existing 200 ms departure delay.",
+      "Toolbar geometry stays clear of time and project-name text; showing it does not reflow the timer body.",
+      "Pause/resume swaps its glyph for the actual state and remains disabled in real-time clock mode.",
+      "Existing close, pause/resume and reset actions keep their controller wiring and active-timer behavior.",
+      "Click-through suppresses pointer interactions and the popup. Existing drag, right-click, shortcuts and no-activate behavior remain available."
+    ],
+    "scopeNote": "Twelve control styles and their shown frame pairings are retained: 1, 2, 3, 4, 5, 6, 7, 10, 12, 14, 15 and 16. Unselected controls remain exploration history only. The three visible actions stay close, pause/resume and reset; Edit and Separate/Merge remain hidden. Background, frame, typography and artwork remain independent choices. No default control style has been selected.",
+    "matchedFramePreview": {
+      "status": "selected-pairings-retained",
+      "count": 12,
+      "selectedOptionNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        10,
+        12,
+        14,
+        15,
+        16
+      ],
+      "unselectedOptionNumbers": [
+        8,
+        9,
+        11,
+        13,
+        17,
+        18,
+        19,
+        20
+      ],
+      "referenceBoards": [
+        "hover-controls-matched-frames-01-06-v1.png",
+        "hover-controls-matched-frames-07-12-v1.png",
+        "hover-controls-matched-frames-13-14-v1.png",
+        "filigree-frame-controls-15-20-v1.png"
+      ],
+      "prompts": [
+        "hover-controls-matched-frames-01-06-v1-prompt.txt",
+        "hover-controls-matched-frames-07-12-v1-prompt.txt",
+        "hover-controls-matched-frames-13-14-v1-prompt.txt",
+        "filigree-frame-controls-15-20-v1-prompt.txt"
+      ],
+      "comparisonBackgroundId": "navigator-parchment",
+      "comparisonTypographyId": "navigator-bold",
+      "comparisonArtworkId": "clean",
+      "framesAndControlsRemainIndependent": true,
+      "pairings": [
+        {
+          "number": 1,
+          "controlId": "classic-brass",
+          "frameId": "classic-brass"
+        },
+        {
+          "number": 2,
+          "controlId": "compass-dials",
+          "frameId": "instrument-case"
+        },
+        {
+          "number": 3,
+          "controlId": "floating-buttons",
+          "frameId": "slim-capsule"
+        },
+        {
+          "number": 4,
+          "controlId": "pixel-controls",
+          "frameId": "pixel-voyage"
+        },
+        {
+          "number": 5,
+          "controlId": "bronze-keys",
+          "frameId": "navy-bevel"
+        },
+        {
+          "number": 6,
+          "controlId": "quiet-glyphs",
+          "frameId": "open-corners"
+        },
+        {
+          "number": 7,
+          "controlId": "wooden-deck",
+          "frameId": "walnut-rim"
+        },
+        {
+          "number": 8,
+          "controlId": "parchment-tabs",
+          "frameId": "chart-scroll"
+        },
+        {
+          "number": 9,
+          "controlId": "art-deco",
+          "frameId": "admiralty"
+        },
+        {
+          "number": 10,
+          "controlId": "porcelain-keys",
+          "frameId": "cloud-crest"
+        },
+        {
+          "number": 11,
+          "controlId": "leather-strap",
+          "frameId": "bound-logbook"
+        },
+        {
+          "number": 12,
+          "controlId": "glass-dock",
+          "frameId": "tide-curve"
+        },
+        {
+          "number": 13,
+          "controlId": "rope-binding",
+          "frameId": "rope-binding"
+        },
+        {
+          "number": 14,
+          "controlId": "filigree-keys",
+          "frameId": "engraved-filigree"
+        },
+        {
+          "number": 15,
+          "controlId": "vine-filigree",
+          "frameId": "vine-filigree"
+        },
+        {
+          "number": 16,
+          "controlId": "royal-cartouche",
+          "frameId": "royal-cartouche"
+        },
+        {
+          "number": 17,
+          "controlId": "shell-rococo",
+          "frameId": "shell-rococo"
+        },
+        {
+          "number": 18,
+          "controlId": "laurel-engraving",
+          "frameId": "laurel-engraving"
+        },
+        {
+          "number": 19,
+          "controlId": "golden-lace",
+          "frameId": "golden-lace"
+        },
+        {
+          "number": 20,
+          "controlId": "wave-filigree",
+          "frameId": "wave-filigree"
+        }
+      ],
+      "notes": "User retained pairings 1, 2, 3, 4, 5, 6, 7, 10, 12, 14, 15 and 16. Other pairings remain exploration history only. Selecting 15 and 16 adds their new frames to the previously retained independent frame collection. Frame/control pairing numbers differ from the original frame-board numbers. No default was chosen; original comparison boards remain preserved."
+    },
+    "filigreeExploration": {
+      "status": "selected-options-retained",
+      "selectedOptionNumbers": [
+        15,
+        16
+      ],
+      "unselectedOptionNumbers": [
+        17,
+        18,
+        19,
+        20
+      ],
+      "parentControlNumber": 14,
+      "parentControlId": "filigree-keys",
+      "parentFrameId": "engraved-filigree",
+      "referenceBoard": "filigree-frame-controls-15-20-v1.png",
+      "prompt": "filigree-frame-controls-15-20-v1-prompt.txt",
+      "optionNumbers": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "scope": "Six related gold-filigree frame and hover-control variations; existing background, typography, clean artwork and action order remain fixed."
+    }
+  },
+  "stateIndicatorsSelection": {
+    "status": "selected-options-retained",
+    "count": 1,
+    "referenceBoard": "state-indicator-05-project-markers-v2.png",
+    "referenceBoards": [
+      "state-indicators-options-01-03-v1.png",
+      "state-indicators-options-04-06-v1.png",
+      "state-indicator-05-project-markers-v2.png"
+    ],
+    "prompt": "state-indicator-05-project-markers-v2-prompt.txt",
+    "prompts": [
+      "state-indicators-options-01-03-v1-prompt.txt",
+      "state-indicators-options-04-06-v1-prompt.txt",
+      "state-indicator-05-project-markers-v2-prompt.txt"
+    ],
+    "comparisonBackgroundId": "navigator-parchment",
+    "comparisonFrameId": "engraved-filigree",
+    "comparisonTypographyId": "navigator-bold",
+    "comparisonArtworkId": "clean",
+    "comparisonHoverControlId": "filigree-keys",
+    "hoverControlsVisibleInBoard": false,
+    "selectedOptionNumbers": [
+      5
+    ],
+    "selectedOptions": [
+      "project-markers"
+    ],
+    "unselectedOptionNumbers": [
+      1,
+      2,
+      3,
+      4,
+      6
+    ],
+    "selectedComposition": {
+      "revision": 2,
+      "runningPausedSourceOptionNumber": 5,
+      "activeSourceOptionNumber": 1,
+      "activeCue": "Navy tab with fine gold outline and ivory ACTIVE text centered on the top frame edge, visible for the selected timer whether running or paused.",
+      "removedCue": "Project-name underline",
+      "userWording": "ok instead of underline in this version, let's have the \"active\" preview in the #1 design.",
+      "previewStatus": "accepted-by-user"
+    },
+    "defaultId": "project-markers",
+    "optionNumbering": "Layer-local numbers 1-6, independent of earlier control/frame numbers.",
+    "activeMeaning": "The session selected as the active timer by the controller; selection and running/paused state are independent.",
+    "comparisonStates": [
+      {
+        "row": 1,
+        "column": 1,
+        "label": "Active - Running",
+        "active": true,
+        "running": true
+      },
+      {
+        "row": 1,
+        "column": 2,
+        "label": "Active - Paused",
+        "active": true,
+        "running": false
+      },
+      {
+        "row": 2,
+        "column": 1,
+        "label": "Other - Running",
+        "active": false,
+        "running": true
+      },
+      {
+        "row": 2,
+        "column": 2,
+        "label": "Other - Paused",
+        "active": false,
+        "running": false
+      }
+    ],
+    "options": [
+      {
+        "number": 1,
+        "id": "status-badges",
+        "label": "Status Badges",
+        "runningPausedCue": "Inset upper-left status pill with a play triangle and RUNNING or pause bars and PAUSED.",
+        "activeCue": "Small ACTIVE tab at the top-center frame edge, present in both active-running and active-paused states."
+      },
+      {
+        "number": 2,
+        "id": "corner-symbols",
+        "label": "Corner Symbols",
+        "runningPausedCue": "Small upper-left running triangle or pause bars, without status words.",
+        "activeCue": "Small ivory diamond with a gold border at the top-center frame edge."
+      },
+      {
+        "number": 3,
+        "id": "status-line",
+        "label": "Status Line",
+        "runningPausedCue": "Compact status line with icon and RUNNING or PAUSED beneath the project name.",
+        "activeCue": "Append ACTIVE to that status line when selected."
+      },
+      {
+        "number": 4,
+        "id": "edge-signals",
+        "label": "Edge Signals",
+        "runningPausedCue": "Narrow inset left-edge rail with a teal running triangle or amber pause bars.",
+        "activeCue": "Additional fine ivory contour inside the frame, forming a double-edge treatment in both active states."
+      },
+      {
+        "number": 5,
+        "id": "project-markers",
+        "label": "Project Markers",
+        "revision": 2,
+        "runningPausedCue": "Small running triangle or pause bars in a fixed slot before the project name.",
+        "activeCue": "Small navy-and-gold ACTIVE tab from option 1 at the top-center frame edge in both active states; no underline.",
+        "referenceBoard": "state-indicator-05-project-markers-v2.png",
+        "revisionHistory": [
+          {
+            "revision": 1,
+            "referenceBoard": "state-indicators-options-04-06-v1.png",
+            "activeCue": "Short navy underline below the project-name group.",
+            "status": "superseded-by-active-tab"
+          }
+        ]
+      },
+      {
+        "number": 6,
+        "id": "state-seal",
+        "label": "State Seal",
+        "runningPausedCue": "Compact top-center wax-seal medallion with a running triangle or pause bars.",
+        "activeCue": "Two short gold ribbon tails appear below the seal only when active."
+      }
+    ],
+    "existingCodeObservations": [
+      {
+        "path": "../../../StopwatchOverlay.Desktop/Views/ControllerWindow.axaml.cs",
+        "members": [
+          "UpdateOverlayStates"
+        ],
+        "finding": "Overlay running state comes from session.IsRunning while active selection is calculated separately from the controller's active session."
+      },
+      {
+        "path": "../../../StopwatchOverlay.Desktop/Views/OverlayWindow.axaml.cs",
+        "members": [
+          "SetRunning",
+          "SetActive",
+          "SetInactiveSeparated",
+          "SetPauseResumeEnabled"
+        ],
+        "finding": "Running swaps the hover action between pause and resume; active sets a border that is hidden for IsNavigator; nonactive overlays use the configured opacity; clock mode disables pausing."
+      }
+    ],
+    "implementationConstraints": [
+      "These are proposed visual state cues, not existing implemented state badges. Do not change timer/session behavior as part of this design exploration.",
+      "Active selection must stay visible when paused and must not be inferred from the running flag.",
+      "For selected option 5 revision 2, show the ACTIVE tab only for the selected timer and retain the running/pause marker beside the project name. Do not render a project-name underline or import option 1's separate running/paused text pills.",
+      "Use shape or text alongside color so running, paused and active are distinguishable without relying only on color.",
+      "Reserve stable space for status cues; toggling state must not reflow or resize the timer or obscure live text and artwork.",
+      "State indicators are noninteractive. The running triangle is a status symbol; the hover control separately shows the action the user can take: Pause while running, Resume while paused.",
+      "No new blinking or continuous animation is proposed. Keep time and project text readable in all states.",
+      "The comparison uses equal opacity to isolate state cues. Existing user-configured nonactive-overlay opacity remains independent and will be addressed in the next layer; pausing alone must not imply nonactive opacity.",
+      "Real-time clock mode must not receive a misleading paused cue; mode-specific labels and disabled pause presentation remain to be resolved before implementation.",
+      "The inactive/reset zero state is distinct from a paused session if the session model exposes that distinction; this board compares only running and paused examples."
+    ]
+  },
+  "appearanceSelection": {
+    "status": "approved-by-user",
+    "referenceBoard": "appearance-settings-style-v1.png",
+    "referenceBoards": [
+      "background-opacity-100-70-40-v1.png",
+      "unselected-timer-opacity-100-70-40-v1.png",
+      "appearance-settings-style-v1.png",
+      "appearance-settings-transparency-v1.png"
+    ],
+    "prompt": "appearance-settings-style-v1-prompt.txt",
+    "prompts": [
+      "background-opacity-100-70-40-v1-prompt.txt",
+      "unselected-timer-opacity-100-70-40-v1-prompt.txt",
+      "appearance-settings-style-v1-prompt.txt",
+      "appearance-settings-transparency-v1-prompt.txt"
+    ],
+    "comparisonBackgroundId": "navigator-parchment",
+    "comparisonFrameId": "engraved-filigree",
+    "comparisonTypographyId": "navigator-bold",
+    "comparisonArtworkId": "clean",
+    "comparisonHoverControlId": "filigree-keys",
+    "comparisonStateStyleId": "project-markers",
+    "comparisonStateRevision": 2,
+    "comparisonStates": [
+      {
+        "previewSlot": "upper",
+        "active": true,
+        "running": true,
+        "hoverControlsVisible": true,
+        "wholeClockOpacityPercent": 100
+      },
+      {
+        "previewSlot": "lower",
+        "active": false,
+        "running": true,
+        "hoverControlsVisible": false,
+        "wholeClockOpacityPercent": 40
+      }
+    ],
+    "backgroundOpacity": {
+      "referenceBoard": "background-opacity-100-70-40-v1.png",
+      "prompt": "background-opacity-100-70-40-v1-prompt.txt",
+      "samplePercentages": [
+        100,
+        70,
+        40
+      ],
+      "supportedRangePercent": [
+        0,
+        100
+      ],
+      "selectedDefaultPercent": 70,
+      "remainsAdjustable": true,
+      "userWording": "70 is good for default",
+      "samplesAreExclusivePresets": false,
+      "affectedLayers": [
+        "parchment-background",
+        "map-linework"
+      ],
+      "opaqueLayersInComparison": [
+        "frame",
+        "timer-text",
+        "project-name",
+        "running-paused-marker",
+        "active-tab",
+        "hover-toolbar"
+      ],
+      "backdrops": [
+        "synthetic-light-desktop",
+        "synthetic-dark-desktop"
+      ],
+      "renderingNote": "AI-generated concept preview of opacity differences, not measured alpha compositing. Exact blending and readability over real desktop content remain to be checked in the implemented overlay."
+    },
+    "unselectedTimerOpacity": {
+      "status": "default-selected",
+      "referenceBoard": "unselected-timer-opacity-100-70-40-v1.png",
+      "prompt": "unselected-timer-opacity-100-70-40-v1-prompt.txt",
+      "samplePercentages": [
+        100,
+        70,
+        40
+      ],
+      "selectedDefaultPercent": 40,
+      "selectedOptionNumber": 3,
+      "remainsAdjustable": true,
+      "userWording": "40% is better. what is next step?",
+      "backgroundOpacityPercent": 70,
+      "selectedTimerWholeOpacityPercent": 100,
+      "sampleState": "running",
+      "hoverControlsVisibleInComparison": false,
+      "options": [
+        {
+          "number": 1,
+          "id": "no-extra-dimming",
+          "label": "No extra dimming",
+          "wholeClockOpacityPercent": 100,
+          "effectiveBackgroundOpacityPercent": 70
+        },
+        {
+          "number": 2,
+          "id": "gentle-dimming",
+          "label": "Gentle dimming",
+          "wholeClockOpacityPercent": 70,
+          "effectiveBackgroundOpacityPercent": 49
+        },
+        {
+          "number": 3,
+          "id": "strong-dimming",
+          "label": "Strong dimming",
+          "wholeClockOpacityPercent": 40,
+          "effectiveBackgroundOpacityPercent": 28
+        }
+      ],
+      "affectedVisibleLayers": [
+        "frame",
+        "background-map",
+        "timer-text",
+        "project-name",
+        "running-paused-marker"
+      ],
+      "compositionRule": "Overall unselected opacity multiplies the existing per-layer opacity: effective background alpha = 0.70 * overall opacity. Percentages describe the intended setting; the generated image is an illustrative preview, not measured alpha compositing.",
+      "selectionRule": "Only selection controls this dimming. An unselected timer may still be running, and a selected paused timer remains at full overall opacity.",
+      "activeTabRule": "Show the ACTIVE tab on selected timers only; unselected timers have no tab or underline.",
+      "hoverToolbarOpacityPolicy": "The approved settings design applies keep-opaque behavior before unselected dimming, including hover controls. The dimming comparison itself does not show an unselected hover toolbar; verify popup opacity explicitly during implementation."
+    },
+    "existingCodeObservations": [
+      {
+        "path": "../../../StopwatchOverlay.Core/AppSettings.cs",
+        "finding": "BackgroundOpacity is normalized to 0-100 and its code default is 50. InactiveSeparatedOverlayOpacity has a code default of 35. These are code defaults, not a live reading of the user's settings or newly selected design defaults."
+      },
+      {
+        "path": "../../../StopwatchOverlay.Core/NavigatorOpaqueParts.cs",
+        "finding": "The existing appearance model combines a shared background opacity with per-part opaque flags. Numeric per-layer sliders and state-indicator opacity mapping have not been selected or implemented in this design session."
+      },
+      {
+        "path": "../../../StopwatchOverlay.Desktop/Views/SettingsWindow.axaml",
+        "finding": "The current host has a left live preview, middle navigation and right scrolling inspector, with a 1060x740 initial size and 840x600 minimum. Background opacity uses 0-100; the unselected-opacity slider uses 10-100. Existing detail checkboxes force named parts opaque."
+      },
+      {
+        "path": "../../../StopwatchOverlay.Desktop/Views/SettingsWindow.axaml.cs",
+        "finding": "Selectors, sliders and checkboxes call CommitControls as they change; DoneButton_Click closes the window. The proposed panel keeps this immediate-apply interaction model."
+      }
+    ],
+    "remainingDecisions": [],
+    "constraints": [
+      "Keep running/paused state independent from active selection and from opacity.",
+      "The background-opacity board varies only background/map opacity. The unselected-timer board fixes the background setting at 70% and varies overall opacity for unselected clocks, including their frame and text.",
+      "Do not silently apply a new opacity default or alter user settings based on the concept images.",
+      "Nonactive-overlay dimming remains separate from background opacity. Settings previews show selected and unselected sample timers; preview-only state/backdrop controls must never start, pause or select real timers.",
+      "Use the approved project-name running/pause marker and top-center ACTIVE tab; never restore the removed underline."
+    ],
+    "settingsPanelProposal": {
+      "status": "approved-by-user",
+      "approvalWording": "yes good, what is next step?",
+      "referenceBoards": [
+        "appearance-settings-style-v1.png",
+        "appearance-settings-transparency-v1.png"
+      ],
+      "prompts": [
+        "appearance-settings-style-v1-prompt.txt",
+        "appearance-settings-transparency-v1-prompt.txt"
+      ],
+      "navigationCategory": "Stopwatch appearance",
+      "hostLayout": "Preserve the existing three-column Settings & Overlay Inspector: live preview left, navigation middle and scrolling inspector right.",
+      "tabs": [
+        "Style",
+        "Transparency"
+      ],
+      "applyBehavior": "Changes apply immediately; Done closes the settings window.",
+      "preview": {
+        "sampleTime": "00:44:27.0",
+        "sampleProject": "Illustration",
+        "samples": [
+          "selected-running-with-hover-controls",
+          "unselected-running-at-40-percent-without-hover-controls"
+        ],
+        "previewOnlyControls": [
+          "Running / Paused",
+          "Light / Dark backdrop"
+        ],
+        "existingOverlayAction": "Show or hide active overlay",
+        "sampleCombinationIsApprovedDefault": true,
+        "sampleCombination": {
+          "backgroundId": "navigator-parchment",
+          "frameId": "engraved-filigree",
+          "typographyId": "navigator-bold",
+          "artworkId": "clean",
+          "hoverControlId": "filigree-keys",
+          "textSizePx": 48
+        }
+      },
+      "styleTab": {
+        "independentSelectors": [
+          {
+            "id": "background",
+            "label": "Background",
+            "retainedCount": 12,
+            "previewValue": "Navigator Parchment"
+          },
+          {
+            "id": "frame",
+            "label": "Frame",
+            "retainedCount": 16,
+            "previewValue": "Engraved Filigree"
+          },
+          {
+            "id": "typography",
+            "label": "Typography",
+            "retainedCount": 10,
+            "previewValue": "Navigator Bold"
+          },
+          {
+            "id": "artwork",
+            "label": "Artwork",
+            "retainedCount": 3,
+            "previewValue": "Clean"
+          },
+          {
+            "id": "hover-controls",
+            "label": "Hover controls",
+            "retainedCount": 12,
+            "previewValue": "Filigree Keys"
+          }
+        ],
+        "textSize": {
+          "control": "slider",
+          "sampleValuePx": 48,
+          "existingRangePx": [
+            16,
+            120
+          ],
+          "newDefaultSelected": false
+        },
+        "stateIndicators": "Read-only summary of the retained Project Markers revision 2 plus ACTIVE tab. Do not expose unselected state designs as active options."
+      },
+      "transparencyTab": {
+        "backgroundSlider": {
+          "rangePercent": [
+            0,
+            100
+          ],
+          "approvedDefaultPercent": 70
+        },
+        "unselectedTimerSlider": {
+          "rangePercent": [
+            10,
+            100
+          ],
+          "approvedDefaultPercent": 40
+        },
+        "perLayerControl": "keep-opaque-checkboxes",
+        "layerRulesStatus": "approved-design",
+        "approvedOpaqueLayerIds": [
+          "frame",
+          "timer-text",
+          "project-name",
+          "state-markers",
+          "hover-controls"
+        ],
+        "checkedBehavior": "Use full layer opacity before overall unselected dimming.",
+        "uncheckedBehavior": "Follow the Background opacity value before overall unselected dimming.",
+        "proposedLayers": [
+          {
+            "id": "frame",
+            "label": "Frame",
+            "proposedChecked": true
+          },
+          {
+            "id": "timer-text",
+            "label": "Time text",
+            "proposedChecked": true
+          },
+          {
+            "id": "project-name",
+            "label": "Project name",
+            "proposedChecked": true
+          },
+          {
+            "id": "state-markers",
+            "label": "State markers",
+            "proposedChecked": true,
+            "includes": [
+              "running-paused-marker",
+              "active-tab"
+            ]
+          },
+          {
+            "id": "hover-controls",
+            "label": "Hover controls",
+            "proposedChecked": true,
+            "includes": [
+              "toolbar-surface",
+              "toolbar-frame-and-ornament",
+              "buttons-and-glyphs"
+            ]
+          },
+          {
+            "id": "artwork",
+            "label": "Artwork",
+            "previewChecked": false,
+            "enabledWhen": "artwork-is-not-clean",
+            "defaultForArtworkEnabled": null
+          }
+        ],
+        "mappingStatus": "Logical UI groups and opacity order approved. Resolve their technical mapping to existing flags and new state/artwork properties during implementation planning; preserve unrelated legacy theme settings.",
+        "artworkNote": "An opacity multiplier must preserve the intrinsic subdued stamp or engraving treatment rather than replacing it with a full-color emblem.",
+        "unselectedDimmingAppliesAfterLayerRules": true,
+        "hoverBrighteningProposed": false
+      },
+      "layoutConstraints": [
+        "Keep the live preview visible while inspector controls scroll; fit the existing minimum window size without clipped controls or horizontal overflow.",
+        "Use thumbnail-assisted closed selectors so catalogs remain accessible without showing every style at once.",
+        "Keep application-theme selection and unrelated settings outside this focused stopwatch category; preserve overlay/application theme independence.",
+        "Use only retained options in active selectors. Original unselected designs stay in exploration history.",
+        "Keep the two tabs and preview controls visually consistent when implementing; image-generated layout and opacity are illustrative, not runtime verification."
+      ]
+    }
+  },
+  "userFeedback": [
+    {
+      "date": "2026-10-30",
+      "request": "More diversity beyond the same four backgrounds.",
+      "response": "Eight additional candidates explore timber, canvas, leather, bronze, sea glass, ink waves, celestial navigation and clouds. The first board is preserved."
+    },
+    {
+      "date": "2026-10-30",
+      "request": "good let's keep all ten",
+      "response": "Retain every background shown, twelve total across the two boards, as alternatives. Default remains undecided. Move to shape and frame comparison."
+    },
+    {
+      "date": "2026-10-30",
+      "request": "generate more",
+      "response": "Add eight frame explorations numbered 7-14: Rope Binding, Chart Scroll, Admiralty, Bound Logbook, Cloud Crest, Tide Curve, Engraved Filigree and Open Corners. Preserve frame options 1-6. No frame selection yet."
+    },
+    {
+      "date": "2026-10-30",
+      "request": "keep them all",
+      "response": "Retain all fourteen shape/frame options, independently of the twelve retained backgrounds. Default remains undecided. Move to timer/project typography comparison."
+    },
+    {
+      "date": "2026-10-30",
+      "request": "generate more",
+      "response": "Add typography profiles 9-16: Art Deco, Harbor Slab, Rounded Deck, Fine Engraving, Racing Log, Chart Plotter, Dot Matrix and Compass Outline. Preserve profiles 1-8. No typography selection yet."
+    },
+    {
+      "date": "2026-10-30",
+      "request": "1و4و5و6و9و11و14و16 و 2و 7",
+      "response": "Retain typography profiles 1, 2, 4, 5, 6, 7, 9, 11, 14 and 16 as alternatives. Keep unselected profiles only in exploration history. Default remains undecided. Move to optional artwork."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "1 و 5و 8",
+      "response": "Retain artwork treatments 1 Clean, 5 Corner Stamp and 8 Edge Engraving. Other artwork treatments remain exploration history only. No default selected. Move to hover controls."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "generate more",
+      "response": "Add six hover-control styles numbered 7-12: Wooden Deck, Parchment Tabs, Art Deco, Porcelain Keys, Leather Strap and Glass Dock. Preserve styles 1-6. No hover-control selections or default chosen yet."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "can you show each hover control with it's matched frame?",
+      "response": "Show all twelve hover-control styles in two matched-frame comparison boards using retained frames. Label every suggested pairing. Background, typography and clean artwork stay consistent; frame and control choices remain independent. No hover-control selection or default inferred."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good, generate the rest of them now",
+      "response": "Generate matching hover-control styles for the two remaining retained frames: control 13 Rope Binding paired with the Rope Binding frame and control 14 Filigree Keys paired with Engraved Filigree. All fourteen frames now have matching-control previews. Preserve independent choices and await an explicit control keep-list or default."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "great. can you generate some more like 14?",
+      "response": "Generate six gold-filigree variations numbered 15-20: Vine Filigree, Royal Cartouche, Shell Rococo, Laurel Engraving, Golden Lace and Wave Filigree. Each includes a new matching frame and hover toolbar inspired by option 14. Preserve earlier retained choices; the six new frames and controls await selection."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "great, let's keep: 1, 2, 3, 4, 5, 6 ,7, 10, 12, 14, 15, 16,",
+      "response": "Retain twelve hover-control styles and matching pairings: 1, 2, 3, 4, 5, 6, 7, 10, 12, 14, 15 and 16. Add Vine Filigree and Royal Cartouche to the previously retained fourteen-frame collection, preserving independent layer choices. Unselected controls/pairings and new frames 17-20 remain exploration history only. No default chosen. Next layer is running, paused and active states."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good let's preceed",
+      "response": "Advance to Layer 6 and compare three indicator styles: Status Badges, Corner Symbols and Status Line. Show active-running, active-paused, other-running and other-paused combinations on retained Engraved Filigree styling. Controls are hidden to evaluate persistent cues. No state style or default selected yet; implementation is unchanged."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "generate more",
+      "response": "Add state-indicator styles 4 Edge Signals, 5 Project Markers and 6 State Seal, each across the same four independent active/running combinations. Preserve styles 1-3 and all earlier retained layers. No state-indicator selection or default chosen yet."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "number 5 is good. but what is the underline itn the first two of number 5?",
+      "response": "User preferred option 5. Explained that its underline indicated the active selected timer independently of running/paused state."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "ok instead of underline in this version, let's have the \"active\" preview in the #1 design.",
+      "response": "Revise selected option 5 to combine its running/pause symbol beside the project name with option 1's top-center ACTIVE tab. Remove the underline in every state. Generate a version 2 preview of all four state combinations and preserve the original comparison boards as history. Production implementation remains unchanged."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good, what is next step?",
+      "response": "Accept revised state style 5 with option 1's ACTIVE tab. Outline the final visual layer: transparency, per-layer appearance controls and nonactive-timer dimming, followed by settings/default decisions."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good; continue",
+      "response": "Begin Layer 7 with a background-opacity concept comparison at 100%, 70% and 40% over light and dark desktop backdrops. Preserve opaque text, frame, state indicators and controls. The percentages are comparison points on an adjustable range; no opacity default has been selected."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "70 is good for default",
+      "response": "Set the approved design default for background opacity to 70%, retaining adjustment across the supported 0-100% range. Other appearance decisions remain pending. This records the design choice; production code and live user settings are unchanged."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good. let's continue",
+      "response": "Compare unselected timers at 100%, 70% and 40% whole-clock opacity, with the approved background setting fixed at 70%. Show an unchanged selected timer beside each variant; all examples are running and hover controls are hidden. No unselected-opacity default chosen yet."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "40% is better. what is next step?",
+      "response": "Select option 3, 40% whole-clock opacity, as the adjustable design default for unselected timers. Keep the approved background setting at 70%. Next design the Appearance settings panel and per-layer controls, then choose the default style combination. Production code and live settings remain unchanged."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "good continue",
+      "response": "Generate Style and Transparency tab proposals for a Stopwatch appearance category in the existing three-column settings host. Preserve live preview and immediate application. Show all retained catalogs, the approved 70% and 40% sliders, and proposed keep-opaque layer checkboxes. The panel, checkbox grouping and preview style combination await review; no production implementation was changed."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "yes good, what is next step?",
+      "response": "Approve the two-tab settings layout and displayed keep-opaque controls. Preserve 70% background and 40% unselected defaults. The final visual decision is the default background/frame/typography/artwork/control combination; the current preview combination remains a recommendation rather than a selected default."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "yes good continue",
+      "response": "Approve Navigator Parchment, Engraved Filigree, Navigator Bold, Clean and Filigree Keys as the default combination, retaining every previously kept option. Consolidate the design and prepare the implementation plan. Production code and live settings remain unchanged."
+    },
+    {
+      "date": "2026-10-31",
+      "request": "yes good, let's proceed with native execution and implement the plan",
+      "response": "Implement the approved six-task plan natively in this chat, with independent review at the end."
+    }
+  ],
+  "proposals": [
+    "Adapt the existing Nika and Todo material palette to the floating stopwatch.",
+    "Use a compact horizontal temporary comparison canvas; its geometry, timer typography, project label and thin edge are not yet approved design decisions."
+  ],
+  "laterLayers": [],
+  "preservedBehavior": [
+    "four timing modes",
+    "multiple timers and combined/separate presentation",
+    "dragging and click-through",
+    "independent overlay theme",
+    "per-layer opacity",
+    "global shortcuts"
+  ],
+  "productionCodeChanged": true,
+  "defaultProfile": {
+    "status": "approved-by-user",
+    "approvalDate": "2026-10-31",
+    "approvalWording": "yes good continue",
+    "backgroundId": "navigator-parchment",
+    "frameId": "engraved-filigree",
+    "typographyId": "navigator-bold",
+    "artworkId": "clean",
+    "hoverControlId": "filigree-keys",
+    "stateStyleId": "project-markers",
+    "stateRevision": 2,
+    "backgroundOpacityPercent": 70,
+    "unselectedTimerOpacityPercent": 40,
+    "textSizeNote": "48 is the existing code default and preview size, not a newly selected design default; preserve saved text size."
+  },
+  "designSpec": "../../../docs/superpowers/specs/2026-10-31-stopwatch-overlay-design.md",
+  "implementationPlan": "../../../docs/superpowers/plans/2026-10-31-stopwatch-overlay.md",
+  "executionMethod": "native",
+  "implementationVerification": {
+    "date": "2026-11-04",
+    "report": "implementation-review/verification.md",
+    "automatedTestsPassed": 1052,
+    "nativeRoutes": ["stopwatch-appearance-only", "nika-only", "todo-appearance-only", "full-desktop"],
+    "nativeDisplayScalePercent": 150,
+    "review": "fresh independent review; both findings fixed with failing-then-passing regressions",
+    "publication": "uncommitted local branch; no installed application or live settings changed",
+    "limits": ["physical 100%/200% display configurations", "hardware dragging and external capture applications", "end-to-end close/reset confirmation dialogs", "non-Windows execution"]
+  }
+}

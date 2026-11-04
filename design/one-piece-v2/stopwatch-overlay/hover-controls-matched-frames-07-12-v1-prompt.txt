@@ -1,0 +1,34 @@
+Use case: ui-mockup.
+Asset type: polished comparison board for an existing desktop stopwatch overlay.
+Primary request: Show each existing hover-control style with a visually matching frame from the retained frame collection. This is a pairing preview, not a redesign of either component.
+Use the supplied images as visual references with these roles:
+Image 1 is the exact source for the SIX hover toolbars and their numbering. Preserve each toolbar's material, silhouette, buttons, icon construction and relative button sizing. Replace the repeated Classic Brass timer frame with the explicitly assigned frame for that tile.
+Images 2 and 3 are the retained FRAME catalogs. Copy the requested frame silhouette and material from the named tile accurately. These are frame references, not layouts to copy wholesale.
+Invariants across ALL tiles: warm Navigator Parchment map background, same dark navy bold condensed timer digits, same centered serif project name, no skull or optional artwork. Timer text must read exactly "00:44:27.0", the name exactly "Illustration". All time digits must be readable and undistorted. Preserve the background and typography consistently so frames and controls are the comparison.
+Every toolbar contains exactly THREE actions in this order: close X; pause two vertical bars; reset counterclockwise circular arrow. Do not add any actions or swap the icon order. The toolbar must sit centered just BELOW the frame, separated by a tiny visible gap. Never cover the timer or project label. Keep toolbar width approximately 40-55% of timer width.
+Composition: landscape 3:2 image, TWO columns and THREE rows, six generous equally spaced comparison tiles, subdued deep navy/slate backdrop. Each tile is a complete stopwatch body plus its hover toolbar. Use a consistent visual scale and baseline. Provide breathing room between rows and safe margins. Crisp finished high-detail UI concept art, softly dimensional materials, legible small engraved details, no photography, no device mockup.
+Typography of labels: pale ivory. Above each tile, a clear circled option number and the hover-control name on the first line; directly below that heading a smaller line naming its paired frame. Do not number frames separately. All labels must be accurate and distinct.
+Title exactly: "MATCHED FRAMES + CONTROLS".
+Footer exactly: "Close · Pause/resume · Reset".
+No watermark. Do not add a logo, redesign backgrounds, add characters, or add new UI functionality.
+Subtitle exactly: "Pairings 7–12".
+Render these SIX specific pairings in reading order:
+TOP LEFT: "7 Wooden Deck"; small label "Frame: Walnut Rim".
+Use hover option 7 from Image 1: walnut bar, small brass corner plates, three recessed navy square button wells and ivory glyphs. Frame: Walnut Rim, option 3 of Image 2, dark wood grain perimeter with brass corner caps.
+
+TOP RIGHT: "8 Parchment Tabs"; small label "Frame: Chart Scroll".
+Use hover option 8 from Image 1: three separate warm parchment tab buttons with folded corners and navy glyphs. Frame: Chart Scroll, option 8 of Image 3, curled parchment edges and slim vertical scroll rollers at both ends, no rounded metallic housing.
+
+MIDDLE LEFT: "9 Art Deco"; small label "Frame: Admiralty".
+Use hover option 9 from Image 1: angular navy/gold segmented bar with fan engraving at ends. Frame: Admiralty, option 9 of Image 3, geometric brass/navy perimeter with angular corners, fine fan engraving and small diamond-shaped side details.
+
+MIDDLE RIGHT: "10 Porcelain Keys"; small label "Frame: Cloud Crest".
+Use hover option 10 from Image 1: three glazed ivory rounded square keys, navy glyphs, brass rims on muted teal support. Frame: Cloud Crest, option 11 of Image 3, graceful golden scrollwork at four corners, soft crest at center top and bottom, softly curved navy/gold outline. Keep the existing golden Cloud Crest frame; do not invent a porcelain frame or recolor the parchment.
+
+BOTTOM LEFT: "11 Leather Strap"; small label "Frame: Bound Logbook".
+Use hover option 11 from Image 1: slim oxblood leather strip with stitched border, brass end studs, ivory glyphs. Frame: Bound Logbook, option 10 of Image 3, matching oxblood leather border, gold stitching and four round brass studs.
+
+BOTTOM RIGHT: "12 Glass Dock"; small label "Frame: Tide Curve".
+Use hover option 12 from Image 1: smoky sea-teal glass capsule, ivory glyphs and subtle vertical dividers. Frame: Tide Curve, option 12 of Image 3, flowing sea-teal/navy perimeter with delicate gold edges, gentle asymmetrical wave contours and curled tips. Keep wave frame recognizable rather than making a generic pill.
+
+Use the supplied reference source images faithfully. The six timer frame outlines MUST actually differ as specified; do not repeat the same rounded brass frame in every tile.

@@ -12,6 +12,7 @@ public static class OverlayThemeCatalog
     public const string PixelDeckNight = AppThemeCatalog.PixelDeckNight;
     public const string PixelDeckDay = AppThemeCatalog.PixelDeckDay;
     public const string Pirate = AppThemeCatalog.Pirate;
+    public const string Nika = AppThemeCatalog.Nika;
     public const string AcanthusLight = "Acanthus Light";
     public const string AcanthusDarkElegantOlive = "Acanthus Dark Elegant Olive";
     public const string AcanthusDarkGoldCrest = "Acanthus Dark Gold Crest";
@@ -21,7 +22,7 @@ public static class OverlayThemeCatalog
     {
         FollowApplicationTheme, Midnight, Daylight, PixelDeckNight, PixelDeckDay,
         AcanthusLight, AcanthusDarkElegantOlive, AcanthusDarkGoldCrest,
-        AcanthusDarkMinimalBotanical, Pirate
+        AcanthusDarkMinimalBotanical, Pirate, Nika
     });
 
     public static string Normalize(string? value)
@@ -66,8 +67,7 @@ public static class OverlayThemeCatalog
         {
             AppThemeCatalog.Acanthus => AcanthusLight,
             AppThemeCatalog.Pirate => Pirate,
-            // Only the controller is redesigned; the rest of Nika follows One Piece.
-            AppThemeCatalog.Nika => Pirate,
+            AppThemeCatalog.Nika => Nika,
             _ => panel
         };
     }

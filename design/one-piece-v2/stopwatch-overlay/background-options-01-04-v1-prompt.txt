@@ -1,0 +1,24 @@
+Use case: ui-mockup.
+Asset type: a single comparison board for the FIRST DESIGN LAYER of the Stopwatch Overlay desktop app.
+Primary request: Transform the four-background reference board into a polished stopwatch-overlay background comparison, preserving the same four established materials and their illustrated cartography style. This is a background exploration only, not a final full UI design.
+
+Input images: Image 1 (four Todo backgrounds) is the source board to adapt: preserve the individual surface identities, warm tones, delicate weathered map linework, and calm reading areas. Image 2 (Nika controller) is a supporting palette and quality reference. Neither is a reference for the stopwatch's final shape or controls.
+
+Composition: wide landscape board, 2 by 2 comparison grid on a plain neutral dark slate backdrop. All four candidates have EXACTLY the same compact, horizontal rounded rectangular temporary silhouette, same 3.2:1 proportions, same size, same modest corner radius and the same single hairline muted brass edge. Generous board margins, even grid spacing. Straight-on, flat desktop UI mockup, crisp text, no perspective, no physical objects or desktop photograph.
+Title across top: "STOPWATCH OVERLAY"
+Smaller subtitle: "Layer 1 · Background surfaces"
+Labels OUTSIDE and directly ABOVE each corresponding panel:
+top left "1  Navigator Parchment"
+top right "2  Amber Vellum"
+bottom left "3  Midnight Chart"
+bottom right "4  Quiet Atlas"
+
+Panel 1: rich warm honey-yellow parchment with faded gray-brown mountain/coastline drawing near outer edges, a very subtle compass fragment on the right. Take directly from surface 1 of the source board.
+Panel 2: warmer amber / ochre vellum with slightly aged edges and restrained sepia coastlines near the perimeter. Take directly from surface 2.
+Panel 3: deep ocean navy with delicate low-contrast brass chart lines near its edges, gentle ink texture, light ivory text. Take directly from surface 3.
+Panel 4: quiet muted warm tan parchment, reduced saturation and very light map engraving; never paper-white or cold cream. Take directly from surface 4.
+
+The CENTER of every panel must stay very quiet so timer digits read immediately at a small size. Map details must not cross through digits. Avoid repeating dense mountain illustrations.
+Use the same temporary live-text sample layout for all four panels: centrally aligned large tabular condensed bold digits "00:44:27.0"; centered smaller project label "Illustration" below. Navy ink on parchment options, warm ivory on the navy option. Digit appearance and layout are deliberately the same on all panels; no decision about final typography is being proposed here.
+No controls, buttons, header bars, emblems, characters, ropes, compass props, wood planks, large badges, metal timer plates, strong shadows, elaborate frames, status dots, unit labels, or extra text. Do not copy Todo rows or the controller's full layout. The only differences among the four overlays must be their background material and the foreground color needed for contrast.
+The result should feel like refined Nika's Chronicle / One Piece navigation stationery adapted into a useful small floating timer.

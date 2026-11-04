@@ -1,0 +1,35 @@
+Use case: ui-mockup.
+Asset: one polished visual comparison board for LAYER 3, TIMER DIGITS AND PROJECT TYPOGRAPHY, of a small floating desktop stopwatch.
+Task: adapt the supplied frame comparison into EIGHT different typography profiles. The user retained all twelve backgrounds and fourteen frames. Now compare ONLY the letterforms and numeral styling, keeping a fixed common background, silhouette, frame and layout.
+
+Input reference: the supplied image is the previous frame sheet. Use ONLY its option 1 "Classic Brass" as the shared comparison container for ALL EIGHT profiles: compact horizontal gently rounded rectangle, refined thin double brass trim with navy gap, warm golden Navigator Parchment map interior, calm reading center, subtle outer-edge map details. Do not repeat or vary the other frames. All eight containers must be identical in size, background, border, color and proportions.
+
+Board composition: landscape 3:2 contact sheet, TWO columns by FOUR rows on the same plain deep slate background. Eight equally sized, evenly aligned panels. Crisp flat straight-on UI presentation, generous gutters, high readability. Outside labels directly above their panels.
+Title: "STOPWATCH OVERLAY"
+Subtitle: "Layer 3 · Timer & project typography"
+Panel labels, reading order:
+"1  Navigator Bold"
+"2  Captain's Serif"
+"3  Chartmaker's Script"
+"4  Typewriter Log"
+"5  Instrument Digital"
+"6  Pixel Voyage"
+"7  Modern Deck"
+"8  Naval Stencil"
+
+COMMON CONTENT: every timer must show EXACTLY "00:44:27.0" and every smaller project label below must show EXACTLY "Illustration". Preserve punctuation, all eight digits and the final decimal zero; no accidental omissions or extra colons.
+Use dark navy ink throughout. The time is always the dominant large line, the project name a smaller centered line underneath, with identical center axes and balanced vertical spacing. Equal nominal digit height and label height across the profiles, but allow different natural numeral widths so each type style remains authentic. Keep fixed content padding and generous safe margins. No number tiles or text backing plates.
+
+The EIGHT genuinely distinct typography directions:
+1 Navigator Bold: the existing reference's strong condensed bold sans-serif numerals, upright modern but characterful, similar to Roboto Condensed Black; paired with an elegant bold classic serif project name similar to Playfair Display. This is the familiar comparison baseline.
+2 Captain's Serif: substantial high-contrast editorial / engraved Roman serif numerals, with clear sharp serifs and elegant traditional forms, similar to Playfair Display ExtraBold; paired with a refined small Garamond-style serif name. Distinct from sans-serif.
+3 Chartmaker's Script: distinctive old-world calligraphic / antique serif numerals with hand-cut character, legible upright digits similar to Almendra Bold; paired with a flowing restrained italic handwritten / calligraphic project name. Do not make the large digits curly or difficult to read.
+4 Typewriter Log: solid monospaced typewriter numerals with an unmistakably monospaced technical / logbook character, similar to Cascadia Mono SemiBold; paired with a smaller matching upright monospaced name. No fake distress, no random ink erosion.
+5 Instrument Digital: authentic seven-segment display digits with straight beveled individual segments and a segment-style decimal point, large dark navy digits; paired with a small condensed upright sans-serif name. No glow, no electronic screen or backing rectangle, no outline shadows.
+6 Pixel Voyage: clearly pixelated bitmap digits built from consistent square pixels with a stepped 5x7 / 7x9 aesthetic, and a matching smaller block-pixel project name. Crisp square steps; this must look visibly different from both the seven-segment digital profile and ordinary sans-serif. No rounded corners in letterforms, no CRT glow.
+7 Modern Deck: clean broad geometric sans-serif numerals with rounded bowls and a robust neutral weight similar to Inter ExtraBold; paired with a restrained regular/medium sans-serif name similar to Inter Medium. Wider and calmer than condensed profile 1, not a narrow display font.
+8 Naval Stencil: bold legible nautical stencil numerals with deliberate narrow stencil bridges / cuts, carefully preserving unmistakable digit shapes; paired with a smaller simple stencil-style project name. No military insignia, no distressed gaps or random erosion. Upright and readable.
+
+Typography diversity is the priority. Each option must be recognizable through its letterforms, not a changed background or frame. Do not create eight nearly identical condensed sans-serif options.
+No control buttons, status dots, emblems, pictures, new decorations, unit labels, headers inside the timer, new colors, arbitrary text, extra sample strings, perspective, desk photograph or full application window.
+This is a typography concept reference, not a promise of exact font-file rendering. Show polished distinct styles that can later be mapped carefully to real fonts and live timer rendering.

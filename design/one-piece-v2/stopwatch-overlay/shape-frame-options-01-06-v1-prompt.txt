@@ -1,0 +1,31 @@
+Use case: ui-mockup.
+Asset: a single comparison board for LAYER 2, SHAPE AND FRAME of a desktop floating stopwatch overlay.
+Task: adapt the supplied stopwatch background comparison into SIX frame/silhouette options. The user has retained every background; now vary ONLY the border/frame and silhouette. All six candidates must share exactly the same Navigator Parchment interior material, same calm center, same timer typography, same project label, same nominal content area and same scale. This is a design exploration, not a final UI implementation.
+
+Input image 1: stopwatch background board, source for the "1 Navigator Parchment" warm golden illustrated surface and its exact temporary live-text sample layout. Use only that ONE background in ALL SIX panels.
+Input image 2: approved Nika controller, supporting reference for refined navy/brass styling and quality, not for copying the whole controller layout.
+
+Board layout: landscape 3:2 sheet on a plain deep slate background, TWO columns by THREE rows, generous equal gutters and margins. Six compact horizontal stopwatch overlays, aligned on the same grid. All large readable and equally sized; no perspective, no desktop photography.
+Top title "STOPWATCH OVERLAY"
+Subtitle "Layer 2 · Shape & frame"
+Panel labels OUTSIDE and immediately ABOVE each panel, in reading order:
+"1  Classic Brass"
+"2  Navy Bevel"
+"3  Walnut Rim"
+"4  Pixel Voyage"
+"5  Instrument Case"
+"6  Slim Capsule"
+
+Common interior: the SAME warm golden parchment with low-contrast faint map details at the extreme edges and a calm center. Same sample text centered in every panel: big dark navy tabular condensed bold digits "00:44:27.0"; smaller dark navy serif project label "Illustration" centered below. Use identical digit size, color, placement and spacing in all six. Background and type are locked comparison aids, not new alternatives.
+
+The six FRAME ONLY proposals:
+1 Classic Brass: elegant gently rounded horizontal rectangle, very fine DOUBLE antique-gold hairline trim separated by a narrow dark navy gap, close in spirit to approved Nika/Todo styling. Minimal frame footprint.
+2 Navy Bevel: slightly squarer rounded rectangle with a restrained slim deep navy outer rim, delicate brass inner rule and tiny neatly inset brass corner accents. A graphic navy bezel, not a new navy header or a separate backing card.
+3 Walnut Rim: slim dark walnut wood rim, modest dimensional bevel, tiny worn brass corner caps. Same compact horizontal size. Keep the rim refined and narrow; no large compass, rope or heavy wooden structure.
+4 Pixel Voyage: crisp stepped rectangle with small cut/stepped corners, deliberate pixel-style navy and warm brass outline using consistent square pixel units. Preserve the SAME smooth timer sample typography as other panels so only the frame changes. No round corners or antialias-like ornamental flourish in the frame.
+5 Instrument Case: octagonal/chamfered-corner horizontal instrument case with a narrow satin antique-brass rim and dark inner gasket. Refined navigation-instrument construction, subtle small corner fasteners permitted only inside the thin rim. No separate metal timer plate or gears.
+6 Slim Capsule: clearly pill-shaped horizontal capsule with rounded semicircular ends, a narrow navy edge and one delicate brass line, generously inset live text. Quiet and streamlined.
+
+Make the silhouettes and edge construction visibly distinct, while keeping the center content identical. The same retained background should be imaginable with any frame. Frame thickness should not dominate the clock or force a large footprint. Clean balanced margins; center labels exactly.
+No control buttons, emblems, external symbols, characters, status indicators, chains, ropes, separate toolbar, titlebars, headers, badges, extra text, different backgrounds, new font styles, oversized corner ornaments or full application windows.
+This sheet is for choosing shapes and frames only.

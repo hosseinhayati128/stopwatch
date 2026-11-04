@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using StopwatchOverlay.Platform;
 using StopwatchOverlay.Desktop.Platform;
+using StopwatchOverlay.Desktop.Controls;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -27,6 +28,40 @@ public partial class OverlayWindow : Window
     private bool _useThemeTextColor;
     private NavigatorOpaqueParts _opaqueParts = NavigatorOpaqueParts.Default;
     private string _effectiveOverlayTheme = string.Empty;
+    private StopwatchAppearanceSettings? _stopwatchAppearance;
+    private bool _isRunning, _isClockMode;
+    private bool _isInactiveSeparated;
+    private double _selectionOpacity=1;
+
+    public void ApplyAppearance(AppSettings settings)
+    {
+        _stopwatchAppearance=null;
+        ClockFace.ApplyStopwatchAppearance(null);
+        StopwatchToolbarStyler.Apply(ActionSurface,ActionButtons,null,new(_isActive,_isRunning,_isClockMode),1);
+        ApplyTheme(settings.OverlayTheme,settings.ApplicationTheme);
+        ClockFace.ApplySettings(settings);
+        ApplySettings(ClockFace.TimerBrush is SolidColorBrush text?text.Color:Colors.White,
+            ClockFace.OutlineBrush is SolidColorBrush border?border.Color:Colors.Black,
+            (int)settings.TextSize,(int)settings.BorderWidth,settings.FontFamily,settings.BackgroundOpacity/100,
+            settings.TextColor=="Theme default",settings.OpaqueOverlayParts);
+        if(_effectiveOverlayTheme==OverlayThemeCatalog.Nika)
+        {
+            _stopwatchAppearance=settings.StopwatchAppearance.Copy();_stopwatchAppearance.Normalize();
+            ClockFace.ApplyStopwatchAppearance(_stopwatchAppearance);
+        }
+        RefreshStopwatchPresentation();
+        SetActive(_isActive);
+        SetInactiveSeparated(_isInactiveSeparated,StopwatchAppearancePolicy.ResolveInactiveOpacityPercent(settings)/100);
+    }
+
+    private Button[] ActionButtons => new[]{CloseActionButton,PauseResumeActionButton,ResetActionButton,EditActionButton,SeparateMergeActionButton};
+    private void RefreshStopwatchPresentation()
+    {
+        var state=new StopwatchPresentationState(_isActive,_isRunning,_isClockMode);
+        ClockFace.SetStopwatchPresentationState(state);
+        StopwatchOpacity.Apply(ClockFace,_stopwatchAppearance!=null?_selectionOpacity:1);
+        if(_stopwatchAppearance!=null)StopwatchToolbarStyler.Apply(ActionSurface,ActionButtons,_stopwatchAppearance,state,_selectionOpacity);
+    }
 
     public string EffectiveOverlayTheme => _effectiveOverlayTheme;
 
@@ -128,19 +163,23 @@ public partial class OverlayWindow : Window
     public void SetActive(bool active)
     {
         _isActive = active;
-        ActiveIndicatorBorder.IsVisible = !ClockFace.IsNavigator;
+        ActiveIndicatorBorder.IsVisible = !ClockFace.IsNavigator && !ClockFace.HasStopwatchAppearance;
         ActiveIndicatorBorder.BorderBrush = active
             ? ClockFace.BrushToken("ActiveItemBorderBrush", new SolidColorBrush(Color.FromArgb(220, 56, 189, 248)))
             : Brushes.Transparent;
+        RefreshStopwatchPresentation();
     }
 
     public void SetInactiveSeparated(bool isInactiveSeparated, double inactiveOpacity)
     {
-        Opacity = isInactiveSeparated ? Math.Clamp(inactiveOpacity, 0.05, 1.0) : 1.0;
+        _isInactiveSeparated=isInactiveSeparated;
+        _selectionOpacity=isInactiveSeparated?Math.Clamp(inactiveOpacity,0.05,1):1;
+        Opacity=_stopwatchAppearance!=null?1:_selectionOpacity;
         if (isInactiveSeparated)
         {
             SetActive(false);
         }
+        RefreshStopwatchPresentation();
     }
 
     public void SetSeparateMergeState(bool isSeparated)
@@ -156,21 +195,25 @@ public partial class OverlayWindow : Window
 
     public void SetRunning(bool running)
     {
+        _isRunning=running;
         ClockFace.IsRunning = running;
         PauseResumeActionButton.SetValue(Controls.NavigatorDialArtwork.ActionProperty, running ? "Pause" : "Play");
         PauseIcon.IsVisible = running;
         ResumeIcon.IsVisible = !running;
         ToolTip.SetTip(PauseResumeActionButton, running ? "Pause timer" : "Resume timer");
+        RefreshStopwatchPresentation();
     }
 
     public void SetPauseResumeEnabled(bool enabled)
     {
+        _isClockMode=!enabled;
         PauseResumeActionButton.IsEnabled = enabled;
         ToolTip.SetTip(
             PauseResumeActionButton,
             enabled
                 ? (PauseIcon.IsVisible ? "Pause timer" : "Resume timer")
                 : "Clock mode cannot be paused");
+        RefreshStopwatchPresentation();
     }
 
     public void ApplySettings(
@@ -206,7 +249,9 @@ public partial class OverlayWindow : Window
     public void ApplyTheme(string? overlayTheme, string? applicationTheme)
     {
         _effectiveOverlayTheme = OverlayThemeCatalog.Resolve(overlayTheme, applicationTheme);
+        _stopwatchAppearance=_effectiveOverlayTheme==OverlayThemeCatalog.Nika?_stopwatchAppearance??new StopwatchAppearanceSettings():null;
         ClockFace.ApplyTheme(overlayTheme, applicationTheme);
+        ClockFace.ApplyStopwatchAppearance(_stopwatchAppearance);
         Resources.MergedDictionaries.Clear();
         Resources.MergedDictionaries.Add(ThemeResources.Load("Overlay/" + ThemeResources.OverlayFile(_effectiveOverlayTheme)));
 
@@ -219,6 +264,8 @@ public partial class OverlayWindow : Window
             _backgroundOpacity,
             _useThemeTextColor,
             _opaqueParts);
+        Opacity=_stopwatchAppearance!=null?1:_selectionOpacity;
+        RefreshStopwatchPresentation();
     }
 
     public void SetHideFromCapture(bool hideFromCapture)

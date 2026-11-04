@@ -24,7 +24,7 @@ int failures = 0;
 void Check(string name, Action test)
 {
     try { test(); Console.WriteLine("PASS " + name); }
-    catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + ": " + ex.GetBaseException().Message); if (args.Contains("--todo-appearance-only")) Console.WriteLine(ex); }
+    catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + ": " + ex.GetBaseException().Message); Console.WriteLine(ex); }
 }
 void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
 SharpHookHotKeyService Service() => (SharpHookHotKeyService)Activator.CreateInstance(
@@ -96,6 +96,31 @@ AppBuilder.Configure<App>().UsePlatformDetect()
     .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if (args.Contains("--shortcuts-only"))
+{
+    Check("timer shortcut actions", ShortcutChecks.Timers);
+    Check("note shortcut actions and cancellation", ShortcutChecks.Notes);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--stopwatch-renderer-only"))
+{
+    Check("Stopwatch shared renderer and live state", StopwatchAppearanceChecks.Renderer);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--stopwatch-appearance-only"))
+{
+    Check("Stopwatch shared renderer and live state", StopwatchAppearanceChecks.Renderer);
+    Check("Stopwatch native state, popup alpha and theme restoration", StopwatchAppearanceChecks.LiveOverlay);
+    Check("Stopwatch complete asset and typography coverage", StopwatchAppearanceChecks.CatalogAssets);
+    Check("Stopwatch appearance inspector and preview isolation", StopwatchAppearanceUiChecks.Run);
+    Check("Stopwatch controller routing, native flags and cached resources", StopwatchAppearanceChecks.ControllerAndResources);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--stopwatch-inspector-only"))
+{
+    Check("Stopwatch appearance inspector and preview isolation", StopwatchAppearanceUiChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
 if (args.Contains("--nika-only"))
 {
     Check("Nika scoped controller, resources and theme restoration", NikaThemeChecks.Run);

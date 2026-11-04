@@ -36,6 +36,7 @@ public sealed class OverlayWindowThemeTests
                     Measure(root);
                     Measure(popup);
                     string effective = OverlayThemeCatalog.Resolve(choice, panel);
+                    if (effective == OverlayThemeCatalog.Nika) effective = OverlayThemeCatalog.Pirate;
                     Assert.Equal(effective, overlay.EffectiveOverlayTheme);
                     Assert.Same(originalTimer, Node<TextBlock>(overlay, "TimeText"));
                     Assert.Equal(-234d, overlay.Left);

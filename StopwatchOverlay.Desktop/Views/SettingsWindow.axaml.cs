@@ -199,6 +199,7 @@ public partial class SettingsWindow : Window
             LoadIdleStopControls();
             LoadCategoryControls();
             LoadTodoAppearance();
+            LoadStopwatchAppearance();
         }
         finally
         {
@@ -573,6 +574,7 @@ public partial class SettingsWindow : Window
 
     private void UpdateValueLabels()
     {
+        SyncStopwatchTextSizeControl();
         TextSizeValueText.Text = $"{Math.Round(TextSizeSlider.Value):0} px";
         BorderWidthValueText.Text = $"{Math.Round(BorderWidthSlider.Value):0} px";
         BackgroundOpacityValueText.Text = $"{Math.Round(BackgroundOpacitySlider.Value):0}%";
@@ -585,6 +587,10 @@ public partial class SettingsWindow : Window
 
     private void UpdateDependentControlStates()
     {
+        bool nikaOverlay=OverlayThemeCatalog.Resolve(_settings.OverlayTheme,_settings.ThemeMode)==OverlayThemeCatalog.Nika;
+        foreach(var control in new Control[]{FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider})control.IsEnabled=!nikaOverlay;
+        NikaStopwatchAppearanceHint.IsVisible=nikaOverlay;
+        if(_stopwatchActivateButton!=null)_stopwatchActivateButton.IsVisible=!nikaOverlay;
         NikaOptionsPanel.IsVisible = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;
         if (TodoAppearancePanel != null && CurrentCategory == "TodoAppearance") LoadTodoAppearance();
         TransparencyDetailsExpander.IsVisible =
@@ -611,6 +617,7 @@ public partial class SettingsWindow : Window
             else
                 SettingsHeaderSurface.Resources.Remove("PrimaryTextBrush");
             PreviewClock.ApplySettings(_settings);
+            if(CurrentCategory=="StopwatchAppearance")RefreshStopwatchAppearancePreview();
             PreviewClock.Text = _settings.TimeFormat switch
             {
                 1 => "00:05:10",

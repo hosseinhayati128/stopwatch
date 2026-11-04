@@ -1,0 +1,35 @@
+Use case: ui-mockup.
+Asset: one polished comparison board extending LAYER 2, SHAPE AND FRAME for a compact desktop floating stopwatch overlay.
+Primary request: generate EIGHT ADDITIONAL distinctly different frame treatments, numbered 7 through 14. The existing six are preserved separately. Push variety in construction and silhouette while keeping the refined fantasy-nautical / Nika's Chronicle character and a practical compact overlay footprint.
+
+Input reference: the supplied earlier frame comparison is a source for the identical warm golden Navigator Parchment interior, placeholder live-text sample, rendering quality, dark slate presentation backdrop and outside labels. This is a new extension board. DO NOT repeat any of its first six frames. No need to copy its existing six labels.
+
+Composition: landscape 3:2 contact sheet, TWO columns by FOUR rows, all EIGHT new options clearly visible and equally sized, consistent whitespace, crisp straight-on 2D native UI style with lightly illustrated/material frame finishes. Plain deep slate backdrop. Each compact horizontal panel approximately 3.5:1. Keep generous safe area around time.
+Title "STOPWATCH OVERLAY"
+Subtitle "Layer 2 · More shapes & frames"
+Labels OUTSIDE, directly above the corresponding panel, reading order:
+"7  Rope Binding"
+"8  Chart Scroll"
+"9  Admiralty"
+"10  Bound Logbook"
+"11  Cloud Crest"
+"12  Tide Curve"
+"13  Engraved Filigree"
+"14  Open Corners"
+
+LOCKED CONTENT in every option:
+The SAME warm honey-golden parchment/map background from the reference, with faded coastlines and mountains confined to outer edges, a very quiet reading center. Same dark navy bold condensed tabular digits "00:44:27.0" centered, the SAME font, digit size, text layout, spacing and ink color on all eight. Smaller dark navy serif label "Illustration" centered below. Do not vary the backgrounds or text. We are comparing frame construction and silhouette ONLY; all retained backgrounds will remain independently selectable later.
+
+Eight new FRAME directions:
+7 Rope Binding: a neatly laid slim tan maritime rope follows the perimeter of a softly rounded rectangle, tiny realistic bindings at the four corners, a thin navy inner lip to separate rope from the paper. Restrained tactile detail; no large knots or rope draped across content.
+8 Chart Scroll: a horizontal navigator's chart with lightly curled / rolled vertical paper ends and subtly uneven parchment edges. Thin sepia-gold contour on the long edges. Same golden map paper and same rectangular content area; shallow rolled ends change the silhouette without covering digits. No wooden rim.
+9 Admiralty: an elegant navy and aged-gold Art Deco nautical frame with geometric fan-line corner engraving and small angular projecting side shoulders. A confident formal graphic silhouette, like an antique officer's instrument. Restrained narrow rim; no center crest, badge or emblem. Make it clearly different from a plain navy rectangular bevel.
+10 Bound Logbook: a narrow deep oxblood leather book-cover rim with fine visible saddle stitching and subtle brass edge wear, slightly rounded corners. The leather surrounds but never covers the identical golden paper. Distinct from the previous walnut frame, no wood.
+11 Cloud Crest: a slim muted antique-gold outline in a softly scalloped cloud-like horizontal silhouette; delicate small gold cloud curls form parts of its edge, with a dark navy fine inner line. Airy yet compact and refined. No stark white cloud objects, no cloud illustrations inside the paper, no exterior mascot.
+12 Tide Curve: a slim deep teal enamel and brass edge with gentle flowing wave-shaped side contours; subtle asymmetric upper-left and lower-right curved tips. Same content rectangle preserved within the softly undulating silhouette. No large crashing waves, no background changes.
+13 Engraved Filigree: a slim antique-brass frame with fine engraved botanical / sea-scroll filigree around its corners and tiny curved gold flourishes extending just beyond the outside edge. Detailed but restrained, symmetrical and refined, more ornamental than the existing Classic Brass. No flowers, leaves or linework over the digits.
+14 Open Corners: an almost frameless parchment rectangle with four small clean brass L-shaped corner brackets and a very fine shadow, NO continuous border along the long sides. Modern and quiet. The paper remains one coherent background surface; subtle rounded paper corners are fine. This must look noticeably lighter than any enclosed frame.
+
+Keep all eight centered and consistently scaled. Preserve legibility. Frame details stay within about 10 percent of the timer footprint so they remain useful on top of work windows.
+No control buttons, status lights, emblems, characters, free-standing compasses, separate toolbars, chains across the timer, giant props, title bars, full app windows, alternate typefaces, new content, white presentation backdrop or perspective photography.
+Do not show frames numbered 1 through 6. This board contains exactly EIGHT new frame options, numbered 7 through 14.

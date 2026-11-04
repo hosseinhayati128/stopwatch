@@ -1,0 +1,67 @@
+Use case: ui-mockup.
+Asset type: complete desktop Settings screen proposal for the Stopwatch Overlay app.
+Create ONE polished, practical Settings & Overlay Inspector screen, not a collage. Landscape approximately 16:10, high resolution, crisp readable UI labels.
+
+Input image roles:
+1: existing Todo appearance settings concept. Match its HOST layout and visual language only: navy header, navy live-preview column LEFT, narrow navy category navigation MIDDLE, calm parchment inspector RIGHT. Do not show Todo content or a skull.
+2: approved stopwatch state design. Use Project Markers revision 2: small teal running triangle immediately before Illustration and a top-center navy/gold ACTIVE tab for the selected timer; no underline.
+3: approved background-opacity comparison. The stopwatch background is at 70%; use its Filigree Keys hover toolbar and solid frame/text.
+4: unselected-opacity comparison. Use its 40% whole-clock opacity treatment for the unselected preview.
+
+Layout proportions: left preview about 32%, middle navigation about 18%, right inspector about 50%. Right inspector scrolls independently. Keep the complete named controls visible on this broad view, with a subtle right scrollbar for smaller windows. Comfortable moderate density, no oversized empty cards.
+Theme: mature navy and pale warm parchment, thin aged-brass dividers, ivory/cream headings on navy, dark navy text on pale inspector. Clean sans-serif controls and restrained serif section headings. Delicate map lines at outer edges only. No heavily textured text fields, glowing metallic interface chrome or fantasy settings panels.
+Top header exact title "Settings & Overlay Inspector"; far-right "Done" button. No Save, Apply or Cancel button.
+
+MIDDLE navigation, exact entries in this order:
+"Overlay & position"
+"Appearance"
+"Stopwatch appearance" — SELECTED with restrained amber highlight
+"Todo appearance"
+"Fonts & colors"
+"Light ring"
+"Behavior"
+"Application"
+"Obsidian / Markdown"
+"Telegram"
+"Habitica"
+Keep names legible; wrap the selected category neatly if necessary. Do not redesign other categories or add category icons everywhere.
+
+LEFT preview:
+Heading "Live stopwatch preview"; small line "Sample timer".
+Large dark neutral preview area containing TWO compact horizontal gold-filigree clocks with generous vertical separation. Use the same retained Engraved Filigree frame, same Navigator Parchment background at 70%, same dark condensed timer exactly "00:44:27.0", same serif project name exactly "Illustration", and a small teal triangle immediately before the name.
+Upper clock caption "Selected timer". Its foreground layers are fully opaque and its top frame carries the "ACTIVE" tab. Show the matching compact navy/gold Filigree Keys toolbar just below, with exactly THREE ivory action glyphs ordered X, pause bars, reset counterclockwise arrow.
+Lower clock caption "Unselected · 40%". Dim the ENTIRE clock including its frame and digits to 40% overall opacity; NO ACTIVE tab and NO hover toolbar. Its clock face still uses the same 70% background setting beneath the overall dimming.
+Fit both clocks at equal scale within the left column; never clip filigree or stretch clocks tall.
+Below the preview area, a small label "Preview state" and segmented control "Running" SELECTED / "Paused".
+Another small label "Backdrop" with "Light" / "Dark" SELECTED.
+At the bottom, the existing button "Show or hide active overlay".
+Preview state/backdrop controls should visually belong to the preview area.
+
+RIGHT inspector header:
+"Stopwatch appearance"
+Subtitle "Nika's Chronicle · Floating stopwatch"
+Two tabs directly below: "Style" and "Transparency".
+Footer at the bottom of this inspector exactly "Changes apply immediately."
+
+Do not include real personal data, extra functionality, imported logos, code terminology, reset-all, export or preset-save buttons. These are editable style controls within the existing settings window. Keep the sample combination coherent; no new background or frame designs.
+RIGHT TAB CONTENT: "Transparency" SELECTED and "Style" unselected.
+Section "Opacity".
+First labeled slider "Background" with value "70%" aligned at the right; range ends "0%" and "100%"; thumb at 70%.
+Second labeled slider "Unselected timers" with value "40%" aligned at the right; range ends "10%" and "100%"; thumb positioned appropriately for 40 on that range.
+Helper beneath: "Unselected opacity affects the whole timer."
+
+Thin divider, then section "Keep these layers opaque".
+A short helper: "Unchecked layers follow background opacity."
+Show SIX clearly aligned checkbox rows:
+"Frame" — CHECKED
+"Time text" — CHECKED
+"Project name" — CHECKED
+"State markers" — CHECKED
+"Hover controls" — CHECKED
+"Artwork" — disabled and unchecked, with quiet adjacent note "Clean selected".
+Use a clear checkmark in each checked checkbox; do not use six sliders or switches.
+Under the group, a small readable note "Unselected dimming still applies to these layers."
+This helper makes clear that checked layers remain solid before the separate 40% whole-timer dimming is applied.
+An unobtrusive final helper "Choose artwork in Style to enable its opacity control."
+No numeric per-layer sliders, reset buttons, hover-brightening toggle, or new automatic behaviors. Keep the controls simple, precise, and visually consistent with the existing settings concept.
+The left preview is IDENTICAL to the Style view: selected clock normal at background 70%, unselected clock dimmed to overall 40%, both running with the approved state markers.

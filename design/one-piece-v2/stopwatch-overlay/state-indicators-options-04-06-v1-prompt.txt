@@ -1,0 +1,40 @@
+Use case: ui-mockup.
+Asset type: second comparison board for Layer 6 of a floating desktop stopwatch.
+
+Primary request: Generate THREE additional state-indicator styles numbered 4–6. Preserve the existing comparison layout and the exact retained filigree stopwatch design. Make the NEW state cues visibly different from the first sheet's text badges, corner symbols and status line.
+
+Input image role: reference for layout, palette, frame, background, typography and state combinations. Use its four-column, three-row matrix. Replace the three indicator approaches and row headings; do NOT copy options 1–3.
+
+Composition: high-detail landscape 3:2 board, ideally 2400 x 1600 or comparable high resolution. Exactly TWELVE clock faces: THREE rows by FOUR columns. Dark navy/slate backdrop. Clear margins around all decoration. All cells same size.
+Title exactly "STOPWATCH STATES".
+Subtitle exactly "Layer 6 · More indicator styles".
+Column headings left to right:
+"Active · Running"
+"Active · Paused"
+"Other · Running"
+"Other · Paused"
+
+Shared invariants across all cells:
+Use the source's Engraved Filigree frame: thin brass rails and delicate dimensional gold corner scrollwork. Same warm Navigator Parchment map, quiet center and small compass at right. Keep the entire face equally opaque in every state.
+Time text exactly "00:44:27.0", large dark navy bold condensed numerals. Project name exactly "Illustration" in smaller dark serif lettering. Same time/name scale and reserved positions across all four cells of each row.
+NO hover toolbars anywhere on this sheet. State indicators are noninteractive markers, not action buttons. No extra toolbar, skull, changing frame style, progress bar, fade, blinking, motion effect or reordered column.
+All state cues stay clear of live time/name text and frame ornament.
+
+ROW 1 heading exactly "4  Edge Signals":
+Running/paused cue: a narrow inset vertical status rail along the inner left edge of the parchment, only about half the body height. For running columns 1 and 3, use a dark teal rail with a small crisp right-pointing ivory triangle at its center. For paused columns 2 and 4, use a warm amber/umber rail with two ivory pause bars at its center. Keep this rail visually part of the edge, NOT a large rectangular button.
+Active-selection cue: in columns 1 and 2 ONLY, add an extra fine IVORY contour just INSIDE the gold frame, forming a clearly visible double-edge treatment. Columns 3 and 4 retain only the normal gold frame, without that extra ivory line.
+The active contour is identical in both active states; running/paused changes only the left rail symbol and color. No status words or ACTIVE tabs. Do not make the rail a progress meter.
+
+ROW 2 heading exactly "5  Project Markers":
+Running/paused cue: a tiny teal play triangle immediately BEFORE "Illustration" in running columns 1 and 3; two small dark amber pause bars at the exact same fixed position in paused columns 2 and 4. The icon and project name form a centered group with a fixed icon slot.
+Active-selection cue: a short clean dark navy underline beneath ONLY the project-name group in columns 1 and 2. Keep a clear small gap from the letters. The same underline appears for active-running and active-paused. Columns 3 and 4 have no underline.
+No extra state words, tabs, dots, diamonds, corner cues or additional text line. Keep this row the quietest and most minimal of the three.
+
+ROW 3 heading exactly "6  State Seal":
+Running/paused cue: a small tasteful embossed wax-seal medallion centered at the TOP EDGE of every timer frame. A dark teal seal with a clear ivory play triangle for running columns 1 and 3; a warm amber/umber seal with two ivory pause bars for paused columns 2 and 4. Same compact diameter in every column, delicate brass rim.
+Active-selection cue: ONLY the active seals in columns 1 and 2 have TWO short forked GOLD RIBBON TAILS extending a little below the seal into the quiet top margin. Other seals in columns 3 and 4 have NO tails. The small tails visibly mark selection regardless of whether the seal shows running or paused.
+Keep the seal and ribbons well above timer digits. No word ACTIVE, no extra letters, no huge seal, no crown. The base filigree frame remains unchanged.
+
+Footer exactly: "Active = selected timer. Running and paused are separate states."
+Differentiate each state with SHAPE, not color alone: triangle versus pause bars; added contour, underline or ribbon tails for selected versus other.
+Maintain a refined compact usable desktop UI with restrained state marks. Every clock must remain legible; do not let the new cues cover existing text.

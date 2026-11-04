@@ -1,0 +1,39 @@
+Use case: ui-mockup.
+Asset: a single polished comparison board adding EIGHT NEW TYPOGRAPHY profiles to the stopwatch overlay design exploration, numbered 9 through 16.
+
+Input reference: the supplied earlier typography board is the visual source for its identical compact rounded "Classic Brass" container, fine double brass trim with narrow navy gap, honey-golden Navigator Parchment surface, faint map details around outer edges, calm reading center, dark slate presentation backdrop and centered two-line timer/project arrangement.
+Task: replace the previous eight typography examples with EIGHT ADDITIONAL new styles below. Existing profiles 1-8 remain on their own saved board. This new sheet contains ONLY 9-16.
+Vary ONLY digit letterforms, font weight, numeral construction and project-name typography. Keep the same background, frame, container proportions, ink color, sample wording, alignment and panel sizes in every candidate. Do not explore new frames or backgrounds.
+
+Composition: landscape 3:2 contact sheet, TWO columns by FOUR rows, eight equally sized panels, even generous gutters, crisp straight-on UI presentation. Labels outside and directly above their corresponding panels.
+Title: "STOPWATCH OVERLAY"
+Subtitle: "Layer 3 · More typography"
+Panel labels in reading order:
+"9  Art Deco"
+"10  Harbor Slab"
+"11  Rounded Deck"
+"12  Fine Engraving"
+"13  Racing Log"
+"14  Chart Plotter"
+"15  Dot Matrix"
+"16  Compass Outline"
+
+Exact common sample text inside EVERY panel:
+large timer "00:44:27.0"
+smaller project name "Illustration"
+Both lines centered, time dominant with a smaller project name below. Keep the exact punctuation and digits. The first TWO characters and the final decimal character are ZERO, never 8 or B. Zero has an empty internal counter, without a horizontal crossbar. Leave comfortable fixed safe margins.
+Use strong dark navy ink throughout. Keep equal nominal numeral height, letting each authentic type style keep its natural width. Equal project-name scale, optically centered with generous separation.
+
+The EIGHT NEW directions must be genuinely visibly different:
+9 Art Deco: tall elegant narrow geometric 1920s-inspired numerals with sophisticated fine inline / double-stroke detailing and strong vertical rhythm; a small matching geometric Art Deco project name. Graphic antique navigation-instrument elegance, no stencil cuts.
+10 Harbor Slab: robust friendly horizontal slab-serif numerals with prominent squared slab serifs and evenly weighted stems, like a bold Clarendon / shipping-ledger type; paired with a small matching readable slab-serif name. Broader, heavier and clearly more slab-like than the earlier thin-contrast Captain's Serif.
+11 Rounded Deck: soft rounded sans-serif numerals, round terminals, open counters and approachable smooth curves; paired with a smaller rounded sans-serif name. Medium-bold weight, not a heavy condensed display face. No childish bubble letters.
+12 Fine Engraving: delicate high-contrast fine serif numerals with slender elegant strokes and small sharp serifs, like carefully engraved nautical stationery; paired with a restrained fine italic serif project name. Dark navy and readable, visibly lighter than earlier bold serif styles. No faded ink or glow.
+13 Racing Log: strong forward-slanted bold italic sans-serif numerals with confident diagonal movement and sharp clean cuts; paired with a smaller simple italic sans-serif name. Slanted typography ONLY; container remains perfectly horizontal. No speed stripes, underlines or other added decoration.
+14 Chart Plotter: narrow light-to-medium monospaced technical sans-serif numerals with square-rounded engineering forms and consistent stroke weight; paired with a small matching technical monospaced name. Crisp plotted navigation-console precision, clearly lighter and squarer than the earlier typewriter/slab serif. No seven-segment construction and no random crossbars in zero.
+15 Dot Matrix: authentic dot-matrix numerals constructed from evenly spaced ROUND ink dots with visible gaps, consistent round dots throughout every digit and punctuation; matching smaller dot-matrix project name. Clearly round dots rather than the previous square-pixel style, no backlit screen or backing plate.
+16 Compass Outline: bold-outline hollow geometric numerals drawn with a clean dark navy outer contour, parchment showing through each stroke's interior; minimal elegant double-line / engraved-outline appearance. Large, clear open numeral shapes. Paired with a smaller clean single-stroke monoline project name for readability. No drop shadow, no solid filled numeral bodies, no glow.
+
+Preserve identical warm backgrounds and Classic Brass frames on all eight. Typography diversity is the point: broad slab, soft rounded, very fine serif, slanted italic, technical mono, round-dot matrix and hollow outlines must each be unmistakable.
+No controls, emblems, characters, status indicators, new decorations, unit labels, extra wording, altered time samples, individual digit boxes, screen rectangles, harsh white backdrop, perspective photography or full application windows.
+This is a concept board for selecting type directions, later matched carefully to live text/font rendering.

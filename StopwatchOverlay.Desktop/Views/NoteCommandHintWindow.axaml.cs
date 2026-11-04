@@ -22,6 +22,7 @@ public partial class NoteCommandHintWindow : Window
         };
         NoteOptions.Text = string.Join(" · ", options.Select(option =>
             $"{(keys.TryGetValue(option.Item1, out var key) && key != 0 ? Shortcut.FormatKeyName(key) : "—")} {option.Item2}"));
+        if (keys.Values.Contains(ShortcutCommandMap.VK_SPACE)) NoteHelp.Text = "Esc to cancel";
         Opened += OnWindowOpened;
     }
 

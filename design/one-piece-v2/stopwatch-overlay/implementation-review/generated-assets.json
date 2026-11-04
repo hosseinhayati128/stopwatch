@@ -1,0 +1,274 @@
+[
+  {
+    "id": "ships-timber",
+    "kind": "background",
+    "source": "exec-372bafef-e418-4420-8c20-99f7f27eec5b.png",
+    "prompt": "Production UI background texture for a live stopwatch. Reference image is a style guide only. Reproduce ONLY background option 5, Ship's Timber: deep warm brown horizontal aged ship timber, fine woodgrain and sparse engraved nautical rope/compass details confined to the outer left and right edges; quiet dark brown central area. Full-bleed wide horizontal canvas approximately 3.3:1 aspect ratio. Keep its distinct material and visual character from the approved reference, clean unobstructed central 65% reserved for live UI text. NO text, NO digits, NO clock, NO label, NO frame, NO border, NO action controls. The output is one full rectangle of background artwork with opaque pixels to all four edges, not a comparison board or UI screenshot.",
+    "board": "background-options-05-12-v1.png",
+    "option": 5
+  },
+  {
+    "id": "sailcloth",
+    "kind": "background",
+    "source": "exec-8be64b76-1242-45b5-8ee4-e19c479b1128.png",
+    "prompt": "Production UI background texture for a live stopwatch. Reference image is a style guide only. Reproduce ONLY background option 6, Sailcloth: warm ivory woven linen sail canvas, delicate blue nautical wave ink near the four corners and subtle stitching along outer edges, calm light canvas center. Full-bleed wide horizontal canvas approximately 3.3:1 aspect ratio. Keep its distinct material and visual character from the approved reference, clean unobstructed central 65% reserved for live UI text. NO text, NO digits, NO clock, NO label, NO frame, NO border, NO action controls. The output is one full rectangle of background artwork with opaque pixels to all four edges, not a comparison board or UI screenshot.",
+    "board": "background-options-05-12-v1.png",
+    "option": 6
+  },
+  {
+    "id": "captains-leather",
+    "kind": "background",
+    "source": "exec-fe56ac5d-afef-4359-b1be-b5368067f213.png",
+    "prompt": "Production UI background texture for a live stopwatch. Reference image is a style guide only. Reproduce ONLY background option 7, Captain's Leather: rich dark oxblood leather, finely pebbled surface, embossed nautical leafy scrollwork and rope confined to far side margins, quiet darker burgundy center. Full-bleed wide horizontal canvas approximately 3.3:1 aspect ratio. Keep its distinct material and visual character from the approved reference, clean unobstructed central 65% reserved for live UI text. NO text, NO digits, NO clock, NO label, NO frame, NO border, NO action controls. The output is one full rectangle of background artwork with opaque pixels to all four edges, not a comparison board or UI screenshot.",
+    "board": "background-options-05-12-v1.png",
+    "option": 7
+  },
+  {
+    "id": "aged-bronze",
+    "kind": "background",
+    "source": "exec-29d8d6c7-9e14-46c6-8cce-b6039c5d1a01.png",
+    "prompt": "Production UI background texture for a live stopwatch. Reference image is a style guide only. Reproduce ONLY background option 8, Aged Bronze: glowing warm antique hammered bronze with subtle mottled patina, turquoise verdigris concentrated around edges, calm softly lit golden center. Full-bleed wide horizontal canvas approximately 3.3:1 aspect ratio. Keep its distinct material and visual character from the approved reference, clean unobstructed central 65% reserved for live UI text. NO text, NO digits, NO clock, NO label, NO frame, NO border, NO action controls. The output is one full rectangle of background artwork with opaque pixels to all four edges, not a comparison board or UI screenshot.",
+    "board": "background-options-05-12-v1.png",
+    "option": 8
+  },
+  {
+    "id": "tideglass",
+    "kind": "background",
+    "source": "exec-52e8ebbc-ec87-45f4-a093-b61437d13c83.png",
+    "prompt": "Production UI background texture. Reproduce ONLY option 9 Tideglass from the reference board: turquoise aqua glass-like ocean water with softly luminous sunlit caustic patterns, gentle bright center, deep teal near lower and side edges, subtle underwater stones along far lower corners. One full-bleed wide horizontal rectangle about 3.3:1. Keep central 65% calm and bright enough for live navy digits. Match the approved color and material. NO text, numbers, clock, labels, frame, border, glyphs or UI controls. No comparison board. Opaque artwork to all edges.",
+    "board": "background-options-05-12-v1.png",
+    "option": 9
+  },
+  {
+    "id": "wano-waves",
+    "kind": "background",
+    "source": "exec-65aca498-f724-497f-a5e7-bf1897274b84.png",
+    "prompt": "Create ONE full-bleed wide 3:1 landscape material texture for a small stopwatch UI. Match ONLY the BACKGROUND of option 10 in attached reference board. Warm ivory Japanese woodblock paper, navy ukiyo-e waves curling at both lower corners and edges, small faded vermilion sun upper right. Center mostly plain ivory. No frame, border, shadow, timer, text, digits, letters, labels, icon or UI. Quiet readable center for live text. Render edge-to-edge, opaque PNG.",
+    "board": "background-options-05-12-v1.png",
+    "option": 10
+  },
+  {
+    "id": "celestial-navigation",
+    "kind": "background",
+    "source": "exec-e94d6bb9-2d41-46ff-90ee-a7dc45533877.png",
+    "prompt": "Create ONE full-bleed wide 3:1 landscape material texture for a small stopwatch UI. Match ONLY the BACKGROUND of option 11 in attached reference board. Deep midnight navy star chart, very fine golden constellation lines, compass geometry at left, crescent moon at right, tiny scattered stars, quiet dark center. No frame, border, shadow, timer, text, digits, letters, labels, icon or UI. Quiet readable center for live text. Render edge-to-edge, opaque PNG.",
+    "board": "background-options-05-12-v1.png",
+    "option": 11
+  },
+  {
+    "id": "sky-island",
+    "kind": "background",
+    "source": "exec-d53c5060-9169-4b53-9ccb-a5cc376347e8.png",
+    "prompt": "Create ONE full-bleed wide 3:1 landscape material texture for a small stopwatch UI. Match ONLY the BACKGROUND of option 12 in attached reference board. Pale blue sky, warm cream clouds, tiny distant fantasy floating islands at edges, subtle ornamental gold wisps. Light blue center remains clear. No frame, border, shadow, timer, text, digits, letters, labels, icon or UI. Quiet readable center for live text. Render edge-to-edge, opaque PNG.",
+    "board": "background-options-05-12-v1.png",
+    "option": 12
+  },
+  {
+    "id": "classic-brass",
+    "kind": "frame",
+    "source": "exec-3162b93e-9258-4aa8-884a-2bfae68fe400.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 1. Slim warm brass rounded rectangular rim, double gold rails and dark inner groove, polished highlights; simple corners. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 1
+  },
+  {
+    "id": "navy-bevel",
+    "kind": "frame",
+    "source": "exec-ef68ac80-eff6-495f-a036-ac0451d9d9a5.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 2. Deep navy chamfered inset rim, thin gold inner and outer rails, four small brass corner studs, beveled corners. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 2
+  },
+  {
+    "id": "walnut-rim",
+    "kind": "frame",
+    "source": "exec-667c511e-e7a9-4fec-845c-fa5781465eeb.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 3. Warm dark walnut wood-grain rim, four rounded brass corner caps with single rivet, fine inner gold line. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 3
+  },
+  {
+    "id": "pixel-voyage",
+    "kind": "frame",
+    "source": "exec-a5d52568-d5eb-484b-819d-c488538cb8b8.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 4. Crisp square stepped pixel-art outline, gold/navy layered rails, stair-step corners, no rounded curves. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 4
+  },
+  {
+    "id": "instrument-case",
+    "kind": "frame",
+    "source": "exec-3521d252-1488-4d02-ba17-59671aa2522c.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 5. Octagonal chamfered navy instrument case with brass bevel rails and two small screws at each diagonal corner. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 5
+  },
+  {
+    "id": "slim-capsule",
+    "kind": "frame",
+    "source": "exec-f84fb995-ebd1-4a8c-b2e7-98bf8a855e5c.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 6. Very slim navy capsule outline, thin warm gold outer and inner rails, fully semicircular left and right ends. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-01-06-v1.png",
+    "option": 6
+  },
+  {
+    "id": "rope-binding",
+    "kind": "frame",
+    "source": "exec-e35b2fbd-e800-4aff-b874-29faa9daade9.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 7. Golden twisted nautical rope binding on four edges, substantial tied knots at all four corners. Slender dark inner outline. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 7
+  },
+  {
+    "id": "chart-scroll",
+    "kind": "frame",
+    "source": "exec-4bd15b28-0ebd-4ea6-9fc3-2a2cfa2817b1.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 8. Cream parchment scroll edges with rolled vertical rods at left/right, tiny brass rod finials, thin gently irregular rolled-paper top/bottom rails; center removed entirely to transparency. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 8
+  },
+  {
+    "id": "admiralty",
+    "kind": "frame",
+    "source": "exec-ca500188-8939-4932-b5dc-e35cc1a47294.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 9. Formal deep navy art-deco frame, geometric gold borders, radiating gold corner line fans, small outward side tabs bearing gold diamonds. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 9
+  },
+  {
+    "id": "bound-logbook",
+    "kind": "frame",
+    "source": "exec-6f360591-ad38-49fa-acf5-c957292d0f1f.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 10. Deep oxblood leather rounded rim, neat golden stitch dashes, four large brass corner studs and slim gold inner rail. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 10
+  },
+  {
+    "id": "cloud-crest",
+    "kind": "frame",
+    "source": "exec-2f163837-515f-413a-bea3-20e934e72eed.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 11. Slender navy and gold elongated cloud shaped frame, gently lobed semicircular ends, small cloud curls at four corners, subtle raised central top/bottom arcs. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 11
+  },
+  {
+    "id": "tide-curve",
+    "kind": "frame",
+    "source": "exec-4d38afce-b32b-4562-830f-2dc6335f2878.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 12. Elegant asymmetric teal and gold wave-shaped capsule frame, flowing wavy top/bottom rails, curled wave tips at upper right and lower left. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 12
+  },
+  {
+    "id": "open-corners",
+    "kind": "frame",
+    "source": "exec-ec643ee7-59ad-4df3-bb09-ca683c88b97e.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 14. ONLY four individual gold brass corner brackets arranged as a wide rectangular frame, rivets in each bracket. NO connecting rails between the four corners; entire center and edges between brackets transparent. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "shape-frame-options-07-14-v1.png",
+    "option": 14
+  },
+  {
+    "id": "vine-filigree",
+    "kind": "frame",
+    "source": "exec-d59cc7d3-04ba-40e5-9a09-764e7b660e1f.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 15. Delicate branching gold vine leaves curling along both sides and four corners, slim double horizontal gold rails. Use option15 only. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "filigree-frame-controls-15-20-v1.png",
+    "option": 15
+  },
+  {
+    "id": "royal-cartouche",
+    "kind": "frame",
+    "source": "exec-3a1ad93d-1cb9-4191-87aa-371abba9dfeb.png",
+    "prompt": "Production game UI frame asset, ONE frame only, wide 3:1 landscape canvas. Use the attached approved design board as reference ONLY for the frame of option 16. Rich gold baroque scrollwork at both ends, slim double gold horizontal rails, small central crest at top and bottom, regal acanthus curls. Use option16 only. Entire interior and exterior MUST be transparent alpha. No background texture, no time, words, numbers, letters, ACTIVE tab, markers or controls. Closed inner boundary; consistent slim edge thickness; large unobstructed empty center for live text. Symmetric front-on flat orthographic UI, finely rendered material. Frame outer edges use ~96% canvas width and height, 2% transparent safety margin. Match approved ornament structure faithfully. No shadows outside frame. Transparent PNG.",
+    "board": "filigree-frame-controls-15-20-v1.png",
+    "option": 16
+  },
+  {
+    "id": "classic-brass",
+    "kind": "control",
+    "source": "exec-61396eba-0336-45cd-af05-93f46bd03711.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 1 in attached board. Navy rounded rectangular dock, double thin brass rim; left/right blank navy circular keys and center blank polished gold key, slim dividers. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 1
+  },
+  {
+    "id": "compass-dials",
+    "kind": "control",
+    "source": "exec-2534aabb-e367-4ed5-8718-acfad8fb7aed.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 2 in attached board. Three golden round compass dial buttons with fine bezel ticks and tiny top crowns mounted on a narrow navy/brass connecting bar. Blank gold faces. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 2
+  },
+  {
+    "id": "floating-buttons",
+    "kind": "control",
+    "source": "exec-f406e6e3-81f1-4d48-b3e9-c7006c5a44a5.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 3 in attached board. Three separate round coin buttons; left ruby red, center polished warm gold, right deep navy, each with thin brass rim. No connected backing panel. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 3
+  },
+  {
+    "id": "pixel-controls",
+    "kind": "control",
+    "source": "exec-751571fe-d966-4c48-bb6a-91ece5f97efd.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 4 in attached board. Stepped square pixel-art navy dock with golden rails, three blocky blank keys. Middle key gold, others navy. Pixel steps at corners, no rounded curves. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 4
+  },
+  {
+    "id": "quiet-glyphs",
+    "kind": "control",
+    "source": "exec-e77f29ab-94aa-4136-9091-3253e5e12a2f.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 6 in attached board. Simple quiet dark navy pill with subtle blue shading, no key outlines, no visible glyphs, no gold ornament. Space for three live icons. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 6
+  },
+  {
+    "id": "bronze-keys",
+    "kind": "control",
+    "source": "exec-40ffee0a-7c8c-4559-98af-d3f9f59eecf3.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 5 in attached board. Navy rounded dock with bronze rim, three blank aged brass square plates, four tiny corner studs on each, fine engraved texture. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-01-06-v1.png",
+    "option": 5
+  },
+  {
+    "id": "wooden-deck",
+    "kind": "control",
+    "source": "exec-3ceddfe6-2bcb-463b-84fe-847628681f2a.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 7 in attached board. Dark walnut plank dock with brass end-caps and rivets, three blank navy square keys with slim cool metallic rims, thin brass dividers. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-07-12-v1.png",
+    "option": 7
+  },
+  {
+    "id": "porcelain-keys",
+    "kind": "control",
+    "source": "exec-7f0a4766-6070-48a1-8219-53abc762e70f.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 10 in attached board. Three ivory porcelain rounded square keys on narrow teal connecting bar with gold studs; thin brass key rims, subtle glossy ivory highlights, blank faces. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-07-12-v1.png",
+    "option": 10
+  },
+  {
+    "id": "glass-dock",
+    "kind": "control",
+    "source": "exec-b3c12404-7a09-4b59-90ea-3ce942befbe4.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 12 in attached board. Translucent teal glass pill with luminous pale cyan rim, gentle glass reflection at upper left, two thin vertical cyan dividers, no individual button outlines. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "hover-controls-matched-frames-07-12-v1.png",
+    "option": 12
+  },
+  {
+    "id": "vine-filigree",
+    "kind": "control",
+    "source": "exec-ebd9b800-de64-41ee-9fb7-6b48b1773817.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 15 in attached board. Three blank navy rounded-square keys edged gold, slender golden vine and leaf flourishes curving around both ends. Delicate botanical filigree. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "filigree-frame-controls-15-20-v1.png",
+    "option": 15
+  },
+  {
+    "id": "royal-cartouche",
+    "kind": "control",
+    "source": "exec-d9dc90bb-8cda-4ed0-91c7-d8116ae739c6.png",
+    "prompt": "Production UI hover toolbar asset, ONE toolbar only, wide 4:1 landscape canvas. Reference ONLY the toolbar below option 16 in attached board. Three blank navy rounded-square keys edged gold, ornate gold acanthus baroque scrollwork around both ends and small central bottom crest, matching royal frame. Three blank button wells equally spaced at 30%,50%,70% of full canvas width, centered vertically. No icons, glyphs, text, labels or stopwatch; live icons will be added in code. Entire exterior transparent alpha, toolbar fits 94% width and 80% height centered, fine material details, orthographic front-on. Transparent PNG.",
+    "board": "filigree-frame-controls-15-20-v1.png",
+    "option": 16
+  }
+]

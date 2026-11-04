@@ -19,6 +19,8 @@ public static class OverlayThemeManager
         ArgumentNullException.ThrowIfNull(target);
         target.Dispatcher.VerifyAccess();
         string theme = OverlayThemeCatalog.Resolve(requestedTheme, applicationTheme);
+        // The layered Nika renderer belongs to Avalonia; keep the existing WPF appearance.
+        if (theme == OverlayThemeCatalog.Nika) theme = OverlayThemeCatalog.Pirate;
         if (Applied.TryGetValue(target, out AppliedPalette? previous)
             && previous.Theme == theme
             && target.Resources.MergedDictionaries.Contains(previous.Resources))
@@ -40,6 +42,7 @@ public static class OverlayThemeManager
     public static ResourceDictionary LoadPalette(string? resolvedTheme)
     {
         string theme = OverlayThemeCatalog.Normalize(resolvedTheme);
+        if (theme == OverlayThemeCatalog.Nika) theme = OverlayThemeCatalog.Pirate;
         string file = theme switch
         {
             OverlayThemeCatalog.Daylight => "DaylightOverlay.xaml",

@@ -1,0 +1,46 @@
+Use case: ui-mockup.
+Asset type: unselected-timer dimming comparison for a floating desktop stopwatch.
+
+Primary request: Compare three amounts of extra whole-clock dimming for an UNSELECTED timer: 100% (none), 70% (gentle), and 40% (strong). The background-opacity setting remains the already approved 70% in every example. Selection is independent of running/paused state.
+
+Input roles:
+Image 1 supplies the parchment background's 70% opacity appearance and desktop backdrop style. Refer to its MIDDLE row only, not its 100% or 40% rows.
+Image 2 supplies the approved state composition: Project Markers revision 2, running triangle beside the project name, small ACTIVE tab only on the selected timer. Use its RUNNING examples. No underline.
+
+Layout: polished landscape 3:2 board, ideally high resolution. TWO columns and THREE rows, exactly SIX same-sized horizontal clock faces. Plenty of safe margins and breathing room. Deep navy presentation background.
+Title exactly "UNSELECTED TIMER DIMMING".
+Subtitle exactly "Layer 7 · Background stays at 70%".
+Column headings:
+Left: "Selected · 100%"
+Right: "Unselected"
+Row headings, each placed above that pair of cells:
+"1  No extra dimming · Unselected 100%"
+"2  Gentle dimming · Unselected 70%"
+"3  Strong dimming · Unselected 40%"
+Footer exactly "Concept preview · The selected timer stays unchanged".
+
+Each cell contains the SAME generic medium-slate desktop workspace backdrop: quiet neutral gray cards, soft horizontal lines and a muted teal rectangle. No readable app copy, branding or logos. Repeat the SAME backdrop geometry, brightness and contrast in all six cells. The timer floats over it. Show desktop cards/lines continuing behind the translucent timer interior. Do not fade or brighten the desktop itself.
+
+The SAME clock in every cell:
+Compact horizontal Engraved Filigree frame, thin brass rails and delicate gold corner scrollwork. Warm Navigator Parchment map surface with a right-side compass. Body approximately 4:1 proportions.
+Time exactly "00:44:27.0" in dark navy bold condensed numerals.
+Project name exactly "Illustration" in dark serif type with the approved small teal right-pointing RUNNING triangle just before it. All six are running; do NOT show pause bars.
+No underline, no secondary status words, no extra artwork.
+Hide ALL hover toolbars and action buttons on this board.
+Same clock size, scale, text baselines and placements across every row.
+
+LEFT COLUMN — selected reference:
+All THREE left clocks are IDENTICAL.
+Outer clock opacity 100%. Interior parchment/map opacity 70%, so desktop geometry is softly visible through the interior.
+Time, project name, running triangle and gold frame are fully solid.
+Small dark navy-and-gold tab labeled exactly "ACTIVE" centered on top frame edge.
+Never dim this left column as the rows descend.
+
+RIGHT COLUMN — unselected variants:
+NO ACTIVE tab, no empty tab placeholder, no alternate active marker.
+Top right: outer clock opacity 100%, interior background 70%. Frame/text/running symbol remain fully solid, equal in visual strength to the left clock; the only selection difference is the absent ACTIVE tab.
+Middle right: apply an extra 70% opacity to the ENTIRE already-composed clock. Gold frame, time, project name, running symbol, map and surface all become visibly translucent together. Background setting remains 70% internally, with effective parchment contribution about 49% after whole-clock dimming. Readable but noticeably quieter than the left.
+Bottom right: apply an extra 40% opacity to the ENTIRE already-composed clock. Gold frame, time, project name, running symbol, map and surface are all clearly fainter and more translucent. Effective parchment contribution about 28%. Desktop content shows through strongly. Honest reduced text contrast, still recognizable.
+
+CRITICAL: This sheet compares WHOLE-clock opacity on the right, not just background opacity. At 70% and 40% the time digits and frame MUST visibly fade too. Do not keep opaque dark text over a faded surface. Do not merely darken or desaturate the gold; blend every part of the right clock toward the desktop. Never change timer content, text color styling, frame design, desktop brightness or left-column opacity.
+Do not add a text backing, glow, new outline, shadows to artificially compensate for fading, progress bars, motion, skulls or watermark. No photography or device mockup. Faithful readable UI concept art; illustrative opacity comparison, not a measured alpha export.

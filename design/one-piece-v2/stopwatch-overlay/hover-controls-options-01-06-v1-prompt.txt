@@ -1,0 +1,35 @@
+Use case: ui-mockup.
+Asset: one polished comparison board for LAYER 5, HOVER CONTROLS of a compact floating desktop stopwatch.
+Task: transform the supplied optional-artwork board into SIX hover-toolbar appearance choices. Compare control styling only. Retained timer backgrounds, frames, fonts and artwork choices stay independent.
+
+Input image 1: the optional-artwork comparison. Use ONLY its option 1 "Clean" as the SAME timer body for every example: compact horizontal rounded rectangle, thin double Classic Brass trim, golden Navigator Parchment map, large condensed navy "00:44:27.0", smaller centered bold serif "Illustration", no extra emblem.
+Input image 2: the older Navigator clock rendering is a supporting reference ONLY for the compass-style brass control dials used in option 2. Do NOT copy its old wooden timer body, giant metal timer plate, typography, bulky toolbar or overall proportions.
+
+Layout: landscape 3:2 board, TWO columns by THREE rows, generous equal gutters and dark slate presentation backdrop. All SIX timer bodies identical in size, shape, background, text style and content. Each body has one compact hover toolbar centered BELOW it, with a small consistent gap. Leave enough room for the separate toolbar in every grid cell. No toolbar covers the project name or timer. Toolbars appear only in these hovered examples; the timer body itself stays unchanged.
+Title "STOPWATCH OVERLAY"
+Subtitle "Layer 5 · Hover controls"
+Global small legend near the bottom, outside the examples: "Close · Pause/resume · Reset"
+Labels outside above the panels, reading order:
+"1  Classic Brass"
+"2  Compass Dials"
+"3  Floating Buttons"
+"4  Pixel Controls"
+"5  Bronze Keys"
+"6  Quiet Glyphs"
+
+Exactly THREE controls in every toolbar, in this SAME left-to-right order:
+1 Close: a clear X cross.
+2 Pause/resume: show the PAUSE icon as TWO VERTICAL BARS in this running example.
+3 Reset: a clearly recognizable counterclockwise circular arrow.
+No play triangle in these examples, no power icon, no stop square, no extra actions. No text labels inside the buttons. All three icons centered perfectly with equal action areas, ample spacing and consistent apparent size.
+
+Six toolbar styles:
+1 Classic Brass: compact dark navy rounded toolbar with fine double brass trim; three gently rounded navy button cells. Pause cell has a muted warm brass face with dark navy bars; Close and Reset use ivory symbols. Restrained, refined, like the accepted Nika control language.
+2 Compass Dials: three small antique-brass compass-like circular buttons on a very slim navy chart-backed support. Refer to the old Navigator dial design but simplify and scale it down. Dark navy X, pause bars, reset arrow over warm brass dial faces. No chains, large gears or ornate extensions.
+3 Floating Buttons: three individually separated circular buttons, with NO shared toolbar backing. Close is muted oxblood with ivory X, center is warm brass with navy pause bars, Reset is navy with a fine brass rim and ivory arrow. Light clean construction, no large shadows.
+4 Pixel Controls: small stepped dark navy toolbar with a crisp gold pixel edge and three square stepped buttons. Pixel-style X, two square pause bars and a stepped reset arrow. Consistent square pixel units, no rounded corners in controls. The TIMER TYPOGRAPHY remains the same smooth condensed Navigator Bold as every other panel.
+5 Bronze Keys: three slightly raised small bronze keycaps grouped on a slim dark navy base. Rectangular keys with subtly rounded corners, lightly brushed antique-brass faces, very restrained patina and clear dark symbols. Keep the control strip compact and readable; no giant instrument panel or new frame.
+6 Quiet Glyphs: minimal understated narrow navy floating strip without a visible border or button outlines; three simple ivory line icons, evenly spaced and centered. Low visual weight, clear action areas, no circles, no decoration or detailed texture.
+
+Keep timer bodies identical and their text exactly "00:44:27.0" and "Illustration", same proportions and typography. Zeros must remain zeros. Every control bar should occupy roughly 40-55 percent of the timer body's width; control scale comfortable but not oversized. All examples are shown hovered for comparison.
+No extra timer emblems, new frames or backgrounds, status dots, REC lights, editor buttons, settings gears, separate/merge buttons, menus, tooltips, cursor arrows, laptop photography, perspective or full application window. This is strictly a toolbar-style comparison, preserving the current three visible actions.

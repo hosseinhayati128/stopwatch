@@ -64,7 +64,7 @@ public sealed class NikaThemeSettingsTests
             Assert.Equal("chartmakers-script", loaded.NikaTypography);
             Assert.Equal("poneglyph", loaded.NikaSidebarArtwork);
             Assert.Equal(OverlayThemeCatalog.Daylight, loaded.OverlayTheme);
-            Assert.Equal(OverlayThemeCatalog.Pirate,
+            Assert.Equal(OverlayThemeCatalog.Nika,
                 OverlayThemeCatalog.Resolve(OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Nika));
         }
         finally { Directory.Delete(folder, true); }

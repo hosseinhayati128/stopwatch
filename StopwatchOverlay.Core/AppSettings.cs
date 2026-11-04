@@ -214,6 +214,7 @@ namespace StopwatchOverlay
         // Floating todo launcher has an independent position and always starts collapsed.
         public bool TodoOverlayShowCompleted { get; set; } = true;
         public TodoAppearanceSettings TodoAppearance { get; set; } = new();
+        public StopwatchAppearanceSettings StopwatchAppearance { get; set; } = new();
         public bool TodoOverlayHasPosition { get; set; }
         public int TodoOverlayLeft { get; set; }
         public int TodoOverlayTop { get; set; }
@@ -612,6 +613,8 @@ namespace StopwatchOverlay
             NikaSidebarArtwork = NikaThemeCatalog.NormalizeArtwork(NikaSidebarArtwork);
             TodoAppearance ??= new();
             TodoAppearance.Normalize();
+            StopwatchAppearance ??= new();
+            StopwatchAppearance.Normalize();
             UiScalePercent = AppUiScale.Normalize(UiScalePercent);
             Typography ??= new();
             Typography.Normalize();
@@ -961,6 +964,8 @@ namespace StopwatchOverlay
                 settings = JsonSerializer.Deserialize<AppSettings>(json, Options);
                 if (settings == null)
                     throw new JsonException("The settings document did not contain an object.");
+                using var document = JsonDocument.Parse(json);
+                StopwatchAppearanceMigration.Apply(settings, document.RootElement);
                 settings.EnsureAllActions();
                 settings.NormalizeForRuntime();
                 AppBackgroundCatalog.NormalizeSettings(settings);

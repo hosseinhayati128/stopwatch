@@ -34,6 +34,20 @@ public sealed class ThemedClockFace : Control
     public string ProjectName { get => _projectName; set { _projectName = value?.Trim() ?? ""; InvalidateMeasure(); InvalidateVisual(); } }
     public bool ShowRec { get => _showRec; set { _showRec = value; InvalidateMeasure(); InvalidateVisual(); } }
     public bool IsRunning { get; set; }
+    public bool UsesThemeTextColor { get; private set; }
+    private StopwatchAppearanceSettings? _stopwatchAppearance;
+    private StopwatchPresentationState _stopwatchState = new(false,false,false);
+    private readonly StopwatchAppearanceRenderer _stopwatchRenderer = new(StopwatchAppearanceAssets.Shared);
+    public bool HasStopwatchAppearance => _stopwatchAppearance != null;
+    public void ApplyStopwatchAppearance(StopwatchAppearanceSettings? profile)
+    {
+        _stopwatchAppearance=profile?.Copy();_stopwatchAppearance?.Normalize();
+        InvalidateMeasure();InvalidateVisual();
+    }
+    public void SetStopwatchPresentationState(StopwatchPresentationState state)
+    {
+        _stopwatchState=state;InvalidateVisual();
+    }
     public string EffectiveOverlayTheme { get; private set; } = OverlayThemeCatalog.Midnight;
     public bool IsNavigator => EffectiveOverlayTheme == OverlayThemeCatalog.Pirate;
     public double TextSize { get; private set; } = 48;
@@ -56,6 +70,7 @@ public sealed class ThemedClockFace : Control
             settings.TextSize, settings.BorderWidth, settings.FontFamily, settings.BackgroundOpacity / 100,
             settings.TextColor == "Theme default", settings.OpaqueOverlayParts);
         ShowRec = settings.ShowRecIndicator;
+        ApplyStopwatchAppearance(EffectiveOverlayTheme==OverlayThemeCatalog.Nika?settings.StopwatchAppearance:null);
     }
     private static Color ParseColor(string value, Color fallback) => value switch
     {
@@ -66,6 +81,8 @@ public sealed class ThemedClockFace : Control
     public void ApplyTheme(string? overlayTheme, string? applicationTheme)
     {
         EffectiveOverlayTheme = OverlayThemeCatalog.Resolve(overlayTheme, applicationTheme);
+        if(EffectiveOverlayTheme!=OverlayThemeCatalog.Nika)ApplyStopwatchAppearance(null);
+        else if(_stopwatchAppearance==null)ApplyStopwatchAppearance(new StopwatchAppearanceSettings());
         Resources.MergedDictionaries.Clear();
         Resources.MergedDictionaries.Add(ThemeResources.Load("Overlay/" + ThemeResources.OverlayFile(EffectiveOverlayTheme)));
         InvalidateMeasure(); InvalidateVisual();
@@ -74,6 +91,7 @@ public sealed class ThemedClockFace : Control
         double opacity, bool themeText, NavigatorOpaqueParts parts)
     {
         TextSize = double.IsFinite(size) ? Math.Clamp(size, 16, 120) : 48;
+        UsesThemeTextColor = themeText;
         OutlineWidth = double.IsFinite(outlineWidth) ? Math.Clamp(outlineWidth, 0, 20) : 2;
         SurfaceOpacity = OverlayPresentationPolicy.ClampBackgroundOpacity(opacity);
         OpaqueParts = parts & NavigatorOpaqueParts.All;
@@ -121,6 +139,12 @@ public sealed class ThemedClockFace : Control
     /// <summary>Apply the clock palette to the detached hover toolbar and preview actions.</summary>
     public void ApplyToolbar(Border surface, System.Collections.Generic.IReadOnlyList<Button> buttons)
     {
+        if(_stopwatchAppearance!=null)
+        {
+            StopwatchToolbarStyler.Apply(surface,buttons,_stopwatchAppearance,_stopwatchState,1);
+            return;
+        }
+        StopwatchToolbarStyler.Apply(surface,buttons,null,_stopwatchState,1);
         surface.Resources.MergedDictionaries.Clear();
         surface.Resources.MergedDictionaries.Add(ThemeResources.Load("Overlay/" + ThemeResources.OverlayFile(EffectiveOverlayTheme)));
         surface.Background = BrushToken("OverlayToolbarSurfaceBrush");
@@ -267,6 +291,7 @@ public sealed class ThemedClockFace : Control
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        if (_stopwatchAppearance != null) return _stopwatchRenderer.Measure(this,_stopwatchAppearance,_stopwatchState);
         if (!IsNavigator) return MeasureStandard();
         double textWidth = Digital ? Text.Sum(Advance) * Em / 100 : Format(Text, TimerFont, Em, TimerBrush).WidthIncludingTrailingWhitespace;
         double width = Math.Max(Em * 8.6, (textWidth + Em * .15) / .53);
@@ -280,6 +305,11 @@ public sealed class ThemedClockFace : Control
     public override void Render(DrawingContext dc)
     {
         base.Render(dc);
+        if (_stopwatchAppearance != null)
+        {
+            _stopwatchRenderer.Render(dc,new Rect(Bounds.Size),this,_stopwatchAppearance,_stopwatchState);
+            return;
+        }
         if (!IsNavigator) { RenderStandard(dc); return; }
         if (Bounds.Width <= 0 || Bounds.Height <= 0) return;
         var bounds = new Rect(Bounds.Size);

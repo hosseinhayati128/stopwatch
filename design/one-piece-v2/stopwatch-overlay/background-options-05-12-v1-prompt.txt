@@ -1,0 +1,35 @@
+Use case: ui-mockup.
+Asset: one polished comparison board that expands an existing stopwatch-overlay background exploration.
+
+User correction: the previous four backgrounds are too similar. Explore much greater diversity of MATERIALS, TEXTURES, PALETTES and MOTIFS while keeping a coherent refined fantasy-nautical / Nika's Chronicle aesthetic. The new candidates must have visibly different identities rather than recolored parchment maps.
+
+Input image: the supplied previous board is a reference ONLY for its crisp straight-on timer layout, label style, neutral dark presentation backdrop, legibility and subtle thin brass edge. REPLACE all four background designs with EIGHT new candidates below. Do not repeat the old map backgrounds.
+
+Board composition: a beautifully typeset wide 3:2 landscape contact sheet, TWO columns by FOUR rows, with all EIGHT candidates equally sized. Each candidate is a compact horizontal rounded rectangle of approximately 3.4:1 proportions. Same geometry, same fine single muted brass outline, same size and same text placement across all eight. Generous even gutters and margins. Each numbered candidate label sits OUTSIDE, directly ABOVE its panel.
+Top title: "STOPWATCH OVERLAY"
+Subtitle: "Layer 1 · More materials & motifs"
+Candidate labels in reading order:
+"5  Ship's Timber"
+"6  Sailcloth"
+"7  Captain's Leather"
+"8  Aged Bronze"
+"9  Tideglass"
+"10  Wano Waves"
+"11  Celestial Navigation"
+"12  Sky Island"
+
+Background directions:
+5 Ship's Timber: dark warm walnut SURFACE with fine horizontal natural wood grain and gentle wear, a very faint nautical carving at the far edges. The wood IS the background plane, not a separate chunky wooden frame. Sophisticated matte grain, not coarse planks. Warm ivory text.
+6 Sailcloth: tactile sandy oatmeal / flax canvas sail fabric, fine diagonal weave, a subtle stitched seam around the inside perimeter. Muted little pale navy wind lines only near the outer corners. No parchment, no geographic map. Deep navy text.
+7 Captain's Leather: deep oxblood/burgundy worn leather, refined subtle grain and a barely visible embossed nautical knot / filigree pattern at the extreme edges, rich warm muted red. Warm ivory text. Avoid bright red or black gaming styling.
+8 Aged Bronze: satin aged bronze / muted antique gold material across the entire surface, restrained brushed texture, warm umber patina plus a touch of green verdigris at the perimeter, calm low-contrast center. Deep dark brown/navy text. No separate riveted plate or bolts.
+9 Tideglass: frosted teal/aquamarine sea-glass background, softly translucent-looking layered ocean depths, very subtle ripple caustics near the edges and slightly darker lower edge. Calm sophisticated marine jade/teal, no shiny neon, no map. Deep navy text.
+10 Wano Waves: warm tan handmade washi paper, sparse expressive deep indigo ink waves sweeping along the bottom and corners, a tiny muted vermilion sun-wash at an outer corner. Japanese woodblock-inspired linework. Warm paper, never stark white, no geographic map. Deep navy text.
+11 Celestial Navigation: midnight indigo / almost-black velvet-smooth sky, sparse tiny warm stars and delicate brass constellation lines concentrated around outer edges, subtle heavenly navigation arcs. Distinct from navy map/chart. Warm ivory text.
+12 Sky Island: a muted soft blue / cloud-blue surface with delicate cream-gold cloud curls and airy watercolor atmosphere near the edges, a subtle warm dawn glow. Keep the center muted blue and readable. No map, no bright white clouds crossing the digits. Deep navy text.
+
+Every panel uses exactly the SAME placeholder timer sample, large clean bold tabular condensed digits "00:44:27.0" centered, and the smaller centered project name "Illustration" below. Preserve all digits and punctuation. Use equal font sizes and alignment on every panel, adapting ONLY foreground color for contrast.
+The central 65 percent of each panel must remain visually quiet. Texture is subtle beneath live text; more character belongs at the edges. All eight should feel practical as small always-on-top desktop timers.
+
+This is BACKGROUND-LAYER exploration only. Do not add controls, icons, emblems, characters, status lights, 3D props, ropes, external compass objects, decorative frame alternatives, extra headings, white paper background, checkerboard, gradients used as the ONLY decoration, perspective, desk photography, or a full application window.
+Do not show any of the old four candidates. Eight NEW backgrounds only, numbered 5 through 12.

@@ -1,0 +1,37 @@
+Use case: ui-mockup.
+Asset type: comparison board of six new ornamental stopwatch frame and hover-control combinations.
+
+Primary request: The user likes option 14, "Filigree Keys" paired with "Engraved Filigree", and wants more like it. Generate SIX distinct but closely related gold-filigree variations, numbered 15 through 20. Each tile must show a complete frame with its own matching hover toolbar.
+
+Input image role: visual style reference. Use ONLY the lower option 14 as the design parent: delicate dimensional gold scrollwork, open ornamental frame, navy control plate, ivory action glyphs, parchment clock face. Do not use the upper rope design.
+
+Composition: landscape 3:2 board, two columns and three rows, six complete horizontal timers with hover toolbars centered below. Navy/slate backdrop; balanced margins, enough breathing room around all ornament and between rows. Title "FILIGREE COLLECTION". Subtitle "Variations 15–20". Every tile has one readable circled number and its name above it. Footer "Close · Pause/resume · Reset". No extra frame-label line needed because each named option is a matched frame-and-control variation.
+
+Shared visual language: warm engraved brass/gold, richly detailed but graceful curved ornament, fine highlights and dark recesses, navy enamel-like controls and ivory symbols. This is the same family as source option 14; no unrelated modern, pixel, wood, leather, rope or industrial designs. Distinct ornamental geometry in every tile, not six near-identical clones.
+
+Exact six tiles in reading order:
+
+15 "Vine Filigree" — top left.
+The lightest version: thin double gold frame rails with elegant long trailing S-curves and small botanical leaves at corners, lots of open space around curling stems. Matching slim navy toolbar with fine vine tendrils at both ends and three thin-gold-outline rounded rectangular button wells. Minimal ornament in the center.
+
+16 "Royal Cartouche" — top right.
+A richer symmetrical baroque version: a small sculpted ornamental central crest above the frame, layered acanthus scrolls at corners, rounded clipped corners and a balanced tiny bottom-center flourish. NO literal crown or emblem. Toolbar is a symmetrical navy cartouche with curled gold ends and three rounded-square keys, with richer raised gold detailing echoing the frame.
+
+17 "Shell Rococo" — middle left.
+Soft scalloped frame silhouette, delicate fan-shell motifs in gold at the corners and subtly curved sides; expressive but controlled rococo C-scrolls. Matching toolbar has softly scalloped ends and a small engraved fan-shell flourish, three oval navy button wells. Keep both frame and toolbar visually graceful.
+
+18 "Laurel Engraving" — middle right.
+A stately classical variation: restrained narrow gold frame with mirrored pointed laurel-leaf sprigs flowing up the outer side edges and clustered at corners, fewer curly spirals. Matching toolbar carries gold laurel sprays extending from both ends, three simple rounded-square navy keys. Leaves must look distinctly different from vines and rococo.
+
+19 "Golden Lace" — bottom left.
+The most intricate airy version: fine pierced gold lacework, small repeated open loops and interwoven scrolls along short frame ends and corners, with a thin clear top/bottom edge. Gold ornament looks open and lightweight, not a thick solid mass. Toolbar has finely pierced lacework end wings and three navy oval-to-rounded button cells enclosed in fine gold wire-like borders. Avoid jewelry gemstones.
+
+20 "Wave Filigree" — bottom right.
+A fluid maritime variation within the same gold filigree family: elongated rolling-wave curls running along the short frame ends and sweeping into slightly wavy upper/lower rails, a few fine spray-like gold tendrils. Matching navy toolbar has gold wave-scroll ends and gently flowing trim, three clean rounded button wells. Ornament is sculpted GOLD scrollwork, not illustrated blue water. No anchors or ships.
+
+LOCKED invariants:
+All six timer faces use the SAME warm Navigator Parchment map as the source, with a quiet center, peripheral coastal linework, and compass rose at right. Maintain the same background brightness and color.
+Timer reads exactly "00:44:27.0" in large dark navy condensed bold digits. Project name exactly "Illustration" in smaller dark serif type centered below. No ambiguous zeros or changed time. Same typography and scale across every tile.
+Each toolbar has exactly THREE action glyphs, ordered left to right: X for close, two vertical pause bars, counterclockwise circular reset arrow. Crisp ivory glyphs with equal visual weight. Do not add controls, extra icon-like ornaments, tiny text, skulls, logos or badges.
+Toolbars sit centered BELOW their frames with a narrow gap, never obscure time/name, and occupy roughly 45–55% of body width including ornament. Ornament stays outside text and icon bounds.
+Do not create portrait clocks, giant fantasy panels or heavy gold slabs. Keep compact practical stopwatch proportions and polished high-detail UI concept rendering. No watermark or photographic device mockup.

@@ -30,7 +30,7 @@
                        FontSize="12"
                        FontWeight="Medium"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="Space expands/collapses todos · O shows/hides overlay · Esc to cancel"
+            <TextBlock x:Name="NoteHelp" Text="Space expands/collapses todos · Esc to cancel"
                        Foreground="{DynamicResource SecondaryTextBrush}"
                        FontSize="11"
                        HorizontalAlignment="Center"

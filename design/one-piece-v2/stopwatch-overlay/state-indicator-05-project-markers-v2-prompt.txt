@@ -1,0 +1,37 @@
+Use case: ui-mockup.
+Asset type: revised state-indicator preview for a floating desktop stopwatch.
+
+Primary request: Revise state style #5 "Project Markers" by replacing its active-selection underline with the "ACTIVE" tab from style #1. Preserve #5's small running/pause icon immediately before the project name. This is one precise hybrid revision, not a new family of alternatives.
+
+Input image roles:
+Image 1 is the edit reference: use ONLY its middle row, "5 Project Markers", as the timer/state design to preserve.
+Image 2 is the donor reference: use ONLY the small navy-and-gold "ACTIVE" tab from its top row, "1 Status Badges". Do NOT import that row's separate RUNNING/PAUSED pills.
+
+Show the revised design in FOUR large examples on a landscape 3:2 board with a TWO-by-TWO layout, generous margins and dark navy/slate backdrop.
+Title exactly "PROJECT MARKERS".
+Subtitle exactly "Option 5 revised · Active tab from option 1".
+Example headings in reading order:
+Top left "Active · Running"
+Top right "Active · Paused"
+Bottom left "Other · Running"
+Bottom right "Other · Paused"
+
+For ALL four examples:
+Preserve the source's horizontal Engraved Filigree frame, thin brass rails, delicate gold scrollwork, warm Navigator Parchment map, quiet center and right-hand compass.
+Time must read exactly "00:44:27.0" in dark navy bold condensed numerals.
+Project name exactly "Illustration", dark navy serif, centered with a fixed icon slot immediately before it.
+The running examples (left column) have a small teal right-pointing triangle before Illustration.
+The paused examples (right column) have two small dark amber vertical pause bars before Illustration.
+KEEP the same typography, time/name baseline, icon spacing and timer dimensions across all four examples.
+REMOVE the project-name underline entirely in EVERY example. No replacement line below or above the project text.
+Keep all four timer faces equally opaque and readable.
+
+For ONLY the two ACTIVE examples on the TOP ROW:
+Add the exact #1-style tab centered on the TOP frame edge: small dark navy inset tab, thin sculpted brass/gold outline, clear ivory uppercase text exactly "ACTIVE". Match donor shape and relative scale, including its clipped ends.
+This same tab appears for both running and paused. It must not overlap the time or change the layout.
+
+For the two OTHER examples on the BOTTOM ROW:
+No active tab, no empty tab placeholder, no underline, no selection marker. Keep the normal uninterrupted top frame edge.
+
+No running/paused text badges, no third status-text line, no corner-state icons, no edge rails, no seals, no diamonds. No hover control toolbar on this board. The icons beside the name are noninteractive status marks.
+Do not redesign background, frame, clock typography or project label. No skull, animation, dimming or watermark. Crisp refined UI concept artwork with faithful softly dimensional gold materials and readable text.

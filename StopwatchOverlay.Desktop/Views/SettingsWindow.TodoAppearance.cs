@@ -14,7 +14,7 @@ public partial class SettingsWindow
     private readonly TodoAppearancePreview _todoPreview=new();
     private TextBlock? _todoSaveStatus;
     private TodoEmblemPickerWindow? _emblemPicker;
-    private bool _todoCompactColumns;
+    private string _appearanceColumnLayout="340,190,*";
 
     private void LoadTodoAppearance()
     {
@@ -146,17 +146,26 @@ public partial class SettingsWindow
 
     internal void ReportPersistenceResult(bool saved)
     {
-        if(_todoSaveStatus==null)return;
-        _todoSaveStatus.Text=saved?"Changes apply immediately.":"Applied for this session, but settings could not be saved. Check disk space and try again.";
-        _todoSaveStatus.Foreground=saved?TodoVisuals.Muted(new TodoAppearanceProfile()):Brush.Parse("#AD3434");
+        foreach(var status in new[]{_todoSaveStatus,_stopwatchSaveStatus})
+        {
+            if(status==null)continue;
+            status.Text=saved?"Changes apply immediately.":"Applied for this session, but settings could not be saved. Check disk space and try again.";
+            status.Foreground=saved?TodoVisuals.Muted(new TodoAppearanceProfile()):Brush.Parse("#AD3434");
+        }
     }
 
     private void UpdateTodoPreviewVisibility(string category)
     {
         if(TodoPreviewArea==null||ClockPreviewArea==null)return;
         TodoPreviewArea.IsVisible=category=="TodoAppearance";
-        ClockPreviewArea.IsVisible=category!="TodoAppearance";
+        ClockPreviewArea.IsVisible=category is not ("TodoAppearance" or "StopwatchAppearance");
         TodoAppearancePanel.IsVisible=category=="TodoAppearance";
+        if(StopwatchPreviewArea!=null)
+        {
+            StopwatchPreviewArea.IsVisible=category=="StopwatchAppearance";
+            StopwatchAppearancePanel.IsVisible=category=="StopwatchAppearance";
+            if(category=="StopwatchAppearance")RefreshStopwatchAppearancePreview();
+        }
         UpdateTodoResponsiveLayout();
         // The initial sample is built before the window's control templates attach.
         // Refresh when this category becomes visible so its snapshot includes text.
@@ -166,9 +175,9 @@ public partial class SettingsWindow
     private void UpdateTodoResponsiveLayout()
     {
         if(SettingsColumns==null)return;
-        bool compact=CurrentCategory=="TodoAppearance"&&ClientSize.Width<1000;
-        if(compact==_todoCompactColumns)return;
-        _todoCompactColumns=compact;
-        SettingsColumns.ColumnDefinitions=new ColumnDefinitions(compact?"200,160,*":"340,190,*");
+        string layout=ClientSize.Width<1000?CurrentCategory switch{"TodoAppearance"=>"200,160,*","StopwatchAppearance"=>"220,170,*",_=>"340,190,*"}:"340,190,*";
+        if(layout==_appearanceColumnLayout)return;
+        _appearanceColumnLayout=layout;
+        SettingsColumns.ColumnDefinitions=new ColumnDefinitions(layout);
     }
 }

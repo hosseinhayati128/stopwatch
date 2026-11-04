@@ -1,0 +1,36 @@
+Use case: ui-mockup.
+Asset: one polished comparison board for LAYER 4, OPTIONAL ARTWORK of a compact floating stopwatch desktop overlay.
+Task: show EIGHT optional artwork placement / treatment choices. Backgrounds, frames and ten typography styles have already been retained. We are now comparing only how an optional emblem is placed and blended.
+Use the SAME familiar Luffy straw-hat skull emblem throughout so we compare placement and treatment, not eight new characters. The emblem choice can be decided separately later.
+
+Input images:
+1 The first typography board provides the exact shared comparison container and text style: use ONLY option 1 Navigator Bold, same warm golden Navigator Parchment map surface, thin double Classic Brass trim, compact horizontal gently rounded rectangle, strong condensed dark navy timer digits with a smaller bold serif project name.
+2 The Pirate icons atlas is the AUTHORITATIVE emblem source: use ONLY the straw-hat skull in the SECOND ROW, SECOND COLUMN of the four-column/two-row atlas (normalized crop x .25, y .5, width .25, height .5). It has an ivory grinning skull and diagonal crossbones, golden straw hat and red hat band. Preserve this existing emblem's design and proportions. Do not use the lion, ram, swords, telescope, paintbrush, anchor or compass from the atlas. Do not redesign the skull.
+
+Composition: landscape 3:2 board, TWO columns by FOUR rows, on the same plain deep slate presentation background. Eight same-sized horizontal timer bodies aligned on an even grid with generous gutters. Leave room above each for any crest. Clear labels OUTSIDE and ABOVE the panels.
+Title "STOPWATCH OVERLAY"
+Subtitle "Layer 4 · Optional artwork"
+Labels in reading order:
+"1  Clean"
+"2  Left Emblem"
+"3  Right Emblem"
+"4  Top Crest"
+"5  Corner Stamp"
+"6  Name Emblem"
+"7  Faded Watermark"
+"8  Edge Engraving"
+
+All eight show the exact SAME sample time "00:44:27.0" and project name "Illustration". Keep zeros unmistakable, exact digits and punctuation. Same numeral font, weight, size, navy ink and label style across every panel. Live text is always fully opaque and dominant. The artwork must never obscure digits or reduce legibility. Same golden background, same map details, same body dimensions and same thin brass frame in ALL options.
+
+Artwork variations:
+1 Clean: the unchanged shared timer with NO extra emblem or new decorative artwork. Keep only its retained map background and fine frame.
+2 Left Emblem: a modest full-color original straw-hat skull emblem occupies a reserved space inside the LEFT end. Shift the two-line timer/name group slightly to the right, centered in the remaining width. Preserve generous gap, identical numeral size and safe padding.
+3 Right Emblem: mirror the placement logic: the SAME full-color emblem inside the RIGHT end; timer/name group centered in the remaining space toward the left. Keep the full time readable at the same size.
+4 Top Crest: a SMALL full-color emblem centered at the top edge, slightly overlapping the fine frame and extending above it like a crest. Keep the timer/name group centered below, same font sizes. Do not add a large badge or medallion behind the emblem.
+5 Corner Stamp: a very small MONOCHROME muted brass / sepia version of the same emblem near the INNER upper-left corner. Subdued stamped appearance, away from the digits. Timer and name centered across the full body.
+6 Name Emblem: a TINY full-color emblem immediately to the LEFT of the project name on the lower line, with comfortable spacing. Treat tiny emblem plus "Illustration" as one centered group below the time. Large timer centered normally. Do not introduce a new row.
+7 Faded Watermark: a large monochrome sepia version of the same emblem, very faint at roughly 6 percent opacity behind the central time/name. It should be barely perceptible like a paper watermark. All text stays fully opaque and very clear. No solid skull competing with text.
+8 Edge Engraving: a softly blended low-contrast monochrome brass/sepia emblem etched into the LEFT side of the background, cropped gently by the inner left edge, around 15 percent opacity. Keep it strictly in the left quarter; centered text remains crisp and unobstructed. Distinct from a full-color reserved-space logo and from the centered watermark.
+
+Use the existing skull consistently, with restrained scaling. Full-color emblems retain their red/yellow/ivory accents; only stamp/watermark/engraving treatments are monochrome. Keep fine frame geometry identical; top crest is an optional artwork extension, not a new frame. No glow or heavy drop shadows.
+No controls, status lights, different typefaces, alternative characters, additional pirate symbols, photos, separate header bars, new frame materials, full application windows or extra text. This is strictly the optional-artwork comparison layer.

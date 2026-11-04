@@ -1,0 +1,50 @@
+Use case: ui-mockup.
+Asset type: state-indicator comparison board for a floating desktop stopwatch.
+
+Primary request: Design Layer 6, running/paused and active-selection indicators. Show THREE distinct approaches, each demonstrated across FOUR independent combinations. This is a new layer: option numbering restarts at 1–3. Active means the selected timer, not necessarily a running timer.
+
+Input image role: style reference. Use ONLY lower option 14, the retained Filigree Keys / Engraved Filigree design. Preserve the thin brass frame, delicate gold corner scrollwork, warm parchment map, dark condensed bold timer and serif project label. Do not use the rope design or invent new frame ornament.
+
+Layout: a wide landscape board, ideally 2400 x 1600 or comparable high-resolution 3:2. Dark navy/slate backdrop with generous margins. Clear matrix of THREE rows and FOUR columns. Each row is one numbered design option, with its heading above that row. Each cell is a complete same-sized filigree stopwatch, approximately 4:1 in body proportions. There are exactly TWELVE timer faces. No tiny illegible text.
+Top title exactly "STOPWATCH STATES".
+Subtitle exactly "Layer 6 · Three indicator styles".
+Four column headings, left to right:
+"Active · Running"
+"Active · Paused"
+"Other · Running"
+"Other · Paused"
+
+ALL TWELVE timer faces:
+Time exactly "00:44:27.0" in dark navy bold condensed numerals, clean zero counters.
+Project name exactly "Illustration" in smaller dark navy serif.
+Same Navigator Parchment background, same gold filigree frame, same timer/project placement and scale.
+Keep every timer readable at equal contrast. NO whole-timer fading, no greyed-out paused digits, no fading the Other columns.
+Hide ALL hover toolbars on this board, so state indicators can be judged while controls are hidden. Do not add permanent action buttons.
+No skull, no new emblem, no extra controls.
+State cues must fit quiet peripheral areas and never overlap timer digits or project text.
+Within each row, indicator space is reserved in every column so changing state does not move, resize or reflow the stopwatch.
+
+ROW 1 heading: "1  Status Badges"
+Inside the top-left quiet area of every timer, add a small clear inset status pill: a tiny play triangle plus exact word "RUNNING" for running, two pause bars plus exact word "PAUSED" for paused. Use dark desaturated teal for the running badge and warm amber/umber for paused, with crisp contrasting light text.
+At the top-center frame edge, add a small restrained gold-edged navy tab labeled exactly "ACTIVE" in the first TWO columns only. No ACTIVE tab in columns 3 and 4. This selection marker is identical whether running or paused.
+Keep badges small but readable; never invade the large time text.
+
+ROW 2 heading: "2  Corner Symbols"
+Use symbols only, NO in-timer status words for this row.
+At the inside upper-left, a small filled right-pointing triangle in teal for running (columns 1 and 3); two amber pause bars for paused (columns 2 and 4). The triangle denotes current running status, not a clickable button. No button container.
+At the top-center frame edge, a small bright ivory diamond nested inside a fine gold outline marks ACTIVE in columns 1 and 2 only. No diamond in columns 3 and 4.
+These marks are discrete, flat inset state markers that do not change the filigree itself.
+The diamond must stay present for Active · Paused, just as for Active · Running.
+
+ROW 3 heading: "3  Status Line"
+Below the project name in a reserved, quiet, small text line, show these EXACT strings by column:
+Column 1: "RUNNING · ACTIVE"
+Column 2: "PAUSED · ACTIVE"
+Column 3: "RUNNING"
+Column 4: "PAUSED"
+Use concise dark teal lettering for RUNNING, dark amber/umber for PAUSED, and navy for ACTIVE. Good contrast over warm parchment. Add a tiny play or pause icon before the status word. No extra badges, tab or diamond in this row.
+All four faces share identical reserved third-line height and unchanged timer/name position.
+
+Footer text exactly: "Active = selected timer. Running and paused are separate states."
+Use the same sampled time in every cell for a fair comparison; this is not a time sequence. No flashing, motion trails, progress arcs or other unrelated state.
+Crisp refined UI concept artwork, faithful dimensional gold scrollwork, restrained legible indicators. Avoid excessive bloom, busy decoration behind state text, extra words, changed time text, duplicated or missing cells.

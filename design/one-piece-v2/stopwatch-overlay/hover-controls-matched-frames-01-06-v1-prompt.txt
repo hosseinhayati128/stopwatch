@@ -1,0 +1,34 @@
+Use case: ui-mockup.
+Asset type: polished comparison board for an existing desktop stopwatch overlay.
+Primary request: Show each existing hover-control style with a visually matching frame from the retained frame collection. This is a pairing preview, not a redesign of either component.
+Use the supplied images as visual references with these roles:
+Image 1 is the exact source for the SIX hover toolbars and their numbering. Preserve each toolbar's material, silhouette, buttons, icon construction and relative button sizing. Replace the repeated Classic Brass timer frame with the explicitly assigned frame for that tile.
+Images 2 and 3 are the retained FRAME catalogs. Copy the requested frame silhouette and material from the named tile accurately. These are frame references, not layouts to copy wholesale.
+Invariants across ALL tiles: warm Navigator Parchment map background, same dark navy bold condensed timer digits, same centered serif project name, no skull or optional artwork. Timer text must read exactly "00:44:27.0", the name exactly "Illustration". All time digits must be readable and undistorted. Preserve the background and typography consistently so frames and controls are the comparison.
+Every toolbar contains exactly THREE actions in this order: close X; pause two vertical bars; reset counterclockwise circular arrow. Do not add any actions or swap the icon order. The toolbar must sit centered just BELOW the frame, separated by a tiny visible gap. Never cover the timer or project label. Keep toolbar width approximately 40-55% of timer width.
+Composition: landscape 3:2 image, TWO columns and THREE rows, six generous equally spaced comparison tiles, subdued deep navy/slate backdrop. Each tile is a complete stopwatch body plus its hover toolbar. Use a consistent visual scale and baseline. Provide breathing room between rows and safe margins. Crisp finished high-detail UI concept art, softly dimensional materials, legible small engraved details, no photography, no device mockup.
+Typography of labels: pale ivory. Above each tile, a clear circled option number and the hover-control name on the first line; directly below that heading a smaller line naming its paired frame. Do not number frames separately. All labels must be accurate and distinct.
+Title exactly: "MATCHED FRAMES + CONTROLS".
+Footer exactly: "Close · Pause/resume · Reset".
+No watermark. Do not add a logo, redesign backgrounds, add characters, or add new UI functionality.
+Subtitle exactly: "Pairings 1–6".
+Render these SIX specific pairings in reading order:
+TOP LEFT: "1 Classic Brass"; small label "Frame: Classic Brass".
+Use hover option 1 from Image 1: rounded navy/brass toolbar with rounded cells, navy close/reset buttons and brass pause button. Frame: Classic Brass, option 1 of Image 2, polished thin rounded double brass edge.
+
+TOP RIGHT: "2 Compass Dials"; small label "Frame: Instrument Case".
+Use hover option 2 from Image 1: three antique-brass circular compass dials on slim navy chart support. Frame: Instrument Case, option 5 of Image 2, sturdy clipped-corner navy housing with riveted brass corner plates.
+
+MIDDLE LEFT: "3 Floating Buttons"; small label "Frame: Slim Capsule".
+Use hover option 3 from Image 1: three independent circular buttons, burgundy X, brass pause, navy reset, no shared backing. Frame: Slim Capsule, option 6 of Image 2, elongated rounded pill silhouette with very thin double brass/navy outline.
+
+MIDDLE RIGHT: "4 Pixel Controls"; small label "Frame: Pixel Voyage".
+Use hover option 4 from Image 1: stepped dark navy/gold toolbar, square key cells and pixel glyphs. Frame: Pixel Voyage, option 4 of Image 2, unmistakably stepped square-pixel corners, dark navy perimeter and gold contour, not rounded.
+
+BOTTOM LEFT: "5 Bronze Keys"; small label "Frame: Navy Bevel".
+Use hover option 5 from Image 1: three raised square bronze keycaps on compact navy base. Frame: Navy Bevel, option 2 of Image 2, thick rectangular beveled navy surround, thin gold edge and four small brass corner studs.
+
+BOTTOM RIGHT: "6 Quiet Glyphs"; small label "Frame: Open Corners".
+Use hover option 6 from Image 1: simple ivory glyphs on minimal navy strip, no visible button outlines. Frame: Open Corners, option 14 of Image 3: parchment rectangle held by only four discrete brass L-shaped corner brackets, WITHOUT a continuous thick perimeter frame. Maintain the minimal open-edge character.
+
+Use the supplied reference source images faithfully. The six timer frame outlines MUST actually differ as specified; do not repeat the same rounded brass frame in every tile.

@@ -115,6 +115,27 @@
                                TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Grid>
             </Border>
+            <Border x:Name="StopwatchPreviewArea" Grid.Column="0" IsVisible="False" Padding="16"
+                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <TextBlock Text="Live stopwatch preview" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,8,*" Margin="0,12,0,12">
+                        <ComboBox x:Name="StopwatchPreviewState" SelectedIndex="0" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="Preview running or paused" SelectionChanged="StopwatchPreviewState_SelectionChanged">
+                            <ComboBoxItem Content="Running"/><ComboBoxItem Content="Paused"/>
+                        </ComboBox>
+                        <ComboBox x:Name="StopwatchPreviewBackdrop" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="Preview backdrop" SelectionChanged="StopwatchPreviewState_SelectionChanged">
+                            <ComboBoxItem Content="Dark"/><ComboBoxItem Content="Light"/>
+                        </ComboBox>
+                    </Grid>
+                    <ContentControl x:Name="StopwatchPreviewHost" Grid.Row="2" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                    <StackPanel Grid.Row="3" Spacing="10" Margin="0,12,0,0">
+                        <TextBlock Text="Sample clocks · Preview controls do not affect your timers." FontSize="11" TextWrapping="Wrap"/>
+                        <Button Content="Show or hide active overlay" Classes="modern" HorizontalAlignment="Stretch" Click="ShowOverlayButton_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
             <Border Grid.Column="1"
                     Background="{DynamicResource NavigationRailBrush}"
                     BorderBrush="{DynamicResource SubtleDividerBrush}"
@@ -138,6 +159,7 @@
                     </ListBox.Styles>
                     <ListBoxItem Content="Overlay &amp; position" Tag="Overlay"/>
                     <ListBoxItem Content="Appearance" Tag="Appearance"/>
+                    <ListBoxItem Content="Stopwatch appearance" Tag="StopwatchAppearance"/>
                     <ListBoxItem Content="Todo appearance" Tag="TodoAppearance"/>
                     <ListBoxItem Content="Fonts &amp; colors" Tag="Typography"/>
                     <ListBoxItem Content="Light ring" Tag="LightRing"/>
@@ -158,6 +180,7 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <Grid Margin="24,20">
                     <StackPanel x:Name="TodoAppearancePanel" IsVisible="False"/>
+                    <StackPanel x:Name="StopwatchAppearancePanel" IsVisible="False"/>
 
                     <!-- Panel 1: Overlay & Position -->
                     <StackPanel x:Name="OverlayPanel" Spacing="6">
@@ -233,6 +256,7 @@
                                 <TextBlock Text="Floating clock theme" Classes="sectionHeader"/>
                                 <ComboBox x:Name="OverlayThemeCombo" HorizontalAlignment="Stretch"
                                           ToolTip.Tip="Styles the floating clock and hover toolbar only. Your text color, font, size and opacity are preserved. Choose Theme default under Text color to use the clock palette's text colors."/>
+                                <TextBlock x:Name="NikaStopwatchAppearanceHint" IsVisible="False" Text="Use Stopwatch appearance to change Nika's frame, typography and transparency. Text size and color remain shared." FontSize="12" TextWrapping="Wrap"/>
 
                                 <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
                                     <StackPanel Grid.Column="0" Spacing="8">

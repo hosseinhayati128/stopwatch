@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -641,6 +642,16 @@ public partial class ShortcutsWindow : Window
 
     private void Save_Click(object? sender, RoutedEventArgs e)
     {
+        var globalBindings = new[] { _pendingLeader, _pendingNoteLeader, _pendingShowActiveOverlay, _pendingOpenController };
+        var duplicate = globalBindings.Where(binding => binding.VirtualKey != 0)
+            .GroupBy(binding => (binding.Modifiers, binding.VirtualKey))
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate != null)
+        {
+            SetRegistrationStatus($"{duplicate.First().Format()} is assigned to more than one global shortcut. Choose a unique combination.");
+            return;
+        }
+
         if (!AppSettings.ValidateCommandModeKeys(_pendingCommandModeKeys, out var f2Error))
         {
             WinF2ValidationWarning.Text = f2Error;

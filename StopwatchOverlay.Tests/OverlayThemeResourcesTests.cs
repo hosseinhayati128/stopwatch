@@ -27,10 +27,12 @@ public sealed class OverlayThemeResourcesTests
     ];
 
     [Fact]
-    public void NikaUsesOnePieceForSharedPagesAndFollowingClock()
+    public void NikaUsesDedicatedCoreRouteAndRetainsLegacyWpfPalette()
     {
         RunSta(() =>
         {
+            // Initialize WPF pack URI support even when this test runs alone.
+            _ = LoadPanel("Pirate.xaml");
             var load = typeof(AppThemeManager).GetMethod("LoadPalette",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
             var nika = (ResourceDictionary)load.Invoke(null, new object[] { AppThemeCatalog.Nika })!;
@@ -38,8 +40,12 @@ public sealed class OverlayThemeResourcesTests
             Assert.Equal(pirate.Source, nika.Source);
             foreach (string key in new[] { "SurfaceBrush", "PrimaryTextBrush", "PrimaryActionBrush", "ThemeTimerFontFamily" })
                 AssertResourceEqual(pirate[key], nika[key]);
-            Assert.Equal(OverlayThemeCatalog.Pirate,
+            Assert.Equal(OverlayThemeCatalog.Nika,
                 OverlayThemeCatalog.Resolve(OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Nika));
+            Assert.Equal(OverlayThemeCatalog.Pirate,
+                OverlayThemeManager.Apply(new Grid(), OverlayThemeCatalog.FollowApplicationTheme, AppThemeCatalog.Nika));
+            Assert.Equal(OverlayThemeManager.LoadPalette(OverlayThemeCatalog.Pirate).Source,
+                OverlayThemeManager.LoadPalette(OverlayThemeCatalog.Nika).Source);
             Assert.Equal(OverlayThemeCatalog.Daylight,
                 OverlayThemeCatalog.Resolve(OverlayThemeCatalog.Daylight, AppThemeCatalog.Nika));
         });
@@ -78,7 +84,7 @@ public sealed class OverlayThemeResourcesTests
     {
         RunSta(() =>
         {
-            Assert.Equal(9, ConcreteThemes.Length);
+            Assert.Equal(10, ConcreteThemes.Length);
             ResourceDictionary baseline = OverlayThemeManager.LoadPalette(OverlayThemeCatalog.Midnight);
             string[] expectedKeys = ResolvedKeys(baseline);
             foreach (string theme in ConcreteThemes)
@@ -292,6 +298,7 @@ public sealed class OverlayThemeResourcesTests
                 foreach (string requestedTheme in OverlayThemeCatalog.All)
                 {
                     string effective = OverlayThemeCatalog.Resolve(requestedTheme, panelTheme);
+                    if (effective == OverlayThemeCatalog.Nika) effective = OverlayThemeCatalog.Pirate;
                     Assert.Equal(effective, OverlayThemeManager.Apply(overlayTarget, requestedTheme, panelTheme));
                     ResourceDictionary expected = OverlayThemeManager.LoadPalette(effective);
                     AssertResourceEqual(expected["OverlayChromeBrush"], overlayTarget.FindResource("OverlayChromeBrush"));
@@ -332,7 +339,8 @@ public sealed class OverlayThemeResourcesTests
                 {
                     root.Resources.MergedDictionaries.Clear();
                     root.Resources.MergedDictionaries.Add(LoadPanel(file));
-                    Assert.Equal(overlayTheme, OverlayThemeManager.Apply(overlayTarget, overlayTheme, panelTheme));
+                    Assert.Equal(overlayTheme == OverlayThemeCatalog.Nika ? OverlayThemeCatalog.Pirate : overlayTheme,
+                        OverlayThemeManager.Apply(overlayTarget, overlayTheme, panelTheme));
                     Assert.Same(overlayPalette, Assert.Single(overlayTarget.Resources.MergedDictionaries));
                     Assert.Same(surface, overlayTarget.FindResource("OverlayChromeBrush"));
                     Assert.Same(font, overlayTarget.FindResource("AppFontFamily"));

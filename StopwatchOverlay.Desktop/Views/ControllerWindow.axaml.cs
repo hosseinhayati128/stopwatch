@@ -137,7 +137,7 @@ public partial class ControllerWindow : Window
     {
         InitializePlatformServices();
         StartHabiticaSync();
-        EnsureTodoOverlay();
+        EnsureTodoOverlay().Show();
         UpdateOverlayStates();
         UpdateLightRing();
     }
@@ -155,7 +155,6 @@ public partial class ControllerWindow : Window
             entry.Activate();
         };
         overlay.Closed += (_, _) => { if (ReferenceEquals(_todoOverlayWindow, overlay)) _todoOverlayWindow = null; };
-        overlay.Show();
         return overlay;
     }
 
@@ -206,12 +205,10 @@ public partial class ControllerWindow : Window
             switch (action)
             {
                 case ShortcutAction.ShowActiveOverlay:
-                    _overlaysVisible = true;
-                    UpdateOverlayStates();
+                    ShowActiveTimerOverlay();
                     break;
                 case ShortcutAction.OpenController:
-                    Show();
-                    Activate();
+                    ShowControllerFromShortcut();
                     break;
                 case ShortcutAction.NoteCommandLeader:
                     if (_isCommandModeActive) ExitShortcutCommandMode();
@@ -220,7 +217,10 @@ public partial class ControllerWindow : Window
                 case ShortcutAction.CommandLeader:
                     if (_isCommandModeActive && !_isNoteCommandModeActive)
                     {
-                        ExitShortcutCommandMode();
+                        _commandModeTimer?.Stop();
+                        if (_commandModeTimer != null)
+                            _commandModeTimer.Interval = TimeSpan.FromSeconds(2);
+                        _commandModeTimer?.Start();
                     }
                     else
                     {
@@ -240,7 +240,7 @@ public partial class ControllerWindow : Window
 
         if (_commandHintWindow == null)
         {
-            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow();
+            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow(_settings.CommandModeKeys);
             var hint = _commandHintWindow;
             if (OperatingSystem.IsWindows()) hint.ShowActivated = false;
             if (PlatformServices.HotKey is PortalHotKeyService)
@@ -310,7 +310,8 @@ public partial class ControllerWindow : Window
 
             if (_isNoteCommandModeActive)
             {
-                if (vk == 0x20)
+                var noteAction = ResolveNoteCommand(vk);
+                if (noteAction == 0 && vk == ShortcutCommandMap.VK_SPACE)
                 {
                     ExitShortcutCommandMode();
                     var todoOverlay = EnsureTodoOverlay();
@@ -322,21 +323,11 @@ public partial class ControllerWindow : Window
                     else todoOverlay.ToggleExpanded();
                     return;
                 }
-                // The leader may repeat while the user releases Super+F3.
-                if (vk == _settings.NoteLeaderShortcut.VirtualKey) return;
-                var noteAction = _settings.NoteCommandModeKeys.FirstOrDefault(item => item.Value == vk).Key;
-                // Keep the original Windows letter aliases, even for saved numeric bindings.
                 if (noteAction == 0)
-                    noteAction = vk switch
-                    {
-                        0x54 => NoteCommandAction.AddTodo,
-                        0x4E => NoteCommandAction.AddNote,
-                        0x52 => NoteCommandAction.AddReminder,
-                        0x56 => NoteCommandAction.ViewNotes,
-                        0x4F => NoteCommandAction.ToggleTodoOverlay,
-                        _ => 0
-                    };
-                if (noteAction == 0) return;
+                {
+                    ExitShortcutCommandMode();
+                    return;
+                }
                 ExitShortcutCommandMode();
                 if (noteAction == NoteCommandAction.ToggleTodoOverlay)
                 {
@@ -364,7 +355,10 @@ public partial class ControllerWindow : Window
 
             if (ShortcutCommandMap.TryGetAction(vk, _settings.CommandModeKeys, out var action))
             {
-                if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord)
+                if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer
+                    or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord
+                    or ShortcutAction.CloseTimer or ShortcutAction.ShowAllClocks or ShortcutAction.PeriodicReview
+                    or ShortcutAction.SyncActivityWatch)
                 {
                     ExitShortcutCommandMode();
                 }
@@ -396,7 +390,7 @@ public partial class ControllerWindow : Window
                 ResetActiveTimer();
                 break;
             case ShortcutAction.ToggleOverlay:
-                ToggleOverlayVisibility();
+                ToggleActiveTimerOverlay();
                 break;
             case ShortcutAction.Lap:
                 AddLap();
@@ -423,8 +417,19 @@ public partial class ControllerWindow : Window
                 DashboardButton_Click(this, new RoutedEventArgs());
                 break;
             case ShortcutAction.OpenController:
-                Show();
-                Activate();
+                ShowControllerFromShortcut();
+                break;
+            case ShortcutAction.UndoTimerEdit:
+                UndoTimerEdit();
+                break;
+            case ShortcutAction.AddRecord:
+                OpenAddRecord();
+                break;
+            case ShortcutAction.SyncActivityWatch:
+                SyncActivityWatchFromShortcut();
+                break;
+            case ShortcutAction.PeriodicReview:
+                OpenPeriodicReview();
                 break;
             case ShortcutAction.SeparateOverlay:
                 SeparateActiveSession();
@@ -436,9 +441,16 @@ public partial class ControllerWindow : Window
                 SwitchSeparatedOverlay();
                 break;
             case ShortcutAction.ShowAllClocks:
-                SelectNextTimer();
+                OpenTimerPicker();
                 break;
             case ShortcutAction.ToggleActiveClocks:
+                ToggleActiveClocksShelf();
+                break;
+            case ShortcutAction.ToggleCombinedOverlay:
+                ToggleCombinedOverlay();
+                break;
+            case ShortcutAction.ShowActiveOverlay:
+                ShowActiveTimerOverlay();
                 break;
         }
     }
@@ -503,7 +515,6 @@ public partial class ControllerWindow : Window
         };
 
         ApplyOverlayStyle(_herdOverlay);
-        if (_overlaysVisible) _herdOverlay.Show();
         return _herdOverlay;
     }
 
@@ -543,8 +554,6 @@ public partial class ControllerWindow : Window
             var herdPos = _herdOverlay.Position;
             overlay.Position = new PixelPoint(herdPos.X + 40, herdPos.Y + 40);
         }
-        if (_overlaysVisible) overlay.Show();
-
         _overlays[session.Id] = overlay;
         return overlay;
     }
@@ -567,9 +576,9 @@ public partial class ControllerWindow : Window
 
                 bool isHerdActive = active != null && !active.IsSeparated && herdSession == active;
                 herdOverlay.SetActive(isHerdActive);
-                herdOverlay.SetInactiveSeparated(!isHerdActive, _settings.InactiveSeparatedOverlayOpacity / 100.0);
+                herdOverlay.SetInactiveSeparated(!isHerdActive, StopwatchAppearancePolicy.ResolveInactiveOpacityPercent(_settings) / 100.0);
                 herdOverlay.SetSeparateMergeState(false);
-                if (_overlaysVisible && !herdOverlay.IsVisible) herdOverlay.Show();
+                ApplyTimerOverlayVisibility(herdOverlay, herdSession);
             }
         }
         else if (_herdOverlay != null)
@@ -595,10 +604,13 @@ public partial class ControllerWindow : Window
 
             bool isSessionActive = session == active;
             overlay.SetActive(isSessionActive);
-            overlay.SetInactiveSeparated(!isSessionActive, _settings.InactiveSeparatedOverlayOpacity / 100.0);
+            overlay.SetInactiveSeparated(!isSessionActive, StopwatchAppearancePolicy.ResolveInactiveOpacityPercent(_settings) / 100.0);
             overlay.SetSeparateMergeState(true);
-            if (_overlaysVisible && !overlay.IsVisible) overlay.Show();
+            ApplyTimerOverlayVisibility(overlay, session);
         }
+
+        if (_activeClocksShelf?.IsVisible == true)
+            UpdateActiveClocksShelf();
     }
 
     private void SeparateActiveSession()
@@ -639,20 +651,7 @@ public partial class ControllerWindow : Window
     }
 
     private void ApplyOverlayStyle(OverlayWindow overlay)
-    {
-        overlay.ApplyTheme(_settings.OverlayTheme, _settings.ThemeMode);
-        Color text = _settings.TextColor == "Theme default" ? Colors.White : ParseColor(_settings.TextColor, Colors.White);
-        Color border = ParseColor(_settings.BorderColor, Colors.Black);
-        overlay.ApplySettings(
-            text,
-            border,
-            (int)_settings.TextSize,
-            (int)_settings.BorderWidth,
-            _settings.FontFamily,
-            _settings.BackgroundOpacity / 100.0,
-            _settings.TextColor == "Theme default",
-            _settings.OpaqueOverlayParts);
-    }
+        => overlay.ApplyAppearance(_settings);
 
     private static Color ParseColor(string name, Color fallback) => name switch
     {
@@ -727,7 +726,7 @@ public partial class ControllerWindow : Window
     {
         var session = CurrentTimer;
         TimeDisplay.Text = FormatDisplayTime(session);
-        ActiveWorkspaceTitle.Text = session.DisplayName;
+        ActiveWorkspaceTitle.Text = _timerManager.Active == null ? "No timers" : session.DisplayName;
 
         bool hasProject = !string.IsNullOrWhiteSpace(session.Name);
         string catBadge = !string.IsNullOrWhiteSpace(session.Category) ? $" [{session.Category}]" : "";
@@ -735,10 +734,11 @@ public partial class ControllerWindow : Window
         ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}{catBadge}" : $"[{session.Category}]";
 
         StartStopButton.Content = session.IsRunning ? "Pause" : "Start";
+        StartStopButton.IsEnabled = LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && session.Mode != 1;
         RecIndicator.IsVisible = session.IsRunning && _settings.ShowRecIndicator && !Classes.Contains("nika");
 
         StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;
-        StatusText.Text = session.IsRunning ? "Running" : "Paused";
+        StatusText.Text = DateTime.UtcNow < _shortcutFeedbackUntil ? _shortcutFeedback : session.IsRunning ? "Running" : "Paused";
 
         LapListBox.ItemsSource = session.LapTimes;
         LapPlaceholder.IsVisible = session.LapTimes.Count == 0;
@@ -751,6 +751,7 @@ public partial class ControllerWindow : Window
 
     private void ToggleClockMode()
     {
+        if (_timerManager.Active == null) return;
         var session = CurrentTimer;
         if (session.Mode == 1)
         {
@@ -879,6 +880,9 @@ public partial class ControllerWindow : Window
 
     private void ToggleSessionStartPause(TimerSession session)
     {
+        if (session.Mode == 1 || !_timerManager.Sessions.Contains(session)) return;
+        if (session.Mode == 2 && !session.IsRunning && session.CountdownRemaining <= TimeSpan.Zero)
+            session.CountdownRemaining = session.CountdownDuration;
         session.IsRunning = !session.IsRunning;
         if (session.IsRunning)
         {
@@ -893,10 +897,7 @@ public partial class ControllerWindow : Window
         UpdateActiveTimerDisplay();
         RefreshTimerRail();
 
-        if (_overlays.TryGetValue(session.Id, out var overlay))
-        {
-            overlay.SetRunning(session.IsRunning);
-        }
+        UpdateOverlayStates();
     }
 
     private void ResetActiveTimer()
@@ -906,24 +907,24 @@ public partial class ControllerWindow : Window
 
     private void ResetSession(TimerSession session)
     {
+        if (!_timerManager.Sessions.Contains(session) || session.Mode == 1) return;
         session.IsRunning = false;
         session.ResetElapsed();
         session.LapTimes.Clear();
+        session.LapCount = 0;
         session.CountdownRemaining = session.CountdownDuration;
+        session.LastCountdownUpdateUtc = default;
 
         UpdateActiveTimerDisplay();
         RefreshTimerRail();
 
-        if (_overlays.TryGetValue(session.Id, out var overlay))
-        {
-            overlay.UpdateTime(FormatDisplayTime(session));
-            overlay.SetRunning(false);
-        }
+        UpdateOverlayStates();
     }
 
     private void AddLap()
     {
         var session = CurrentTimer;
+        if (_timerManager.Active == null || session.Mode == 1) return;
         string lapStr = $"Lap {session.LapTimes.Count + 1}: {FormatDisplayTime(session)}";
         session.LapTimes.Insert(0, lapStr);
         UpdateActiveTimerDisplay();
@@ -932,22 +933,20 @@ public partial class ControllerWindow : Window
     private void ToggleOverlayVisibility()
     {
         _overlaysVisible = !_overlaysVisible;
+        _overlayVisibilityOverrides.Clear();
         ToggleOverlayButton.Content = _overlaysVisible ? "Hide overlay" : "Show overlay";
-        if (_herdOverlay != null)
-        {
-            if (_overlaysVisible) _herdOverlay.Show();
-            else _herdOverlay.Hide();
-        }
-        foreach (var overlay in _overlays.Values)
-        {
-            if (_overlaysVisible) overlay.Show();
-            else overlay.Hide();
-        }
+        UpdateOverlayStates();
     }
 
-    private void CreateNewTimer()
+    private async void CreateNewTimer()
     {
-        var newSession = _timerManager.Create();
+        if (_timerCommandDialog != null) return;
+        var dialog = CreateProjectChooser(null);
+        await ShowTimerCommandDialog(dialog);
+        if (!dialog.WasAccepted || _isExiting) return;
+
+        var session = _timerManager.Create();
+        ApplyProjectChoice(session, dialog);
         RefreshTimerRail();
         UpdateActiveTimerDisplay();
         UpdateOverlayStates();
@@ -955,7 +954,7 @@ public partial class ControllerWindow : Window
 
     private void SelectNextTimer()
     {
-        var next = _timerManager.CycleNextHerd() ?? _timerManager.CycleNext();
+        var next = _timerManager.CycleNext();
         if (next != null)
         {
             RefreshTimerRail();
@@ -978,22 +977,19 @@ public partial class ControllerWindow : Window
 
     private async void CloseSession(TimerSession session)
     {
-        if (_timerManager.Sessions.Count <= 1)
-        {
-            ResetSession(session);
-            return;
-        }
-
+        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
         string targetName = session.DisplayName;
-        bool confirmed = await ConfirmationDialogWindow.ShowAsync(
-            this,
+        var dialog = new ConfirmationDialogWindow(
             "Close Timer",
             "Close Timer",
             $"Are you sure you want to close '{targetName}'?",
             "Close",
             destructive: true);
+        await ShowTimerCommandDialog(dialog);
 
-        if (!confirmed) return;
+        if (!dialog.Result || _isExiting || !_timerManager.Close(session)) return;
+        _overlayVisibilityOverrides.Remove(session.Id);
+        if (_lastTimerEdit?.Session == session) _lastTimerEdit = null;
 
         if (_overlays.TryGetValue(session.Id, out var overlay))
         {
@@ -1001,7 +997,6 @@ public partial class ControllerWindow : Window
             _overlays.Remove(session.Id);
         }
 
-        _timerManager.Close(session);
         RefreshTimerRail();
         UpdateActiveTimerDisplay();
         UpdateOverlayStates();
@@ -1009,27 +1004,45 @@ public partial class ControllerWindow : Window
 
     private async void OpenTimerEditor(TimerSession session)
     {
+        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
         var projectNames = _projectHistory.ProjectNames.ToList();
-        var intervals = Array.Empty<ProjectWorkIntervalView>();
-        var editor = new TimerEditorWindow(session, projectNames, intervals, canUndo: false, settings: _settings);
-        await editor.ShowForOwnerAsync(this);
-        if (editor.WasSaved)
+        var intervals = _projectHistory.GetIntervalsForTimer(session.Id);
+        var editor = new TimerEditorWindow(session, projectNames, intervals, canUndo: _lastTimerEdit?.Session == session, settings: _settings);
+        await ShowTimerCommandDialog(editor);
+        if (_isExiting || !_timerManager.Sessions.Contains(session)) return;
+        if (editor.UndoRequested)
         {
-            session.RestoreElapsed(editor.NewTimeValue, editor.NewIsRunning);
-            if (!string.IsNullOrEmpty(editor.NewProjectName))
+            UndoTimerEdit();
+        }
+        else if (editor.DeleteTimerRequested)
+        {
+            CloseSession(session);
+        }
+        else if (editor.WasSaved)
+        {
+            SaveTimerEditUndo(session);
+            if (editor.DiscardRecordsRequested)
+                _projectHistory.DiscardAllIntervalsForTimer(session.Id);
+            else if (editor.Delta != TimeSpan.Zero)
+                _projectHistory.AdjustIntervalsForTimer(session.Id, editor.Delta, session.Name, DateTime.UtcNow, editor.NewIsRunning);
+            session.IsRunning = session.Mode != 1 && editor.NewIsRunning;
+            if (session.Mode == 2)
             {
-                session.Name = editor.NewProjectName;
-                if (_overlays.TryGetValue(session.Id, out var overlay))
-                    overlay.SetTimerName(session.Name);
+                session.CountdownRemaining = editor.NewTimeValue;
+                session.RestoreElapsed(session.Elapsed, session.IsRunning);
             }
+            else if (session.Mode != 1)
+                session.RestoreElapsed(editor.NewTimeValue, session.IsRunning);
+            session.LastCountdownUpdateUtc = session.IsRunning ? DateTime.UtcNow : default;
+            session.Name = editor.NewProjectName ?? "";
             session.Category = editor.NewCategory;
             session.ScorePerHour = editor.NewScorePerHour;
             if (!string.IsNullOrWhiteSpace(session.Name))
             {
                 _projectHistory.SetProjectCategory(session.Name, editor.NewCategory);
                 _projectHistory.SetProjectScorePerHour(session.Name, editor.NewScorePerHour);
-                _projectTimeStore.Save(_projectHistory);
             }
+            _projectTimeStore.Save(_projectHistory);
             if (_settings.AddProjectCategory(editor.NewCategory))
             {
                 SettingsStore.Save(_settings);
@@ -1103,40 +1116,14 @@ public partial class ControllerWindow : Window
     private async void RenameTimerMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         var session = CurrentTimer;
-        var projectNames = _projectHistory.ProjectNames.ToList();
-        var dialog = new TimerNameWindow(
-            session.Name,
-            projectNames,
-            isCreatingTimer: false,
-            renameShortcut: "",
-            categories: _settings.GetNormalizedProjectCategories(),
-            currentCategory: session.Category,
-            getProjectCategory: name => _projectHistory.GetProjectCategory(name),
-            currentScorePerHour: session.ScorePerHour,
-            getProjectScore: name => _projectHistory.GetProjectScorePerHour(name));
-        await dialog.ShowDialog(this);
-        if (dialog.WasAccepted)
-        {
-            session.Name = dialog.TimerName;
-            session.Category = dialog.Category;
-            session.ScorePerHour = dialog.ScorePerHour;
-            if (!string.IsNullOrWhiteSpace(session.Name))
-            {
-                _projectHistory.SetProjectCategory(session.Name, dialog.Category);
-                _projectHistory.SetProjectScorePerHour(session.Name, dialog.ScorePerHour);
-                _projectTimeStore.Save(_projectHistory);
-            }
-            if (_settings.AddProjectCategory(dialog.Category))
-            {
-                SettingsStore.Save(_settings);
-            }
-            if (_overlays.TryGetValue(session.Id, out var overlay))
-            {
-                overlay.SetTimerName(session.Name);
-            }
-            UpdateActiveTimerDisplay();
-            RefreshTimerRail();
-        }
+        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
+        var dialog = CreateProjectChooser(session);
+        await ShowTimerCommandDialog(dialog);
+        if (!dialog.WasAccepted || _isExiting || !_timerManager.Sessions.Contains(session)) return;
+        ApplyProjectChoice(session, dialog);
+        UpdateActiveTimerDisplay();
+        RefreshTimerRail();
+        UpdateOverlayStates();
     }
 
     private bool SetProjectScore(string projectName, double scorePerHour)
@@ -1162,12 +1149,7 @@ public partial class ControllerWindow : Window
         {
             _dashboardWindow = new ProjectDashboardWindow(
                 () => _projectHistory.CreateView(DateTime.UtcNow),
-                (name, start, end) =>
-                {
-                    var record = _projectHistory.AddManualInterval(name, start, end);
-                    _projectTimeStore.Save(_projectHistory);
-                    return new ProjectRecordMutationResult(ProjectRecordMutationStatus.Success, record);
-                },
+                AddProjectRecord,
                 (id, name, start, end) =>
                 {
                     var result = _projectHistory.UpdateClosedInterval(id, name, start, end);
@@ -1216,6 +1198,7 @@ public partial class ControllerWindow : Window
                 _settings.StartWithWindows = PlatformServices.Startup.IsEnabled();
             _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow));
             _settingsWindow.SettingsChanged += OnSettingsChanged;
+            _settingsWindow.PeriodicReviewRequested += OpenPeriodicReview;
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
         }
@@ -1279,22 +1262,33 @@ public partial class ControllerWindow : Window
                 _settings.NoteCommandModeKeys);
             if (PlatformServices.HotKey is PortalHotKeyService portal)
                 _shortcutsWindow.SetRegistrationStatus(portal.RegistrationStatus);
-            await _shortcutsWindow.ShowDialog(this);
-            if (_shortcutsWindow.DialogResult == true)
+            ExitShortcutCommandMode();
+            bool temporarilyUnregistered = PlatformServices.HotKey is SharpHookHotKeyService;
+            if (temporarilyUnregistered) PlatformServices.HotKey.UnregisterAll();
+            bool saved = false;
+            try
             {
-                _settings.Shortcuts[ShortcutAction.CommandLeader] = _shortcutsWindow.ResultLeader;
-                _settings.LeaderShortcut = _shortcutsWindow.ResultLeader;
-                _settings.NoteLeaderShortcut = _shortcutsWindow.ResultNoteLeader;
-                _settings.Shortcuts[ShortcutAction.NoteCommandLeader] = _shortcutsWindow.ResultNoteLeader;
-                _settings.Shortcuts[ShortcutAction.ShowActiveOverlay] = _shortcutsWindow.ResultShowActiveOverlay;
-                _settings.Shortcuts[ShortcutAction.OpenController] = _shortcutsWindow.ResultOpenController;
-                _settings.CommandChainingTimeoutSeconds = _shortcutsWindow.ResultChainingTimeoutSeconds;
-                _settings.CommandModeKeys = _shortcutsWindow.ResultCommandModeKeys;
-                _settings.NoteCommandModeKeys = _shortcutsWindow.ResultNoteCommandModeKeys;
-                SettingsStore.Save(_settings);
-                InitializePlatformServices();
+                await _shortcutsWindow.ShowDialog(this);
+                if (_shortcutsWindow.DialogResult == true)
+                {
+                    _settings.Shortcuts[ShortcutAction.CommandLeader] = _shortcutsWindow.ResultLeader;
+                    _settings.LeaderShortcut = _shortcutsWindow.ResultLeader;
+                    _settings.NoteLeaderShortcut = _shortcutsWindow.ResultNoteLeader;
+                    _settings.Shortcuts[ShortcutAction.NoteCommandLeader] = _shortcutsWindow.ResultNoteLeader;
+                    _settings.Shortcuts[ShortcutAction.ShowActiveOverlay] = _shortcutsWindow.ResultShowActiveOverlay;
+                    _settings.Shortcuts[ShortcutAction.OpenController] = _shortcutsWindow.ResultOpenController;
+                    _settings.CommandChainingTimeoutSeconds = _shortcutsWindow.ResultChainingTimeoutSeconds;
+                    _settings.CommandModeKeys = _shortcutsWindow.ResultCommandModeKeys;
+                    _settings.NoteCommandModeKeys = _shortcutsWindow.ResultNoteCommandModeKeys;
+                    saved = true;
+                    SettingsStore.Save(_settings);
+                }
             }
-            _shortcutsWindow = null;
+            finally
+            {
+                _shortcutsWindow = null;
+                if (!_isExiting && (saved || temporarilyUnregistered)) InitializePlatformServices();
+            }
         }
     }
 
@@ -1354,6 +1348,8 @@ public partial class ControllerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _timerCommandDialog?.Close();
+        _activeClocksShelf?.Close();
         StopHabiticaSync();
         _todoOverlayWindow?.Close();
         _todoOverlayWindow = null;

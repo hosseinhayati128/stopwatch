@@ -1,0 +1,1085 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "kind": "background",
+      "id": "navigator-parchment",
+      "path": "Assets/Todo/navigator-parchment.png",
+      "sourceRect": [
+        0,
+        0,
+        1,
+        0.46
+      ],
+      "sourceBoard": "background-options-01-04-v1.png",
+      "sourceOption": 1,
+      "licenseOrProvenance": "Existing project-generated parchment, reused without editing",
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "frame",
+      "id": "engraved-filigree",
+      "path": "Assets/Stopwatch/Frames/engraved-filigree.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sliceInsets": [
+        290,
+        160,
+        290,
+        160
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "sourceBoard": "hover-controls-matched-frames-13-14-v1.png",
+      "sourceOption": 14,
+      "licenseOrProvenance": "Built-in imagegen from approved frame; exact prompt in implementation-review/asset-prompts.md",
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "control",
+      "id": "filigree-keys",
+      "path": "Assets/Stopwatch/Controls/filigree-keys.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceRect": [
+        0.06,
+        0.16,
+        0.88,
+        0.62
+      ],
+      "sourceBoard": "hover-controls-matched-frames-13-14-v1.png",
+      "sourceOption": 14,
+      "licenseOrProvenance": "Built-in imagegen from approved control, blank wells for live glyphs; prompt in implementation-review/asset-prompts.md",
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "background",
+      "id": "amber-vellum",
+      "path": "Assets/Todo/amber-vellum.png",
+      "sourceRect": [
+        0,
+        0,
+        1,
+        0.46
+      ],
+      "sourceBoard": "background-options-01-04-v1.png",
+      "sourceOption": 2,
+      "licenseOrProvenance": "Existing project-generated material, reused intact",
+      "dark": false,
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "background",
+      "id": "midnight-chart",
+      "path": "Assets/Todo/midnight-chart.png",
+      "sourceRect": [
+        0,
+        0,
+        1,
+        0.46
+      ],
+      "sourceBoard": "background-options-01-04-v1.png",
+      "sourceOption": 3,
+      "licenseOrProvenance": "Existing project-generated material, reused intact",
+      "dark": true,
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "background",
+      "id": "quiet-atlas",
+      "path": "Assets/Todo/quiet-atlas.png",
+      "sourceRect": [
+        0,
+        0,
+        1,
+        0.46
+      ],
+      "sourceBoard": "background-options-01-04-v1.png",
+      "sourceOption": 4,
+      "licenseOrProvenance": "Existing project-generated material, reused intact",
+      "dark": false,
+      "intrinsicOpacity": 1
+    },
+    {
+      "kind": "background",
+      "id": "ships-timber",
+      "path": "Assets/Stopwatch/Backgrounds/ships-timber.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 5,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": true
+    },
+    {
+      "kind": "background",
+      "id": "sailcloth",
+      "path": "Assets/Stopwatch/Backgrounds/sailcloth.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 6,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": false
+    },
+    {
+      "kind": "background",
+      "id": "captains-leather",
+      "path": "Assets/Stopwatch/Backgrounds/captains-leather.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 7,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": true
+    },
+    {
+      "kind": "background",
+      "id": "aged-bronze",
+      "path": "Assets/Stopwatch/Backgrounds/aged-bronze.png",
+      "sourceSize": [
+        2171,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 8,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": false
+    },
+    {
+      "kind": "background",
+      "id": "tideglass",
+      "path": "Assets/Stopwatch/Backgrounds/tideglass.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 9,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": false
+    },
+    {
+      "kind": "background",
+      "id": "wano-waves",
+      "path": "Assets/Stopwatch/Backgrounds/wano-waves.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 10,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": false
+    },
+    {
+      "kind": "background",
+      "id": "celestial-navigation",
+      "path": "Assets/Stopwatch/Backgrounds/celestial-navigation.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 11,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": true
+    },
+    {
+      "kind": "background",
+      "id": "sky-island",
+      "path": "Assets/Stopwatch/Backgrounds/sky-island.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "background-options-05-12-v1.png",
+      "sourceOption": 12,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "dark": false
+    },
+    {
+      "kind": "frame",
+      "id": "classic-brass",
+      "path": "Assets/Stopwatch/Frames/classic-brass.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 1,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "navy-bevel",
+      "path": "Assets/Stopwatch/Frames/navy-bevel.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 2,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "walnut-rim",
+      "path": "Assets/Stopwatch/Frames/walnut-rim.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 3,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "pixel-voyage",
+      "path": "Assets/Stopwatch/Frames/pixel-voyage.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 4,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "instrument-case",
+      "path": "Assets/Stopwatch/Frames/instrument-case.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 5,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "slim-capsule",
+      "path": "Assets/Stopwatch/Frames/slim-capsule.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-01-06-v1.png",
+      "sourceOption": 6,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        369,
+        232,
+        369,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "rope-binding",
+      "path": "Assets/Stopwatch/Frames/rope-binding.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 7,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "chart-scroll",
+      "path": "Assets/Stopwatch/Frames/chart-scroll.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 8,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "admiralty",
+      "path": "Assets/Stopwatch/Frames/admiralty.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 9,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "bound-logbook",
+      "path": "Assets/Stopwatch/Frames/bound-logbook.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 10,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "cloud-crest",
+      "path": "Assets/Stopwatch/Frames/cloud-crest.png",
+      "sourceSize": [
+        2164,
+        727
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 11,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        368,
+        233,
+        368,
+        233
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "tide-curve",
+      "path": "Assets/Stopwatch/Frames/tide-curve.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 12,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        369,
+        232,
+        369,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "open-corners",
+      "path": "Assets/Stopwatch/Frames/open-corners.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "shape-frame-options-07-14-v1.png",
+      "sourceOption": 14,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        282,
+        232,
+        282,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "open-corners"
+    },
+    {
+      "kind": "frame",
+      "id": "vine-filigree",
+      "path": "Assets/Stopwatch/Frames/vine-filigree.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "filigree-frame-controls-15-20-v1.png",
+      "sourceOption": 15,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        369,
+        232,
+        369,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "frame",
+      "id": "royal-cartouche",
+      "path": "Assets/Stopwatch/Frames/royal-cartouche.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "filigree-frame-controls-15-20-v1.png",
+      "sourceOption": 16,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sliceInsets": [
+        369,
+        232,
+        369,
+        232
+      ],
+      "contentInsets": [
+        12,
+        19,
+        12,
+        20
+      ],
+      "minimumSize": [
+        130,
+        44
+      ],
+      "mask": "transparent-interior"
+    },
+    {
+      "kind": "control",
+      "id": "classic-brass",
+      "path": "Assets/Stopwatch/Controls/classic-brass.png",
+      "sourceSize": [
+        1983,
+        793
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 1,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.12,
+        1,
+        0.76
+      ],
+      "controlCenters": [
+        0.23,
+        0.5,
+        0.77
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "compass-dials",
+      "path": "Assets/Stopwatch/Controls/compass-dials.png",
+      "sourceSize": [
+        2048,
+        768
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 2,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.1,
+        1,
+        0.8
+      ],
+      "controlCenters": [
+        0.235,
+        0.5,
+        0.765
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "floating-buttons",
+      "path": "Assets/Stopwatch/Controls/floating-buttons.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 3,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.06,
+        1,
+        0.88
+      ],
+      "controlCenters": [
+        0.19,
+        0.5,
+        0.81
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "pixel-controls",
+      "path": "Assets/Stopwatch/Controls/pixel-controls.png",
+      "sourceSize": [
+        1916,
+        821
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 4,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.15,
+        1,
+        0.7
+      ],
+      "controlCenters": [
+        0.255,
+        0.5,
+        0.745
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "quiet-glyphs",
+      "path": "Assets/Stopwatch/Controls/quiet-glyphs.png",
+      "sourceSize": [
+        1983,
+        793
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 6,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.18,
+        1,
+        0.64
+      ],
+      "controlCenters": [
+        0.27,
+        0.5,
+        0.73
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "bronze-keys",
+      "path": "Assets/Stopwatch/Controls/bronze-keys.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "hover-controls-matched-frames-01-06-v1.png",
+      "sourceOption": 5,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.15,
+        1,
+        0.7
+      ],
+      "controlCenters": [
+        0.23,
+        0.5,
+        0.77
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "wooden-deck",
+      "path": "Assets/Stopwatch/Controls/wooden-deck.png",
+      "sourceSize": [
+        1983,
+        793
+      ],
+      "sourceBoard": "hover-controls-matched-frames-07-12-v1.png",
+      "sourceOption": 7,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.15,
+        1,
+        0.7
+      ],
+      "controlCenters": [
+        0.25,
+        0.5,
+        0.75
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "porcelain-keys",
+      "path": "Assets/Stopwatch/Controls/porcelain-keys.png",
+      "sourceSize": [
+        1983,
+        793
+      ],
+      "sourceBoard": "hover-controls-matched-frames-07-12-v1.png",
+      "sourceOption": 10,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.18,
+        1,
+        0.64
+      ],
+      "controlCenters": [
+        0.23,
+        0.5,
+        0.77
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "glass-dock",
+      "path": "Assets/Stopwatch/Controls/glass-dock.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sourceBoard": "hover-controls-matched-frames-07-12-v1.png",
+      "sourceOption": 12,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.15,
+        1,
+        0.7
+      ],
+      "controlCenters": [
+        0.25,
+        0.5,
+        0.75
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "vine-filigree",
+      "path": "Assets/Stopwatch/Controls/vine-filigree.png",
+      "sourceSize": [
+        2005,
+        784
+      ],
+      "sourceBoard": "filigree-frame-controls-15-20-v1.png",
+      "sourceOption": 15,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0.08,
+        1,
+        0.84
+      ],
+      "controlCenters": [
+        0.325,
+        0.5,
+        0.675
+      ],
+      "controlCenterY": 0.5
+    },
+    {
+      "kind": "control",
+      "id": "royal-cartouche",
+      "path": "Assets/Stopwatch/Controls/royal-cartouche.png",
+      "sourceSize": [
+        1983,
+        793
+      ],
+      "sourceBoard": "filigree-frame-controls-15-20-v1.png",
+      "sourceOption": 16,
+      "licenseOrProvenance": "Built-in imagegen from approved reference; prompt and original path in implementation-review/generated-assets.json",
+      "intrinsicOpacity": 1,
+      "sourceRect": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "controlCenters": [
+        0.275,
+        0.5,
+        0.725
+      ],
+      "controlCenterY": 0.5
+    }
+  ],
+  "typography": [
+    {
+      "id": "navigator-bold",
+      "timerFamily": "Roboto Condensed Black",
+      "timerFile": "Assets/Fonts/Nika/RobotoCondensed-Black.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-RobotoCondensed.txt",
+      "nameFamily": "Almendra",
+      "nameFile": "Assets/Fonts/Pirate/Almendra-Bold.ttf",
+      "nameLicense": "Assets/Fonts/Pirate/almendra-OFL.txt",
+      "renderer": "fixed-advance-live-text"
+    },
+    {
+      "id": "captains-serif",
+      "timerFamily": "Playfair Display ExtraBold",
+      "timerFile": "Assets/Fonts/Nika/PlayfairDisplay-ExtraBold.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-PlayfairDisplay.txt",
+      "nameFamily": "Almendra",
+      "nameFile": "Assets/Fonts/Pirate/Almendra-Bold.ttf",
+      "nameLicense": "Assets/Fonts/Pirate/almendra-OFL.txt",
+      "renderer": "fixed-advance-lining-figures"
+    },
+    {
+      "id": "typewriter-log",
+      "timerFamily": "Cascadia Mono",
+      "timerFile": "Assets/Fonts/Acanthus/CascadiaMono-SemiBold.ttf",
+      "timerLicense": "Assets/Fonts/Acanthus/OFL.txt",
+      "nameFamily": "Cascadia Mono",
+      "nameFile": "Assets/Fonts/Acanthus/CascadiaMono-SemiBold.ttf",
+      "nameLicense": "Assets/Fonts/Acanthus/OFL.txt",
+      "renderer": "fixed-advance-open-zero"
+    },
+    {
+      "id": "instrument-digital",
+      "timerFamily": "Rajdhani SemiBold",
+      "timerFile": "Assets/Fonts/Nika/Rajdhani-SemiBold.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-Rajdhani.txt",
+      "nameFamily": "Barlow Condensed",
+      "nameFile": "Assets/Fonts/Pirate/BarlowCondensed-SemiBold.ttf",
+      "nameLicense": "Assets/Fonts/Pirate/barlowcondensed-OFL.txt",
+      "renderer": "live-seven-segment"
+    },
+    {
+      "id": "pixel-voyage",
+      "timerFamily": "Press Start 2P",
+      "timerFile": "Assets/Fonts/Stopwatch/PressStart2P-Regular.ttf",
+      "timerLicense": "Assets/Fonts/Stopwatch/OFL-pressstart2p.txt",
+      "nameFamily": "Press Start 2P",
+      "nameFile": "Assets/Fonts/Stopwatch/PressStart2P-Regular.ttf",
+      "nameLicense": "Assets/Fonts/Stopwatch/OFL-pressstart2p.txt",
+      "renderer": "fixed-advance-pixel-font"
+    },
+    {
+      "id": "modern-deck",
+      "timerFamily": "Inter ExtraBold",
+      "timerFile": "Assets/Fonts/Nika/Inter-ExtraBold.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-Inter.txt",
+      "nameFamily": "Inter",
+      "nameFile": "Assets/Fonts/Acanthus/Inter-SemiBold.ttf",
+      "nameLicense": "Assets/Fonts/Acanthus/OFL.txt",
+      "renderer": "fixed-advance-live-text"
+    },
+    {
+      "id": "art-deco",
+      "timerFamily": "Poiret One",
+      "timerFile": "Assets/Fonts/Stopwatch/PoiretOne-Regular.ttf",
+      "timerLicense": "Assets/Fonts/Stopwatch/OFL-poiretone.txt",
+      "nameFamily": "Poiret One",
+      "nameFile": "Assets/Fonts/Stopwatch/PoiretOne-Regular.ttf",
+      "nameLicense": "Assets/Fonts/Stopwatch/OFL-poiretone.txt",
+      "renderer": "live-inline-geometry"
+    },
+    {
+      "id": "rounded-deck",
+      "timerFamily": "Nunito ExtraBold",
+      "timerFile": "Assets/Fonts/Stopwatch/Nunito-ExtraBold.ttf",
+      "timerLicense": "Assets/Fonts/Stopwatch/OFL-nunito-static.txt",
+      "nameFamily": "Nunito",
+      "nameFile": "Assets/Fonts/Stopwatch/Nunito-Bold.ttf",
+      "nameLicense": "Assets/Fonts/Stopwatch/OFL-nunito-static.txt",
+      "renderer": "fixed-advance-live-text"
+    },
+    {
+      "id": "chart-plotter",
+      "timerFamily": "Rajdhani SemiBold",
+      "timerFile": "Assets/Fonts/Nika/Rajdhani-SemiBold.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-Rajdhani.txt",
+      "nameFamily": "Cascadia Mono",
+      "nameFile": "Assets/Fonts/Acanthus/CascadiaMono-Regular.ttf",
+      "nameLicense": "Assets/Fonts/Acanthus/OFL.txt",
+      "renderer": "fixed-advance-live-text"
+    },
+    {
+      "id": "compass-outline",
+      "timerFamily": "Roboto Condensed Black",
+      "timerFile": "Assets/Fonts/Nika/RobotoCondensed-Black.ttf",
+      "timerLicense": "Assets/Fonts/Nika/OFL-RobotoCondensed.txt",
+      "nameFamily": "Cascadia Mono",
+      "nameFile": "Assets/Fonts/Acanthus/CascadiaMono-Regular.ttf",
+      "nameLicense": "Assets/Fonts/Acanthus/OFL.txt",
+      "renderer": "live-outline-geometry"
+    }
+  ],
+  "artwork": [
+    {
+      "id": "clean",
+      "renderer": "none"
+    },
+    {
+      "id": "corner-stamp",
+      "renderer": "StopwatchInkArtwork",
+      "path": "Assets/Pirate/icons.png",
+      "sourceRect": [
+        0.25,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "intrinsicOpacity": 0.58
+    },
+    {
+      "id": "edge-engraving",
+      "renderer": "StopwatchInkArtwork",
+      "path": "Assets/Pirate/icons.png",
+      "sourceRect": [
+        0.25,
+        0.5,
+        0.25,
+        0.5
+      ],
+      "intrinsicOpacity": 0.58
+    }
+  ]
+}

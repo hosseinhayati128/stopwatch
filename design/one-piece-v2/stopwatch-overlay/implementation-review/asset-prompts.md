@@ -1,0 +1,12 @@
+# Production asset prompts
+
+Tool: built-in imagegen. Original generated files remain under the Codex generated_images directory; runtime copies are in the repository. Prompts below generated reusable layers from approved reference boards.
+
+## Engraved Filigree
+
+Production UI asset, background-extraction. Reference image 1 is the APPROVED appearance, not an output board. Reproduce ONLY the bottom Engraved Filigree CLOCK FRAME from pairing 14 as one isolated straight-on wide rectangular gold frame, its fine double gold rails, sculpted gold corner scrolls and central side beads. Match the elegant thin outline and intricate curved engraving faithfully. No clock face, no parchment, no map, no time, no project name, no ACTIVE tab, no toolbar, no glyphs, no captions. All inside opening and all outside background must be true transparent alpha, no checkerboard painted in. Composition: single frame fills a wide 3.3:1 canvas, small transparent outer safety margin, horizontal top/bottom rails, all four corner ornaments fully visible. Warm polished brass/gold highlights, subtle dark edge definition, without cast shadow outside frame. Reference image 2 confirms the same ornate corners; exclude its ACTIVE tabs. This will be a scalable UI frame layer; center and exterior completely empty transparent.
+
+## Filigree Keys
+
+Production UI asset, precise-object-edit using reference ONLY for appearance. Isolate and reproduce ONLY the Filigree Keys navy-and-gold hover toolbar in the bottom pairing #14 of the reference. One horizontal slim navy cartouche with thin gold double rails and intricate polished gold scrollwork at left and right, three equal navy rounded-square button wells with thin golden outlines. Remove ALL action icons from the three wells: each well is blank solid navy. No clock, no text, no digits, no headings, no captions. Keep the same elegant light ornamental weight and gold color as reference. Flat straight-on view, single centered UI toolbar asset, about 5:1 overall ratio, narrow transparent safety margin. True transparent alpha outside the toolbar silhouette, no painted checkerboard, no drop shadow. Blank button centers must stay navy and opaque, to receive live close/play/pause/reset vector glyphs. All three wells equal-sized and evenly spaced. The curls and complete corners must not be clipped.
+Quiet Glyphs refinement: removed individual key outlines; one uninterrupted navy pill, transparent exterior, no text/icons. Original generated file: exec-d73c8564-ef9f-42b7-9d19-b3b990495165.png

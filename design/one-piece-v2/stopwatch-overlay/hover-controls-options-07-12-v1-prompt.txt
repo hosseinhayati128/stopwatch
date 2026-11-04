@@ -1,0 +1,38 @@
+Use case: ui-mockup.
+Create one polished extension board for Layer 5, hover-control styles, of a floating desktop stopwatch.
+Adapt the supplied comparison board into SIX NEW control-bar alternatives, numbered 7-12. Keep the earlier six options on their own saved sheet; do not repeat them here.
+
+REFERENCE AND INVARIANTS:
+The reference supplies the exact timer body: golden Navigator Parchment with faint map details at the edges, thin double Classic Brass frame, rounded horizontal rectangle, large condensed navy "00:44:27.0", smaller centered bold serif "Illustration", no extra emblem. Duplicate this identical body above every new toolbar. All six bodies have the same dimensions, font sizes, colors, content and map. Change ONLY the hover toolbar below the timer.
+
+COMPOSITION:
+Landscape 3:2 board, TWO columns by THREE rows, generous equal gutters, same dark slate backdrop, refined straight-on desktop UI presentation. Each candidate has one timer body and its compact toolbar centered below, separated by a small visible gap. No toolbar overlaps the frame, digits or project name. Toolbar width roughly 40-55 percent of the timer body width.
+Title: "STOPWATCH OVERLAY"
+Subtitle: "Layer 5 · More hover controls"
+Small legend at the bottom, outside the examples: "Close · Pause/resume · Reset"
+Labels outside, immediately above the panels, in reading order:
+"7  Wooden Deck"
+"8  Parchment Tabs"
+"9  Art Deco"
+"10  Porcelain Keys"
+"11  Leather Strap"
+"12  Glass Dock"
+
+CONTROLS:
+Every toolbar has exactly THREE equal usable action areas. Always the same left-to-right actions:
+Close = clear X cross.
+Pause/resume = TWO VERTICAL PAUSE BARS, since all samples are running.
+Reset = a clear counterclockwise circular arrow.
+Keep glyphs centered, consistent in apparent size and clearly readable. No extra buttons, menu dots, settings gear, stop square, power icon or play triangle. No text inside the buttons.
+
+SIX DISTINCT NEW TOOLBAR DIRECTIONS:
+7 Wooden Deck: a slim dark walnut bar with understated natural grain, tiny brass corner fittings, and three recessed dark navy square-rounded key wells with warm ivory glyphs. Thin brass separators. Wood belongs to the toolbar only; the timer remains parchment and brass.
+8 Parchment Tabs: three light warm parchment tab-shaped buttons joined in a compact horizontal group, delicate dark-ink outlines, tiny folded top-corner details and crisp dark navy glyphs. Almost flat paper construction with a subtle sepia shadow. A lightweight warm alternative to the dark metallic controls. No thick brass base.
+9 Art Deco: a compact angular navy-and-brass bar with clipped corners, symmetrical fine fan-line engraving at the two outer ends, three slender geometric button sections and clean ivory glyphs. Distinct formal geometric construction, elegant and restrained. No compass dials, clock faces or rounded medallions.
+10 Porcelain Keys: three small ivory porcelain rounded-square keys with a subtle smooth glazed finish, navy action glyphs, thin muted brass key rims and a very slim muted teal support. Light ceramic material, tasteful blue-and-ivory nautical styling, no weathering or map printed on the keys.
+11 Leather Strap: a narrow oxblood / dark burgundy leather strap with visible fine saddle stitching around the perimeter and small brass end studs. Three clean, evenly spaced engraved-looking warm ivory action symbols, separated by fine brass lines. Soft leather and stitch detail dominate; no wooden base or raised bronze keycaps.
+12 Glass Dock: a compact smoky sea-teal translucent glass capsule, subtle edge highlights, softly defined three action regions separated by very faint vertical rules, crisp ivory X, pause and reset glyphs. Refined modern maritime glass, gentle controlled sheen, no neon, heavy glow or sci-fi decorations.
+
+The six new toolbars must be visibly different through material and construction, while actions and timer body remain consistent. Preserve the literal time "00:44:27.0" in every panel, including both leading zeros and final decimal zero. Preserve project name "Illustration".
+No new frame choices, typography variations, additional artwork, status indicators, REC lights, tooltips, cursors, titlebars, whole application window or photographic desk scene.
+Show exactly six new styles, numbered 7, 8, 9, 10, 11, 12.

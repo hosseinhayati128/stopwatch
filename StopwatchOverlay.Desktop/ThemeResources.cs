@@ -40,6 +40,7 @@ internal static class ThemeResources
         OverlayThemeCatalog.AcanthusDarkGoldCrest => "AcanthusDarkGoldCrestOverlay",
         OverlayThemeCatalog.AcanthusDarkMinimalBotanical => "AcanthusDarkMinimalBotanicalOverlay",
         OverlayThemeCatalog.Pirate => "PirateOverlay",
+        OverlayThemeCatalog.Nika => "NikaOverlay",
         OverlayThemeCatalog.Daylight => "DaylightOverlay",
         _ => "MidnightOverlay"
     };

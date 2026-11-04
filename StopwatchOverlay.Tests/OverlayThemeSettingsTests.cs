@@ -15,15 +15,15 @@ public sealed class OverlayThemeSettingsTests
            select new object[] { panel, overlay };
 
     [Fact]
-    public void Catalog_ContainsExactlyTheTenIndependentChoices()
+    public void Catalog_ContainsAllIndependentChoicesIncludingNika()
     {
         Assert.Equal(new[]
         {
             "Follow Application Theme", "Midnight", "Daylight", "Pixel Deck Night",
             "Pixel Deck Day", "Acanthus Light", "Acanthus Dark Elegant Olive",
-            "Acanthus Dark Gold Crest", "Acanthus Dark Minimal Botanical", "one piece"
+            "Acanthus Dark Gold Crest", "Acanthus Dark Minimal Botanical", "one piece", "Nika's Chronicle"
         }, OverlayThemeCatalog.All);
-        Assert.Equal(10, OverlayThemeCatalog.All.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(11, OverlayThemeCatalog.All.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.Equal(OverlayThemeCatalog.FollowApplicationTheme, new AppSettings().OverlayTheme);
     }
 
@@ -60,7 +60,7 @@ public sealed class OverlayThemeSettingsTests
                 {
                     AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
                     AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
-                    AppThemeCatalog.Nika => OverlayThemeCatalog.Pirate,
+                    AppThemeCatalog.Nika => AppThemeCatalog.Nika,
                     _ => panel
                 }
                 : overlay,
@@ -118,7 +118,7 @@ public sealed class OverlayThemeSettingsTests
                     {
                         AppThemeCatalog.Acanthus => OverlayThemeCatalog.AcanthusLight,
                         AppThemeCatalog.Pirate => OverlayThemeCatalog.Pirate,
-                        AppThemeCatalog.Nika => OverlayThemeCatalog.Pirate,
+                        AppThemeCatalog.Nika => OverlayThemeCatalog.Nika,
                         _ => nextPanel
                     }
                     : overlay,

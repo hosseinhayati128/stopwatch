@@ -1,0 +1,39 @@
+Use case: ui-mockup.
+Asset type: background-opacity comparison board for a floating desktop stopwatch.
+
+Primary request: Preview background opacity at 100%, 70% and 40% over both light and dark desktop backdrops. ONLY the parchment/map interior changes opacity. Timer text, project name, state indicators, gold frame and the separate hover toolbar stay fully opaque and visually identical.
+
+Input roles:
+Image 1 is the approved state composition: use its Active · Running example. Exact small teal triangle before project name and top-center navy/gold ACTIVE tab, with NO project underline.
+Image 2 is the frame/hover-control style reference: use ONLY lower option 14 Filigree Keys / Engraved Filigree. Use its compact horizontal clock proportions and matching navy/gold three-button toolbar. Do not use rope design.
+
+Composition: high-detail landscape 3:2 comparison board, ideally 2400 x 1600 or comparable high resolution. TWO columns and THREE rows, exactly SIX complete overlay examples. Dark navy outer presentation background with clean ivory/gold labels.
+Title exactly "BACKGROUND OPACITY".
+Subtitle exactly "Layer 7 · Background only".
+Column headings "Light desktop" and "Dark desktop".
+Row headings, each above its pair of examples: "100% opacity", "70% opacity", "40% opacity".
+Footer exactly "Text, frame, state markers and controls stay opaque".
+Small additional footer note exactly "Concept preview".
+
+Each cell contains a SIMPLE DESKTOP BACKDROP panel with the stopwatch floating over it:
+For the light-desktop column, repeat the SAME pale gray workspace with quiet rectangular white cards, a few soft slate lines and one muted blue rectangular area.
+For the dark-desktop column, repeat the SAME medium-dark slate workspace with muted lighter-gray cards and lines, plus one desaturated teal rectangular area.
+These are generic unfocused windows without readable app text, logos or brands. Underlying panels and blocks must have recognizable broad edges so transmission through the parchment is visible.
+Make the desktop geometry at corresponding positions identical down each column. The overlay stays in exactly the same position relative to those blocks.
+Do NOT use a transparency checkerboard. Do NOT blur away or erase the underlying geometry selectively between rows. No wallpaper photographs or extra objects.
+
+ALL SIX overlays:
+Same thin engraved gold filigree frame, warm Navigator Parchment map interior, small compass at right, dark navy bold condensed timer exactly "00:44:27.0", and dark serif project name exactly "Illustration".
+Small teal running triangle immediately before Illustration in a fixed slot. No underline or extra status text.
+Small navy-and-gold tab reading exactly "ACTIVE" centered on the top frame edge in all six.
+Below the clock, centered with a tiny gap, show the same compact navy Filigree Keys hover toolbar with gold scrollwork ends and THREE ivory glyphs in this order: X, two vertical pause bars, counterclockwise reset arrow. Toolbar width about half the clock width.
+Keep all text, symbols, frame ornament, ACTIVE tab and the ENTIRE toolbar fully solid at all three opacity levels. Never fade or recolor these layers.
+Consistent compact horizontal body around 4:1, comfortably inside its desktop backdrop panel. Do not create oversized desktop windows, perspective mockups or tall clocks.
+
+Opacity differences must be obvious and credible:
+TOP ROW 100%: parchment interior is fully opaque golden map paper, completely covering desktop geometry beneath it. Nothing behind shows through the clock interior.
+MIDDLE ROW 70%: map interior is translucent warm parchment. Underlying desktop cards and blocks are faintly but distinctly visible THROUGH it, following their unchanged positions; surface remains mostly parchment-like. The dark desktop should subtly influence the resulting color, not fade the text.
+BOTTOM ROW 40%: parchment is substantially more translucent. Underlying desktop geometry is clearly visible THROUGH the entire clock interior, with a lighter map-pattern tint over it. The light and dark desktop results must visibly differ. Gold frame/text/state/toolbar remain just as solid as above.
+Do not simulate transparency merely by desaturating the parchment or making everything dim. Actual appearance should show composited desktop structure through the interior. Map linework fades together with the parchment.
+Keep text the same dark navy across rows so the comparison honestly shows contrast changes; do not introduce glow, outline, shadow, a solid text backing or automatic text recoloring.
+No added skull artwork, new frame/control variations, extra badges, selection changes, motion or watermark. Refined faithful UI concept render; opacity is an illustrative preview rather than a measured alpha export.

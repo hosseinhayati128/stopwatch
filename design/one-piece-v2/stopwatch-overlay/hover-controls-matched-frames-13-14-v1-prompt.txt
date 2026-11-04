@@ -1,0 +1,35 @@
+Use case: ui-mockup.
+Asset type: final comparison board completing a matched frame-and-hover-control collection for a floating desktop stopwatch.
+
+Primary request: Create TWO new hover-control styles, numbered 13 and 14, paired with the only two retained frames not yet shown with matching controls: Rope Binding and Engraved Filigree. Keep the existing frame designs faithful to the reference. This is a visual design exploration.
+
+Input roles:
+Image 1 is the retained FRAME catalog. Use the frame labeled "7 Rope Binding" for the first tile and "13 Engraved Filigree" for the second tile. Source-frame numbers are not the new control numbers.
+Image 2 is the existing MATCHED FRAMES + CONTROLS board. Match its polished presentation, navy backdrop, parchment texture, time typography, project name, icon order, material rendering and overall styling. Do not reproduce its six options.
+
+Composition: landscape 3:2 polished board with TWO large, well-spaced rows, one complete compact horizontal stopwatch and toolbar per row, centered, generous safe margins. Each stopwatch body should have approximately a 4:1 width-to-height ratio, with room below it for its hover toolbar. Frame/control design must be easily inspectable. Do not stretch the time text or make the stopwatch body unusually tall.
+Title exactly "MATCHED FRAMES + CONTROLS".
+Subtitle exactly "Pairings 13–14".
+Each row has a clear circled hover-control number, an ivory control name, and a smaller gold line naming its matched frame.
+Footer exactly "Close · Pause/resume · Reset".
+
+TOP ROW:
+Heading exactly "13 Rope Binding"
+Small label exactly "Frame: Rope Binding"
+Timer frame: copy the reference's rope-bound rectangle, warm tan braided rope running along all four sides, compact nautical knots at all four corners. Keep the rectangular frame silhouette and rope fiber detail.
+NEW MATCHING HOVER TOOLBAR: a compact dark navy fabric-like backing plate, border neatly bound in matching tan braided rope, small knots at the two ends. Three understated round navy button wells with thin rope rings, each holding one crisp ivory action glyph. The texture and knot scale should match the frame. Nautical and tactile, restrained, functional. No dangling loose ropes, anchors, ship wheels, or extra icons.
+
+BOTTOM ROW:
+Heading exactly "14 Filigree Keys"
+Small label exactly "Frame: Engraved Filigree"
+Timer frame: copy the reference's elegant thin brass outline with delicate curling gold leaf/vine scrollwork at the corners and short decorative sides. Retain open fine ornamentation and the broad clear text center; do not turn it into a thick gold slab.
+NEW MATCHING HOVER TOOLBAR: a slim dark navy cartouche with fine brass outline and delicate engraved gold scrollwork at its left and right ends, echoing the frame. Three balanced dark navy rounded button cells with thin gold borders; ivory glyphs. A few fine gold dividers are acceptable. Ornament remains outside the three glyph bounds. Refined and readable rather than heavily encrusted.
+
+LOCKED across both rows:
+Background inside each frame is the existing warm Navigator Parchment map with quiet center, small coastal linework around the edges and compass rose toward the right.
+Time exactly "00:44:27.0", large dark navy condensed bold digits with clean open zero counters; project name exactly "Illustration" below in smaller dark serif lettering.
+No optional skull artwork or new emblem.
+Every hover toolbar has exactly THREE actions left to right: CLOSE X, PAUSE two vertical bars, RESET counterclockwise circular arrow. Repeat this exact order in both rows. No extra actions or extra button-like ornaments.
+Toolbar centered BELOW its frame, separated by a narrow visible gap, width about 45-50% of the timer. No overlap with time, project label, or frame ornament.
+Keep time/project fully readable and consistent. Preserve original frame identities, while creating coherent matching toolbar materials.
+High-detail softly dimensional UI concept artwork. No device mockup, photography, watermark, or extra labels.
