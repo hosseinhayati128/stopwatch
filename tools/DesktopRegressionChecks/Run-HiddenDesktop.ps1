@@ -42,6 +42,14 @@ Copy-Item -LiteralPath 'tools/DesktopRegressionChecks/bin/Debug/net10.0/DesktopR
 dotnet exec --runtimeconfig StopwatchOverlay.Desktop/bin/Debug/net10.0/StopwatchOverlay.Desktop.runtimeconfig.json --depsfile StopwatchOverlay.Desktop/bin/Debug/net10.0/StopwatchOverlay.Desktop.deps.json StopwatchOverlay.Desktop/bin/Debug/net10.0/DesktopRegressionChecks.dll $testArguments *> '$escapeLog'
 exit `$LASTEXITCODE
 "@
+if($Mode -eq '--unit-tests'){
+ $unitResultsPath=(Join-Path ([System.IO.Path]::GetDirectoryName($logFullPath)) 'unit-results').Replace("'","''")
+ $runner=@"
+Set-Location -LiteralPath '$escapeRoot'
+dotnet test StopwatchOverlay.Tests/StopwatchOverlay.Tests.csproj --no-build --no-restore --logger 'trx;LogFileName=unit-tests.trx' --results-directory '$unitResultsPath' *> '$escapeLog'
+exit `$LASTEXITCODE
+"@
+}
 [System.IO.File]::WriteAllText($runnerPath,$runner)
 $info=New-Object HiddenRegressionDesktop+ProcessInfo
 $startup=New-Object HiddenRegressionDesktop+Startup

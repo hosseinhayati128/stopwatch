@@ -9,6 +9,7 @@ namespace StopwatchOverlay.Desktop.Controls;
 public sealed record StopwatchAsset(Bitmap Bitmap,Rect Source,Thickness SliceInsets,
     Thickness ContentInsets,Size MinimumSize,double IntrinsicOpacity,bool IsDark)
 {
+    public string Id {get;init;}=string.Empty;
     public double[] ControlCenters {get;init;}={.3,.5,.7};
     public double ControlCenterY {get;init;}=.5;
 }
@@ -56,6 +57,7 @@ public sealed class StopwatchAppearanceAssets
                 entry.TryGetProperty("intrinsicOpacity",out var alpha)?alpha.GetDouble():1,
                 entry.TryGetProperty("dark",out var dark)&&dark.GetBoolean())
             {
+                Id=entry.GetProperty("id").GetString()!,
                 ControlCenters=entry.TryGetProperty("controlCenters",out var centers)?centers.EnumerateArray().Select(x=>x.GetDouble()).ToArray():new[]{.3,.5,.7},
                 ControlCenterY=entry.TryGetProperty("controlCenterY",out var cy)?cy.GetDouble():.5
             };
@@ -68,16 +70,7 @@ public sealed class StopwatchAppearanceAssets
 
     public static void DrawFrame(DrawingContext context,StopwatchAsset asset,Rect destination,double scale)
     {
-        var s=asset.Source;var i=asset.SliceInsets;
-        if(i==default){context.DrawImage(asset.Bitmap,s,destination);return;}
-        double factor=Math.Min(scale,Math.Min(destination.Width/(i.Left+i.Right),destination.Height/(i.Top+i.Bottom)));
-        double[] sx={s.X,s.X+i.Left,s.Right-i.Right,s.Right},sy={s.Y,s.Y+i.Top,s.Bottom-i.Bottom,s.Bottom};
-        double[] dx={destination.X,destination.X+i.Left*factor,destination.Right-i.Right*factor,destination.Right},
-            dy={destination.Y,destination.Y+i.Top*factor,destination.Bottom-i.Bottom*factor,destination.Bottom};
-        for(int y=0;y<3;y++)for(int x=0;x<3;x++)
-            if(dx[x+1]>dx[x]&&dy[y+1]>dy[y])
-                context.DrawImage(asset.Bitmap,new Rect(sx[x],sy[y],sx[x+1]-sx[x],sy[y+1]-sy[y]),
-                    new Rect(dx[x],dy[y],dx[x+1]-dx[x],dy[y+1]-dy[y]));
+        StopwatchFrameRenderer.Draw(context,asset,destination,scale);
     }
 
     public static void DrawCover(DrawingContext context,StopwatchAsset asset,Rect destination)

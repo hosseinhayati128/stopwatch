@@ -32,9 +32,13 @@ public partial class OverlayWindow : Window
     private bool _isRunning, _isClockMode;
     private bool _isInactiveSeparated;
     private double _selectionOpacity=1;
+    private StopwatchPresentationState? _appliedStopwatchState;
+    private StopwatchAppearanceSettings? _appliedStopwatchAppearance;
+    private double _appliedSelectionOpacity=double.NaN;
 
     public void ApplyAppearance(AppSettings settings)
     {
+        _appliedStopwatchState=null;
         _stopwatchAppearance=null;
         ClockFace.ApplyStopwatchAppearance(null);
         StopwatchToolbarStyler.Apply(ActionSurface,ActionButtons,null,new(_isActive,_isRunning,_isClockMode),1);
@@ -58,9 +62,14 @@ public partial class OverlayWindow : Window
     private void RefreshStopwatchPresentation()
     {
         var state=new StopwatchPresentationState(_isActive,_isRunning,_isClockMode);
+        if (_appliedStopwatchState == state && ReferenceEquals(_appliedStopwatchAppearance,_stopwatchAppearance)
+            && _appliedSelectionOpacity == _selectionOpacity) return;
         ClockFace.SetStopwatchPresentationState(state);
         StopwatchOpacity.Apply(ClockFace,_stopwatchAppearance!=null?_selectionOpacity:1);
         if(_stopwatchAppearance!=null)StopwatchToolbarStyler.Apply(ActionSurface,ActionButtons,_stopwatchAppearance,state,_selectionOpacity);
+        _appliedStopwatchState=state;
+        _appliedStopwatchAppearance=_stopwatchAppearance;
+        _appliedSelectionOpacity=_selectionOpacity;
     }
 
     public string EffectiveOverlayTheme => _effectiveOverlayTheme;
@@ -226,6 +235,9 @@ public partial class OverlayWindow : Window
         bool useThemeTextColor = false,
         NavigatorOpaqueParts opaqueParts = NavigatorOpaqueParts.Default)
     {
+        // Applying toolbar appearance restores its default selection opacity;
+        // reapply this window's current selection after changing settings.
+        _appliedStopwatchState=null;
         _textColor = textColor;
         _borderColor = borderColor;
         _fontSize = Math.Clamp(fontSize, 16, 120);
@@ -248,6 +260,7 @@ public partial class OverlayWindow : Window
 
     public void ApplyTheme(string? overlayTheme, string? applicationTheme)
     {
+        _appliedStopwatchState=null;
         _effectiveOverlayTheme = OverlayThemeCatalog.Resolve(overlayTheme, applicationTheme);
         _stopwatchAppearance=_effectiveOverlayTheme==OverlayThemeCatalog.Nika?_stopwatchAppearance??new StopwatchAppearanceSettings():null;
         ClockFace.ApplyTheme(overlayTheme, applicationTheme);

@@ -1,0 +1,50 @@
+{
+  "label": "baseline",
+  "logicalProcessors": 8,
+  "backend": "Win32 AngleEgl with software fallback, private desktop",
+  "profile": {
+    "Version": 1,
+    "Background": "midnight-chart",
+    "Frame": "vine-filigree",
+    "Typography": "instrument-digital",
+    "Artwork": "edge-engraving",
+    "HoverControls": "filigree-keys",
+    "BackgroundOpacity": 79,
+    "UnselectedOpacity": 38,
+    "OpaqueLayers": 23
+  },
+  "textSize": 27,
+  "note": "Same simulated controller updates in each run; no exports/readback inside the timed interval. Does not measure the user\u0027s whole workload or prove the sole cause of machine lag.",
+  "results": [
+    {
+      "scenario": "paused",
+      "updates": 180,
+      "distinctTimes": 1,
+      "wallSeconds": 8.0911365,
+      "cpuSeconds": 8.15625,
+      "totalCpuPercent": 12.600593872072238,
+      "allocatedBytes": 26147728,
+      "workingSetBytes": 534237184
+    },
+    {
+      "scenario": "seconds",
+      "updates": 180,
+      "distinctTimes": 6,
+      "wallSeconds": 7.720256,
+      "cpuSeconds": 2.3125,
+      "totalCpuPercent": 3.744208741264538,
+      "allocatedBytes": 26137808,
+      "workingSetBytes": 534237184
+    },
+    {
+      "scenario": "tenths",
+      "updates": 180,
+      "distinctTimes": 60,
+      "wallSeconds": 7.7819155,
+      "cpuSeconds": 2.453125,
+      "totalCpuPercent": 3.9404260429196385,
+      "allocatedBytes": 29176632,
+      "workingSetBytes": 534237184
+    }
+  ]
+}

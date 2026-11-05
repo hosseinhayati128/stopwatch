@@ -7,6 +7,8 @@ using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using StopwatchOverlay.Desktop.Controls;
+using Avalonia.Threading;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -17,16 +19,19 @@ internal sealed class TimerPickerWindow : Window
 
     internal TimerSession? SelectedTimer { get; private set; }
 
-    internal TimerPickerWindow(IReadOnlyList<TimerSession> timers, TimerSession? active)
+    internal TimerPickerWindow(IReadOnlyList<TimerSession> timers, TimerSession? active, AppSettings? settings=null)
     {
+        bool framed=settings?.ThemeMode==AppThemeCatalog.Nika;
         Title = "Choose a clock";
         Width = 460;
-        Height = 410;
+        Height = framed?480:410;
+        if(framed){MinWidth=360;MinHeight=300;}
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         _timers = timers.ToArray();
         _clocks = new ListBox
         {
+            Focusable = true,
             ItemsSource = _timers.Select((timer, index) =>
                 $"{index + 1}. {timer.DisplayName}{(timer == active ? " · Active" : "")}\n{timer.DisplaySummary}").ToArray(),
             ItemTemplate = new FuncDataTemplate<string>((label, _) => new TextBlock
@@ -44,15 +49,28 @@ internal sealed class TimerPickerWindow : Window
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 10)
         };
-        var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), Margin = new Thickness(16) };
+        var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), Margin = framed?new Thickness(0):new Thickness(16) };
         Grid.SetRow(_clocks, 1);
         Grid.SetRow(choose, 2);
         layout.Children.Add(help);
         layout.Children.Add(_clocks);
         layout.Children.Add(choose);
-        Content = layout;
+        if(framed)
+        {
+            var surface=new StopwatchFrameSurface{Child=layout,Padding=new Thickness(8)};
+            // Keep the existing dialog material; reuse of artwork does not link preferences.
+            surface.Bind(StopwatchFrameSurface.BackgroundProperty,this.GetResourceObservable("DialogSurfaceBrush"));
+            Content=surface;
+        }
+        else Content = layout;
         AddHandler(KeyDownEvent, HandlePickerKey, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        Opened += (_, _) => _clocks.Focus();
+        Opened += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            if(!IsVisible)return;
+            _clocks.ScrollIntoView(_clocks.SelectedIndex);
+            if(_clocks.ContainerFromIndex(_clocks.SelectedIndex) is Control item)item.Focus();
+            else _clocks.Focus();
+        },DispatcherPriority.Loaded);
     }
 
     private void HandlePickerKey(object? sender, KeyEventArgs args)

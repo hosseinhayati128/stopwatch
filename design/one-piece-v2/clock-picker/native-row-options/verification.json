@@ -1,0 +1,69 @@
+{
+  "status": "design-options-not-production-UI",
+  "renderer": "Avalonia native text and shared production frame surface",
+  "frame": "engraved-filigree",
+  "panelWidth": 460,
+  "panelHeight": 480,
+  "names": [
+    "Illustration",
+    "Coding",
+    "Reading",
+    "Study",
+    "Writing",
+    "Planning"
+  ],
+  "times": [
+    "00:44:27",
+    "01:12:08",
+    "00:18:42",
+    "00:36:10",
+    "00:08:15",
+    "00:05:32"
+  ],
+  "options": [
+    {
+      "number": 1,
+      "Name": "Navigator",
+      "nameFont": "Almendra",
+      "NameSize": 20,
+      "timeFont": "Roboto Condensed Black",
+      "TimeSize": 22,
+      "rowHeight": 44,
+      "contentWidth": 367,
+      "contentHeight": 412,
+      "clocks": 6,
+      "activeRow": 1,
+      "focusedRow": 3
+    },
+    {
+      "number": 2,
+      "Name": "Clean",
+      "nameFont": "Inter",
+      "NameSize": 16,
+      "timeFont": "Inter ExtraBold",
+      "TimeSize": 18,
+      "rowHeight": 44,
+      "contentWidth": 367,
+      "contentHeight": 412,
+      "clocks": 6,
+      "activeRow": 1,
+      "focusedRow": 3
+    },
+    {
+      "number": 3,
+      "Name": "Logbook",
+      "nameFont": "Playfair Display ExtraBold",
+      "NameSize": 16,
+      "timeFont": "Cascadia Mono",
+      "TimeSize": 16,
+      "rowHeight": 44,
+      "contentWidth": 367,
+      "contentHeight": 412,
+      "clocks": 6,
+      "activeRow": 1,
+      "focusedRow": 3
+    }
+  ],
+  "execution": "Private Windows desktop; no application lifetime, settings, windows or hotkeys.",
+  "newRuntimeImages": 0
+}

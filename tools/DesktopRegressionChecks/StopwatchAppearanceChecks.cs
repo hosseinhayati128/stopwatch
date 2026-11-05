@@ -15,7 +15,8 @@ using StopwatchOverlay.Desktop.Views;
 
 internal static partial class StopwatchAppearanceChecks
 {
-    internal static string OutputDirectory => Path.GetFullPath("design/one-piece-v2/stopwatch-overlay/implementation-review");
+    internal static string? OutputOverride {get;set;}
+    internal static string OutputDirectory => Path.GetFullPath(OutputOverride??"design/one-piece-v2/stopwatch-overlay/implementation-review");
     internal static void Require(bool condition,string message) { if(!condition) throw new Exception(message); }
 
     internal static void Renderer()

@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-05",
+  "surface": "clock-picker",
+  "stage": "navigator-states-and-edge-cases-ready-for-review",
+  "implementationTarget": "StopwatchOverlay.Desktop",
+  "generationTool": "Original concept boards: built-in image_gen; native previews: Avalonia",
+  "boards": [
+    {
+      "image": "layout-options-01-03-v1.png",
+      "prompt": "layout-options-01-03-v1-prompt.txt",
+      "layer": "layout",
+      "optionNumbers": [
+        1,
+        2,
+        3
+      ],
+      "status": "option-1-approved",
+      "sourceFile": "exec-d6b13b5b-c107-40b7-8c71-1f2cb5005c61.png"
+    },
+    {
+      "image": "surface-options-01-04-v1.png",
+      "prompt": "surface-options-01-04-v1-prompt.txt",
+      "layer": "background-and-outer-frame",
+      "optionNumbers": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "status": "proposed",
+      "sourceFile": "exec-ef1fe77f-e7cc-4810-af87-d80ed3475c7e.png"
+    }
+  ],
+  "options": [
+    {
+      "number": 1,
+      "name": "Compact List"
+    },
+    {
+      "number": 2,
+      "name": "Stacked Cards"
+    },
+    {
+      "number": 3,
+      "name": "Two-column Grid"
+    }
+  ],
+  "recommendedOption": 1,
+  "selectedOption": 1,
+  "selectedLayout": "compact-list",
+  "layoutApproval": "User: 1 is good",
+  "surfaceOptions": [
+    {
+      "number": 1,
+      "name": "Engraved Parchment"
+    },
+    {
+      "number": 2,
+      "name": "Midnight Chart"
+    },
+    {
+      "number": 3,
+      "name": "Sailcloth & Walnut"
+    },
+    {
+      "number": 4,
+      "name": "Tideglass"
+    }
+  ],
+  "recommendedSurfaceOption": 1,
+  "selectedSurfaceOption": null,
+  "assetReuse": {
+    "userDirection": "Reuse modular stopwatch frames across different pages and panel sizes instead of generating a new PNG frame for each surface.",
+    "verifiedCurrentState": {
+      "existingFrameStyles": 16,
+      "allFramesHaveSliceInsets": true,
+      "frameFilesBytes": 9595101,
+      "renderer": "StopwatchOverlay.Desktop/Controls/StopwatchFrameRenderer.cs",
+      "currentMethod": "Shared modular recipes: uniform-scale fixed ornaments, repeated and clipped rails, assembled interior clips, per-frame content insets, and a bounded 32-layout cache.",
+      "bitmapCache": "Shared by stopwatch overlays and previews, keyed by resource path.",
+      "conceptBoards": "Design references outside the Desktop Assets resource directory; not production window images."
+    },
+    "proposedApproach": "Reuse the current catalog through a shared modular frame component. All artwork pieces keep one uniform scale; corners and ornaments stay fixed, rails repeat, and the last repeat is clipped to fit. No artwork stretching. Backgrounds remain independent reusable assets. Avoid per-page or per-size frame bitmap exports.",
+    "noStretchRequirement": "User rejected the nine-slice preview: no stretching please. This applies to edges and ornaments as well as corners.",
+    "settingsBoundary": "Sharing artwork does not require sharing appearance preferences; no global synchronization policy has been approved.",
+    "validationNeeded": "Physical monitor DPI remains untested. Future picker rows, typography and controls remain separate design layers.",
+    "implementationStatus": "Integrated into the production overlay, inspector previews, reusable panel surface and Nika clock picker. Native regressions and production-resolution audit passed; no new runtime frame assets. Installed application unchanged.",
+    "nativePreview": {
+      "board": "native-frame-preview/same-frame-three-sizes.png",
+      "verification": "native-frame-preview/verification.json",
+      "notes": "native-frame-preview/README.md",
+      "frame": "engraved-filigree",
+      "sizes": [
+        "412.8 x 132 stopwatch frame",
+        "460 x 480 picker",
+        "820 x 650 larger panel"
+      ],
+      "finding": "One existing frame renders at all three sizes. Corner proportions remain fixed; decorative side sections stretch on tall panels and need a modular edge refinement before adoption.",
+      "status": "Rejected by user because side artwork stretches; preserved as baseline."
+    },
+    "modularPreview": {
+      "board": "native-modular-frame-preview/same-frame-three-sizes.png",
+      "verification": "native-modular-frame-preview/verification.json",
+      "notes": "native-modular-frame-preview/README.md",
+      "frame": "engraved-filigree",
+      "sizes": [
+        "420 x 132 stopwatch frame",
+        "460 x 480 picker",
+        "820 x 650 larger panel"
+      ],
+      "finding": "All six ornaments keep their size and proportions. Uniformly scaled rail segments repeat with end clipping; no artwork is stretched. Same existing PNG reused at all sizes.",
+      "status": "User accepted the improved no-stretch preview; native prototype is not yet integrated into the application.",
+      "userFeedback": "yea that's much better. but I think some of the frames has more work than this.",
+      "nextStepProposal": "Audit all 16 frame styles for fixed pieces, repeatable edges, custom ornament placement, joins and minimum sizes; review native three-size comparisons before consolidating the shared renderer."
+    },
+    "catalogAudit": {
+      "date": "2026-11-05",
+      "directory": "native-frame-catalog-audit",
+      "verification": "native-frame-catalog-audit/verification.json",
+      "visualReview": "native-frame-catalog-audit/visual-review.md",
+      "contactSheets": [
+        "catalog-01.png",
+        "catalog-02.png",
+        "catalog-03.png",
+        "catalog-04.png"
+      ],
+      "frameCount": 16,
+      "sizeSamples": 48,
+      "sizes": [
+        "420 x 132 stopwatch frame",
+        "460 x 480 picker",
+        "820 x 650 larger panel"
+      ],
+      "additionalExportDpiRenders": 18,
+      "exportDpiValues": [
+        144,
+        192
+      ],
+      "artworkPlacementsChecked": 4112,
+      "uniformArtworkScale": 0.18,
+      "sourceHashesUnchanged": true,
+      "newRuntimeArtworkFiles": 0,
+      "execution": "Isolated native Avalonia harness on a private desktop, without app windows or settings access.",
+      "status": "Geometry checks passed; catalog is not visually approved or production-ready.",
+      "priorityRefinements": [
+        "Tide Curve: broken wave phase and abrupt clipped joins.",
+        "Admiralty: corner fan cuts and rail transitions.",
+        "Vine Filigree: leaf tips need tailored rail connectors.",
+        "Royal Cartouche: corner and side-crest transitions; header clearance."
+      ],
+      "nextStep": "Refine the four priority recipes and compare their joins at the same three sizes before consolidating the shared production renderer."
+    },
+    "joinRefinement": {
+      "date": "2026-11-05",
+      "directory": "native-frame-join-refinement",
+      "verification": "native-frame-join-refinement/verification.json",
+      "visualReview": "native-frame-join-refinement/visual-review.md",
+      "frames": [
+        "tide-curve",
+        "admiralty",
+        "vine-filigree",
+        "royal-cartouche"
+      ],
+      "frameCountRechecked": 16,
+      "sizeSamples": 48,
+      "additionalResolutionRenders": 24,
+      "exportScales": [
+        1.5,
+        2
+      ],
+      "artworkPlacementsChecked": 6223,
+      "sourceHashesUnchanged": true,
+      "newRuntimeArtworkFiles": 0,
+      "changes": [
+        "Tide Curve: whole reflected wave repeats with variable-length level troughs; short overlap into the original right ornament.",
+        "Admiralty: separate fan tips and diamond flares, with straight inner and outer rail strips.",
+        "Vine Filigree: move stem cuts between curls and overlap the rails with softly blended ornament exits.",
+        "Royal Cartouche: retain complete corner curls and taller side crests, with overlapping rail connections."
+      ],
+      "captureNote": "Direct non-96-DPI offscreen targets displaced transformed pieces and double-scaled text. Explicit context scale into 96-DPI targets gives correct native 1.5x/2x exports; pixel coverage comparisons guard against that failure. Physical monitor DPI remains untested.",
+      "status": "Refined native prototypes ready for user review; not integrated into the application.",
+      "nextStep": "Settle frame visuals, then consolidate the shared renderer with per-style background clipping, content insets and minimum-size rules."
+    },
+    "productionIntegration": {
+      "date": "2026-11-05",
+      "directory": "shared-renderer-integration",
+      "notes": "shared-renderer-integration/README.md",
+      "board": "shared-renderer-integration/shared-renderer.png",
+      "overlayCatalog": "shared-renderer-integration/all-frame-overlays.png",
+      "verification": "shared-renderer-integration/frame-catalog/verification.json",
+      "frameCount": 16,
+      "sizeSamples": 48,
+      "additionalResolutionRenders": 24,
+      "exportScales": [
+        1.5,
+        2
+      ],
+      "unitTestsPassed": 1052,
+      "nativeRegressionGroupsPassed": 16,
+      "sourceHashesUnchanged": true,
+      "newRuntimeArtworkFiles": 0,
+      "execution": "All native and unit-test windows confined to private Windows desktops; no active desktop interaction.",
+      "behavior": "70% background and 40% inactive defaults preserved. Heavy ornaments may add overlay height to preserve font size and content clearance. Picker keeps independent frame/material choices and existing row styling.",
+      "review": "Independent review identified a Tide Curve mask issue; RED regression reproduced it, contiguous interior spans preserved, and translated geometry uses NonZero fill to prevent opacity seams. Final native regression and 1x/1.5x/2x mask checks passed.",
+      "limitations": [
+        "Physical monitor DPI not exercised; explicit native render scales were tested.",
+        "Frame placements and masks are cached; cropped image operations replay per paint. No frame-rate improvement claim.",
+        "Build prepared locally; no commit, push or live installation."
+      ]
+    }
+  },
+  "designIntent": [
+    "Explore the Win+F2 then K picker before adapting approved styling to the H running-clock shelf.",
+    "Compare identical six sample clocks across three layouts.",
+    "Distinguish current active clock from prospective keyboard selection and running or paused status.",
+    "Keep all picker entries readable; overlay opacity defaults are not assumed to apply to the picker."
+  ],
+  "existingBehavior": [
+    "Lists all sessions in current session order.",
+    "1-9 and numpad 1-9 select directly; arrows and Enter navigate and confirm; Escape closes.",
+    "Double-click and Select clock confirm."
+  ],
+  "deferredLayers": [
+    "Background and outer frame choices",
+    "Status and keyboard-focus treatment",
+    "Hover and control states",
+    "Long names, more than nine clocks, empty state and all timing modes",
+    "Consolidated specification and implementation plan"
+  ],
+  "notes": [
+    "Generated concept boards are references only; native audit boards use the documented fixture dimensions.",
+    "Both boards have been inspected for six correct clocks, times, order, running/paused markers, active clock and focus marker in every option.",
+    "Surface-board frame and material combinations are proposals; no new retained collections or picker opacity settings are approved yet.",
+    "Shared production frame infrastructure is integrated. Earlier preview and refinement blocks preserve the historical design stages; current status and evidence are in productionIntegration. User app settings were not changed."
+  ],
+  "rowTypographyExploration": {
+    "directory": "native-row-options",
+    "board": "native-row-options/row-options-01-03.png",
+    "verification": "native-row-options/verification.json",
+    "notes": "native-row-options/README.md",
+    "status": "navigator-selected-not-implemented",
+    "renderer": "Native Avalonia text with production StopwatchFrameSurface",
+    "options": [
+      {
+        "number": 1,
+        "name": "Navigator"
+      },
+      {
+        "number": 2,
+        "name": "Clean"
+      },
+      {
+        "number": 3,
+        "name": "Logbook"
+      }
+    ],
+    "recommendedOption": 1,
+    "selectedOption": 1,
+    "fixedContext": "Approved compact-list layout; existing Engraved Filigree frame and reference dialog material. Same six clocks and active/focus states in all options.",
+    "execution": "Private desktop; no active-screen UI or live installation. Only design harness and artifacts changed in this step.",
+    "approval": "User accepted the recommended Navigator option with: yea ok, good. continue"
+  },
+  "stateExploration": {
+    "directory": "native-state-preview",
+    "board": "native-state-preview/states-and-edge-cases.png",
+    "verification": "native-state-preview/verification.json",
+    "notes": "native-state-preview/README.md",
+    "designSpec": "docs/superpowers/specs/2026-11-05-clock-picker-navigator-design.md",
+    "status": "proposed-static-native-preview",
+    "selectedRowStyle": "Navigator",
+    "scenarios": [
+      "ACTIVE, hover and keyboard selection",
+      "Long names, RTL, long hours and four timing modes",
+      "12-clock list scrolled to entries 7-12, with active and selected on the same row"
+    ],
+    "proposedAdditions": [
+      "Small mode label beneath time",
+      "Pale hover wash distinct from gold selection outline",
+      "Plain row numbers after 9",
+      "Tooltip and accessibility details retain full row information"
+    ],
+    "emptyState": "Existing controller guard does not open the picker with zero timers; preserved.",
+    "execution": "Private desktop static rendering; no pointer injection, live settings or production UI changes."
+  }
+}

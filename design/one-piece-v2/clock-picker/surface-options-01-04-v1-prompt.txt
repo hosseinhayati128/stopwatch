@@ -1,0 +1,38 @@
+Use case: ui-mockup
+Asset type: ONE polished comparison board for the stopwatch CLOCK PICKER, Layer 2 / Background & frame.
+Input image: previous layout comparison, STYLE AND GEOMETRY REFERENCE ONLY. The user selected option 1 COMPACT LIST, the LEFT panel. Discard the stacked-card and grid layouts completely. Use that same compact-list structure for ALL four new panels.
+Primary request: show FOUR numbered, distinctly different material/background/outer-frame treatments of exactly the same compact clock picker. A 2-by-2 comparison board, wide landscape about 2400 by 1900. Crisp, professionally art-directed front-on desktop UI. All four windows same size and layout, fully visible, well separated. Tight neat presentation margins, no desktop or taskbar.
+Board title: "CLOCK PICKER"
+Subtitle: "Layer 2 / Background & frame"
+Small note: "Compact list layout retained"
+Each option has its number and title ABOVE its panel, outside the app frame. Labels:
+"1  ENGRAVED PARCHMENT"
+"2  MIDNIGHT CHART"
+"3  SAILCLOTH & WALNUT"
+"4  TIDEGLASS"
+Panel 1: closest to the reference. Warm light parchment with quiet chart texture, navy header, crisp navy text and digits, slim gold outer frame with engraved filigree at the outer four corners. Rich but restrained.
+Panel 2: deep midnight-blue nautical chart paper, fine ghosted navigation contours that NEVER compete with type, cream text and numerals, antique brushed brass frame with squared clipped corners and small etched compass marks. NO ornate scrollwork. Navy header only slightly darker than body. Elegant navigation-instrument character.
+Panel 3: pale warm woven sailcloth, subtle linen fiber texture, thin warm walnut outer frame with small brass corner fittings. Navy header and navy type. Clean warm physical material, different from parchment and ornate gold. No ropes, no filigree.
+Panel 4: translucent smoky ocean-teal glass-like surface, softly blurred dark navy backdrop visible through it, fine brushed-silver outer rim with softly rounded corners, pale warm white text and numerals. Restrained cool maritime instrument feel. No neon, no intense glow, no excessive lens reflections.
+Presentation backdrop: deep navy with quiet chart details at outer edges, enough separation to read each silhouette. This background is NOT part of the app design.
+Keep invariant across all FOUR panels:
+- Exact same window geometry and compact one-line row structure, no cards or grid within any panel.
+- Header: "Choose a clock", small "6 clocks", small close X at right.
+- Six rows, numbered with the same square navy/brass keycaps at left.
+- Names in a readable bold serif, elapsed times in dark condensed tabular numerals for light surfaces and light condensed tabular numerals for dark surfaces; identical font styles and sizes between panels.
+- Number, small state glyph, name, optional small ACTIVE badge, time right-aligned. Keep ample room so Illustration and its badge don't collide with time.
+- EXACT data in every panel:
+1 Illustration 00:44:27 (TEAL running triangle, and small navy/gold ACTIVE badge)
+2 Coding 01:12:08 (TEAL running triangle)
+3 Reading 00:18:42 (AMBER pause bars)
+4 Study 00:36:10 (AMBER pause bars)
+5 Writing 00:08:15 (TEAL running triangle)
+6 Planning 00:05:32 (AMBER pause bars)
+- Only Reading is keyboard highlighted, using the SAME fine gold rectangular outline with lightly tinted gold fill in all options; do NOT mark Reading ACTIVE.
+- Thin quiet row dividers. No underlines beneath names or times.
+- All rows fully readable, no whole-row dimming.
+- Footer with exact small text "1–9 select · Arrows move · Enter confirm · Esc close".
+- Single navy/gold bottom button "Select clock". No other action buttons.
+- Keep row keycaps, ACTIVE badge, highlight, close button, bottom button and their shapes identical across all four; ONLY background/outer-frame/header material and necessary text contrast adaptation change.
+Bottom board note: "ACTIVE = current clock   •   Gold outline = keyboard focus"
+Constraints: exactly FOUR alternatives, SIX clocks in each, exact spelling and exact times, top-left and top-right panels are 1 and 2, bottom-left and bottom-right are 3 and 4. Do not change compact layout, data, density, typography style, or interactions. Do not add characters, skulls, emblems, controls, screenshots, app icons or giant compass art. Flat UI mockups, sharp text, strong readability, polished material diversity.

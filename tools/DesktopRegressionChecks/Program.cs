@@ -37,6 +37,27 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
+// This visual spike needs only Avalonia drawing services, without application settings or hooks.
+if (args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    if(args.Contains("--clock-picker-state-preview"))Check("clock picker state design proposal",ClockPickerStatePreview.Run);
+    else if(args.Contains("--clock-picker-row-preview"))Check("clock picker row design proposals",ClockPickerRowPreview.Run);
+    else if(args.Contains("--shared-frames-only"))
+    {
+        Check("production frames match reviewed artwork",SharedFrameChecks.ReviewedArtwork);
+        Check("shared frame masks, padding, small sizes and cache",SharedFrameChecks.Layouts);
+        Check("wave mask preserves separate interior spans",SharedFrameChecks.WaveRecesses);
+    }
+    else if(args.Contains("--frame-production-audit"))Check("production frame resolution audit",FrameCatalogAudit.RunProduction);
+    else if(args.Contains("--frame-join-refinement"))Check("refined joins and all sixteen modular frame recipes",FrameCatalogAudit.RunRefinement);
+    else if(args.Contains("--frame-catalog-audit"))Check("all sixteen modular frame recipes",FrameCatalogAudit.Run);
+    else Check("shared frame at stopwatch, picker and large panel sizes", () => FrameSizePreview.Run(args.Contains("--frame-modules-preview")));
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 // Tests feed hook events directly. They never generate OS keyboard input.
 PlatformServices.HotKey.Dispose();
 Check("left and right modifiers each register shortcuts", () => {
@@ -93,9 +114,43 @@ if (args.Contains("--todo-settings-only"))
 }
 
 AppBuilder.Configure<App>().UsePlatformDetect()
-    .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+    .With(new Win32PlatformOptions { RenderingMode = args.Any(a=>a.StartsWith("--stopwatch-performance-"))
+        ? new[] { Win32RenderingMode.AngleEgl,Win32RenderingMode.Software } : new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if(args.Contains("--stopwatch-performance-baseline")||args.Contains("--stopwatch-performance-final"))
+{
+    Check("native overlay performance sample",()=>StopwatchPerformanceChecks.Benchmark(args.Contains("--stopwatch-performance-baseline")?"baseline":"final"));
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--stopwatch-invalidation-only"))
+{
+    Check("unchanged face values retain layout",StopwatchPerformanceChecks.UnchangedProperties);
+    Check("fixed-width Nika ticks retain layout and repaint",StopwatchPerformanceChecks.StableDigitLayout);
+    Check("unchanged overlay presentation reuses masks and toolbar",StopwatchPerformanceChecks.RepeatedPresentation);
+    Check("direct settings preserve inactive toolbar opacity",StopwatchPerformanceChecks.DirectSettingsPreserveOpacity);
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--stopwatch-redraw-regression"))
+{
+    StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-stopwatch-redraw-cost/render-checks";
+    Check("unchanged face values retain layout",StopwatchPerformanceChecks.UnchangedProperties);
+    Check("fixed-width Nika ticks retain layout and repaint",StopwatchPerformanceChecks.StableDigitLayout);
+    Check("unchanged overlay presentation reuses masks and toolbar",StopwatchPerformanceChecks.RepeatedPresentation);
+    Check("direct settings preserve inactive toolbar opacity",StopwatchPerformanceChecks.DirectSettingsPreserveOpacity);
+    Check("performance repair visual parity",StopwatchPerformanceChecks.VisualParity);
+    Check("production frames match reviewed artwork",SharedFrameChecks.ReviewedArtwork);
+    Check("shared frame masks, padding, small sizes and cache",SharedFrameChecks.Layouts);
+    Check("wave mask preserves separate interior spans",SharedFrameChecks.WaveRecesses);
+    Check("shared frame picker and keyboard behavior",SharedFrameUiChecks.Picker);
+    Check("overlay layout and state",StopwatchAppearanceChecks.Renderer);
+    Check("native state, popup alpha and theme restoration",StopwatchAppearanceChecks.LiveOverlay);
+    Check("complete asset and typography coverage",StopwatchAppearanceChecks.CatalogAssets);
+    Check("inspector and preview isolation",StopwatchAppearanceUiChecks.Run);
+    Check("controller routing, native flags and resources",StopwatchAppearanceChecks.ControllerAndResources);
+    Check("timer shortcut actions",ShortcutChecks.Timers);
+    Environment.Exit(failures==0?0:1);
+}
 if (args.Contains("--shortcuts-only"))
 {
     Check("timer shortcut actions", ShortcutChecks.Timers);
@@ -105,6 +160,29 @@ if (args.Contains("--shortcuts-only"))
 if (args.Contains("--stopwatch-renderer-only"))
 {
     Check("Stopwatch shared renderer and live state", StopwatchAppearanceChecks.Renderer);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--shared-frames-ui"))
+{
+    StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-shared-modular-frames/render-checks";
+    Check("shared frame picker and keyboard behavior",SharedFrameUiChecks.Picker);
+    Check("shared frame overlay layout and state",StopwatchAppearanceChecks.Renderer);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--shared-frames-regression"))
+{
+    StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-shared-modular-frames/render-checks";
+    Check("production frames match reviewed artwork",SharedFrameChecks.ReviewedArtwork);
+    Check("shared frame masks, padding, small sizes and cache",SharedFrameChecks.Layouts);
+    Check("wave mask preserves separate interior spans",SharedFrameChecks.WaveRecesses);
+    Check("shared frame picker and keyboard behavior",SharedFrameUiChecks.Picker);
+    Check("shared frame overlay layout and state",StopwatchAppearanceChecks.Renderer);
+    Check("Stopwatch native state, popup alpha and theme restoration",StopwatchAppearanceChecks.LiveOverlay);
+    Check("Stopwatch complete asset and typography coverage",StopwatchAppearanceChecks.CatalogAssets);
+    Check("Stopwatch appearance inspector and preview isolation",StopwatchAppearanceUiChecks.Run);
+    Check("Stopwatch controller routing, native flags and cached resources",StopwatchAppearanceChecks.ControllerAndResources);
+    Check("timer shortcut actions",ShortcutChecks.Timers);
+    Check("production shared frame visual evidence",SharedFrameUiChecks.Evidence);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 if (args.Contains("--stopwatch-appearance-only"))

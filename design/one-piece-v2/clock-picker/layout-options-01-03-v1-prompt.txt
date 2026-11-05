@@ -1,0 +1,30 @@
+Use case: ui-mockup
+Asset type: one polished design comparison board for a Windows stopwatch application's CLOCK PICKER. This is a design concept, not a screenshot of implemented UI.
+Primary request: show THREE clearly numbered alternative layouts SIDE BY SIDE: "1  COMPACT LIST", "2  STACKED CARDS", "3  TWO-COLUMN GRID". Same sample clocks, same visual language, different information arrangement and density. This is the FIRST LAYER: LAYOUT ONLY.
+Input images: reference image 1 is the established stopwatch state-indicator design; reference image 2 is the approved settings style. They are STYLE REFERENCES only; do not reproduce their boards, text or settings UI.
+Scene/backdrop: a clean deep midnight navy presentation canvas, very subtle navigation chart linework at its outer edges. Flat front-on UI, crisp readable type, premium crafted desktop interface. Board should be wide landscape, roughly 2400 by 1400 or similar proportions. No desktop/taskbar/device.
+Board title top: "CLOCK PICKER"
+Small subtitle: "Layer 1 / Layout     •     Win+F2 → K"
+Three distinct fully visible app panels aligned at their top, with ample space between. Match their font sizes as much as possible, not three arbitrarily scaled miniatures. Compact list is shortest, stacked cards is tallest, grid is wider. All panels entirely inside the image.
+Style: warm pale parchment panels with subtle atlas texture, navy text, fine engraved brass edging, restrained filigree only at outer panel corners. Small navy header, cream serif title "Choose a clock", restrained gold-outlined close X. Header small text "6 clocks". Use dark condensed tabular numerals for elapsed time, readable serif names. Tiny square navy/brass numbered keycaps. Far less ornament inside rows than the outer frame. No character, skull, logo, giant compass or random decorative objects.
+EXACT SIX SAMPLE CLOCKS in every panel, numbered in this same order:
+1  Illustration   00:44:27   Running   ACTIVE
+2  Coding         01:12:08   Running
+3  Reading        00:18:42   Paused
+4  Study          00:36:10   Paused
+5  Writing        00:08:15   Running
+6  Planning       00:05:32   Paused
+For running clocks, put a SMALL TEAL TRIANGLE immediately beside the project name. For paused clocks, SMALL AMBER PAUSE BARS in that same slot. They are status markers, not action buttons.
+Illustration is the current active clock and alone has a small navy-and-gold ACTIVE label, inspired by the tab in the style reference.
+Reading is the prospective keyboard selection: give ONLY its row/card a clear gold OUTLINE and light gold tint. Reading must NOT be marked ACTIVE. This distinction must be consistent in all three panels.
+All rows including paused clocks stay fully readable. No underlines beneath times or names. No 40% dimming in this picker mockup.
+OPTION 1 COMPACT LIST: tight but comfortable one-line rows. Each row: number keycap at left, status glyph plus project name in middle, time right-aligned. Small ACTIVE badge on Illustration. Thin quiet dividers between rows. Clear solid Reading row outline. No separate internal card frames, no large times.
+OPTION 2 STACKED CARDS: six wider, taller two-line rounded rectangular cards stacked vertically, modest spacing. Number keycap left; project name/status on first line; larger time second line. All six visible. ACTIVE tab on first card. Reading third card outlined. Each card has a thin quiet brass border, with no ornate corners.
+OPTION 3 TWO-COLUMN GRID: exactly 2 columns and 3 rows of generously spaced small cards. Reading order is row-major: [1 Illustration,2 Coding], [3 Reading,4 Study], [5 Writing,6 Planning]. Number in top-left; name and status under it; time prominent below. ACTIVE tab on Illustration; Reading card gold outline. No extra or repeated clocks.
+Every panel has the same bottom footer: small "1–9 select  ·  Arrows move  ·  Enter confirm  ·  Esc close", plus one navy button outlined in gold, "Select clock".
+Below each panel, short neat caption outside its frame:
+1: "Fastest to scan"
+2: "More breathing room"
+3: "More visual emphasis"
+Bottom small legend: "ACTIVE = current clock    •    Gold outline = keyboard focus"
+Constraints: exactly 3 options, exactly 6 clocks per option, exact names and times, clearly numbered options and keys, no search field, no new-clock action, no pause/reset/delete buttons, no implementation notes, no chart data or settings controls. Text must be sharp and properly spelled. Reproduce the nautical parchment/navy/gold family from references but prioritize usable UI and clear layout differences over decoration.

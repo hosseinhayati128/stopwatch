@@ -1,0 +1,263 @@
+{
+  "frame": "engraved-filigree",
+  "source": "StopwatchOverlay.Desktop/Assets/Stopwatch/Frames/engraved-filigree.png",
+  "sourceHash": "EBD3969F1AB007BBB609ECB1F33B61FDE385BE06650D21F28FB9588C2C8AA8BD",
+  "sourceBytes": 551375,
+  "frameScale": 0.18,
+  "cornerDip": {
+    "width": 52.199999999999996,
+    "height": 28.799999999999997
+  },
+  "renderer": "StopwatchAppearanceAssets.DrawFrame; StopwatchFrameMask.Create; ThemedClockFace for stopwatch",
+  "sourceFrameUnchanged": true,
+  "newRuntimeArtworkFiles": 0,
+  "checks": [
+    {
+      "dpi": 96,
+      "target": "460, 480",
+      "corner": 0,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "460, 480",
+      "corner": 1,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "460, 480",
+      "corner": 2,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "460, 480",
+      "corner": 3,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "820, 650",
+      "corner": 0,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "820, 650",
+      "corner": 1,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 31,
+      "maxDifference": 8,
+      "meanChannelDifference": 0.011923076923076923
+    },
+    {
+      "dpi": 96,
+      "target": "820, 650",
+      "corner": 2,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 96,
+      "target": "820, 650",
+      "corner": 3,
+      "comparedWidth": 50,
+      "comparedHeight": 26,
+      "differences": 33,
+      "maxDifference": 8,
+      "meanChannelDifference": 0.01596153846153846
+    },
+    {
+      "dpi": 144,
+      "target": "460, 480",
+      "corner": 0,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 144,
+      "target": "460, 480",
+      "corner": 1,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 144,
+      "target": "460, 480",
+      "corner": 2,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 101,
+      "maxDifference": 11,
+      "meanChannelDifference": 0.01652759948652118
+    },
+    {
+      "dpi": 144,
+      "target": "460, 480",
+      "corner": 3,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 101,
+      "maxDifference": 9,
+      "meanChannelDifference": 0.014441591784338896
+    },
+    {
+      "dpi": 144,
+      "target": "820, 650",
+      "corner": 0,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 144,
+      "target": "820, 650",
+      "corner": 1,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 144,
+      "target": "820, 650",
+      "corner": 2,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 101,
+      "maxDifference": 11,
+      "meanChannelDifference": 0.01652759948652118
+    },
+    {
+      "dpi": 144,
+      "target": "820, 650",
+      "corner": 3,
+      "comparedWidth": 76,
+      "comparedHeight": 41,
+      "differences": 101,
+      "maxDifference": 9,
+      "meanChannelDifference": 0.014441591784338896
+    },
+    {
+      "dpi": 192,
+      "target": "460, 480",
+      "corner": 0,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 192,
+      "target": "460, 480",
+      "corner": 1,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 315,
+      "maxDifference": 9,
+      "meanChannelDifference": 0.025133689839572194
+    },
+    {
+      "dpi": 192,
+      "target": "460, 480",
+      "corner": 2,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 192,
+      "target": "460, 480",
+      "corner": 3,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 285,
+      "maxDifference": 9,
+      "meanChannelDifference": 0.022014260249554368
+    },
+    {
+      "dpi": 192,
+      "target": "820, 650",
+      "corner": 0,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 192,
+      "target": "820, 650",
+      "corner": 1,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 192,
+      "target": "820, 650",
+      "corner": 2,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "dpi": 192,
+      "target": "820, 650",
+      "corner": 3,
+      "comparedWidth": 102,
+      "comparedHeight": 55,
+      "differences": 0,
+      "maxDifference": 0,
+      "meanChannelDifference": 0
+    }
+  ],
+  "maximumCornerDifference": 11,
+  "cornerComparison": "Diagnostic pixel readback; nonzero differences are reported, not treated as byte-identical corners.",
+  "exportDpi": {
+    "individual": 96,
+    "comparison": 96
+  },
+  "limits": "One frame only. Raster exports at 100%, 150%, 200% do not change or test system monitor DPI. Picker and large-panel contents are static examples; behavior and adaptive layouts are not implemented. No native windows or user settings are opened."
+}

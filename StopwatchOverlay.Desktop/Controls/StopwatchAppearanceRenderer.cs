@@ -8,7 +8,7 @@ public sealed record StopwatchPresentationState(bool IsActive,bool IsRunning,boo
 /// <summary>Layer rendering shared by the native clock and its appearance inspector.</summary>
 public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets)
 {
-    private string? maskFrame;
+    private StopwatchFrameLayout? maskLayout;
     private Rect maskBounds;
     private Geometry? mask;
     private static readonly IBrush Navy=Brush.Parse("#071C2A"),Ivory=Brush.Parse("#FFF2D3"),Gold=Brush.Parse("#D4A44C"),
@@ -19,7 +19,12 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         var type=StopwatchTypography.Resolve(profile.Typography);
         double scale=face.TextSize/48;
         // The name, state and current digits never move the overlay anchor.
-        return new Size(Math.Max(8.6*face.TextSize,StopwatchTypography.Width(face.Text,type,face.TextSize)+3.8*face.TextSize),144*scale);
+        double width=Math.Max(8.6*face.TextSize,StopwatchTypography.Width(face.Text,type,face.TextSize)+3.8*face.TextSize);
+        var frame=assets.Get("frame",profile.Frame);
+        var layout=StopwatchFrameRenderer.GetLayout(frame,new Size(width,132*scale),.18*scale);
+        // Heavy scrolls/crests reserve their real depth without reducing the chosen font size.
+        double height=Math.Max(132*scale,layout.ContentInsets.Top+layout.ContentInsets.Bottom+80*scale);
+        return new Size(width,height+12*scale);
     }
 
     public void Render(DrawingContext context,Rect bounds,ThemedClockFace face,StopwatchAppearanceSettings profile,StopwatchPresentationState state)
@@ -29,11 +34,12 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         var frame=assets.Get("frame",profile.Frame);
         var background=assets.Get("background",profile.Background);
         var frameRect=new Rect(0,12*scale,bounds.Width,bounds.Height-12*scale);
-        var content=new Rect(12*scale,31*scale,bounds.Width-24*scale,bounds.Height-51*scale);
-        if(mask==null||maskFrame!=profile.Frame||maskBounds!=frameRect)
+        var layout=StopwatchFrameRenderer.GetLayout(frame,frameRect.Size,.18*scale);
+        var content=frameRect.Deflate(layout.ContentInsets);
+        if(mask==null||!ReferenceEquals(maskLayout,layout)||maskBounds!=frameRect)
         {
             mask=StopwatchFrameMask.Create(frame,frameRect,scale,profile.Frame=="open-corners");
-            maskFrame=profile.Frame;maskBounds=frameRect;
+            maskLayout=layout;maskBounds=frameRect;
         }
         using(context.PushOpacity(profile.BackgroundOpacity/100))
         using(context.PushGeometryClip(mask))
@@ -54,14 +60,18 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         IBrush text=face.UsesThemeTextColor?(background.IsDark?Ivory:Navy):face.TimerBrush;
         double timeWidth=StopwatchTypography.Width(face.Text,typography,face.TextSize);
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.TimeText)),bounds))
-            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,36*scale),typography,face.TextSize,text);
+        // ContentInsets already fit a safe rectangle inside the border. Text
+        // needs only this cheap clip, not another full decorative stencil.
+        using(context.PushClip(content))
+            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,text);
 
         var name=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,text);
-        name.MaxTextWidth=Math.Max(1,bounds.Width-100*scale);name.MaxTextHeight=32*scale;
+        name.MaxTextWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));name.MaxTextHeight=32*scale;
         name.Trimming=TextTrimming.CharacterEllipsis;
         double nameWidth=Math.Min(name.WidthIncludingTrailingWhitespace,name.MaxTextWidth);
-        double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=84*scale;
+        double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=content.Top+48*scale;
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.ProjectName)),bounds))
+        using(context.PushClip(content))
             context.DrawText(name,new Point(nameX,nameY));
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
         {

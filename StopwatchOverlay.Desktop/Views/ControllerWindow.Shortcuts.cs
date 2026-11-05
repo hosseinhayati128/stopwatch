@@ -76,7 +76,7 @@ public partial class ControllerWindow
     private async void OpenTimerPicker()
     {
         if (_timerCommandDialog != null || _timerManager.Count == 0) return;
-        var picker = new TimerPickerWindow(_timerManager.Sessions, _timerManager.Active);
+        var picker = new TimerPickerWindow(_timerManager.Sessions, _timerManager.Active, _settings);
         await ShowTimerCommandDialog(picker);
         if (!_isExiting && _timerManager.Activate(picker.SelectedTimer))
         {

@@ -30,9 +30,41 @@ public sealed class ThemedClockFace : Control
 
     private string _text = "00:00:00.0", _projectName = "";
     private bool _showRec;
-    public string Text { get => _text; set { _text = value ?? ""; InvalidateMeasure(); InvalidateVisual(); } }
-    public string ProjectName { get => _projectName; set { _projectName = value?.Trim() ?? ""; InvalidateMeasure(); InvalidateVisual(); } }
-    public bool ShowRec { get => _showRec; set { _showRec = value; InvalidateMeasure(); InvalidateVisual(); } }
+    public string Text
+    {
+        get => _text;
+        set
+        {
+            string text = value ?? "";
+            if (_text == text) return;
+            // Nika uses fixed advances. Digit changes repaint without running
+            // layout again; added hour digits and precision still remeasure.
+            bool measure = true;
+            if (_stopwatchAppearance != null)
+            {
+                var type = StopwatchTypography.Resolve(_stopwatchAppearance.Typography);
+                measure = StopwatchTypography.Width(_text, type, TextSize) != StopwatchTypography.Width(text, type, TextSize);
+            }
+            _text = text;
+            if (measure) InvalidateMeasure();
+            InvalidateVisual();
+        }
+    }
+    public string ProjectName
+    {
+        get => _projectName;
+        set
+        {
+            string name = value?.Trim() ?? "";
+            if (_projectName == name) return;
+            _projectName = name; InvalidateMeasure(); InvalidateVisual();
+        }
+    }
+    public bool ShowRec
+    {
+        get => _showRec;
+        set { if (_showRec == value) return; _showRec = value; InvalidateMeasure(); InvalidateVisual(); }
+    }
     public bool IsRunning { get; set; }
     public bool UsesThemeTextColor { get; private set; }
     private StopwatchAppearanceSettings? _stopwatchAppearance;
@@ -46,6 +78,7 @@ public sealed class ThemedClockFace : Control
     }
     public void SetStopwatchPresentationState(StopwatchPresentationState state)
     {
+        if (_stopwatchState == state) return;
         _stopwatchState=state;InvalidateVisual();
     }
     public string EffectiveOverlayTheme { get; private set; } = OverlayThemeCatalog.Midnight;
