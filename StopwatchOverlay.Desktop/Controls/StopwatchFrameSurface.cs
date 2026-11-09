@@ -24,10 +24,10 @@ public sealed class StopwatchFrameSurface:Decorator
         layout.ContentInsets.Right+Padding.Right,layout.ContentInsets.Bottom+Padding.Bottom);
     protected override Size MeasureOverride(Size availableSize)
     {
-        var probe=new Size(double.IsFinite(availableSize.Width)&&availableSize.Width>0?availableSize.Width:460,
-            double.IsFinite(availableSize.Height)&&availableSize.Height>0?availableSize.Height:480);
+        var probe=new Size(double.IsFinite(availableSize.Width)&&availableSize.Width>0?availableSize.Width:Bounds.Width>0?Bounds.Width:460,
+            double.IsFinite(availableSize.Height)&&availableSize.Height>0?availableSize.Height:Bounds.Height>0?Bounds.Height:480);
         var layout=Layout(probe);var insets=Insets(layout);
-        Child?.Measure(availableSize.Deflate(insets));
+        Child?.Measure(probe.Deflate(insets));
         var desired=(Child?.DesiredSize??default).Inflate(insets);
         return new Size(Math.Max(desired.Width,layout.MinimumSize.Width),Math.Max(desired.Height,layout.MinimumSize.Height));
     }
@@ -35,7 +35,12 @@ public sealed class StopwatchFrameSurface:Decorator
     {
         if(finalSize.Width>0&&finalSize.Height>0)
         {
-            Child?.Arrange(new Rect(finalSize).Deflate(Insets(Layout(finalSize))));
+            // Window content can be measured without finite constraints and
+            // later arranged at a smaller client size. Grids must remeasure
+            // their stars/auto rows for that real interior before arranging.
+            var interior=new Rect(finalSize).Deflate(Insets(Layout(finalSize)));
+            Child?.Measure(interior.Size);
+            Child?.Arrange(interior);
             if(Child!=null)Child.ClipToBounds=true;
         }
         return finalSize;

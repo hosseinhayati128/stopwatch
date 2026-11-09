@@ -36,36 +36,63 @@ public static class StopwatchTypography
     public static double Width(string text,StopwatchTypographyProfile profile,double size)
         => text.Sum(c=>Advance(c,profile,size));
 
-    public static void DrawTime(DrawingContext context,string text,Point origin,StopwatchTypographyProfile profile,double size,IBrush brush)
+    private readonly record struct EdgedGlyph(FormattedText Text,Geometry? Shape);
+    private static readonly Dictionary<(StopwatchTypographyProfile Profile,double Size,char Character,IBrush Brush),EdgedGlyph> EdgedGlyphs=new();
+    private static EdgedGlyph Glyph(StopwatchTypographyProfile profile,double size,char c,IBrush brush,bool withEdge)
+    {
+        var key=(profile,size,c,brush);
+        if(withEdge&&EdgedGlyphs.TryGetValue(key,out var cached))return cached;
+        string character=profile==Profiles["typewriter-log"]&&c=='0'?"O":c.ToString();
+        var text=Format(character,profile.TimerFont,profile.TimerWeight,size,brush);
+        text.SetFontFeatures(TimerFeatures);
+        var glyph=new EdgedGlyph(text,withEdge?text.BuildGeometry(default):null);
+        if(withEdge)
+        {
+            // Font/size sliders can explore many combinations. Keep the shared cache bounded.
+            if(EdgedGlyphs.Count>=256)EdgedGlyphs.Clear();
+            EdgedGlyphs.Add(key,glyph);
+        }
+        return glyph;
+    }
+
+    public static void DrawTime(DrawingContext context,string text,Point origin,StopwatchTypographyProfile profile,double size,IBrush brush,IBrush? edge=null)
     {
         double x=origin.X;
+        var edgePen=edge==null?null:new Pen(edge,size*.045,lineJoin:PenLineJoin.Round);
         foreach(char c in text)
         {
             double advance=Advance(c,profile,size);
             // The corrected Typewriter reference uses an open zero, not a slashed/dotted zero.
-            string character=profile==Profiles["typewriter-log"]&&c=='0'?"O":c.ToString();
             double glyphSize=profile.DigitStyle==StopwatchDigitStyle.Pixel?size*.64:size;
-            var glyph=Format(character,profile.TimerFont,profile.TimerWeight,glyphSize,brush);
-            glyph.SetFontFeatures(TimerFeatures);
+            var cached=Glyph(profile,glyphSize,c,brush,edge!=null);
+            var glyph=cached.Text;
             double fit=Math.Min(1,(advance-size*.035)/Math.Max(1,glyph.WidthIncludingTrailingWhitespace));
             var point=new Point(x+(advance-glyph.WidthIncludingTrailingWhitespace*fit)/2,origin.Y+(size-glyphSize)*.55);
             if(profile.DigitStyle==StopwatchDigitStyle.SevenSegment&&char.IsAsciiDigit(c))
-                DrawSegments(context,c,new Rect(x+size*.045,origin.Y+size*.19,advance-size*.09,size*.70),brush);
+                DrawSegments(context,c,new Rect(x+size*.045,origin.Y+size*.19,advance-size*.09,size*.70),brush,edgePen);
             else if(profile.DigitStyle is StopwatchDigitStyle.Outline or StopwatchDigitStyle.Inline)
             {
                 using(context.PushTransform(Matrix.CreateScale(fit,1)*Matrix.CreateTranslation(point.X,point.Y)))
                 {
-                    var geometry=glyph.BuildGeometry(default);
-                    if(geometry!=null)context.DrawGeometry(null,new Pen(brush,size*.025),geometry);
+                    var geometry=cached.Shape??glyph.BuildGeometry(default);
+                    if(geometry!=null)
+                    {
+                        if(edge!=null)context.DrawGeometry(null,new Pen(edge,size*.07,lineJoin:PenLineJoin.Round),geometry);
+                        context.DrawGeometry(null,new Pen(brush,size*.025),geometry);
+                    }
                 }
             }
-            else using(context.PushTransform(Matrix.CreateScale(fit,1)*Matrix.CreateTranslation(point.X,point.Y)))context.DrawText(glyph,default);
+            else using(context.PushTransform(Matrix.CreateScale(fit,1)*Matrix.CreateTranslation(point.X,point.Y)))
+            {
+                if(cached.Shape!=null)context.DrawGeometry(null,edgePen,cached.Shape);
+                context.DrawText(glyph,default);
+            }
             x+=advance;
         }
     }
 
     private static readonly int[] Segments={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f};
-    private static void DrawSegments(DrawingContext context,char digit,Rect r,IBrush brush)
+    private static void DrawSegments(DrawingContext context,char digit,Rect r,IBrush brush,IPen? edgePen)
     {
         double t=r.Height*.13,g=t*.18;
         Rect[] pieces={new(r.X+t,r.Y,r.Width-2*t,t),new(r.Right-t,r.Y+t,t,r.Height/2-t-g),
@@ -79,6 +106,7 @@ public static class StopwatchTypography
                 path.LineTo(new Point(p.Right,p.Bottom-cut));path.LineTo(new Point(p.Right-cut,p.Bottom));path.LineTo(new Point(p.X+cut,p.Bottom));
                 path.LineTo(new Point(p.X,p.Bottom-cut));path.LineTo(new Point(p.X,p.Y+cut));path.EndFigure(true);
             }
+            if(edgePen!=null)context.DrawGeometry(null,edgePen,geometry);
             context.DrawGeometry(brush,null,geometry);
         }
     }

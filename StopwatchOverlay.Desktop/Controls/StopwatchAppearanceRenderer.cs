@@ -11,8 +11,10 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
     private StopwatchFrameLayout? maskLayout;
     private Rect maskBounds;
     private Geometry? mask;
-    private static readonly IBrush Navy=Brush.Parse("#071C2A"),Ivory=Brush.Parse("#FFF2D3"),Gold=Brush.Parse("#D4A44C"),
-        Running=Brush.Parse("#087480"),Paused=Brush.Parse("#A45A12");
+    private (string Text,StopwatchTypographyProfile Type,double Scale,double Width,IBrush Brush)? nameKey;
+    private FormattedText? cachedName;
+    private Geometry? nameEdge;
+    private static readonly IBrush Navy=Brush.Parse("#071C2A"),Ivory=Brush.Parse("#FFF2D3"),Gold=Brush.Parse("#D4A44C");
 
     public Size Measure(ThemedClockFace face,StopwatchAppearanceSettings profile,StopwatchPresentationState state)
     {
@@ -57,22 +59,34 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
             StopwatchAppearanceAssets.DrawFrame(context,frame,frameRect,.18*scale);
 
         var typography=StopwatchTypography.Resolve(profile.Typography);
-        IBrush text=face.UsesThemeTextColor?(background.IsDark?Ivory:Navy):face.TimerBrush;
+        // This independently styled overlay owns its palette, including when an
+        // older installation still has the shared text setting fixed to White.
+        var palette=StopwatchTextPalette.For(profile.Background);
         double timeWidth=StopwatchTypography.Width(face.Text,typography,face.TextSize);
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.TimeText)),bounds))
         // ContentInsets already fit a safe rectangle inside the border. Text
         // needs only this cheap clip, not another full decorative stencil.
         using(context.PushClip(content))
-            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,text);
+            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,palette.Time,palette.Edge);
 
-        var name=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,text);
-        name.MaxTextWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));name.MaxTextHeight=32*scale;
-        name.Trimming=TextTrimming.CharacterEllipsis;
+        double nameMaxWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));
+        var key=(face.ProjectName,typography,scale,nameMaxWidth,palette.Name);
+        if(cachedName==null||nameKey!=key)
+        {
+            cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,palette.Name);
+            cachedName.MaxTextWidth=nameMaxWidth;cachedName.MaxTextHeight=32*scale;cachedName.Trimming=TextTrimming.CharacterEllipsis;
+            nameEdge=palette.Edge==null?null:cachedName.BuildGeometry(default);nameKey=key;
+        }
+        var name=cachedName;
         double nameWidth=Math.Min(name.WidthIncludingTrailingWhitespace,name.MaxTextWidth);
         double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=content.Top+48*scale;
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.ProjectName)),bounds))
         using(context.PushClip(content))
-            context.DrawText(name,new Point(nameX,nameY));
+        using(context.PushTransform(Matrix.CreateTranslation(nameX,nameY)))
+        {
+            if(nameEdge!=null)context.DrawGeometry(null,new Pen(palette.Edge,1.6*scale,lineJoin:PenLineJoin.Round),nameEdge);
+            context.DrawText(name,default);
+        }
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
         {
             bool running=StopwatchAppearancePolicy.MarkerFor(state.IsRunning,state.IsClockMode)==StopwatchMarker.Running;
@@ -81,12 +95,12 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
             {
                 var triangle=new StreamGeometry();using(var g=triangle.Open())
                 {g.BeginFigure(rect.TopLeft,true);g.LineTo(new Point(rect.Right,rect.Center.Y));g.LineTo(rect.BottomLeft);g.EndFigure(true);}
-                context.DrawGeometry(Running,null,triangle);
+                context.DrawGeometry(palette.Running,null,triangle);
             }
             else
             {
-                context.DrawRectangle(Paused,null,new Rect(rect.X,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
-                context.DrawRectangle(Paused,null,new Rect(rect.X+8*scale,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
+                context.DrawRectangle(palette.Paused,null,new Rect(rect.X,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
+                context.DrawRectangle(palette.Paused,null,new Rect(rect.X+8*scale,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
             }
             if(state.IsActive)DrawActive(context,bounds.Width,scale,StopwatchTypography.Resolve("navigator-bold").NameFont);
         }
@@ -94,8 +108,8 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         {
             using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
             {
-                context.DrawEllipse(Brush.Parse("#BD4637"),null,new Point(content.Right-33*scale,content.Y+10*scale),2*scale,2*scale);
-                context.DrawText(StopwatchTypography.Format("REC",FontFamily.Default,FontWeight.SemiBold,7*scale,text),new Point(content.Right-27*scale,content.Y+5*scale));
+                context.DrawEllipse(palette.Recording,null,new Point(content.Right-33*scale,content.Y+10*scale),2*scale,2*scale);
+                context.DrawText(StopwatchTypography.Format("REC",FontFamily.Default,FontWeight.SemiBold,7*scale,palette.Name),new Point(content.Right-27*scale,content.Y+5*scale));
             }
         }
     }

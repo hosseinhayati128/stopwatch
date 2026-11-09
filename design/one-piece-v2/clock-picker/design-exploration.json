@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "date": "2026-11-05",
   "surface": "clock-picker",
-  "stage": "navigator-states-and-edge-cases-ready-for-review",
+  "stage": "navigator-native-picker-implemented-and-verified",
   "implementationTarget": "StopwatchOverlay.Desktop",
   "generationTool": "Original concept boards: built-in image_gen; native previews: Avalonia",
   "boards": [
@@ -222,11 +222,7 @@
     "Double-click and Select clock confirm."
   ],
   "deferredLayers": [
-    "Background and outer frame choices",
-    "Status and keyboard-focus treatment",
-    "Hover and control states",
-    "Long names, more than nine clocks, empty state and all timing modes",
-    "Consolidated specification and implementation plan"
+    "Background and outer frame choices"
   ],
   "notes": [
     "Generated concept boards are references only; native audit boards use the documented fixture dimensions.",
@@ -239,7 +235,7 @@
     "board": "native-row-options/row-options-01-03.png",
     "verification": "native-row-options/verification.json",
     "notes": "native-row-options/README.md",
-    "status": "navigator-selected-not-implemented",
+    "status": "navigator-implemented-and-native-verified",
     "renderer": "Native Avalonia text with production StopwatchFrameSurface",
     "options": [
       {
@@ -267,7 +263,7 @@
     "verification": "native-state-preview/verification.json",
     "notes": "native-state-preview/README.md",
     "designSpec": "docs/superpowers/specs/2026-11-05-clock-picker-navigator-design.md",
-    "status": "proposed-static-native-preview",
+    "status": "implemented-and-native-verified",
     "selectedRowStyle": "Navigator",
     "scenarios": [
       "ACTIVE, hover and keyboard selection",
@@ -282,5 +278,19 @@
     ],
     "emptyState": "Existing controller guard does not open the picker with zero timers; preserved.",
     "execution": "Private desktop static rendering; no pointer injection, live settings or production UI changes."
+  },
+  "nativeImplementation": {
+    "directory": "native-implementation",
+    "board": "native-implementation/navigator-native.png",
+    "notes": "native-implementation/README.md",
+    "verification": "native-implementation/verification.json",
+    "status": "installed-verified-build-app-left-closed",
+    "nativeGroupsPassed": 27,
+    "unitTestsPassed": 1052,
+    "nativeInput": "Real private-window input callback, hit-testing and device; no OS injection.",
+    "sharedFrameResizeFix": "Measure actual finite interior before arranging, including minimum-size resizing.",
+    "installation": "Updated the stopped saved app with a hash-verified backup on 2026-11-05; app left closed.",
+    "standaloneWindow": "Native caption/border absent; transparent composition and exterior verified on private desktop.",
+    "stabilityReport": "docs/picker-stability-and-memory-2026-11-05.md"
   }
 }

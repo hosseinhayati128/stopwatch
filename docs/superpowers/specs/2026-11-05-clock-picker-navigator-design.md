@@ -1,6 +1,6 @@
 # Clock picker: Navigator
 
-Status: compact-list layout and Navigator typography chosen. The accompanying state refinements are ready for review in `design/one-piece-v2/clock-picker/native-state-preview/states-and-edge-cases.png`. This is a small, scoped UI change to the Nika picker; the shared frame infrastructure is already integrated.
+Status: implemented and native-verified in the local build after the user resumed the selected design. Actual control captures and verification are in `design/one-piece-v2/clock-picker/native-implementation/`. The running installed app is unchanged in this step.
 
 ## Intent and constraints
 
@@ -16,7 +16,7 @@ Make the clock picker fit the stopwatch's visual language while remaining quick 
 
 Keep the compact list, 44-DIP rows, right-aligned complete times, teal running and amber paused markers, and an ACTIVE badge belonging only to the current timer. Use the existing Engraved Filigree shared surface and its safe content insets; frame/material selection remains independent of overlay settings. Preserve the existing default window dimensions from the shared-renderer integration. Header, close control and footer use the same Nika visual family without changing close semantics.
 
-## Proposed state refinements
+## State refinements
 
 - Hover adds a pale wash; it does not move selection or change the active timer. Selection uses a gold outline and warm fill. ACTIVE and selection can coexist on one row.
 - Paused/unselected entries remain readable at full picker opacity. Overlay opacity defaults do not apply here.

@@ -118,6 +118,64 @@ AppBuilder.Configure<App>().UsePlatformDetect()
         ? new[] { Win32RenderingMode.AngleEgl,Win32RenderingMode.Software } : new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if(args.Contains("--stopwatch-performance-palettes"))
+{
+    foreach(string background in new[]{"navigator-parchment","sky-island"})
+    {
+        var settings=new AppSettings{ThemeMode=AppThemeCatalog.Nika,TextSize=27,TextColor="White",TimeFormat=1,
+            StopwatchAppearance=new(){Background=background,BackgroundOpacity=70,Typography="navigator-bold"}};
+        Check(background+" palette redraw sample",()=>StopwatchPerformanceChecks.Benchmark(background,OverlayLegibilityChecks.Output,settings));
+    }
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--overlay-legibility-baseline")||args.Contains("--overlay-legibility"))
+{
+    bool baseline=args.Contains("--overlay-legibility-baseline");
+    Check("actual backgrounds and toolbar capture",()=>OverlayLegibilityChecks.Capture(baseline?"before":"after"));
+    Check("button hit centers match source artwork",OverlayLegibilityChecks.ButtonCenters);
+    Check("Nika palette replaces legacy fixed white",OverlayLegibilityChecks.BackgroundColors);
+    if(!baseline)
+    {
+        StopwatchAppearanceChecks.OutputOverride=OverlayLegibilityChecks.Output+"/native";
+        Check("live overlay behavior and alpha",StopwatchAppearanceChecks.LiveOverlay);
+        Check("layout retained between ticks",StopwatchPerformanceChecks.StableDigitLayout);
+        Check("cached toolbar state",StopwatchPerformanceChecks.RepeatedPresentation);
+        Check("settings preview and theme isolation",StopwatchAppearanceUiChecks.Run);
+    }
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--toolbar-glyphs-baseline")||args.Contains("--toolbar-glyphs"))
+{
+    Check("all hover-control symbols at native and double scale",()=>ToolbarGlyphChecks.Capture(args.Contains("--toolbar-glyphs-baseline")?"before":"after"));
+    if(!args.Contains("--toolbar-glyphs-baseline"))
+    {
+        StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-hover-symbols/native";
+        Check("toolbar actions, disabled clock mode and theme restoration",StopwatchAppearanceChecks.LiveOverlay);
+        Check("unchanged presentation retains cached toolbar",StopwatchPerformanceChecks.RepeatedPresentation);
+        Check("direct settings retain inactive toolbar opacity",StopwatchPerformanceChecks.DirectSettingsPreserveOpacity);
+        Check("appearance inspector state and preview",StopwatchAppearanceUiChecks.Run);
+    }
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--picker-stability-baseline")||args.Contains("--picker-stability-only"))
+{
+    bool baseline=args.Contains("--picker-stability-baseline");
+    Check("cold artwork load budget",()=>PickerStabilityChecks.ColdArtwork(baseline?"baseline":"final",true));
+    Check("closed overlays recover through shortcut visibility actions",PickerStabilityChecks.ReopenClosedOverlays);
+    Check("standalone native picker chrome and exterior",PickerStabilityChecks.StandalonePicker);
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--navigator-picker-only")||args.Contains("--navigator-picker-regression"))
+{
+    Check("Navigator native row presentation",NavigatorPickerChecks.Presentation);
+    Check("Navigator native navigation and confirmation",NavigatorPickerChecks.Navigation);
+    Check("Navigator native hover, click and cancellation",NavigatorPickerChecks.PointerStates);
+    Check("Navigator native button states",NavigatorPickerChecks.ButtonStates);
+    Check("Navigator close-button focus and press",NavigatorPickerChecks.CloseButtonStates);
+    Check("Navigator maximum hours, recycling and automation",NavigatorPickerChecks.ExtremeHoursAndRecycling);
+    Check("Navigator actual control captures",NavigatorPickerChecks.Evidence);
+    if(!args.Contains("--navigator-picker-regression"))Environment.Exit(failures==0?0:1);
+}
 if(args.Contains("--stopwatch-performance-baseline")||args.Contains("--stopwatch-performance-final"))
 {
     Check("native overlay performance sample",()=>StopwatchPerformanceChecks.Benchmark(args.Contains("--stopwatch-performance-baseline")?"baseline":"final"));
@@ -131,7 +189,7 @@ if(args.Contains("--stopwatch-invalidation-only"))
     Check("direct settings preserve inactive toolbar opacity",StopwatchPerformanceChecks.DirectSettingsPreserveOpacity);
     Environment.Exit(failures==0?0:1);
 }
-if(args.Contains("--stopwatch-redraw-regression"))
+if(args.Contains("--stopwatch-redraw-regression")||args.Contains("--navigator-picker-regression"))
 {
     StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-stopwatch-redraw-cost/render-checks";
     Check("unchanged face values retain layout",StopwatchPerformanceChecks.UnchangedProperties);

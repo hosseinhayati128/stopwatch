@@ -255,8 +255,8 @@
 
                                 <TextBlock Text="Floating clock theme" Classes="sectionHeader"/>
                                 <ComboBox x:Name="OverlayThemeCombo" HorizontalAlignment="Stretch"
-                                          ToolTip.Tip="Styles the floating clock and hover toolbar only. Your text color, font, size and opacity are preserved. Choose Theme default under Text color to use the clock palette's text colors."/>
-                                <TextBlock x:Name="NikaStopwatchAppearanceHint" IsVisible="False" Text="Use Stopwatch appearance to change Nika's frame, typography and transparency. Text size and color remain shared." FontSize="12" TextWrapping="Wrap"/>
+                                          ToolTip.Tip="Styles the floating clock and hover toolbar. Nika uses its own appearance settings and matches text colors to the selected background. Other themes use the controls below."/>
+                                <TextBlock x:Name="NikaStopwatchAppearanceHint" IsVisible="False" Text="Use Stopwatch appearance to change Nika's frame, typography and transparency. Text colors match the selected background automatically. Text size remains shared." FontSize="12" TextWrapping="Wrap"/>
 
                                 <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
                                     <StackPanel Grid.Column="0" Spacing="8">

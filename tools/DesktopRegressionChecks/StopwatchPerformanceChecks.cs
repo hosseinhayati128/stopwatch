@@ -105,9 +105,10 @@ internal static class StopwatchPerformanceChecks
         window.SetTimerName("Navigation");window.UpdateTime(text);window.SetRunning(running);
         window.SetPauseResumeEnabled(true);window.SetActive(active);window.SetInactiveSeparated(!active,opacity);window.SetSeparateMergeState(false);
     }
-    internal static void Benchmark(string label)
+    internal static void Benchmark(string label,string? output=null,AppSettings? appearance=null)
     {
-        Directory.CreateDirectory(Output);
+        string directory=output??Output;var settings=appearance??Settings();
+        Directory.CreateDirectory(directory);
         var results=new List<object>();
         using var process=Process.GetCurrentProcess();
         foreach(string scenario in new[]{"paused","seconds","tenths"})
@@ -115,7 +116,7 @@ internal static class StopwatchPerformanceChecks
             var window=new OverlayWindow{ShowActivated=false,ShowInTaskbar=false};
             try
             {
-                window.ApplyAppearance(Settings());Apply(window,"00:44:27",scenario!="paused");window.Show();ClockOverlayChecks.Pump(250);
+                window.ApplyAppearance(settings);Apply(window,"00:44:27",scenario!="paused");window.Show();ClockOverlayChecks.Pump(250);
                 void Run(int updates,HashSet<string>? texts=null)
                 {
                     using var cancel=new CancellationTokenSource(TimeSpan.FromSeconds(20));int count=0;
@@ -142,12 +143,12 @@ internal static class StopwatchPerformanceChecks
                 results.Add(result);Console.WriteLine(JsonSerializer.Serialize(result));
                 var face=window.FindControl<ThemedClockFace>("ClockFace")!;
                 using var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(face.Bounds.Width),(int)Math.Ceiling(face.Bounds.Height)),new Vector(96,96));
-                bitmap.Render(face);bitmap.Save(Path.Combine(Output,$"{label}-{scenario}.png"));
+                bitmap.Render(face);bitmap.Save(Path.Combine(directory,$"{label}-{scenario}.png"));
             }
             finally{window.Close();ClockOverlayChecks.Pump(80);}
         }
-        File.WriteAllText(Path.Combine(Output,label+".json"),JsonSerializer.Serialize(new{label,logicalProcessors=Environment.ProcessorCount,
-            backend="Win32 AngleEgl with software fallback, private desktop",profile=Settings().StopwatchAppearance,textSize=27,
+        File.WriteAllText(Path.Combine(directory,label+".json"),JsonSerializer.Serialize(new{label,logicalProcessors=Environment.ProcessorCount,
+            backend="Win32 AngleEgl with software fallback, private desktop",profile=settings.StopwatchAppearance,textSize=settings.TextSize,
             note="Same simulated controller updates in each run; no exports/readback inside the timed interval. Does not measure the user's whole workload or prove the sole cause of machine lag.",results},new JsonSerializerOptions{WriteIndented=true}));
     }
 }

@@ -29,6 +29,7 @@ internal static class StopwatchAppearanceUiChecks
             try
             {
                 window.Show();ClockOverlayChecks.Pump(70);
+                Require(window.FindControl<ComboBox>("TextColorCombo")!.IsEnabled,"Legacy themes lost their text-color control.");
                 var nav=window.FindControl<ListBox>("NavigationList")!;
                 var category=nav.Items.OfType<ListBoxItem>().SingleOrDefault(x=>Equals(x.Tag,"StopwatchAppearance"));
                 Require(category!=null,"Stopwatch appearance category has not been implemented.");
@@ -67,6 +68,8 @@ internal static class StopwatchAppearanceUiChecks
                 Click(Named<Button>(window,"UseNikaStopwatchOverlay"));
                 Require(settings.OverlayTheme==OverlayThemeCatalog.Nika&&settings.ThemeMode==AppThemeCatalog.Midnight,"Use Nika changed the application theme.");
                 Require(!window.FindControl<ComboBox>("FontCombo")!.IsEnabled&&!window.FindControl<Slider>("BackgroundOpacitySlider")!.IsEnabled,"Legacy controls remain editable for Nika.");
+                Require(!window.FindControl<ComboBox>("TextColorCombo")!.IsEnabled,"Nika still offers a fixed text color that overrides its background palette.");
+                Require(settings.TextColor=="Theme default","Activating Nika rewrote the saved legacy text color.");
                 var tabs=Named<TabControl>(window,"StopwatchAppearanceTabs");tabs.SelectedIndex=1;ClockOverlayChecks.Pump(40);
                 var background=Named<Slider>(window,"StopwatchBackgroundOpacity");var unselected=Named<Slider>(window,"StopwatchUnselectedOpacity");
                 Require(background.Minimum==0&&background.Maximum==100&&unselected.Minimum==10&&unselected.Maximum==100,"Wrong opacity ranges.");

@@ -12,7 +12,7 @@ using Avalonia.Threading;
 
 namespace StopwatchOverlay.Desktop.Views;
 
-internal sealed class TimerPickerWindow : Window
+internal sealed partial class TimerPickerWindow : Window
 {
     private readonly ListBox _clocks;
     private readonly TimerSession[] _timers;
@@ -25,7 +25,13 @@ internal sealed class TimerPickerWindow : Window
         Title = "Choose a clock";
         Width = 460;
         Height = framed?480:410;
-        if(framed){MinWidth=360;MinHeight=300;}
+        if(framed)
+        {
+            MinWidth=360;MinHeight=300;
+            SystemDecorations=SystemDecorations.None;
+            Background=Brushes.Transparent;
+            TransparencyLevelHint=new[]{WindowTransparencyLevel.Transparent};
+        }
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         _timers = timers.ToArray();
@@ -52,17 +58,18 @@ internal sealed class TimerPickerWindow : Window
         var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), Margin = framed?new Thickness(0):new Thickness(16) };
         Grid.SetRow(_clocks, 1);
         Grid.SetRow(choose, 2);
-        layout.Children.Add(help);
-        layout.Children.Add(_clocks);
-        layout.Children.Add(choose);
         if(framed)
         {
-            var surface=new StopwatchFrameSurface{Child=layout,Padding=new Thickness(8)};
+            var surface=new StopwatchFrameSurface{Child=NavigatorLayout(choose,active),Padding=new Thickness(8)};
             // Keep the existing dialog material; reuse of artwork does not link preferences.
             surface.Bind(StopwatchFrameSurface.BackgroundProperty,this.GetResourceObservable("DialogSurfaceBrush"));
             Content=surface;
         }
-        else Content = layout;
+        else
+        {
+            layout.Children.Add(help);layout.Children.Add(_clocks);layout.Children.Add(choose);
+            Content=layout;
+        }
         AddHandler(KeyDownEvent, HandlePickerKey, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Opened += (_, _) => Dispatcher.UIThread.Post(() =>
         {

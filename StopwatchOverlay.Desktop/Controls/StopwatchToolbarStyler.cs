@@ -67,7 +67,8 @@ public static class StopwatchToolbarStyler
             bool dark=profile.HoverControls is "compass-dials" or "bronze-keys" or "porcelain-keys" ||
                 index==1&&profile.HoverControls is "classic-brass" or "floating-buttons" or "pixel-controls";
             button.Foreground=Brush.Parse(dark?"#091B25":profile.HoverControls=="pixel-controls"?"#F6D77A":"#FFF2D3");
-            StopwatchActionGlyph.SetState(button,index,state.IsRunning||state.IsClockMode,profile.HoverControls=="pixel-controls");
+            StopwatchActionGlyph.SetState(button,index,state.IsRunning||state.IsClockMode,profile.HoverControls=="pixel-controls",
+                profile.HoverControls is "vine-filigree" or "royal-cartouche");
         }
         if(actionButtons.Count>=3)
         {
@@ -86,11 +87,33 @@ public static class StopwatchToolbarStyler
 
 internal sealed class StopwatchActionGlyph(Button owner) : Control
 {
-    private sealed record GlyphState(int Action,bool Running,bool Pixel);
+    private sealed record GlyphState(int Action,bool Running,bool Pixel,bool Compact);
     private static readonly ConditionalWeakTable<Button,GlyphState> States=new();
-    internal static void SetState(Button button,int action,bool running,bool pixel)
+    private static readonly Geometry Play=StreamGeometry.Parse("M6,3 L17,10 L6,17 Z");
+    private static readonly Geometry Reset=StreamGeometry.Parse("M4,6 A7,7 0 1 1 3,12 M4,2 L4,6 L8,6");
+    private static readonly Geometry PixelClose=Pixels("10000001","01000010","00100100","00011000","00011000","00100100","01000010","10000001");
+    private static readonly Geometry PixelPause=Pixels("01100110","01100110","01100110","01100110","01100110","01100110","01100110","01100110");
+    private static readonly Geometry PixelPlay=Pixels("01000000","01100000","01111000","01111110","01111110","01111000","01100000","01000000");
+    private static readonly Geometry PixelReset=Pixels("00011100","00100010","01000001","11110001","01000001","00100010","00011100","00000000");
+    private static Geometry Pixels(params string[] rows)
     {
-        States.Remove(button);States.Add(button,new(action,running,pixel));
+        var geometry=new StreamGeometry();
+        using(var path=geometry.Open())
+        {
+            path.SetFillRule(FillRule.NonZero);
+            for(int y=0;y<rows.Length;y++)for(int x=0;x<rows[y].Length;x++)
+            {
+                if(rows[y][x]!='1')continue;
+                path.BeginFigure(new Point(x*2,y*2),true);
+                path.LineTo(new Point(x*2+2,y*2));path.LineTo(new Point(x*2+2,y*2+2));
+                path.LineTo(new Point(x*2,y*2+2));path.EndFigure(true);
+            }
+        }
+        return geometry;
+    }
+    internal static void SetState(Button button,int action,bool running,bool pixel,bool compact)
+    {
+        States.Remove(button);States.Add(button,new(action,running,pixel,compact));
         foreach(var glyph in button.GetVisualDescendants().OfType<StopwatchActionGlyph>())glyph.InvalidateVisual();
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -102,26 +125,35 @@ internal sealed class StopwatchActionGlyph(Button owner) : Control
     {
         if(!States.TryGetValue(owner,out var state))return;
         var brush=owner.Foreground??Brushes.White;var area=new Rect(Bounds.Size);
+        double size=state.Pixel||state.Compact?16:20;
         if(owner.IsPointerOver||owner.IsFocused)context.DrawRectangle(new SolidColorBrush(Colors.White,.13),null,area.Deflate(2),5,5);
         using(context.PushOpacity(owner.IsEffectivelyEnabled?1:.35))
-        using(context.PushTransform(Matrix.CreateTranslation((area.Width-20)/2,(area.Height-20)/2)))
+        using(context.PushTransform(Matrix.CreateTranslation((area.Width-size)/2,(area.Height-size)/2)))
         {
             if(state.Pixel)
             {
-                string[] pixels=state.Action==0?new[]{"1100011","0110110","0011100","0001000","0011100","0110110","1100011"}:
-                    state.Action==1?(state.Running?new[]{"1100011","1100011","1100011","1100011","1100011","1100011","1100011"}:new[]{"1100000","1111000","1111110","1111111","1111110","1111000","1100000"}):
-                    new[]{"0011110","0110011","1100001","1111001","1100001","0100011","0011110"};
-                for(int y=0;y<7;y++)for(int x=0;x<7;x++)if(pixels[y][x]=='1')context.FillRectangle(brush,new Rect(x*2.8,y*2.8,2.8,2.8));
+                var pixels=state.Action==0?PixelClose:state.Action==1?(state.Running?PixelPause:PixelPlay):PixelReset;
+                // Fill the whole glyph once so adjacent blocks have no antialias seams.
+                using(context.PushTransform(Matrix.CreateTranslation(8-pixels.Bounds.Center.X,8-pixels.Bounds.Center.Y)))
+                    context.DrawGeometry(brush,null,pixels);
                 return;
             }
-            var pen=new Pen(brush,2.7,lineCap:PenLineCap.Round,lineJoin:PenLineJoin.Round);
-            if(state.Action==0){context.DrawLine(pen,new Point(3,3),new Point(17,17));context.DrawLine(pen,new Point(17,3),new Point(3,17));}
-            else if(state.Action==1)
+            // Compact ornate keys use 16 DIP; larger faces retain readable 20 DIP icons.
+            // Cache the paths; repainting hover/focus never reparses SVG geometry.
+            using(context.PushTransform(Matrix.CreateScale(size/20,size/20)))
             {
-                if(state.Running){context.DrawRectangle(brush,null,new Rect(4,2,4,16),.7,.7);context.DrawRectangle(brush,null,new Rect(12,2,4,16),.7,.7);}
-                else context.DrawGeometry(brush,null,StreamGeometry.Parse("M5,2 L18,10 L5,18 Z"));
+                var pen=new Pen(brush,2.5,lineCap:PenLineCap.Round,lineJoin:PenLineJoin.Round);
+                if(state.Action==0){context.DrawLine(pen,new Point(4,4),new Point(16,16));context.DrawLine(pen,new Point(16,4),new Point(4,16));}
+                else if(state.Action==1)
+                {
+                    if(state.Running){context.DrawRectangle(brush,null,new Rect(4.5,3,3,14),.6,.6);context.DrawRectangle(brush,null,new Rect(12.5,3,3,14),.6,.6);}
+                    // Center the ink, with a small optical correction for the triangle's weight.
+                    else using(context.PushTransform(Matrix.CreateTranslation(10.5-Play.Bounds.Center.X,10-Play.Bounds.Center.Y)))
+                        context.DrawGeometry(brush,null,Play);
+                }
+                else using(context.PushTransform(Matrix.CreateTranslation(10-Reset.Bounds.Center.X,10-Reset.Bounds.Center.Y)))
+                    context.DrawGeometry(null,pen,Reset);
             }
-            else context.DrawGeometry(null,pen,StreamGeometry.Parse("M15,5 A7,7 0 1 1 7,3 M15,5 L10,5 M15,5 L15,0"));
         }
     }
 }
@@ -138,7 +170,11 @@ internal sealed class StopwatchToolbarPanel : Panel
     {
         var buttons=Children.Where(c=>c.IsVisible).ToArray();
         var asset=StopwatchAppearanceAssets.Shared.Get("control",Choice);var target=StopwatchAppearanceAssets.Fit(asset,finalSize);
-        for(int i=0;i<buttons.Length;i++)buttons[i].Arrange(new Rect(target.X+target.Width*asset.ControlCenters[Math.Min(i,2)]-17,target.Y+target.Height*asset.ControlCenterY-17,34,34));
+        for(int i=0;i<buttons.Length;i++)
+        {
+            var anchor=asset.ControlAnchors[Math.Min(i,2)];
+            buttons[i].Arrange(new Rect(target.X+target.Width*anchor.X-17,target.Y+target.Height*anchor.Y-17,34,34));
+        }
         return finalSize;
     }
 }

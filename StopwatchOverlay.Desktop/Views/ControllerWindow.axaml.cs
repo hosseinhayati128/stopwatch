@@ -469,6 +469,14 @@ public partial class ControllerWindow : Window
         if (_herdOverlay != null) return _herdOverlay;
 
         _herdOverlay = new OverlayWindow();
+        var overlay = _herdOverlay;
+        overlay.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(_herdOverlay, overlay)) return;
+            _herdOverlay = null;
+            if (!_isExiting && GetActiveHerdSession() is { } session)
+                _overlayVisibilityOverrides[session.Id] = false;
+        };
         _herdOverlay.SetSeparateMergeState(false);
         _herdOverlay.SetClickThrough(_settings.ClickThrough);
         _herdOverlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
@@ -524,6 +532,15 @@ public partial class ControllerWindow : Window
             return existing;
 
         var overlay = new OverlayWindow();
+        overlay.Closed += (_, _) =>
+        {
+            if (_overlays.GetValueOrDefault(session.Id) != overlay) return;
+            _overlays.Remove(session.Id);
+            // Merge/delete change membership before closing their old window.
+            // A native close hides the overlay while leaving its timer intact.
+            if (!_isExiting && session.IsSeparated && _timerManager.Sessions.Contains(session))
+                _overlayVisibilityOverrides[session.Id] = false;
+        };
         overlay.SetTimerName(session.Name);
         overlay.UpdateTime(FormatDisplayTime(session));
         overlay.SetRunning(session.IsRunning);
@@ -1335,7 +1352,7 @@ public partial class ControllerWindow : Window
             _isExiting = true;
             _herdOverlay?.Close();
             _herdOverlay = null;
-            foreach (var overlay in _overlays.Values)
+            foreach (var overlay in _overlays.Values.ToArray())
                 overlay.Close();
             _overlays.Clear();
             _lightRingWindow?.Close();
@@ -1348,6 +1365,7 @@ public partial class ControllerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _isExiting = true;
         _timerCommandDialog?.Close();
         _activeClocksShelf?.Close();
         StopHabiticaSync();
@@ -1362,7 +1380,7 @@ public partial class ControllerWindow : Window
         ExitShortcutCommandMode();
         _herdOverlay?.Close();
         _herdOverlay = null;
-        foreach (var overlay in _overlays.Values)
+        foreach (var overlay in _overlays.Values.ToArray())
             overlay.Close();
         _overlays.Clear();
         if (PlatformServices.HotKey is PortalHotKeyService portal)

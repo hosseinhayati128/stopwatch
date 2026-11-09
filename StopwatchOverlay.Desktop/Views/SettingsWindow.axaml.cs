@@ -588,7 +588,7 @@ public partial class SettingsWindow : Window
     private void UpdateDependentControlStates()
     {
         bool nikaOverlay=OverlayThemeCatalog.Resolve(_settings.OverlayTheme,_settings.ThemeMode)==OverlayThemeCatalog.Nika;
-        foreach(var control in new Control[]{FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider})control.IsEnabled=!nikaOverlay;
+        foreach(var control in new Control[]{FontCombo,TextColorCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider})control.IsEnabled=!nikaOverlay;
         NikaStopwatchAppearanceHint.IsVisible=nikaOverlay;
         if(_stopwatchActivateButton!=null)_stopwatchActivateButton.IsVisible=!nikaOverlay;
         NikaOptionsPanel.IsVisible = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;

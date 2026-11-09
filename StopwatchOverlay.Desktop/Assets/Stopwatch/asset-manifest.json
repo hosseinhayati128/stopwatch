@@ -62,7 +62,12 @@
       "sourceBoard": "hover-controls-matched-frames-13-14-v1.png",
       "sourceOption": 14,
       "licenseOrProvenance": "Built-in imagegen from approved control, blank wells for live glyphs; prompt in implementation-review/asset-prompts.md",
-      "intrinsicOpacity": 1
+      "intrinsicOpacity": 1,
+      "controlAnchors": [
+        [0.29726477, 0.54170380],
+        [0.49973841, 0.54170380],
+        [0.70195044, 0.54170380]
+      ]
     },
     {
       "kind": "background",
@@ -692,12 +697,11 @@
         1,
         0.76
       ],
-      "controlCenters": [
-        0.23,
-        0.5,
-        0.77
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.22768533, 0.47428154],
+        [0.49823500, 0.47428154],
+        [0.76828038, 0.47428154]
+      ]
     },
     {
       "kind": "control",
@@ -717,12 +721,11 @@
         1,
         0.8
       ],
-      "controlCenters": [
-        0.235,
-        0.5,
-        0.765
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.23559570, 0.47314453],
+        [0.49877930, 0.47314453],
+        [0.76171875, 0.47395833]
+      ]
     },
     {
       "kind": "control",
@@ -742,12 +745,11 @@
         1,
         0.88
       ],
-      "controlCenters": [
-        0.19,
-        0.5,
-        0.81
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.19337017, 0.46311527],
+        [0.50000000, 0.46311527],
+        [0.80639963, 0.46390005]
+      ]
     },
     {
       "kind": "control",
@@ -767,12 +769,11 @@
         1,
         0.7
       ],
-      "controlCenters": [
-        0.255,
-        0.5,
-        0.745
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.25260960, 0.52088046],
+        [0.49921712, 0.52001044],
+        [0.74686848, 0.52088046]
+      ]
     },
     {
       "kind": "control",
@@ -792,12 +793,11 @@
         1,
         0.64
       ],
-      "controlCenters": [
-        0.27,
-        0.5,
-        0.73
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.27000000, 0.49113335],
+        [0.50000000, 0.49113335],
+        [0.73000000, 0.49113335]
+      ]
     },
     {
       "kind": "control",
@@ -817,12 +817,11 @@
         1,
         0.7
       ],
-      "controlCenters": [
-        0.23,
-        0.5,
-        0.77
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.24585635, 0.47632202],
+        [0.49861878, 0.47632202],
+        [0.75184162, 0.47632202]
+      ]
     },
     {
       "kind": "control",
@@ -842,12 +841,11 @@
         1,
         0.7
       ],
-      "controlCenters": [
-        0.25,
-        0.5,
-        0.75
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.26853253, 0.48829040],
+        [0.50428643, 0.48829040],
+        [0.73625819, 0.48648892]
+      ]
     },
     {
       "kind": "control",
@@ -867,12 +865,11 @@
         1,
         0.64
       ],
-      "controlCenters": [
-        0.23,
-        0.5,
-        0.77
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.20549672, 0.43891866],
+        [0.49924357, 0.43990385],
+        [0.79198185, 0.43596311]
+      ]
     },
     {
       "kind": "control",
@@ -892,12 +889,11 @@
         1,
         0.7
       ],
-      "controlCenters": [
-        0.25,
-        0.5,
-        0.75
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.25000000, 0.47336227],
+        [0.50000000, 0.47336227],
+        [0.75000000, 0.47336227]
+      ]
     },
     {
       "kind": "control",
@@ -917,12 +913,11 @@
         1,
         0.84
       ],
-      "controlCenters": [
-        0.325,
-        0.5,
-        0.675
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.32468828, 0.46431608],
+        [0.49975062, 0.46431608],
+        [0.67531172, 0.46431608]
+      ]
     },
     {
       "kind": "control",
@@ -942,12 +937,11 @@
         1,
         1
       ],
-      "controlCenters": [
-        0.275,
-        0.5,
-        0.725
-      ],
-      "controlCenterY": 0.5
+      "controlAnchors": [
+        [0.27029753, 0.45964691],
+        [0.49899143, 0.45901639],
+        [0.72869390, 0.45901639]
+      ]
     }
   ],
   "typography": [

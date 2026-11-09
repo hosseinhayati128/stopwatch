@@ -1,0 +1,70 @@
+{
+  "status": "installed-verified-build-app-left-closed",
+  "date": "2026-11-05",
+  "renderer": "Actual native TimerPickerWindow content, native ListBox/Button/TextBlock and production shared frame",
+  "style": "Navigator",
+  "frame": "engraved-filigree",
+  "defaultWindow": "460 x 480",
+  "minimumWindow": "360 x 300",
+  "nativeGroupsPassed": 27,
+  "timerShortcutSubcasesPassed": 16,
+  "unitTestsPassed": 1052,
+  "execution": "Private Windows desktops. Process-local real window input callback; no OS input injection.",
+  "newRuntimeArtworkFiles": 0,
+  "newFonts": 0,
+  "newDependencies": 0,
+  "addedRefreshTimers": 0,
+  "standaloneNativeChecks": {
+    "nativeCaptionAndBorderAbsent": true,
+    "actualComposition": "Transparent",
+    "rootOuterCornerAlpha": 0,
+    "report": "docs/picker-stability-and-memory-2026-11-05.md"
+  },
+  "limits": [
+    "Physical monitor DPI and live screen-reader operation not exercised.",
+    "OS-level header dragging and edge resize not automated.",
+    "Saved app build updated but left closed; no live user-workspace test or Git publication in this step."
+  ],
+  "images": [
+    {
+      "file": "standalone-picker.png",
+      "width": 460,
+      "height": 480
+    },
+    {
+      "file": "minimum-size.png",
+      "width": 360,
+      "height": 300
+    },
+    {
+      "file": "names-and-modes-1.5x.png",
+      "width": 690,
+      "height": 720
+    },
+    {
+      "file": "names-and-modes-2.0x.png",
+      "width": 920,
+      "height": 960
+    },
+    {
+      "file": "names-and-modes.png",
+      "width": 460,
+      "height": 480
+    },
+    {
+      "file": "navigator-native.png",
+      "width": 1520,
+      "height": 824
+    },
+    {
+      "file": "row-states.png",
+      "width": 460,
+      "height": 480
+    },
+    {
+      "file": "twelve-clocks.png",
+      "width": 460,
+      "height": 480
+    }
+  ]
+}
