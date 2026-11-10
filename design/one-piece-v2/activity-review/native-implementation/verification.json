@@ -1,0 +1,18 @@
+{
+  "productionWindow": true,
+  "privateDesktop": true,
+  "syntheticData": true,
+  "checks": [
+    "fixed sequence and actions",
+    "independent scrolling",
+    "repeated selection and targeted removal",
+    "project registration and RTL",
+    "keyboard actions",
+    "chronological tracked slots",
+    "allocation and mood navigation",
+    "threshold persistence and expansion",
+    "offline retry",
+    "late completion and cancellation",
+    "legacy themes"
+  ]
+}

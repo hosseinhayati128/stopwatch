@@ -37,6 +37,24 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
+// Review fixtures load production styles without initializing live settings, hooks or tray.
+if(args.Contains("--review-projects-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
+        { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("review projects shared frame and fixed actions",ReviewProjectsNativeChecks.Layout);
+    Check("review repeated selection, registration and keyboard",ReviewProjectsNativeChecks.SelectionAndRegistration);
+    Check("review chronological removal and wizard navigation",ReviewProjectsNativeChecks.ChronologicalRemovalAndNavigation);
+    Check("review activity grouping, threshold and offline retry",ReviewProjectsNativeChecks.ActivityAndRetry);
+    Check("review pending loads and closed-window cancellation",ReviewProjectsNativeChecks.LateCompletion);
+    Check("review production native captures",ReviewProjectsNativeChecks.Evidence);
+    Environment.Exit(failures==0?0:1);
+}
+
 // Record fixtures load production styles without initializing the app's settings or tray.
 if(args.Contains("--time-record-native"))
 {
@@ -59,12 +77,13 @@ if(args.Contains("--time-record-native"))
 }
 
 // This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if (args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--time-record-preview"))Check("time record native design proposals",ProjectRecordPreview.Run);
+    if(args.Contains("--review-projects-preview"))Check("review projects native design proposals",ReviewProjectsPreview.Run);
+    else if(args.Contains("--time-record-preview"))Check("time record native design proposals",ProjectRecordPreview.Run);
     else if(args.Contains("--project-chooser-preview"))Check("project chooser native design proposals",ProjectChooserPreview.Run);
     else if(args.Contains("--timer-editor-states"))Check("timer editor native state proposals",()=>TimerEditorPreview.Run(true));
     else if(args.Contains("--timer-editor-preview"))Check("timer editor native layout proposal",()=>TimerEditorPreview.Run());

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -32,6 +33,11 @@ public partial class PeriodicReviewWindow : Window
     private bool _handled;
     private double _thresholdPercent;
     private bool _isOthersExpanded;
+    private readonly Func<CancellationToken, Task<PeriodicReviewModel>> _loadReviewData;
+    private readonly Action<AppSettings> _persistReviewSettings;
+    private readonly CancellationTokenSource _reviewLifetime = new();
+    private bool _reviewLoading;
+    private bool _reviewClosed;
 
     // Mood & Feelings state for Step 3
     private double _currentMoodScore = 5.0;
@@ -100,7 +106,9 @@ public partial class PeriodicReviewWindow : Window
         IEnumerable<TimerSession>? runningSessions,
         Action<List<PeriodicReviewStopwatchSlot>>? onSave,
         Func<string, string>? onRegisterProject = null,
-        Action<MoodEntry>? onSaveMood = null)
+        Action<MoodEntry>? onSaveMood = null,
+        Func<CancellationToken, Task<PeriodicReviewModel>>? loadReviewData = null,
+        Action<AppSettings>? persistSettings = null)
     {
         InitializeComponent();
 
@@ -116,6 +124,9 @@ public partial class PeriodicReviewWindow : Window
         _onSave = onSave;
         _onRegisterProject = onRegisterProject;
         _onSaveMood = onSaveMood;
+        _loadReviewData = loadReviewData ?? (ct => PeriodicReviewDataAggregator.FetchAndAggregateAsync(
+            _startUtc, _endUtc, _settings, _history, _runningSessions, ct: ct));
+        _persistReviewSettings = persistSettings ?? (value => SettingsStore.Save(value));
         _thresholdPercent = _settings.PeriodicReviewMinActivityPercent;
 
         _currentMoodScore = _settings.DefaultMoodScore;
@@ -160,6 +171,15 @@ public partial class PeriodicReviewWindow : Window
         }
 
         InitializeProjectsList();
+        // Recorded time is available immediately, independently of ActivityWatch's response.
+        _model = new PeriodicReviewModel
+        {
+            StartUtc = _startUtc, EndUtc = _endUtc,
+            StopwatchSlots = PeriodicReviewDataAggregator.SliceStopwatchIntervals(_startUtc, _endUtc, _history, _runningSessions)
+        };
+        AutoSelectStopwatchProjects();
+        ApplyNavigatorReviewLayout();
+        Closed += (_, _) => { _reviewClosed = true; _reviewLifetime.Cancel(); _reviewLifetime.Dispose(); };
         Loaded += Window_Loaded;
     }
 
@@ -176,8 +196,8 @@ public partial class PeriodicReviewWindow : Window
 
     private async void Window_Loaded(object? sender, RoutedEventArgs e)
     {
-        RenderProjectCards();
         UpdateStep1SequenceSummary();
+        RenderProjectCards();
         RenderActivityLoadingState();
 
         Activate();
@@ -188,6 +208,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void RenderActivityLoadingState()
     {
+        if (_navigatorReviewFrame != null) { ShowNavigatorActivityStatus("Loading activity…", "Your project sequence is ready. Loading apps, websites and time away.", false); return; }
         ActivitySummariesContainer.Children.Clear();
         var loadingPanel = new StackPanel
         {
@@ -221,25 +242,33 @@ public partial class PeriodicReviewWindow : Window
 
     private async Task LoadReviewDataAsync()
     {
+        if (_reviewLoading || _reviewClosed) return;
+        _reviewLoading = true;
+        RetryActivityWatchButton.IsEnabled = false;
         try
         {
-            _model = await PeriodicReviewDataAggregator.FetchAndAggregateAsync(
-                _startUtc,
-                _endUtc,
-                _settings,
-                _history,
-                _runningSessions);
-
+            var loaded = await _loadReviewData(_reviewLifetime.Token);
+            if (_reviewClosed) return;
+            _model = loaded;
             SyncKnownProjects();
-            AutoSelectStopwatchProjects();
-            UpdateStep1SequenceSummary();
-            RenderProjectCards();
-            RenderActivitySummaries();
+            if (_currentStep == 1)
+            {
+                UpdateStep1SequenceSummary();
+                RenderProjectCards();
+                RenderActivitySummaries();
+            }
         }
+        catch (OperationCanceledException) when (_reviewClosed) { }
         catch (Exception ex)
         {
-            CrashLogger.LogRecoverable(ex, "PeriodicReviewWindow.LoadData");
+            if (!_reviewClosed)
+            {
+                CrashLogger.LogRecoverable(ex, "PeriodicReviewWindow.LoadData");
+                if (_navigatorReviewFrame != null) ShowNavigatorActivityStatus("Activity could not be loaded", "You can still choose projects and continue. Retry to load activity details.", true);
+                else RenderActivitySummaries();
+            }
         }
+        finally { _reviewLoading = false; if (!_reviewClosed) RetryActivityWatchButton.IsEnabled = true; }
     }
 
     private void InitializeProjectsList()
@@ -327,13 +356,14 @@ public partial class PeriodicReviewWindow : Window
 
     private void RenderStep1()
     {
+        UpdateStep1SequenceSummary();
         RenderProjectCards();
         RenderActivitySummaries();
-        UpdateStep1SequenceSummary();
     }
 
     private void RenderProjectCards()
     {
+        if (_navigatorReviewFrame != null) { RenderNavigatorProjects(); return; }
         ProjectCardsContainer.Children.Clear();
 
         foreach (var item in _availableProjects)
@@ -482,6 +512,7 @@ public partial class PeriodicReviewWindow : Window
             SelectedSequenceText.IsVisible = true;
             SelectedSequenceChipsContainer.IsVisible = false;
             ContinueToStep2Button.IsEnabled = false;
+            UpdateNavigatorSequenceCount(0);
 
             foreach (var card in _availableProjects)
             {
@@ -501,6 +532,7 @@ public partial class PeriodicReviewWindow : Window
             _model?.StopwatchSlots,
             _startUtc,
             _endUtc);
+        UpdateNavigatorSequenceCount(chronological.Count);
 
         // Update card badges in _availableProjects
         foreach (var card in _availableProjects)
@@ -527,6 +559,11 @@ public partial class PeriodicReviewWindow : Window
         for (int i = 0; i < chronological.Count; i++)
         {
             var it = chronological[i];
+            if (_navigatorReviewFrame != null)
+            {
+                SelectedSequenceChipsContainer.Children.Add(CreateNavigatorSequenceChip(it, FindSequenceSource(chronological, i)));
+                continue;
+            }
             int order = it.SelectionOrder;
             DateTime sLocal = it.CalculatedStartUtc.ToLocalTime();
             DateTime eLocal = it.CalculatedEndUtc.ToLocalTime();
@@ -586,18 +623,10 @@ public partial class PeriodicReviewWindow : Window
             };
             ToolTip.SetTip(closeBtn, "Remove this session from sequence");
 
-            int itemIndexToRemove = i;
+            var itemToRemove = FindSequenceSource(chronological, i);
             closeBtn.Click += (_, _) =>
             {
-                if (itemIndexToRemove >= 0 && itemIndexToRemove < _selectedItems.Count)
-                {
-                    _selectedItems.RemoveAt(itemIndexToRemove);
-                }
-                else
-                {
-                    var matching = _selectedItems.FirstOrDefault(si => string.Equals(si.ProjectName, it.ProjectName, StringComparison.OrdinalIgnoreCase));
-                    if (matching != null) _selectedItems.Remove(matching);
-                }
+                if (itemToRemove != null) _selectedItems.Remove(itemToRemove);
                 UpdateStep1SequenceSummary();
                 RenderProjectCards();
             };
@@ -676,12 +705,13 @@ public partial class PeriodicReviewWindow : Window
     {
         ThresholdPercentText.Text = _thresholdPercent <= 0.0 ? "Off" : $"{_thresholdPercent:0.#}%";
         _settings.PeriodicReviewMinActivityPercent = _thresholdPercent;
-        SettingsStore.Save(_settings);
+        _persistReviewSettings(_settings);
         RenderActivitySummaries();
     }
 
     private void RenderActivitySummaries()
     {
+        if (_navigatorReviewFrame != null) { RenderNavigatorActivities(); return; }
         ActivitySummariesContainer.Children.Clear();
 
         if (_model == null)
@@ -947,6 +977,8 @@ public partial class PeriodicReviewWindow : Window
 
     private async void RetryActivityWatchButton_Click(object? sender, RoutedEventArgs e)
     {
+        if (_reviewLoading) return;
+        RenderActivityLoadingState();
         await LoadReviewDataAsync();
     }
 
@@ -990,6 +1022,7 @@ public partial class PeriodicReviewWindow : Window
         }
 
         RenderStep2();
+        UpdateNavigatorReviewStep();
     }
 
     private void Step2BackButton_Click(object? sender, RoutedEventArgs e)
@@ -1030,6 +1063,7 @@ public partial class PeriodicReviewWindow : Window
         _selectedItems.AddRange(clonedList);
 
         RenderStep1();
+        UpdateNavigatorReviewStep();
     }
 
     private void RenderStep2()
@@ -1061,7 +1095,7 @@ public partial class PeriodicReviewWindow : Window
         {
             _settings.PeriodicReviewFixedCollisionBehavior = "StopAtFixed";
         }
-        SettingsStore.Save(_settings);
+        _persistReviewSettings(_settings);
         UpdateCollisionButtonUI();
         PeriodicReviewDataAggregator.RepackTimelineIntervals(_selectedItems, _startUtc, _endUtc, _settings.PeriodicReviewFixedCollisionBehavior);
         RenderAllocatedCards();
@@ -2849,6 +2883,8 @@ public partial class PeriodicReviewWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+        if (e.Handled) return;
+        if (e.Key == Key.Enter && _currentStep == 1 && e.Source is Button) return;
         if (e.Key == Key.Escape)
         {
             e.Handled = true;

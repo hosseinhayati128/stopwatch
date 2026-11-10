@@ -1,0 +1,60 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "state": "selected",
+      "width": 1020,
+      "height": 700,
+      "projectPane": 444,
+      "activityPane": 480,
+      "projectContent": 252.66666666666666,
+      "projectViewport": 252.66666666666666,
+      "activityContent": 270.6666666666667,
+      "activityViewport": 270.6666666666667,
+      "continueEnabled": true
+    },
+    {
+      "state": "expanded-activities",
+      "width": 1020,
+      "height": 700,
+      "projectPane": 444,
+      "activityPane": 480,
+      "projectContent": 252.66666666666666,
+      "projectViewport": 252.66666666666666,
+      "activityContent": 331.3333333333333,
+      "activityViewport": 270.6666666666667,
+      "continueEnabled": true
+    },
+    {
+      "state": "activity-offline",
+      "width": 1020,
+      "height": 700,
+      "projectPane": 444,
+      "activityPane": 480,
+      "projectContent": 252.66666666666666,
+      "projectViewport": 252.66666666666666,
+      "activityContent": 270.6666666666667,
+      "activityViewport": 270.6666666666667,
+      "continueEnabled": true
+    },
+    {
+      "state": "empty-selection",
+      "width": 1020,
+      "height": 700,
+      "projectPane": 444,
+      "activityPane": 480,
+      "projectContent": 252.66666666666666,
+      "projectViewport": 252.66666666666666,
+      "activityContent": 270.6666666666667,
+      "activityViewport": 270.6666666666667,
+      "continueEnabled": false
+    }
+  ],
+  "shortHeight": 520,
+  "independentScrolling": true,
+  "fixedSequenceAndActions": true,
+  "frame": "engraved-filigree",
+  "artworkScale": 0.16,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; native Avalonia controls and shared renderer/styles; synthetic values, no production services or save handlers."
+}
