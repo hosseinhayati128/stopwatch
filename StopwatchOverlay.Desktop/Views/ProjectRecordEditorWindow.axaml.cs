@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -15,7 +16,10 @@ public partial class ProjectRecordEditorWindow : Window
 
     private readonly ProjectWorkIntervalView? _record;
     private readonly Func<string, DateTime, DateTime, ProjectRecordMutationResult>? _commit;
+    private readonly string? _theme;
     private bool _loaded;
+    private bool _accepted;
+    private Control? _validationTarget;
 
     public string ProjectName { get; private set; } = "";
     public DateTime StartUtc { get; private set; }
@@ -32,13 +36,22 @@ public partial class ProjectRecordEditorWindow : Window
         string? initialProjectKey,
         ProjectWorkIntervalView? record = null,
         Func<string, DateTime, DateTime, ProjectRecordMutationResult>? commit = null,
-        DateTime? initialLocalDate = null)
+        DateTime? initialLocalDate = null,
+        string? theme = null)
     {
         ArgumentNullException.ThrowIfNull(projects);
 
         _record = record;
         _commit = commit;
+        _theme = theme;
         InitializeComponent();
+        foreach (var date in new[] { StartDatePicker, EndDatePicker })
+            date.DateValidationError += (_, e) =>
+            {
+                e.ThrowException = false;
+                // The native picker otherwise restores the old date after invalid text.
+                date.SelectedDate = null;
+            };
 
         var choices = projects
             .OrderBy(project => project.Name, StringComparer.CurrentCultureIgnoreCase)
@@ -98,6 +111,7 @@ public partial class ProjectRecordEditorWindow : Window
         EndDatePicker.SelectedDate = endLocal.Date;
         StartTimeBox.Text = startLocal.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
         EndTimeBox.Text = endLocal.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        ApplyNavigatorLayout();
         UpdateDurationPreview();
 
         Opened += (_, _) =>
@@ -106,7 +120,7 @@ public partial class ProjectRecordEditorWindow : Window
             UpdateNewProjectPanel();
             UpdateDurationPreview();
 
-            if (ProjectSelector.SelectedItem is ProjectChoice { IsNew: true })
+            if (IsAddingProject)
                 NewProjectBox.Focus();
         };
     }
@@ -117,30 +131,34 @@ public partial class ProjectRecordEditorWindow : Window
         string? initialProjectKey,
         ProjectWorkIntervalView? record = null,
         Func<string, DateTime, DateTime, ProjectRecordMutationResult>? commit = null,
-        DateTime? initialLocalDate = null)
+        DateTime? initialLocalDate = null,
+        string? theme = null)
     {
-        var dialog = new ProjectRecordEditorWindow(projects, initialProjectKey, record, commit, initialLocalDate);
+        var dialog = new ProjectRecordEditorWindow(projects, initialProjectKey, record, commit, initialLocalDate, theme);
         if (owner != null)
         {
             return await dialog.ShowDialog<bool>(owner);
         }
 
         var tcs = new TaskCompletionSource<bool>();
-        dialog.Closed += (_, _) => tcs.TrySetResult(dialog.SavedRecord != null || !string.IsNullOrWhiteSpace(dialog.ProjectName));
+        dialog.Closed += (_, _) => tcs.TrySetResult(dialog._accepted);
         dialog.Show();
         return await tcs.Task;
     }
 
     private void ProjectSelector_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (ProjectSelector.SelectedItem is ProjectChoice { IsNew: false })
+            _navigatorAdding = false;
         UpdateNewProjectPanel();
         UpdateDurationPreview();
     }
 
     private void UpdateNewProjectPanel()
     {
-        bool isNew = ProjectSelector.SelectedItem is ProjectChoice { IsNew: true };
+        bool isNew = IsAddingProject;
         NewProjectPanel.IsVisible = isNew;
+        UpdateNavigatorProject();
         if (_loaded && isNew)
             NewProjectBox.Focus();
     }
@@ -157,10 +175,12 @@ public partial class ProjectRecordEditorWindow : Window
         if (!TryReadUtcRange(out _, out DateTime startUtc, out DateTime endUtc, out _))
         {
             DurationPreviewText.Text = "—";
+            UpdateNavigatorSummary(null);
             return;
         }
 
         DurationPreviewText.Text = FormatDuration(endUtc - startUtc);
+        UpdateNavigatorSummary(endUtc - startUtc);
     }
 
     private void Save_Click(object? sender, RoutedEventArgs e)
@@ -213,6 +233,7 @@ public partial class ProjectRecordEditorWindow : Window
             SavedRecord = result.Record;
         }
 
+        _accepted = true;
         Close(true);
     }
 
@@ -220,6 +241,12 @@ public partial class ProjectRecordEditorWindow : Window
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && (StartDatePicker.IsDropDownOpen || EndDatePicker.IsDropDownOpen || ProjectSelector.IsDropDownOpen))
+        {
+            StartDatePicker.IsDropDownOpen = EndDatePicker.IsDropDownOpen = ProjectSelector.IsDropDownOpen = false;
+            e.Handled = true;
+            return;
+        }
         base.OnKeyDown(e);
         if (e.Key == Key.Escape)
         {
@@ -238,26 +265,30 @@ public partial class ProjectRecordEditorWindow : Window
         startUtc = default;
         endUtc = default;
         error = "";
+        _validationTarget = null;
 
-        if (ProjectSelector.SelectedItem is not ProjectChoice projectChoice)
+        var projectChoice = ProjectSelector.SelectedItem as ProjectChoice;
+        if (!IsAddingProject && projectChoice == null)
         {
+            _validationTarget = ProjectSelector;
             error = "Choose a project.";
             return false;
         }
 
-        projectName = projectChoice.IsNew ? (NewProjectBox.Text?.Trim() ?? "") : projectChoice.Name;
+        projectName = IsAddingProject ? (NewProjectBox.Text?.Trim() ?? "") : projectChoice!.Name;
         try
         {
             projectName = ProjectTimeHistory.NormalizeProjectName(projectName);
         }
         catch (ArgumentException)
         {
+            _validationTarget = NewProjectBox;
             error = "Enter a valid project name using 200 or fewer printable characters.";
             return false;
         }
 
-        if (!TryReadLocalDateTime(StartDatePicker, StartTimeBox, "start", out DateTime startLocal, out error)
-            || !TryReadLocalDateTime(EndDatePicker, EndTimeBox, "end", out DateTime endLocal, out error))
+        if (!TryReadLocalDateTime(StartDatePicker, StartTimeBox, "start", out DateTime startLocal, out error, out _validationTarget)
+            || !TryReadLocalDateTime(EndDatePicker, EndTimeBox, "end", out DateTime endLocal, out error, out _validationTarget))
         {
             return false;
         }
@@ -269,11 +300,13 @@ public partial class ProjectRecordEditorWindow : Window
 
         if (TimeZoneInfo.Local.IsAmbiguousTime(startLocal) && !preserveStart)
         {
+            _validationTarget = StartTimeBox;
             error = "The start time occurs twice locally because the daylight-saving clock moves backward. Choose an unambiguous time.";
             return false;
         }
         if (TimeZoneInfo.Local.IsAmbiguousTime(endLocal) && !preserveEnd)
         {
+            _validationTarget = EndTimeBox;
             error = "The end time occurs twice locally because the daylight-saving clock moves backward. Choose an unambiguous time.";
             return false;
         }
@@ -300,12 +333,14 @@ public partial class ProjectRecordEditorWindow : Window
 
         if (endUtc <= startUtc)
         {
+            _validationTarget = EndTimeBox;
             error = "End time must be later than start time.";
             return false;
         }
 
         if (endUtc > DateTime.UtcNow.AddSeconds(1))
         {
+            _validationTarget = EndDatePicker;
             error = "A historical record cannot end in the future.";
             return false;
         }
@@ -318,12 +353,15 @@ public partial class ProjectRecordEditorWindow : Window
         TextBox timeBox,
         string label,
         out DateTime local,
-        out string error)
+        out string error,
+        out Control? invalidField)
     {
         local = default;
         error = "";
+        invalidField = null;
         if (datePicker.SelectedDate is not DateTime date)
         {
+            invalidField = datePicker;
             error = $"Choose the {label} date.";
             return false;
         }
@@ -336,6 +374,7 @@ public partial class ProjectRecordEditorWindow : Window
                 DateTimeStyles.None,
                 out DateTime parsedTime))
         {
+            invalidField = timeBox;
             error = $"Enter the {label} time as HH:mm or HH:mm:ss, for example 09:30:15.";
             return false;
         }
@@ -343,6 +382,7 @@ public partial class ProjectRecordEditorWindow : Window
         local = DateTime.SpecifyKind(date.Date + parsedTime.TimeOfDay, DateTimeKind.Unspecified);
         if (TimeZoneInfo.Local.IsInvalidTime(local))
         {
+            invalidField = timeBox;
             error = $"The {label} time does not exist locally because the clock changes at daylight saving time.";
             return false;
         }
@@ -367,12 +407,19 @@ public partial class ProjectRecordEditorWindow : Window
     {
         ValidationText.Text = message;
         ValidationText.IsVisible = true;
+        UpdateNavigatorValidation(true);
+        if (_theme == AppThemeCatalog.Nika)
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (IsVisible && ValidationText.IsVisible) ValidationText.BringIntoView();
+            }, DispatcherPriority.Background);
     }
 
     private void HideValidation()
     {
         ValidationText.Text = "";
         ValidationText.IsVisible = false;
+        UpdateNavigatorValidation(false);
     }
 
     private static DateTime EnsureUtc(DateTime value) => value.Kind switch

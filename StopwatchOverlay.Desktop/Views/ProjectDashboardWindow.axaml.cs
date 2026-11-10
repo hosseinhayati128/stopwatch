@@ -1209,7 +1209,8 @@ public partial class ProjectDashboardWindow : Window
                 _history.Projects,
                 _selectedProjectKey,
                 commit: (proj, sUtc, eUtc) => _addRecord(proj, sUtc, eUtc),
-                initialLocalDate: _selectedRange == DashboardRange.Day ? _selectedDayLocal : null);
+                initialLocalDate: _selectedRange == DashboardRange.Day ? _selectedDayLocal : null,
+                theme: _settings?.ThemeMode);
 
             bool confirmed = await dialog.ShowDialog<bool>(this);
             if (confirmed)
@@ -1238,7 +1239,8 @@ public partial class ProjectDashboardWindow : Window
                 _history.Projects,
                 record.ProjectKey,
                 record,
-                (proj, sUtc, eUtc) => _updateRecord(record.Id, proj, sUtc, eUtc));
+                (proj, sUtc, eUtc) => _updateRecord(record.Id, proj, sUtc, eUtc),
+                theme: _settings?.ThemeMode);
 
             bool confirmed = await dialog.ShowDialog<bool>(this);
             if (confirmed)

@@ -1,0 +1,47 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "file": "add-record",
+      "width": 560,
+      "height": 620,
+      "body": 404,
+      "viewport": 404,
+      "dateWidth": 209.33333333333334,
+      "fixedFooter": true
+    },
+    {
+      "file": "edit-record",
+      "width": 560,
+      "height": 620,
+      "body": 404,
+      "viewport": 404,
+      "dateWidth": 209.33333333333334,
+      "fixedFooter": true
+    },
+    {
+      "file": "new-project",
+      "width": 560,
+      "height": 732,
+      "body": 516,
+      "viewport": 516,
+      "dateWidth": 209.33333333333334,
+      "fixedFooter": true
+    },
+    {
+      "file": "invalid-range",
+      "width": 560,
+      "height": 732,
+      "body": 516,
+      "viewport": 516,
+      "dateWidth": 209.33333333333334,
+      "fixedFooter": true
+    }
+  ],
+  "shortHeight": 440,
+  "shortHeightScroll": true,
+  "frame": "engraved-filigree",
+  "artworkScale": 0.16,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; real Avalonia controls and shared renderer/styles; synthetic values, no save handlers or application lifetime."
+}

@@ -221,7 +221,7 @@ public partial class ControllerWindow
         var view = _projectHistory.CreateView(DateTime.UtcNow);
         string? projectKey = view.Projects.FirstOrDefault(project =>
             string.Equals(project.Name, _timerManager.Active?.Name, StringComparison.OrdinalIgnoreCase))?.Key;
-        var editor = new ProjectRecordEditorWindow(view.Projects, projectKey, commit: AddProjectRecord);
+        var editor = new ProjectRecordEditorWindow(view.Projects, projectKey, commit: AddProjectRecord, theme: _settings.ThemeMode);
         await ShowTimerCommandDialog(editor);
         if (editor.SavedRecord != null) _dashboardWindow?.RefreshData();
     }

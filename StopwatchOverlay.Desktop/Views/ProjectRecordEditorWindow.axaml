@@ -8,14 +8,14 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Background="{DynamicResource AppBackgroundBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Border Margin="18"
+    <ScrollViewer x:Name="RecordScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border x:Name="RecordSurface" Margin="18"
                 Background="{DynamicResource DialogSurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="{DynamicResource ThemePanelBorderThickness}"
                 CornerRadius="{DynamicResource ThemePanelCornerRadius}"
                 BoxShadow="0 6 20 0 #40000000">
-            <StackPanel Margin="24">
+            <StackPanel x:Name="RecordBody" Margin="24">
                 <TextBlock x:Name="HeadingText"
                            Text="Add project record"
                            Classes="heading"
@@ -27,7 +27,7 @@
                            TextWrapping="Wrap"
                            Margin="0,5,0,20"/>
 
-                <TextBlock Text="PROJECT"
+                <TextBlock x:Name="ProjectLabel" Text="PROJECT"
                            FontSize="12"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource SecondaryTextBrush}"
@@ -136,11 +136,11 @@
                            Margin="2,12,0,0"
                            IsVisible="False"/>
 
-                <StackPanel Orientation="Horizontal"
+                <StackPanel x:Name="RecordActions" Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             Margin="0,20,0,0"
                             Spacing="8">
-                    <Button Content="Cancel"
+                    <Button x:Name="CancelButton" Content="Cancel"
                             Classes="modern"
                             MinWidth="90"
                             Click="Cancel_Click"/>
