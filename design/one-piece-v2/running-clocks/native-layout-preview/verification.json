@@ -1,0 +1,39 @@
+{
+  "status": "layout-proposal-not-production",
+  "renderer": "Avalonia text and production StopwatchFrameSurface / ThemedClockFace",
+  "frame": "engraved-filigree",
+  "artworkScale": 0.14,
+  "scenarios": [
+    {
+      "scenario": "Beneath the stopwatch",
+      "total": 3,
+      "visibleRows": 3,
+      "width": 350,
+      "height": 292,
+      "contentWidth": 279,
+      "contentHeight": 238
+    },
+    {
+      "scenario": "A longer list",
+      "total": 8,
+      "visibleRows": 5,
+      "width": 350,
+      "height": 380,
+      "contentWidth": 279,
+      "contentHeight": 326
+    },
+    {
+      "scenario": "Nothing running",
+      "total": 0,
+      "visibleRows": 0,
+      "width": 350,
+      "height": 194,
+      "contentWidth": 279,
+      "contentHeight": 140
+    }
+  ],
+  "rowHeight": 44,
+  "maximumVisibleRows": 5,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; no application lifetime, live settings, hotkeys or input injection."
+}

@@ -117,6 +117,7 @@ public partial class ControllerWindow
     private void UpdateActiveClocksShelf()
     {
         if (_activeClocksShelf == null) return;
+        _activeClocksShelf.ApplyTheme(_settings.ThemeMode);
         _activeClocksShelf.UpdateClocks(_timerManager.Sessions, _timerManager.Active, FormatDisplayTime);
         var active = _timerManager.Active;
         var anchor = active?.IsSeparated == true ? _overlays.GetValueOrDefault(active.Id) : _herdOverlay;

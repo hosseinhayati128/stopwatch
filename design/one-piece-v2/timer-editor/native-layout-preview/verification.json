@@ -1,0 +1,16 @@
+{
+  "status": "layout-proposal-not-production",
+  "full": {
+    "width": 620,
+    "height": 780,
+    "content": "44, 31.333333333333332, 533.3333333333334, 714",
+    "viewport": 563.3333333333334,
+    "extent": 563.3333333333334
+  },
+  "shortHeight": 640,
+  "shortViewport": 424,
+  "frame": "engraved-filigree",
+  "artworkScale": 0.16,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; static values, no editor handlers, user settings, timers or hotkeys."
+}

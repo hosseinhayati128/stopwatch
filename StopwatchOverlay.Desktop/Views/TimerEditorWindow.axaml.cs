@@ -30,6 +30,7 @@ public partial class TimerEditorWindow : Window
     private bool _isCustomCategoryMode;
     private bool _isRunning;
     private TimeSpan _currentTimeSpan;
+    private string? _segmentDetails;
 
     public bool WasSaved { get; private set; }
     public bool UndoRequested { get; private set; }
@@ -162,7 +163,8 @@ public partial class TimerEditorWindow : Window
         }
         else
         {
-            DateTime fallbackStart = DateTime.Now - _originalTotalElapsed;
+            var now = DateTime.Now;
+            DateTime fallbackStart = _originalTotalElapsed <= now - DateTime.MinValue ? now - _originalTotalElapsed : DateTime.MinValue;
             _latestStartLocal = fallbackStart;
             StartTimeBox.Text = fallbackStart.ToString("HH:mm:ss");
             SegmentDetailText.Text = "No previously saved segments recorded for this timer.";
@@ -175,6 +177,14 @@ public partial class TimerEditorWindow : Window
         UpdateRunningButton();
         UpdateRecordsStatus();
         UndoPreviousEditButton.IsVisible = canUndo;
+        _segmentDetails = SegmentDetailText.Text;
+        ApplyNavigatorLayout();
+        ValidateInputs();
+        // TextChanged is queued; handle start edits before a subsequent duration edit.
+        StartTimeBox.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBox.TextProperty) StartTimeBox_TextChanged();
+        };
 
         _liveRefreshTimer = new DispatcherTimer
         {
@@ -237,6 +247,7 @@ public partial class TimerEditorWindow : Window
     private void UpdateRunningButton()
     {
         PauseResumeButton.Content = _isRunning ? "Pause Timer" : "Resume Timer";
+        if (_settings?.ThemeMode == AppThemeCatalog.Nika) return;
         if (_isRunning)
         {
             PauseResumeButton.Classes.Remove("primary");
@@ -254,24 +265,25 @@ public partial class TimerEditorWindow : Window
         if (_discardRecords)
         {
             RecordsStatusText.Text = "Session records will be removed from project history upon saving.";
-            if (Application.Current?.TryFindResource("DangerTextBrush", out var dang) == true && dang is IBrush dBrush)
+            if (this.TryFindResource("DangerTextBrush", out var dang) == true && dang is IBrush dBrush)
                 RecordsStatusText.Foreground = dBrush;
             DiscardRecordsButton.IsEnabled = false;
         }
         else if (_intervals.Count > 0 || _timer.HasAccumulatedTime)
         {
             RecordsStatusText.Text = $"Tracking {_intervals.Count} segment(s) in project history.";
-            if (Application.Current?.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
+            if (this.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
                 RecordsStatusText.Foreground = sBrush;
             DiscardRecordsButton.IsEnabled = true;
         }
         else
         {
             RecordsStatusText.Text = "No active work interval recorded for this timer yet.";
-            if (Application.Current?.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
+            if (this.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
                 RecordsStatusText.Foreground = sBrush;
             DiscardRecordsButton.IsEnabled = true;
         }
+        UpdateNavigatorRecordsSummary();
     }
 
     private void UpdateAdjustmentSummary()
@@ -282,7 +294,7 @@ public partial class TimerEditorWindow : Window
             AdjustmentSummaryText.Text = _intervals.Count > 0
                 ? $"Total: {FormatDuration(_originalTotalElapsed)} across {_intervals.Count} segment(s)"
                 : $"Total: {FormatDuration(_originalTotalElapsed)}";
-            if (Application.Current?.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
+            if (this.TryFindResource("SecondaryTextBrush", out var sec) == true && sec is IBrush sBrush)
                 AdjustmentSummaryText.Foreground = sBrush;
         }
         else if (delta > TimeSpan.Zero)
@@ -316,13 +328,13 @@ public partial class TimerEditorWindow : Window
             {
                 AdjustmentSummaryText.Text = $"+{FormatDuration(delta)} will be added to project records";
             }
-            if (Application.Current?.TryFindResource("AccentBrush", out var acc) == true && acc is IBrush aBrush)
+            if (this.TryFindResource("AccentBrush", out var acc) == true && acc is IBrush aBrush)
                 AdjustmentSummaryText.Foreground = aBrush;
         }
         else
         {
             AdjustmentSummaryText.Text = $"-{FormatDuration(-delta)} will eliminate time from the latest segments backwards";
-            if (Application.Current?.TryFindResource("AccentBrush", out var acc) == true && acc is IBrush aBrush)
+            if (this.TryFindResource("AccentBrush", out var acc) == true && acc is IBrush aBrush)
                 AdjustmentSummaryText.Foreground = aBrush;
         }
     }
@@ -330,25 +342,25 @@ public partial class TimerEditorWindow : Window
     private void TimeValueBox_TextChanged(object? sender, TextChangedEventArgs e)
     {
         if (_isUpdatingInternally) return;
-
-        if (TryParseDuration(TimeValueBox.Text, out TimeSpan duration))
-        {
-            _currentTimeSpan = duration;
-            UpdateAdjustmentSummary();
-            SaveButton.IsEnabled = true;
-        }
-        else
-        {
-            AdjustmentSummaryText.Text = "Please enter a valid duration (e.g. 01:30:00, 15m, 45s).";
-            if (Application.Current?.TryFindResource("DangerTextBrush", out var dang) == true && dang is IBrush dBrush)
-                AdjustmentSummaryText.Foreground = dBrush;
-            SaveButton.IsEnabled = false;
-        }
+        ValidateInputs();
     }
 
-    private void StartTimeBox_TextChanged(object? sender, TextChangedEventArgs e)
+    private void StartTimeBox_TextChanged()
     {
         if (_isUpdatingInternally) return;
+        if(TryGetSafeDuration(out _) && TryGetStartTotal(out var total))
+        {
+            _currentTimeSpan=total;
+            _isUpdatingInternally=true;TimeValueBox.Text=FormatDuration(total);_isUpdatingInternally=false;
+        }
+        ValidateInputs();
+    }
+
+    private bool TryGetStartTotal(out TimeSpan total)
+    {
+        total=default;
+        try
+        {
 
         string text = StartTimeBox.Text?.Trim() ?? "";
         if (TimeOnly.TryParse(text, CultureInfo.InvariantCulture, out TimeOnly t)
@@ -366,13 +378,7 @@ public partial class TimerEditorWindow : Window
                 TimeSpan newTotal = _originalTotalElapsed + diff;
                 if (newTotal >= TimeSpan.Zero)
                 {
-                    _currentTimeSpan = newTotal;
-                    _isUpdatingInternally = true;
-                    TimeValueBox.Text = FormatDuration(newTotal);
-                    _isUpdatingInternally = false;
-                    UpdateAdjustmentSummary();
-                    SaveButton.IsEnabled = true;
-                    return;
+                    total=newTotal;return true;
                 }
             }
             else
@@ -381,18 +387,48 @@ public partial class TimerEditorWindow : Window
                 TimeSpan elapsed = DateTime.Now - today;
                 if (elapsed >= TimeSpan.Zero)
                 {
-                    _currentTimeSpan = elapsed;
-                    _isUpdatingInternally = true;
-                    TimeValueBox.Text = FormatDuration(elapsed);
-                    _isUpdatingInternally = false;
-                    UpdateAdjustmentSummary();
-                    SaveButton.IsEnabled = true;
-                    return;
+                    total=elapsed;return true;
                 }
             }
         }
 
-        SaveButton.IsEnabled = false;
+        }
+        catch(ArgumentOutOfRangeException){return false;}
+        catch(OverflowException){return false;}
+        return false;
+    }
+
+    private bool TryGetSafeDuration(out TimeSpan duration)
+    {
+        if (!TryParseDuration(TimeValueBox.Text, out duration)) return false;
+        // History additions extend backwards; never allow them before DateTime.MinValue.
+        long availableTicks = _intervals.Count == 0 ? DateTime.UtcNow.Ticks : _intervals.Min(i => i.StartUtc.Ticks);
+        return duration <= _originalTotalElapsed || (duration - _originalTotalElapsed).Ticks <= availableTicks;
+    }
+
+    private bool ValidateInputs()
+    {
+        bool durationValid=TryGetSafeDuration(out var duration),startValid=TryGetStartTotal(out _);
+        TimeValueBox.Classes.Set("invalidTime",!durationValid);StartTimeBox.Classes.Set("invalidTime",!startValid);
+        if(durationValid){_currentTimeSpan=duration;UpdateAdjustmentSummary();}
+        else
+        {
+            AdjustmentSummaryText.Text=TryParseDuration(TimeValueBox.Text,out _)
+                ? "This duration exceeds the supported project-history date range."
+                : "Enter a valid duration, such as 01:30:00, 15m or 45s.";
+            if(this.TryFindResource("DangerTextBrush",out var brush)&&brush is IBrush ink)AdjustmentSummaryText.Foreground=ink;
+        }
+        if(!startValid)
+        {
+            SegmentDetailText.Text="Enter a valid start time (HH:mm:ss) that leaves a non-negative duration.";
+            if(this.TryFindResource("DangerTextBrush",out var brush)&&brush is IBrush ink)SegmentDetailText.Foreground=ink;
+        }
+        else if(_segmentDetails!=null)
+        {
+            SegmentDetailText.Text=_segmentDetails;
+            if(this.TryFindResource("SecondaryTextBrush",out var brush)&&brush is IBrush ink)SegmentDetailText.Foreground=ink;
+        }
+        return SaveButton.IsEnabled=durationValid&&startValid;
     }
 
     private void QuickAdjust_Click(object? sender, RoutedEventArgs e)
@@ -405,7 +441,8 @@ public partial class TimerEditorWindow : Window
             }
             else if (int.TryParse(tag, out int secondsDelta))
             {
-                _currentTimeSpan += TimeSpan.FromSeconds(secondsDelta);
+                try{_currentTimeSpan += TimeSpan.FromSeconds(secondsDelta);}
+                catch(OverflowException){return;}
                 if (_currentTimeSpan < TimeSpan.Zero)
                 {
                     _currentTimeSpan = TimeSpan.Zero;
@@ -415,8 +452,7 @@ public partial class TimerEditorWindow : Window
             _isUpdatingInternally = true;
             TimeValueBox.Text = FormatDuration(_currentTimeSpan);
             _isUpdatingInternally = false;
-            UpdateAdjustmentSummary();
-            SaveButton.IsEnabled = true;
+            ValidateInputs();
         }
     }
 
@@ -587,7 +623,7 @@ public partial class TimerEditorWindow : Window
 
     private void SaveButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (!TryParseDuration(TimeValueBox.Text, out TimeSpan duration))
+        if (!ValidateInputs() || !TryParseDuration(TimeValueBox.Text, out TimeSpan duration))
         {
             return;
         }
@@ -662,6 +698,13 @@ public partial class TimerEditorWindow : Window
     }
 
     public static bool TryParseDuration(string? input, out TimeSpan duration)
+    {
+        try{return TryParseDurationCore(input,out duration);}
+        catch(ArgumentException){duration=default;return false;}
+        catch(OverflowException){duration=default;return false;}
+    }
+
+    private static bool TryParseDurationCore(string? input,out TimeSpan duration)
     {
         duration = TimeSpan.Zero;
         if (string.IsNullOrWhiteSpace(input)) return false;

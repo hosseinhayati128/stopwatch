@@ -10,14 +10,14 @@
         Topmost="True"
         ShowInTaskbar="False"
         Background="{DynamicResource AppBackgroundBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Border Margin="18"
+    <ScrollViewer x:Name="EditorScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Border x:Name="EditorSurface" Margin="18"
                 Background="{DynamicResource DialogSurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="{DynamicResource ThemePanelBorderThickness}"
                 CornerRadius="{DynamicResource ThemePanelCornerRadius}"
                 BoxShadow="0 6 20 0 #40000000">
-            <StackPanel Margin="24">
+            <StackPanel x:Name="EditorBody" Margin="24">
                 <TextBlock x:Name="HeadingText"
                            Text="Edit Timer"
                            Classes="heading"
@@ -32,12 +32,12 @@
                            FontSize="13"/>
 
                 <!-- Project Assignment -->
-                <TextBlock Text="PROJECT"
+                <TextBlock x:Name="ProjectLabel" Text="PROJECT"
                            FontSize="12"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            Margin="0,0,0,6"/>
-                <Grid Margin="0,0,0,8" ColumnDefinitions="*,Auto">
+                <Grid x:Name="ProjectRow" Margin="0,0,0,8" ColumnDefinitions="*,Auto">
                     <ComboBox x:Name="ProjectSelector"
                               MinHeight="38"
                               HorizontalAlignment="Stretch"
@@ -62,7 +62,7 @@
                           Click="IdleStopForProjectCheck_Click"/>
 
                 <!-- Category & Score per Hour Assignment -->
-                <Grid Margin="0,0,0,14" ColumnDefinitions="3*,2*">
+                <Grid x:Name="CategoryRow" Margin="0,0,0,14" ColumnDefinitions="3*,2*">
                     <!-- Category -->
                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
                         <TextBlock Text="CATEGORY"
@@ -113,7 +113,7 @@
                 </Grid>
 
                 <!-- Total Time Value Section -->
-                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                <Border x:Name="TimeCard" Background="{DynamicResource SurfaceRaisedBrush}"
                         BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
@@ -151,7 +151,7 @@
                                    TextWrapping="Wrap"/>
 
                         <!-- Quick Adjust row -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0" Spacing="6">
+                        <StackPanel x:Name="QuickAdjustButtons" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0" Spacing="6">
                             <Button Content="-5m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="-300"/>
                             <Button Content="-1m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="-60"/>
                             <Button Content="+1m" Classes="modern" Height="32" Padding="8,2" Click="QuickAdjust_Click" Tag="60"/>
@@ -163,7 +163,7 @@
                 </Border>
 
                 <!-- Latest Segment Start Time Section -->
-                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                <Border x:Name="StartCard" Background="{DynamicResource SurfaceRaisedBrush}"
                         BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
@@ -182,7 +182,7 @@
                                      MaxLength="8"
                                      VerticalContentAlignment="Center"
                                      ToolTip.Tip="Latest segment start time as HH:mm:ss. Editing this adjusts elapsed duration."
-                                     TextChanged="StartTimeBox_TextChanged"/>
+                                     />
                             <TextBlock x:Name="SegmentDetailText"
                                        Text="Latest segment details"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
@@ -224,7 +224,7 @@
                 </Expander>
 
                 <!-- Record Options & Timer Actions -->
-                <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                <Border x:Name="RecordsCard" Background="{DynamicResource SurfaceRaisedBrush}"
                         BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
@@ -262,8 +262,8 @@
                 </Border>
 
                 <!-- Bottom dialog buttons -->
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Button Content="Cancel"
+                <Grid x:Name="EditorActions" ColumnDefinitions="Auto,*,Auto">
+                    <Button x:Name="CancelButton" Content="Cancel"
                             MinWidth="90" Height="38"
                             Classes="modern"
                             Click="CancelButton_Click"/>

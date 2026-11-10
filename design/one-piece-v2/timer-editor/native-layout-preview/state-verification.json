@@ -1,0 +1,14 @@
+{
+  "status": "state-proposal-not-production",
+  "width": 620,
+  "height": 780,
+  "footerFixed": true,
+  "expandedActionsVisible": true,
+  "scenarios": [
+    "Expanded records",
+    "Removal pending until Save",
+    "Valid time adjustment",
+    "Invalid duration / disabled Save"
+  ],
+  "execution": "Private desktop; simulated states, no edit/save/delete handlers or user data."
+}

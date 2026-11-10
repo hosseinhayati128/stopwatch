@@ -38,12 +38,16 @@ void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
 // This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if (args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--clock-picker-state-preview"))Check("clock picker state design proposal",ClockPickerStatePreview.Run);
+    if(args.Contains("--timer-editor-states"))Check("timer editor native state proposals",()=>TimerEditorPreview.Run(true));
+    else if(args.Contains("--timer-editor-preview"))Check("timer editor native layout proposal",()=>TimerEditorPreview.Run());
+    else if(args.Contains("--running-clocks-state-preview"))Check("running clocks state and format proposals",RunningClocksPreview.RunStates);
+    else if(args.Contains("--running-clocks-preview"))Check("running clocks native layout proposal",RunningClocksPreview.Run);
+    else if(args.Contains("--clock-picker-state-preview"))Check("clock picker state design proposal",ClockPickerStatePreview.Run);
     else if(args.Contains("--clock-picker-row-preview"))Check("clock picker row design proposals",ClockPickerRowPreview.Run);
     else if(args.Contains("--shared-frames-only"))
     {
@@ -118,6 +122,30 @@ AppBuilder.Configure<App>().UsePlatformDetect()
         ? new[] { Win32RenderingMode.AngleEgl,Win32RenderingMode.Software } : new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if(args.Contains("--timer-editor-native"))
+{
+    Check("editor duration/start validation for click and keyboard",TimerEditorNativeChecks.Validation);
+    Check("editor duration bounds and extreme elapsed values",TimerEditorNativeChecks.DurationBounds);
+    Check("editor shared frame, scrolling and fixed footer",TimerEditorNativeChecks.Layout);
+    Check("editor fields preserve save results",TimerEditorNativeChecks.FieldsAndResults);
+    Check("editor pointer, keyboard and dropdown input",TimerEditorNativeChecks.InputStates);
+    Check("editor pending discard, undo and confirmed deletion",TimerEditorNativeChecks.RecordActions);
+    Check("editor themes, modes and closed timer lifecycle",TimerEditorNativeChecks.ThemesModesAndLifecycle);
+    Check("editor hidden and visible ownership",TimerEditorChecks.HiddenOwner);
+    Check("editor actual native captures",TimerEditorNativeChecks.Evidence);
+    Environment.Exit(failures==0?0:1);
+}
+if(args.Contains("--running-clocks-only"))
+{
+    Check("running shelf approved layout and timer filtering",RunningClocksChecks.Layout);
+    Check("running shelf actions and safe focus after pause",RunningClocksChecks.ActionsAndFocus);
+    Check("running shelf keyboard and pointer states",RunningClocksChecks.InputStates);
+    Check("running shelf long times, RTL and scrolling",RunningClocksChecks.ReadabilityAndScrolling);
+    Check("running shelf stable updates and theme isolation",RunningClocksChecks.StableUpdatesAndThemes);
+    Check("running shelf monitor-edge placement",RunningClocksChecks.Placement);
+    Check("running shelf actual native captures",RunningClocksChecks.Evidence);
+    Environment.Exit(failures==0?0:1);
+}
 if(args.Contains("--stopwatch-performance-palettes"))
 {
     foreach(string background in new[]{"navigator-parchment","sky-island"})
