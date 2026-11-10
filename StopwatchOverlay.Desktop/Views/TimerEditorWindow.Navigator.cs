@@ -34,7 +34,7 @@ public partial class TimerEditorWindow
         TransparencyLevelHint=[WindowTransparencyLevel.Transparent];
         Content=null;EditorScroll.Content=null;EditorSurface.Child=null;EditorBody.Children.Clear();
         EditorBody.Margin=new(0,0,10,0);
-        AddEditorStyles();
+        NavigatorFormStyles.Apply(this);
 
         HeadingText.Text="Edit timer";HeadingText.Classes.Clear();HeadingText.FontFamily=StopwatchTypography.Resolve("navigator-bold").NameFont;
         HeadingText.FontSize=30;HeadingText.FontWeight=FontWeight.Bold;HeadingText.HorizontalAlignment=HorizontalAlignment.Left;
@@ -46,7 +46,7 @@ public partial class TimerEditorWindow
         title.PointerPressed+=(_,e)=>{if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed){BeginMoveDrag(e);e.Handled=true;}};
         var close=new Button{Content=new Avalonia.Controls.Shapes.Path{Data=Geometry.Parse("M 2,2 L 14,14 M 14,2 L 2,14"),Width=16,Height=16,
             Stroke=ClockPickerPresentation.Navy,StrokeThickness=2,StrokeLineCap=PenLineCap.Round},Padding=new(0),Width=28,Height=28,VerticalAlignment=VerticalAlignment.Top,Margin=new(0,6,0,0)};
-        StyleEditorButton(close);close.Click+=(_,_)=>Close(false);AutomationProperties.SetName(close,"Close timer editor");ToolTip.SetTip(close,"Close (Esc)");
+        NavigatorFormStyles.StyleButton(close);close.Click+=(_,_)=>Close(false);AutomationProperties.SetName(close,"Close timer editor");ToolTip.SetTip(close,"Close (Esc)");
         var header=new Grid{ColumnDefinitions=new("*,32"),Children={title,close}};Grid.SetColumn(close,1);
 
         ProjectLabel.FontSize=10;
@@ -56,7 +56,7 @@ public partial class TimerEditorWindow
         {field.Classes.Add("editorField");field.MinHeight=36;field.FontSize=13;field.Padding=new(10,5);}
         AutoTextDirection.Attach(CustomProjectBox);AutoTextDirection.Attach(CustomCategoryBox);
         foreach(var button in new[]{ToggleProjectInputButton,ToggleCategoryInputButton,PauseResumeButton,CancelButton,UndoPreviousEditButton,SaveButton,DiscardRecordsButton,DeleteTimerButton})
-            StyleEditorButton(button,button==SaveButton,button==DiscardRecordsButton||button==DeleteTimerButton);
+            NavigatorFormStyles.StyleButton(button,button==SaveButton,button==DiscardRecordsButton||button==DeleteTimerButton);
         ToggleProjectInputButton.Width=70;ToggleCategoryInputButton.Width=62;
         ToggleProjectInputButton.Height=ToggleCategoryInputButton.Height=36;
         IdleStopForProjectCheck.FontSize=11;IdleStopForProjectCheck.Margin=new(0);
@@ -75,7 +75,7 @@ public partial class TimerEditorWindow
         var timeRow=new Grid{ColumnDefinitions=new("*,Auto"),Children={TimeValueBox,PauseResumeButton}};Grid.SetColumn(PauseResumeButton,1);
         AdjustmentSummaryText.FontSize=11;AdjustmentSummaryText.Margin=new(0,8,0,0);
         QuickAdjustButtons.HorizontalAlignment=HorizontalAlignment.Left;QuickAdjustButtons.Margin=new(0,12,0,0);
-        foreach(var button in QuickAdjustButtons.Children.OfType<Button>()){StyleEditorButton(button);button.Height=30;button.Padding=new(9,2);}
+        foreach(var button in QuickAdjustButtons.Children.OfType<Button>()){NavigatorFormStyles.StyleButton(button);button.Height=30;button.Padding=new(9,2);}
         TimeCard.Child=new StackPanel{Children={timeHeader,timeRow,AdjustmentSummaryText,QuickAdjustButtons}};
         TimeCard.Background=Brush.Parse("#46FFF3D8");TimeCard.BorderBrush=EditorRule;TimeCard.CornerRadius=new(7);TimeCard.Margin=new(0,18,0,0);
         EditorBody.Children.Add(TimeCard);
@@ -134,14 +134,6 @@ public partial class TimerEditorWindow
         RecordsStatusText.Foreground=_discardRecords?EditorDanger:ClockPickerPresentation.Muted;
     }
 
-    private static void StyleEditorButton(Button button,bool primary=false,bool danger=false)
-    {
-        button.Classes.Remove("modern");button.Classes.Remove("primary");button.Classes.Remove("danger");
-        button.Classes.Add("editorAction");if(primary)button.Classes.Add("editorPrimary");if(danger)button.Classes.Add("editorDanger");
-        button.MinWidth=0;button.MinHeight=0;
-        button.FontFamily=ClockPickerPresentation.Body;
-    }
-
     private static void StyleEditorExpander(Expander expander)
     {
         expander.HorizontalAlignment=HorizontalAlignment.Stretch;expander.HorizontalContentAlignment=HorizontalAlignment.Stretch;
@@ -172,37 +164,4 @@ public partial class TimerEditorWindow
         });
     }
 
-    private void AddEditorStyles()
-    {
-        Styles.Add(new Style(s=>s.OfType<Button>().Class("editorAction")){Setters={
-            new Setter(TemplatedControl.FontSizeProperty,12d),new Setter(TemplatedControl.FontWeightProperty,FontWeight.SemiBold),
-            new Setter(TemplatedControl.ForegroundProperty,ClockPickerPresentation.Navy),new Setter(TemplatedControl.BackgroundProperty,Brushes.Transparent),
-            new Setter(TemplatedControl.BorderBrushProperty,ClockPickerPresentation.Gold),new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(1)),
-            new Setter(TemplatedControl.TemplateProperty,new FuncControlTemplate<Button>((button,scope)=>
-            {
-                var presenter=new ContentPresenter{Name="PART_ContentPresenter",HorizontalContentAlignment=HorizontalAlignment.Center,VerticalContentAlignment=VerticalAlignment.Center,
-                    Background=Brushes.Transparent,Padding=new(0),BorderThickness=new(0),RenderTransform=new MatrixTransform(Matrix.Identity)};
-                scope.Register(presenter.Name,presenter);presenter.Bind(ContentPresenter.ContentProperty,new TemplateBinding(ContentControl.ContentProperty),BindingPriority.Template);
-                presenter.Bind(ContentPresenter.ForegroundProperty,button.GetObservable(Button.ForegroundProperty));
-                var border=new Border{CornerRadius=new(4),Child=presenter};
-                border.Bind(Border.BackgroundProperty,button.GetObservable(Button.BackgroundProperty));border.Bind(Border.BorderBrushProperty,button.GetObservable(Button.BorderBrushProperty));
-                border.Bind(Border.BorderThicknessProperty,button.GetObservable(Button.BorderThicknessProperty));border.Bind(Border.PaddingProperty,button.GetObservable(Button.PaddingProperty));return border;
-            }))}});
-        foreach(var (kind,normal,hover,pressed,ink) in new[]{
-            ("editorAction","#00FFFFFF","#66FFFFFF","#F1D796",ClockPickerPresentation.Navy),
-            ("editorPrimary","#102B3B","#214A5C","#071E29",ClockPickerPresentation.Cream),
-            ("editorDanger","#00FFFFFF","#EDCEB4","#DCA990",EditorDanger)})
-        {
-            Styles.Add(new Style(s=>s.OfType<Button>().Class(kind)){Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse(normal)),new Setter(TemplatedControl.ForegroundProperty,ink)}});
-            Styles.Add(new Style(s=>s.OfType<Button>().Class(kind).Class(":pointerover")){Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse(hover))}});
-            Styles.Add(new Style(s=>s.OfType<Button>().Class(kind).Class(":pressed")){Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse(pressed))}});
-        }
-        Styles.Add(new Style(s=>s.OfType<Button>().Class("editorDanger")){Setters={new Setter(TemplatedControl.BorderBrushProperty,EditorDanger)}});
-        Styles.Add(new Style(s=>s.OfType<Button>().Class("editorAction").Class(":focus-visible")){Setters={new Setter(TemplatedControl.BorderBrushProperty,ClockPickerPresentation.Navy),new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(2))}});
-        Styles.Add(new Style(s=>s.OfType<Button>().Class("editorAction").Class(":disabled")){Setters={new Setter(Visual.OpacityProperty,.42)}});
-        Styles.Add(new Style(s=>s.Is<TemplatedControl>().Class("editorField")){Setters={new Setter(TemplatedControl.BackgroundProperty,FieldPaper),new Setter(TemplatedControl.ForegroundProperty,ClockPickerPresentation.Navy),new Setter(TemplatedControl.BorderBrushProperty,EditorRule)}});
-        Styles.Add(new Style(s=>s.OfType<TextBox>().Class("editorField").Template().OfType<Border>().Name("PART_BorderElement")){Setters={new Setter(Border.BackgroundProperty,FieldPaper),new Setter(Border.BorderBrushProperty,EditorRule)}});
-        Styles.Add(new Style(s=>s.OfType<TextBox>().Class("editorField").Class(":focus").Template().OfType<Border>().Name("PART_BorderElement")){Setters={new Setter(Border.BorderBrushProperty,ClockPickerPresentation.Gold)}});
-        Styles.Add(new Style(s=>s.OfType<TextBox>().Class("invalidTime").Template().OfType<Border>().Name("PART_BorderElement")){Setters={new Setter(Border.BorderBrushProperty,EditorDanger)}});
-    }
 }

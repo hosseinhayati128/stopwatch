@@ -160,7 +160,8 @@ public partial class ControllerWindow
         currentCategory: session?.Category ?? "Work",
         getProjectCategory: _projectHistory.GetProjectCategory,
         currentScorePerHour: session?.ScorePerHour ?? 1,
-        getProjectScore: _projectHistory.GetProjectScorePerHour);
+        getProjectScore: _projectHistory.GetProjectScorePerHour,
+        theme: _settings.ThemeMode);
 
     private void ApplyProjectChoice(TimerSession session, TimerNameWindow dialog)
     {

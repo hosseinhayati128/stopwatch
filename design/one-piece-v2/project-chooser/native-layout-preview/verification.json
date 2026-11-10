@@ -1,0 +1,35 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "file": "new-timer-existing",
+      "width": 560,
+      "height": 490,
+      "body": 274,
+      "viewport": 274,
+      "fixedFooter": true
+    },
+    {
+      "file": "new-timer-new-project",
+      "width": 560,
+      "height": 602,
+      "body": 386,
+      "viewport": 386,
+      "fixedFooter": true
+    },
+    {
+      "file": "choose-project",
+      "width": 560,
+      "height": 490,
+      "body": 274,
+      "viewport": 274,
+      "fixedFooter": true
+    }
+  ],
+  "shortHeight": 420,
+  "shortHeightScroll": true,
+  "frame": "engraved-filigree",
+  "artworkScale": 0.16,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; real Avalonia controls and shared renderer; synthetic values, no application handlers or persistence."
+}

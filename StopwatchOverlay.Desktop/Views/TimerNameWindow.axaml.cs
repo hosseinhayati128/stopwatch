@@ -15,6 +15,7 @@ public partial class TimerNameWindow : Window
     private readonly bool _isCreatingTimer;
     private readonly Func<string, string>? _getProjectCategory;
     private readonly Func<string, double>? _getProjectScore;
+    private readonly string? _theme;
     private bool _isAddingProject;
     private bool _isAddingCategory;
 
@@ -36,7 +37,8 @@ public partial class TimerNameWindow : Window
         string currentCategory = "Work",
         Func<string, string>? getProjectCategory = null,
         double currentScorePerHour = 1.0,
-        Func<string, double>? getProjectScore = null)
+        Func<string, double>? getProjectScore = null,
+        string? theme = null)
     {
         InitializeComponent();
 
@@ -44,8 +46,9 @@ public partial class TimerNameWindow : Window
         _currentName = (currentName ?? "").Trim();
         _getProjectCategory = getProjectCategory;
         _getProjectScore = getProjectScore;
+        _theme = theme;
         Category = string.IsNullOrWhiteSpace(currentCategory) ? "Work" : currentCategory.Trim();
-        ScorePerHour = (double.IsNaN(currentScorePerHour) || double.IsInfinity(currentScorePerHour) || currentScorePerHour < 0) ? 1.0 : currentScorePerHour;
+        ScorePerHour = NormalizeScore(currentScorePerHour);
         ScorePerHourBox.Value = (decimal)ScorePerHour;
 
         var projects = (projectNames ?? Enumerable.Empty<string>())
@@ -115,6 +118,7 @@ public partial class TimerNameWindow : Window
         }
 
         SelectInitialProject();
+        ApplyNavigatorLayout();
         Opened += (_, _) => ProjectSelector.Focus();
     }
 
@@ -128,9 +132,10 @@ public partial class TimerNameWindow : Window
         string currentCategory = "Work",
         Func<string, string>? getProjectCategory = null,
         double currentScorePerHour = 1.0,
-        Func<string, double>? getProjectScore = null)
+        Func<string, double>? getProjectScore = null,
+        string? theme = null)
     {
-        var dialog = new TimerNameWindow(currentName, projectNames, isCreatingTimer, renameShortcut, categories, currentCategory, getProjectCategory, currentScorePerHour, getProjectScore);
+        var dialog = new TimerNameWindow(currentName, projectNames, isCreatingTimer, renameShortcut, categories, currentCategory, getProjectCategory, currentScorePerHour, getProjectScore, theme);
         if (owner != null)
         {
             var res = await dialog.ShowDialog<bool>(owner);
@@ -191,34 +196,22 @@ public partial class TimerNameWindow : Window
         {
             ShowNewProjectEditor(false);
         }
-        else
+        ValidationText.IsVisible = false;
+        string selectedProject = (ProjectSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+        if (string.IsNullOrWhiteSpace(selectedProject)) return;
+        if (_getProjectCategory != null)
         {
-            ValidationText.IsVisible = false;
-            string selectedProject = (ProjectSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
-            if (!string.IsNullOrWhiteSpace(selectedProject))
-            {
-                if (_getProjectCategory != null)
-                {
-                    string knownCat = _getProjectCategory(selectedProject);
-                    if (!string.IsNullOrWhiteSpace(knownCat))
-                    {
-                        SetSelectedCategory(knownCat);
-                    }
-                }
-                if (_getProjectScore != null)
-                {
-                    double knownScore = _getProjectScore(selectedProject);
-                    if (knownScore >= 0 && !double.IsNaN(knownScore) && !double.IsInfinity(knownScore))
-                    {
-                        ScorePerHourBox.Value = (decimal)knownScore;
-                    }
-                }
-            }
+            string knownCat = _getProjectCategory(selectedProject);
+            if (!string.IsNullOrWhiteSpace(knownCat)) SetSelectedCategory(knownCat);
         }
+        if (_getProjectScore != null)
+            ScorePerHourBox.Value = (decimal)NormalizeScore(_getProjectScore(selectedProject));
     }
 
     private void SetSelectedCategory(string category)
     {
+        if (_isAddingCategory)
+            ShowNewCategoryEditor(false);
         foreach (object? candidate in CategorySelector.Items)
         {
             if (candidate is ComboBoxItem item
@@ -246,6 +239,7 @@ public partial class TimerNameWindow : Window
         AddProjectButton.Content = show ? "×" : "+";
         ToolTip.SetTip(AddProjectButton, show ? "Cancel adding project" : "Add new project");
         ValidationText.IsVisible = false;
+        UpdateNavigatorDrafts();
 
         if (show)
         {
@@ -291,6 +285,7 @@ public partial class TimerNameWindow : Window
         AddCategoryButton.Content = show ? "×" : "+";
         ToolTip.SetTip(AddCategoryButton, show ? "Cancel adding category" : "Add custom category");
         CategoryValidationText.IsVisible = false;
+        UpdateNavigatorDrafts();
 
         if (show)
         {
@@ -340,6 +335,8 @@ public partial class TimerNameWindow : Window
 
     private void Save_Click(object? sender, RoutedEventArgs e)
         => AcceptSelection();
+
+    private static double NormalizeScore(double score) => double.IsFinite(score) && score >= 0 ? Math.Min(score, 1000) : 1;
 
     private void AcceptSelection()
     {

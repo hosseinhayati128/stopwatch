@@ -38,12 +38,13 @@ void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
 // This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if (args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--timer-editor-states"))Check("timer editor native state proposals",()=>TimerEditorPreview.Run(true));
+    if(args.Contains("--project-chooser-preview"))Check("project chooser native design proposals",ProjectChooserPreview.Run);
+    else if(args.Contains("--timer-editor-states"))Check("timer editor native state proposals",()=>TimerEditorPreview.Run(true));
     else if(args.Contains("--timer-editor-preview"))Check("timer editor native layout proposal",()=>TimerEditorPreview.Run());
     else if(args.Contains("--running-clocks-state-preview"))Check("running clocks state and format proposals",RunningClocksPreview.RunStates);
     else if(args.Contains("--running-clocks-preview"))Check("running clocks native layout proposal",RunningClocksPreview.Run);
@@ -122,6 +123,16 @@ AppBuilder.Configure<App>().UsePlatformDetect()
         ? new[] { Win32RenderingMode.AngleEgl,Win32RenderingMode.Software } : new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if(args.Contains("--project-chooser-native"))
+{
+    Check("project chooser native layout and fixed footer",ProjectChooserNativeChecks.Layout);
+    Check("project chooser results and project defaults",ProjectChooserNativeChecks.ResultsAndDefaults);
+    Check("project chooser draft validation and cancellation",ProjectChooserNativeChecks.DraftsAndValidation);
+    Check("project chooser bounded scores, themes and RTL",ProjectChooserNativeChecks.ScoresAndThemes);
+    Check("project chooser real pointer and dropdown keys",ProjectChooserNativeChecks.NativeInput);
+    Check("project chooser actual native captures",ProjectChooserNativeChecks.Evidence);
+    Environment.Exit(failures==0?0:1);
+}
 if(args.Contains("--timer-editor-native"))
 {
     Check("editor duration/start validation for click and keyboard",TimerEditorNativeChecks.Validation);
