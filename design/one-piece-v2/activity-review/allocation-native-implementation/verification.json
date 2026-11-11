@@ -1,0 +1,18 @@
+{
+  "productionControls": true,
+  "privateDesktop": true,
+  "installedAppChanged": false,
+  "syntheticData": true,
+  "checks": [
+    "layout and independent scrolling",
+    "duration and exact time controls",
+    "order split add remove",
+    "collision policies",
+    "fixed-record guards and removal",
+    "manual drag",
+    "keyboard navigation",
+    "save callbacks excluding gaps and breaks",
+    "RTL and zero minutes",
+    "other themes"
+  ]
+}

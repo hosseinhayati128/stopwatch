@@ -22,6 +22,8 @@ public partial class PeriodicReviewWindow
     private ScrollViewer? _reviewSequenceScroll;
     private TextBlock? _reviewSequenceCount;
     private TextBlock? _reviewActivityNote;
+    private Grid? _reviewProjectsLayout;
+    private Grid? _reviewAllocationLayout;
     private static readonly IBrush ReviewNavy=Brush.Parse("#102B3B"),ReviewMuted=Brush.Parse("#655539"),ReviewGold=Brush.Parse("#AF7C29"),
         ReviewCream=Brush.Parse("#F6E8C9"),ReviewRule=Brush.Parse("#509A7B48");
     private static readonly FontFamily ReviewBody=StopwatchTypography.Resolve("modern-deck").NameFont;
@@ -103,13 +105,19 @@ public partial class PeriodicReviewWindow
         _navigatorReviewFrame.Resources["PrimaryTextBrush"]=ReviewNavy;_navigatorReviewFrame.Resources["AccentBrush"]=ReviewNavy;
         _navigatorReviewFrame.Resources["SecondaryTextBrush"]=ReviewMuted;_navigatorReviewFrame.Resources["BorderBrush"]=ReviewRule;
         _navigatorReviewFrame.Resources["SurfaceRaisedBrush"]=ReviewCream;
+        _reviewProjectsLayout=layout;
+        _reviewAllocationLayout=CreateNavigatorAllocationLayout();
         Content=new Grid{Children={_legacyReviewContent,new ThemeVariantScope{RequestedThemeVariant=ThemeVariant.Light,Child=_navigatorReviewFrame}}};
         UpdateNavigatorReviewStep();
-        PointerPressed+=(_,e)=>{var p=e.GetPosition(this);if(_currentStep==1&&e.GetCurrentPoint(this).Properties.IsLeftButtonPressed&&p.X>=Bounds.Width-18&&p.Y>=Bounds.Height-18){BeginResizeDrag(WindowEdge.SouthEast,e);e.Handled=true;}};
+        PointerPressed+=(_,e)=>{var p=e.GetPosition(this);if(_currentStep<=2&&e.GetCurrentPoint(this).Properties.IsLeftButtonPressed&&p.X>=Bounds.Width-18&&p.Y>=Bounds.Height-18){BeginResizeDrag(WindowEdge.SouthEast,e);e.Handled=true;}};
     }
 
     private void UpdateNavigatorReviewStep()
-    {if(_navigatorReviewFrame==null)return;_navigatorReviewFrame.IsVisible=_currentStep==1;_legacyReviewContent!.IsVisible=_currentStep!=1;}
+    {
+        if(_navigatorReviewFrame==null)return;
+        _navigatorReviewFrame.IsVisible=_currentStep<=2;_legacyReviewContent!.IsVisible=_currentStep==3;
+        _navigatorReviewFrame.Child=_currentStep==2?_reviewAllocationLayout:_reviewProjectsLayout;
+    }
 
     private void RenderNavigatorProjects()
     {

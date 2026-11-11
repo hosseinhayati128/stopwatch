@@ -1,0 +1,68 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "state": "allocation-overview",
+      "width": 1020,
+      "height": 700,
+      "leftWidth": 494,
+      "rightWidth": 430,
+      "editorContent": 280,
+      "editorViewport": 280,
+      "timelineContent": 248.66666666666666,
+      "timelineViewport": 248.66666666666666,
+      "allocated": 25,
+      "unallocated": 5,
+      "feelingsEnabled": true
+    },
+    {
+      "state": "exact-time-expanded",
+      "width": 1020,
+      "height": 700,
+      "leftWidth": 494,
+      "rightWidth": 430,
+      "editorContent": 409.3333333333333,
+      "editorViewport": 280,
+      "timelineContent": 248.66666666666666,
+      "timelineViewport": 248.66666666666666,
+      "allocated": 30,
+      "unallocated": 0,
+      "feelingsEnabled": false
+    },
+    {
+      "state": "split-around-recorded",
+      "width": 1020,
+      "height": 700,
+      "leftWidth": 494,
+      "rightWidth": 430,
+      "editorContent": 309.3333333333333,
+      "editorViewport": 280,
+      "timelineContent": 248.66666666666666,
+      "timelineViewport": 248.66666666666666,
+      "allocated": 28,
+      "unallocated": 2,
+      "feelingsEnabled": true
+    },
+    {
+      "state": "stop-at-recorded",
+      "width": 1020,
+      "height": 700,
+      "leftWidth": 494,
+      "rightWidth": 430,
+      "editorContent": 280,
+      "editorViewport": 280,
+      "timelineContent": 248.66666666666666,
+      "timelineViewport": 248.66666666666666,
+      "allocated": 20,
+      "unallocated": 10,
+      "feelingsEnabled": true
+    }
+  ],
+  "shortHeight": 520,
+  "fixedActions": true,
+  "independentScrolling": true,
+  "newRuntimeArtwork": 0,
+  "frame": "engraved-filigree",
+  "artworkScale": 0.16,
+  "execution": "Private desktop; drawing-only Avalonia application; synthetic values; no production activity queries or save/navigation handlers."
+}

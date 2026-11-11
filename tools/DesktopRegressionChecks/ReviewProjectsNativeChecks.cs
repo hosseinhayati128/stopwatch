@@ -21,7 +21,7 @@ internal static class ReviewProjectsNativeChecks
     private static void Require(bool condition,string message){if(!condition)throw new Exception(message);}
     private static void Click(Button button){button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);}
     private static void Key(Control control,Key key){control.RaiseEvent(new KeyEventArgs{RoutedEvent=InputElement.KeyDownEvent,Key=key});ClockOverlayChecks.Pump(15);}
-    private sealed class Fixture:IDisposable
+    internal sealed class Fixture:IDisposable
     {
         internal readonly PeriodicReviewWindow Window;
         internal readonly AppSettings Settings;

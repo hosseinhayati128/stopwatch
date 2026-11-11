@@ -58,6 +58,8 @@ public partial class PeriodicReviewWindow : Window
         public TextBox MinInput { get; set; } = null!;
         public TextBox? StartBox { get; set; }
         public TextBox? EndBox { get; set; }
+        public TextBlock? WarningText { get; set; }
+        public Button? SplitButton { get; set; }
     }
 
     private readonly List<AllocatedCardViewHolder> _cardViewHolders = [];
@@ -1105,6 +1107,7 @@ public partial class PeriodicReviewWindow : Window
     private void UpdateCollisionButtonUI()
     {
         bool isStop = string.Equals(_settings.PeriodicReviewFixedCollisionBehavior, "StopAtFixed", StringComparison.OrdinalIgnoreCase);
+        if(_reviewCollisionSelector!=null)_reviewCollisionSelector.SelectedIndex=isStop?1:0;
         CollisionModeButton.Content = isStop ? "🛑 Stop at Fixed" : "✂️ Cut & Continue";
         ToolTip.SetTip(CollisionModeButton, isStop
             ? "When manual timers exceed slot before a fixed stopwatch record, they stop at the fixed boundary. Click to switch to Cut & Continue."
@@ -1196,6 +1199,8 @@ public partial class PeriodicReviewWindow : Window
 
     private void SyncAllViews(bool updateCards = true)
     {
+        // Repacking can add or replace continuation items; rebuild their controls before synchronizing.
+        if(_navigatorReviewFrame!=null&&!_cardViewHolders.Select(h=>h.Item).SequenceEqual(_selectedItems))RenderAllocatedCards();
         var fullTimeline = PeriodicReviewDataAggregator.BuildFullTimeline(_startUtc, _endUtc, _selectedItems);
 
         RenderDistributionBar(fullTimeline);
@@ -1241,6 +1246,8 @@ public partial class PeriodicReviewWindow : Window
                     }
 
                     ToolTip.SetTip(holder.Border, CreateRichToolTip(it));
+                    if(holder.WarningText!=null){holder.WarningText.Text=NavigatorCollisionWarning(it);holder.WarningText.IsVisible=!string.IsNullOrWhiteSpace(holder.WarningText.Text);}
+                    if(holder.SplitButton!=null)holder.SplitButton.IsEnabled=it.AllocatedMinutes>=2;
                 }
             }
             finally
@@ -1252,19 +1259,22 @@ public partial class PeriodicReviewWindow : Window
 
     private void RenderAllocatedCards()
     {
-        AllocatedProjectsContainer.Children.Clear();
-        _cardViewHolders.Clear();
-
-        int totalMin = TotalPeriodMinutes;
-
-        for (int i = 0; i < _selectedItems.Count; i++)
+        bool wasUpdating = _isUpdatingViews;
+        _isUpdatingViews = true;
+        try
         {
-            var item = _selectedItems[i];
-            int index = i;
-            var (card, holder) = CreateAllocatedProjectCard(item, index, totalMin);
-            _cardViewHolders.Add(holder);
-            AllocatedProjectsContainer.Children.Add(card);
+            // Removing focused fields raises LostFocus; those stale values must not commit again.
+            AllocatedProjectsContainer.Children.Clear();
+            _cardViewHolders.Clear();
+            int totalMin = TotalPeriodMinutes;
+            for (int i = 0; i < _selectedItems.Count; i++)
+            {
+                var (card, holder) = CreateAllocatedProjectCard(_selectedItems[i], i, totalMin);
+                _cardViewHolders.Add(holder);
+                AllocatedProjectsContainer.Children.Add(card);
+            }
         }
+        finally { _isUpdatingViews = wasUpdating; }
     }
 
     private (Control Card, AllocatedCardViewHolder Holder) CreateAllocatedProjectCard(ReviewProjectSelectionItem item, int index, int maxMinutes)
@@ -1481,7 +1491,7 @@ public partial class PeriodicReviewWindow : Window
         }
 
         // Split Session Button
-        if (!item.IsFixedTracked && item.AllocatedMinutes >= 2)
+        if (!item.IsFixedTracked && (item.AllocatedMinutes >= 2 || _navigatorReviewFrame!=null))
         {
             var splitBtn = new Button
             {
@@ -1642,7 +1652,7 @@ public partial class PeriodicReviewWindow : Window
 
         minInput.LostFocus += (_, _) =>
         {
-            if (item.IsFixedTracked) return;
+            if (_isUpdatingViews || item.IsFixedTracked) return;
             if (double.TryParse(minInput.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
             {
                 SetItemAllocatedMinutes(item, Math.Clamp(parsed, 0, maxMinutes));
@@ -1699,6 +1709,7 @@ public partial class PeriodicReviewWindow : Window
             EndBox = endBox
         };
 
+        if(_navigatorReviewFrame!=null)StyleNavigatorAllocatedCard(holder,index,nameText,actionStack,expandBtn,presetStack);
         return (border, holder);
     }
 
@@ -1755,6 +1766,7 @@ public partial class PeriodicReviewWindow : Window
         };
         startBox.LostFocus += (_, _) =>
         {
+            if (_isUpdatingViews || item.IsFixedTracked) return;
             if (TryParseLocalTime(startBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemStartTime(item, parsedUtc);
@@ -1815,6 +1827,7 @@ public partial class PeriodicReviewWindow : Window
         };
         endBox.LostFocus += (_, _) =>
         {
+            if (_isUpdatingViews || item.IsFixedTracked) return;
             if (TryParseLocalTime(endBox.Text, _startUtc, _endUtc, out DateTime parsedUtc))
             {
                 SetItemEndTime(item, parsedUtc);
@@ -1890,6 +1903,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void SetItemStartTime(ReviewProjectSelectionItem item, DateTime newStartUtc)
     {
+        if(item.IsFixedTracked)return;
         newStartUtc = PeriodicReviewDataAggregator.TruncateToMinute(newStartUtc);
 
         var sorted = _selectedItems
@@ -1928,6 +1942,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void ShiftItem(ReviewProjectSelectionItem item, int deltaMinutes)
     {
+        if(item.IsFixedTracked)return;
         if (!item.StartUtc.HasValue || !item.EndUtc.HasValue) return;
 
         TimeSpan duration = item.EndUtc.Value - item.StartUtc.Value;
@@ -2150,6 +2165,7 @@ public partial class PeriodicReviewWindow : Window
                 AttachProjectBlockDrag(segBorder, item);
             }
 
+            if(_navigatorReviewFrame!=null)StyleNavigatorDistributionSegment(segBorder,slot);
             Grid.SetColumn(segBorder, DistributionBarContainer.ColumnDefinitions.Count - 1);
             DistributionBarContainer.Children.Add(segBorder);
         }
@@ -2200,6 +2216,11 @@ public partial class PeriodicReviewWindow : Window
             HorizontalAlignment = HorizontalAlignment.Center
         });
         pinBorder.Child = pinStack;
+        if(_navigatorReviewFrame!=null)
+        {
+            pinBorder.Background=AllocationInk(item);pinBorder.BorderBrush=ReviewGold;
+            var label=(TextBlock)pinStack.Children[0];label.Text=(itemIdx+1).ToString();label.FontFamily=ReviewBody;label.FontSize=11;label.Foreground=ReviewCream;
+        }
 
         pinBorder.PointerPressed += (s, e) =>
         {
@@ -2340,6 +2361,7 @@ public partial class PeriodicReviewWindow : Window
 
     private Control CreateTimelineCard(TimelineSlot slot)
     {
+        if(_navigatorReviewFrame!=null)return CreateNavigatorTimelineCard(slot);
         var border = new Border
         {
             CornerRadius = new CornerRadius(6),
@@ -2441,6 +2463,7 @@ public partial class PeriodicReviewWindow : Window
 
     private void UpdateStep2SummaryText(List<TimelineSlot> fullTimeline)
     {
+        if(_navigatorReviewFrame!=null){UpdateNavigatorAllocationSummary(fullTimeline);return;}
         int totalMin = TotalPeriodMinutes;
         int totalAllocated = (int)Math.Round(_selectedItems.Sum(it => it.AllocatedMinutes));
         int totalUnallocated = (int)Math.Round(fullTimeline.Where(s => s.IsUnallocated).Sum(s => s.DurationMinutes));
@@ -2491,6 +2514,7 @@ public partial class PeriodicReviewWindow : Window
         Step3SaveButton.IsVisible = true;
 
         RenderStep3();
+        UpdateNavigatorReviewStep();
     }
 
     private void Step3BackButton_Click(object? sender, RoutedEventArgs e)
@@ -2514,6 +2538,7 @@ public partial class PeriodicReviewWindow : Window
         Step2SkipFeelingsButton.IsVisible = true;
         Step2ContinueButton.IsVisible = true;
         Step2VerifyButton.IsVisible = false;
+        UpdateNavigatorReviewStep();
     }
 
     private void RenderStep3()
@@ -2884,7 +2909,7 @@ public partial class PeriodicReviewWindow : Window
     {
         base.OnKeyDown(e);
         if (e.Handled) return;
-        if (e.Key == Key.Enter && _currentStep == 1 && e.Source is Button) return;
+        if (e.Key == Key.Enter && _currentStep <= 2 && e.Source is Button or ComboBox or Slider) return;
         if (e.Key == Key.Escape)
         {
             e.Handled = true;
