@@ -38,7 +38,7 @@ void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
 // Review fixtures load production styles without initializing live settings, hooks or tray.
-if(args.Contains("--review-projects-native") || args.Contains("--review-allocation-native"))
+if(args.Contains("--review-projects-native") || args.Contains("--review-allocation-native") || args.Contains("--review-mood-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
@@ -46,8 +46,19 @@ if(args.Contains("--review-projects-native") || args.Contains("--review-allocati
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
         { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    if(args.Contains("--review-mood-native"))
+    {
+        Check("review mood shared frame and fixed actions",ReviewMoodNativeChecks.Layout);
+        Check("review mood score defaults, limits and presets",ReviewMoodNativeChecks.Scores);
+        Check("review mood feelings, keyboard and RTL notes",ReviewMoodNativeChecks.FeelingsAndNotes);
+        Check("review mood navigation and time summary",ReviewMoodNativeChecks.NavigationAndSummary);
+        Check("review mood save, time-only, cancellation and themes",ReviewMoodNativeChecks.SaveAndCancel);
+        Check("review mood production native captures",ReviewMoodNativeChecks.Evidence);
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--review-allocation-native"))
     {
+        Check("review allocation consistent project colors",ReviewAllocationNativeChecks.ProjectColors);
         Check("review allocation shared frame and actions",ReviewAllocationNativeChecks.Layout);
         Check("review allocation duration and session actions",ReviewAllocationNativeChecks.Actions);
         Check("review allocation collision policies and recorded intervals",ReviewAllocationNativeChecks.CollisionsAndFixedRecords);
@@ -86,12 +97,13 @@ if(args.Contains("--time-record-native"))
 }
 
 // This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if (args.Contains("--review-mood-preview") || args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--review-allocation-preview"))Check("review allocation native design proposals",ReviewAllocationPreview.Run);
+    if(args.Contains("--review-mood-preview"))Check("review feelings and mood native design proposals",ReviewMoodPreview.Run);
+    else if(args.Contains("--review-allocation-preview"))Check("review allocation native design proposals",ReviewAllocationPreview.Run);
     else if(args.Contains("--review-projects-preview"))Check("review projects native design proposals",ReviewProjectsPreview.Run);
     else if(args.Contains("--time-record-preview"))Check("time record native design proposals",ProjectRecordPreview.Run);
     else if(args.Contains("--project-chooser-preview"))Check("project chooser native design proposals",ProjectChooserPreview.Run);

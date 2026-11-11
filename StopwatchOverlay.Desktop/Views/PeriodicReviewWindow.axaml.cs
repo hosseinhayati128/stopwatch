@@ -2572,11 +2572,13 @@ public partial class PeriodicReviewWindow : Window
                         MoodSlider.Value = preset;
                 };
                 MoodPresetsContainer.Children.Add(btn);
+                if(_reviewMoodLayout!=null){StyleReviewAction(btn,48,30);btn.Padding=new(0);btn.Margin=new(0,0,6,0);}
             }
         }
 
         // 3. Render feelings keyword chips
         RenderKeywordChips();
+        if(_reviewMoodLayout!=null){UpdateNavigatorMoodPresets();UpdateNavigatorMoodSummary();}
     }
 
     private void UpdateMoodScoreDisplay(double score)
@@ -2633,10 +2635,12 @@ public partial class PeriodicReviewWindow : Window
         }
         if (MoodSubtext != null)
             MoodSubtext.Text = subtext;
+        if(_reviewMoodLayout!=null)UpdateNavigatorMoodScore(descriptor);
     }
 
     private void RenderKeywordChips()
     {
+        if(_reviewMoodLayout!=null){RenderNavigatorMoodKeywords();return;}
         if (FeelingsKeywordsContainer == null) return;
         FeelingsKeywordsContainer.Children.Clear();
 
@@ -2909,7 +2913,7 @@ public partial class PeriodicReviewWindow : Window
     {
         base.OnKeyDown(e);
         if (e.Handled) return;
-        if (e.Key == Key.Enter && _currentStep <= 2 && e.Source is Button or ComboBox or Slider) return;
+        if (e.Key == Key.Enter && e.Source is Button or ComboBox or Slider) return;
         if (e.Key == Key.Escape)
         {
             e.Handled = true;

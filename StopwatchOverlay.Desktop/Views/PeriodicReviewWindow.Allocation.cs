@@ -16,7 +16,27 @@ public partial class PeriodicReviewWindow
     private ComboBox? _reviewCollisionSelector;
     private TextBlock? _reviewAllocationNote;
     private static readonly IBrush ReviewTeal=Brush.Parse("#2E756D"),ReviewOchre=Brush.Parse("#8B5C24"),ReviewGap=Brush.Parse("#DDC599");
-    private static IBrush AllocationInk(ReviewProjectSelectionItem? item)=>item==null?ReviewGap:item.IsFixedTracked?ReviewTeal:item.IsBreak?ReviewOchre:ReviewNavy;
+    private static readonly IBrush ReviewBreak=Brush.Parse("#716A5D");
+    private static readonly IBrush[] ReviewProjectColors =
+    [
+        Brush.Parse("#2D7169"),Brush.Parse("#3B6394"),Brush.Parse("#7A527F"),Brush.Parse("#96543E"),
+        Brush.Parse("#596F43"),Brush.Parse("#8A4764"),Brush.Parse("#456E83"),Brush.Parse("#8B5C24"),
+        Brush.Parse("#505989"),Brush.Parse("#596D58"),Brush.Parse("#834C48"),Brush.Parse("#6F6331")
+    ];
+    private readonly Dictionary<string,IBrush> _reviewProjectColors=new(StringComparer.OrdinalIgnoreCase);
+    private IBrush AllocationInk(ReviewProjectSelectionItem? item)
+    {
+        if(item==null)return ReviewGap;
+        if(item.IsBreak)return ReviewBreak;
+        string project=item.ProjectName.Trim();
+        if(!_reviewProjectColors.TryGetValue(project,out var ink))
+        {
+            // shortcut: colors repeat beyond twelve projects per review; expand the palette if larger reviews need it.
+            ink=ReviewProjectColors[_reviewProjectColors.Count%ReviewProjectColors.Length];
+            _reviewProjectColors.Add(project,ink);
+        }
+        return ink;
+    }
 
     private Grid CreateNavigatorAllocationLayout()
     {
@@ -146,15 +166,17 @@ public partial class PeriodicReviewWindow
     private Control CreateNavigatorTimelineCard(TimelineSlot slot)
     {
         var item=slot.Item;
-        Control mark=item?.IsFixedTracked==true?ReviewIcon("M4,7 L4,5 C4,0 12,0 12,5 L12,7 M2,7 L14,7 L14,15 L2,15 Z",ReviewTeal,14):ReviewText(slot.IsUnallocated?"—":(_selectedItems.IndexOf(item!)+1).ToString(),11);
+        var ink=AllocationInk(item);
+        Control mark=item?.IsFixedTracked==true?ReviewIcon("M4,7 L4,5 C4,0 12,0 12,5 L12,7 M2,7 L14,7 L14,15 L2,15 Z",ReviewCream,14):ReviewText(slot.IsUnallocated?"—":(_selectedItems.IndexOf(item!)+1).ToString(),11);
+        if(mark is TextBlock number)number.Foreground=slot.IsUnallocated?ReviewNavy:ReviewCream;
         mark.HorizontalAlignment=HorizontalAlignment.Center;
-        var badge=new Border{Width=24,Height=26,Background=slot.IsUnallocated?ReviewGap:Brush.Parse("#22FFFFFF"),CornerRadius=new(4),Child=mark,VerticalAlignment=VerticalAlignment.Center};
+        var badge=new Border{Width=24,Height=26,Background=ink,CornerRadius=new(4),Child=mark,VerticalAlignment=VerticalAlignment.Center};
         var name=ReviewText(slot.IsUnallocated?"Unallocated":slot.IsBreak?"Break / Empty":item!.ProjectName,13);name.TextTrimming=TextTrimming.CharacterEllipsis;AutoTextDirection.Apply(name,name.Text);
         string detail=slot.IsUnallocated?"Not saved to project history":item!.IsFixedTracked?"Recorded · fixed":slot.IsBreak?"Break · not saved":item.TotalParts>1?$"Part {item.PartIndex} of {item.TotalParts}":"Manual session";
         var words=new StackPanel{Spacing=3,Children={name,ReviewLabel(detail,10)}};
         var amount=new StackPanel{Spacing=3,HorizontalAlignment=HorizontalAlignment.Right,Children={ReviewText($"{slot.DurationMinutes:0} min",13),ReviewLabel($"{slot.StartLocal:HH:mm}–{slot.EndLocal:HH:mm}",10)}};
         var row=new Grid{ColumnDefinitions=new("24,8,*,8,Auto"),Children={badge,words,amount}};Grid.SetColumn(words,2);Grid.SetColumn(amount,4);
-        var card=new Border{Padding=new(10,9),Background=slot.IsUnallocated?Brush.Parse("#24AF7C29"):ReviewCream,BorderBrush=slot.IsUnallocated?ReviewGold:ReviewRule,BorderThickness=new(3,1,1,1),CornerRadius=new(5),Child=row};
+        var card=new Border{Padding=new(10,9),Background=slot.IsUnallocated?Brush.Parse("#24AF7C29"):ReviewCream,BorderBrush=ink,BorderThickness=new(3,1,1,1),CornerRadius=new(5),Child=row};
         ToolTip.SetTip(card,CreateRichToolTip(slot));return card;
     }
 

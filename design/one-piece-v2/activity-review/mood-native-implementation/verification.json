@@ -1,0 +1,15 @@
+{
+  "productionControls": true,
+  "privateDesktop": true,
+  "syntheticData": true,
+  "checks": [
+    "frame and fixed footer",
+    "configured score, limits, presets and decimals",
+    "keyboard-safe tags and notes",
+    "duplicate and RTL custom feelings",
+    "long tags and short windows",
+    "navigation state and live summary",
+    "save/skip/cancel payloads",
+    "legacy themes"
+  ]
+}

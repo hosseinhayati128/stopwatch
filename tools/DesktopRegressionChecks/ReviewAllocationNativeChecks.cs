@@ -30,11 +30,55 @@ internal static class ReviewAllocationNativeChecks
     }
     private static void Refresh(Fixture f){Invoke(f,"RenderAllocatedCards");Invoke(f,"SyncAllViews",true);ClockOverlayChecks.Pump(20);}
     private const string Output="design/one-piece-v2/activity-review/allocation-native-implementation";
-    private static void Capture(Fixture f,string name)
+    private static void Capture(Fixture f,string name,string output=Output)
     {
-        Directory.CreateDirectory(Output);ClockOverlayChecks.Pump(30);
+        Directory.CreateDirectory(output);ClockOverlayChecks.Pump(30);
         var frame=f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single(c=>c.IsEffectivelyVisible);
-        using var image=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(frame.Bounds.Width),(int)Math.Ceiling(frame.Bounds.Height)),new Vector(96,96));image.Render(frame);image.Save(System.IO.Path.Combine(Output,name+".png"));
+        using var image=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(frame.Bounds.Width),(int)Math.Ceiling(frame.Bounds.Height)),new Vector(96,96));image.Render(frame);image.Save(System.IO.Path.Combine(output,name+".png"));
+    }
+    private static Color Ink(IBrush? brush)=>((ISolidColorBrush)brush!).Color;
+    private static Color SessionInk(Fixture f,ReviewProjectSelectionItem item)=>Ink(Card(f,item).GetVisualDescendants().OfType<Border>()
+        .Single(b=>b.Child is TextBlock text&&text.Text==(f.Selections.IndexOf(item)+1).ToString()).Background);
+    private static void MatchingProjectColors(Fixture f,Dictionary<string,Color> expected)
+    {
+        var slots=PeriodicReviewDataAggregator.BuildFullTimeline(f.Start,f.Start.AddMinutes(30),f.Selections);
+        var blocks=f.Named<Grid>("DistributionBarContainer").Children.OfType<Border>().ToArray();
+        var rows=f.Named<StackPanel>("TimelinePreviewContainer").Children.OfType<Border>().ToArray();
+        Require(blocks.Length==slots.Count&&rows.Length==slots.Count(s=>s.DurationMinutes>0),"Color fixture lost a timeline block or row.");
+        int rowIndex=0;
+        for(int i=0;i<slots.Count;i++)
+        {
+            var row=slots[i].DurationMinutes>0?rows[rowIndex++]:null;
+            var item=slots[i].Item;if(item==null||item.IsBreak)continue;
+            var color=expected[item.ProjectName.Trim()];
+            Require(SessionInk(f,item)==color&&Ink(blocks[i].Background)==color,"Project color differs between bar and session marker, or changed during editing.");
+            if(row==null)continue;
+            var marker=row.GetVisualDescendants().OfType<Border>().Single(b=>b.Width==24&&b.Height==26);
+            Require(Ink(marker.Background)==color&&Ink(row.BorderBrush)==color,"Timeline color differs from its project.");
+        }
+    }
+    internal static void ProjectColors()
+    {
+        const string output="design/one-piece-v2/activity-review/project-colors-native-implementation";
+        using var f=new Fixture(feelings:true);
+        Seed(f,Item(f,"Arash",0,6),Item(f,"Art",6,6),Item(f,"Learning",12,6),Item(f,"Apply",18,6),Item(f,"Apply",24,6));
+        var colors=f.Selections.GroupBy(x=>x.ProjectName,StringComparer.OrdinalIgnoreCase).ToDictionary(g=>g.Key,g=>SessionInk(f,g.First()),StringComparer.OrdinalIgnoreCase);
+        Require(colors.Values.Distinct().Count()==4,"Different projects still share one session color.");
+        MatchingProjectColors(f,colors);f.Window.Height=720;Capture(f,"project-colors",output);
+        f.Named<ScrollViewer>("ReviewSessionsScroll").Offset=new(0,10000);f.Named<ScrollViewer>("ReviewTimelineScroll").Offset=new(0,10000);Capture(f,"repeated-project",output);
+        var arash=f.Selections[0];Click(Named<Button>(Card(f,arash),"AllocationExpand"));Click(Button(Card(f,arash),"Split"));
+        Require(f.Selections.Count==6,"Split did not create the color-check continuation.");MatchingProjectColors(f,colors);
+        f.Selections.Reverse();Refresh(f);MatchingProjectColors(f,colors);
+        var apply=f.Selections.First(x=>x.ProjectName=="Apply");apply.ProjectName="apply";apply.IsFixedTracked=true;Refresh(f);MatchingProjectColors(f,colors);
+        f.Selections.Add(Item(f," APPLY ",30,0));Refresh(f);MatchingProjectColors(f,colors);
+        Click(f.Named<Button>("Step2BackButton"));Click(f.Next);MatchingProjectColors(f,colors);
+        f.Selections.Clear();f.Selections.AddRange([Item(f,"Arash",0,5),Item(f,"Apply",5,5,true),Item(f,"Apply",10,5),Item(f,"Break / Empty",15,3,isBreak:true)]);Refresh(f);MatchingProjectColors(f,colors);
+        var slots=PeriodicReviewDataAggregator.BuildFullTimeline(f.Start,f.Start.AddMinutes(30),f.Selections);
+        var blocks=f.Named<Grid>("DistributionBarContainer").Children.OfType<Border>().ToArray();
+        for(int i=0;i<slots.Count;i++)if(slots[i].IsBreak||slots[i].IsUnallocated)Require(!colors.Values.Contains(Ink(blocks[i].Background)),"Break/gap borrowed a project color.");
+        Require(f.Named<StackPanel>("TimelinePreviewContainer").GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Any(),"Recorded time lost its lock marker.");
+        f.Named<ScrollViewer>("ReviewSessionsScroll").Offset=default;f.Named<ScrollViewer>("ReviewTimelineScroll").Offset=default;Capture(f,"recorded-break-gap",output);
+        Require(f.Saves==0&&f.SettingsWrites==0,"Changing project presentation wrote review data or settings.");
     }
     internal static void Layout()
     {
@@ -109,7 +153,7 @@ internal static class ReviewAllocationNativeChecks
         {
             var a=Item(f,"Programming",0,12);var b=Item(f,"Illustration",12,10,true);var rest=Item(f,"Break / Empty",22,3,isBreak:true);Seed(f,a,b,rest);Capture(f,"allocation-overview");
             Click(Named<Button>(Card(f,a),"AllocationExpand"));Capture(f,"exact-time-expanded");
-            Click(f.Named<Button>("Step2ContinueButton"));Require(f.Step==3&&!f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(c=>c.IsEffectivelyVisible),"Feelings step did not show its existing layout.");
+            Click(f.Named<Button>("Step2ContinueButton"));Require(f.Step==3&&f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(c=>c.IsEffectivelyVisible),"Feelings step did not retain the shared frame.");
             Key(f.Window,Avalonia.Input.Key.Escape);Require(f.Step==2&&f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(c=>c.IsEffectivelyVisible),"Mood back failed to restore allocation frame.");
             Key(f.Window,Avalonia.Input.Key.Escape);Require(f.Step==1&&f.Saves==0,"Allocation back saved or failed.");Click(f.Next);Require(f.Step==2,"Forward navigation failed after returning to projects.");
         }

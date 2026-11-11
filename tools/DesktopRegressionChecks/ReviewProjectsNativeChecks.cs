@@ -13,6 +13,7 @@ using StopwatchOverlay.Desktop;
 using StopwatchOverlay.Desktop.Controls;
 using StopwatchOverlay.Desktop.Views;
 using StopwatchOverlay.PeriodicReview;
+using StopwatchOverlay.Mood;
 
 internal static class ReviewProjectsNativeChecks
 {
@@ -29,17 +30,20 @@ internal static class ReviewProjectsNativeChecks
         internal readonly DateTime Start=DateTime.Today.AddHours(14).ToUniversalTime();
         internal int Registrations,SettingsWrites,Loads,Saves;
         internal List<PeriodicReviewStopwatchSlot>? Saved;
+        internal int MoodSaves;
+        internal MoodEntry? SavedMood;
         internal bool Cancelled;
         internal Func<CancellationToken,Task<PeriodicReviewModel>>? Loader;
         internal T Named<T>(string name) where T:Control=>Window.FindControl<T>(name)??Window.GetVisualDescendants().OfType<T>().First(c=>c.Name==name);
         internal List<ReviewProjectSelectionItem> Selections=>(List<ReviewProjectSelectionItem>)typeof(PeriodicReviewWindow).GetField("_selectedItems",Private)!.GetValue(Window)!;
         internal int Step=>(int)typeof(PeriodicReviewWindow).GetField("_currentStep",Private)!.GetValue(Window)!;
         internal Button Next=>Named<Button>("ContinueToStep2Button");
-        internal Fixture(bool offline=false,bool tracked=false,bool feelings=false,string theme=AppThemeCatalog.Nika,Task<PeriodicReviewModel>? pending=null,int extraProjects=0)
+        internal Fixture(bool offline=false,bool tracked=false,bool feelings=false,string theme=AppThemeCatalog.Nika,Task<PeriodicReviewModel>? pending=null,int extraProjects=0,double moodScore=5,string[]? keywords=null)
         {
             Require(Application.Current is not App,"Review fixture loaded live application settings.");
             typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!.GetMethod("ApplyApplication",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[theme]);
-            Settings=new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,PeriodicReviewMinActivityPercent=3,PeriodicReviewFeelingsEnabled=feelings};
+            Settings=new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,PeriodicReviewMinActivityPercent=3,PeriodicReviewFeelingsEnabled=feelings,DefaultMoodScore=moodScore};
+            if(keywords!=null)Settings.MoodPresetKeywords=keywords.ToList();
             var history=new ProjectTimeHistory();
             foreach(var name in new[]{"Programming","Illustration","Reading","Learning","Writing","Art","Research"})history.RegisterProject(name);
             for(int i=0;i<extraProjects;i++)history.RegisterProject($"Long project {i:D2} — detailed research notes and additional context");
@@ -50,7 +54,7 @@ internal static class ReviewProjectsNativeChecks
                     Activity("Terminal","App",45,2.5),Activity("Files","App",45,2.5),Activity("Music","App",30,1.667)]};
             if(pending!=null)Loader=_=>pending;
             Window=new PeriodicReviewWindow(Start,Start.AddMinutes(30),Settings,history.CreateView(Start.AddMinutes(30)),null,
-                slots=>{Saves++;Saved=slots;},name=>{Registrations++;return name.Trim();},loadReviewData:ct=>{Loads++;ct.Register(()=>Cancelled=true);return Loader?.Invoke(ct)??Task.FromResult(Model);},
+                slots=>{Saves++;Saved=slots;},name=>{Registrations++;return name.Trim();},onSaveMood:mood=>{MoodSaves++;SavedMood=mood;},loadReviewData:ct=>{Loads++;ct.Register(()=>Cancelled=true);return Loader?.Invoke(ct)??Task.FromResult(Model);},
                 persistSettings:_=>SettingsWrites++);
             Window.ShowActivated=false;Window.ShowInTaskbar=false;Window.Show();ClockOverlayChecks.Pump(35);
         }

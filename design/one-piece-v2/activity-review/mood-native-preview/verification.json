@@ -1,0 +1,46 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "state": "neutral",
+      "score": 5,
+      "selectedFeelings": 0,
+      "width": 1020,
+      "height": 700,
+      "moodViewport": 320,
+      "feelingsViewport": 320
+    },
+    {
+      "state": "selected-feelings",
+      "score": 7.6,
+      "selectedFeelings": 3,
+      "width": 1020,
+      "height": 700,
+      "moodViewport": 320,
+      "feelingsViewport": 320
+    },
+    {
+      "state": "low-mood",
+      "score": 2.4,
+      "selectedFeelings": 2,
+      "width": 1020,
+      "height": 700,
+      "moodViewport": 320,
+      "feelingsViewport": 320
+    },
+    {
+      "state": "custom-feeling-rtl",
+      "score": 8.5,
+      "selectedFeelings": 2,
+      "width": 1020,
+      "height": 700,
+      "moodViewport": 320,
+      "feelingsViewport": 320
+    }
+  ],
+  "shortHeight": 520,
+  "fixedActions": true,
+  "independentScrolling": true,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; drawing-only Avalonia app; synthetic values; no production settings or save handlers."
+}
