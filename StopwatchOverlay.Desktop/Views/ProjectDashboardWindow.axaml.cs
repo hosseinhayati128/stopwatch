@@ -117,6 +117,7 @@ public partial class ProjectDashboardWindow : Window
         _setProjectScore = setProjectScore;
 
         InitializeComponent();
+        ApplyNavigatorLayout();
 
         _liveRefreshTimer = new DispatcherTimer
         {
@@ -204,7 +205,8 @@ public partial class ProjectDashboardWindow : Window
             _updatingProjectScore = true;
             try
             {
-                ProjectScoreBox.Value = (decimal)(proj?.ScorePerHour ?? 1.0);
+                if (!ProjectScoreBox.IsKeyboardFocusWithin)
+                    ProjectScoreBox.Value = (decimal)(proj?.ScorePerHour ?? 1.0);
                 ProjectScoreBox.IsEnabled = _setProjectScore != null;
                 ProjectScorePanel.IsVisible = true;
             }
@@ -223,6 +225,8 @@ public partial class ProjectDashboardWindow : Window
 
         UpdateSummaryKPIs(intervals, history, asOfUtc);
         UpdateRangeHeader(asOfLocal, targetLocalDay);
+        NextDayButton.IsEnabled = _selectedRange == DashboardRange.Day && targetLocalDay < _latestLocalDate;
+        AddRecordButton.IsEnabled = SafeCanMutateRecords();
 
         RenderProjectBars(intervals);
         RenderDailyBars(BuildDayTotals(intervals));
@@ -263,6 +267,17 @@ public partial class ProjectDashboardWindow : Window
 
         RangeHeadingText.Text = rangeTitle;
         UpdatedText.Text = $"Updated {asOfLocal:HH:mm:ss}";
+        if (_overviewHint != null)
+        {
+            RangeHeadingText.Text = _selectedRange switch
+            {
+                DashboardRange.Day => (targetLocalDay == asOfLocal.Date ? "Today · " : "") + targetLocalDay.ToString("dddd, d MMMM yyyy", CultureInfo.CurrentCulture),
+                DashboardRange.SevenDays => $"{asOfLocal.Date.AddDays(-6):d MMMM}–{asOfLocal:d MMMM yyyy}",
+                DashboardRange.ThirtyDays => $"{asOfLocal.Date.AddDays(-29):d MMMM}–{asOfLocal:d MMMM yyyy}",
+                _ => "All recorded history"
+            };
+            UpdatedText.Text += " · Times shown in your local time zone";
+        }
     }
 
     private void UpdateSummaryKPIs(List<DisplayInterval> intervals, ProjectHistoryView history, DateTime asOfUtc)
@@ -285,6 +300,7 @@ public partial class ProjectDashboardWindow : Window
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
         ProjectCountText.Text = projectCount.ToString(CultureInfo.CurrentCulture);
+        UpdateNavigatorSummary(projectCount, intervals.Count == 0);
 
         int activeCount = history.Intervals.Count(i => !i.EndUtc.HasValue);
         ActiveCountText.Text = activeCount.ToString(CultureInfo.CurrentCulture);
@@ -311,6 +327,9 @@ public partial class ProjectDashboardWindow : Window
                 }
             }
 
+            // Keep the open popup and keyboard selection stable across live ticks.
+            if (ProjectFilterSelector.ItemsSource is List<ProjectFilterOption> previous && previous.SequenceEqual(options))
+                return;
             ProjectFilterSelector.ItemsSource = options;
 
             var match = options.FirstOrDefault(o => string.Equals(o.Key, currentKey, StringComparison.OrdinalIgnoreCase))
@@ -341,10 +360,11 @@ public partial class ProjectDashboardWindow : Window
             _followToday = false;
         }
 
-        DayButton.Classes.Set("primary", range == DashboardRange.Day);
-        SevenDaysButton.Classes.Set("primary", range == DashboardRange.SevenDays);
-        ThirtyDaysButton.Classes.Set("primary", range == DashboardRange.ThirtyDays);
-        AllTimeButton.Classes.Set("primary", range == DashboardRange.AllTime);
+        string primaryClass = _overviewHint == null ? "primary" : "editorPrimary";
+        DayButton.Classes.Set(primaryClass, range == DashboardRange.Day);
+        SevenDaysButton.Classes.Set(primaryClass, range == DashboardRange.SevenDays);
+        ThirtyDaysButton.Classes.Set(primaryClass, range == DashboardRange.ThirtyDays);
+        AllTimeButton.Classes.Set(primaryClass, range == DashboardRange.AllTime);
 
         PreviousDayButton.IsEnabled = range == DashboardRange.Day;
         NextDayButton.IsEnabled = range == DashboardRange.Day && _selectedDayLocal < _latestLocalDate;
@@ -1201,7 +1221,7 @@ public partial class ProjectDashboardWindow : Window
 
     private async void AddRecordButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_history == null) return;
+        if (_history == null || !SafeCanMutateRecords()) return;
         _recordDialogOpen = true;
         try
         {

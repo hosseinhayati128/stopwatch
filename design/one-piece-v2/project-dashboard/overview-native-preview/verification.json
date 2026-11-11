@@ -1,0 +1,56 @@
+{
+  "status": "native-design-preview-not-production",
+  "measures": [
+    {
+      "state": "all-projects-today",
+      "width": 1080,
+      "height": 620,
+      "body": 414,
+      "viewport": 414,
+      "projectWidth": 600
+    },
+    {
+      "state": "project-seven-days",
+      "width": 1080,
+      "height": 620,
+      "body": 414,
+      "viewport": 414,
+      "projectWidth": 600
+    },
+    {
+      "state": "empty-day",
+      "width": 1080,
+      "height": 620,
+      "body": 414,
+      "viewport": 414,
+      "projectWidth": 600
+    },
+    {
+      "state": "project-rtl",
+      "width": 1080,
+      "height": 620,
+      "body": 414,
+      "viewport": 414,
+      "projectWidth": 600
+    },
+    {
+      "state": "all-time",
+      "width": 1080,
+      "height": 620,
+      "body": 414,
+      "viewport": 414,
+      "projectWidth": 600
+    },
+    {
+      "state": "compact",
+      "width": 760,
+      "height": 560,
+      "body": 667.3333333333334,
+      "viewport": 354,
+      "projectWidth": 640.6666666666666
+    }
+  ],
+  "sharedFrame": true,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; drawing-only Avalonia fixture; synthetic data; no application hooks, timers, persistence or production actions."
+}
