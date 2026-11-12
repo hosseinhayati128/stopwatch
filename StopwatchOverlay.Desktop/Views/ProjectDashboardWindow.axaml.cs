@@ -134,7 +134,8 @@ public partial class ProjectDashboardWindow : Window
 
     private void Window_Loaded(object? sender, RoutedEventArgs e)
     {
-        HeatmapScrollViewer.ScrollToEnd();
+        if (_navigatorCharts != null) HeatmapScrollViewer.Offset = new Vector(HeatmapScrollViewer.Extent.Width, 0);
+        else HeatmapScrollViewer.ScrollToEnd();
     }
 
     private void LiveRefreshTimer_Tick(object? sender, EventArgs e)
@@ -405,6 +406,7 @@ public partial class ProjectDashboardWindow : Window
 
     private void RenderProjectBars(IReadOnlyList<DisplayInterval> intervals)
     {
+        if (_navigatorCharts != null) { RenderNavigatorProjects(intervals); return; }
         ProjectBarsPanel.Children.Clear();
         var totals = intervals
             .GroupBy(item => item.ProjectKey, StringComparer.OrdinalIgnoreCase)
@@ -499,6 +501,7 @@ public partial class ProjectDashboardWindow : Window
 
     private void RenderDailyBars(IReadOnlyList<DayTotal> totals)
     {
+        if (_navigatorCharts != null) { RenderNavigatorDays(totals); return; }
         DailyBarsPanel.Children.Clear();
         if (totals.Count == 0)
         {
@@ -601,6 +604,7 @@ public partial class ProjectDashboardWindow : Window
         string scope = selectedProject?.Key is null
             ? "All projects"
             : selectedProject.Name;
+        if (_navigatorCharts != null) { RenderNavigatorHeatmap(values, firstDate, today, scope, maximumTicks); return; }
         HeatmapScopeText.Text = $"{scope} · last 12 months";
         ToolTip.SetTip(HeatmapScopeText, HeatmapScopeText.Text);
         HeatmapEmptyText.Text = maximumTicks == 0
@@ -1537,6 +1541,7 @@ public partial class ProjectDashboardWindow : Window
 
     private SolidColorBrush GetProjectBrush(string key)
     {
+        if (_navigatorCharts != null) return NavigatorProjectBrush(key);
         uint hash = 2166136261;
         foreach (char character in key.ToUpperInvariant())
         {

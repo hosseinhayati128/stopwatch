@@ -99,7 +99,8 @@ public partial class ProjectDashboardWindow
         // Reparented XAML labels retain dynamic resource bindings; scope their ink to this overview.
         overview.Resources["PrimaryTextBrush"]=ClockPickerPresentation.Navy;overview.Resources["SecondaryTextBrush"]=ClockPickerPresentation.Muted;
         var body=new StackPanel{Spacing=18,Margin=new(0,0,6,0),Children={overview}};
-        foreach(var section in lowerSections)body.Children.Add(section);
+        body.Children.Add(CreateNavigatorCharts());
+        foreach(var section in lowerSections.Where(section=>section!=ChartsGrid&&section!=HeatmapCard))body.Children.Add(section);
         DashboardScrollViewer.Content=body;
 
         Action(AddRecordButton,140);AddRecordButton.Classes.Add("editorPrimary");AddRecordButton.Content="+ Add record";AddRecordButton.Margin=default;AddRecordButton.VerticalAlignment=VerticalAlignment.Center;
@@ -112,6 +113,7 @@ public partial class ProjectDashboardWindow
         void ResizeOverview()
         {
             bool compact=ClientSize.Width<960;if(_compactOverview==compact)return;_compactOverview=compact;
+            ResizeNavigatorCharts(compact);
             filterFields.ColumnDefinitions=new(compact?"*":"*,24,338");filterFields.RowDefinitions=new(compact?"Auto,12,Auto":"Auto");Grid.SetColumn(rangeField,compact?0:2);Grid.SetRow(rangeField,compact?2:0);
             summary.ColumnDefinitions=new(compact?"*":".85*,14,1.15*");summary.RowDefinitions=new(compact?"180,12,224":"*");summary.Height=compact?416:224;Grid.SetColumn(stats,compact?0:2);Grid.SetRow(stats,compact?2:0);
         }

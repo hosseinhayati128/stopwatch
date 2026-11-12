@@ -1,0 +1,88 @@
+{
+  "status": "native-design-preview-not-production",
+  "checks": [
+    {
+      "state": "all-projects",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 1302,
+      "projectCount": 4,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "selected-project",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 564,
+      "projectCount": 1,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "selected-day",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 270,
+      "projectCount": 4,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "empty",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 0,
+      "projectCount": 0,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "many-projects",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 1302,
+      "projectCount": 10,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "thirty-days",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 4812,
+      "projectCount": 4,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "project-rtl",
+      "width": 1080,
+      "height": 720,
+      "totalMinutes": 564,
+      "projectCount": 1,
+      "yearCells": 371,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334
+    },
+    {
+      "state": "compact",
+      "width": 760,
+      "height": 560,
+      "totalMinutes": 1302,
+      "projectCount": 4,
+      "yearCells": 371,
+      "body": 791.3333333333334,
+      "viewport": 354
+    }
+  ],
+  "sharedFrame": true,
+  "newRuntimeArtwork": 0,
+  "execution": "Private desktop; drawing-only app; synthetic data; no live app settings, hooks, timer or persistence handlers."
+}

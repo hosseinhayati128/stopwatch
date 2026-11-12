@@ -37,7 +37,7 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
-if(args.Contains("--dashboard-overview-native"))
+if(args.Contains("--dashboard-overview-native") || args.Contains("--dashboard-charts-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
@@ -45,6 +45,18 @@ if(args.Contains("--dashboard-overview-native"))
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
         { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    if(args.Contains("--dashboard-charts-native"))
+    {
+        Check("dashboard chart totals, project colors and calendar selection",DashboardChartsNativeChecks.DataAndSelection);
+        Check("dashboard bounded long-history rendering and live scroll retention",DashboardChartsNativeChecks.LongHistoryAndRefresh);
+        Check("dashboard charts compact, RTL, empty and other themes",DashboardChartsNativeChecks.LayoutAndStates);
+        Check("dashboard charts native production captures",DashboardChartsNativeChecks.Evidence);
+        Check("dashboard overview regression layout",DashboardOverviewNativeChecks.Layout);
+        Check("dashboard overview regression calculations",DashboardOverviewNativeChecks.CalculationsAndFilters);
+        Check("dashboard overview regression editing and lifecycle",DashboardOverviewNativeChecks.LiveEditingAndLifecycle);
+        Check("dashboard overview regression dialogs",DashboardOverviewNativeChecks.DialogsAndThemes);
+        Environment.Exit(failures==0?0:1);
+    }
     Check("dashboard standalone layout and fixed actions",DashboardOverviewNativeChecks.Layout);
     Check("dashboard totals, filters and score actions",DashboardOverviewNativeChecks.CalculationsAndFilters);
     Check("dashboard live editing and lifecycle",DashboardOverviewNativeChecks.LiveEditingAndLifecycle);
@@ -113,12 +125,13 @@ if(args.Contains("--time-record-native"))
 }
 
 // This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--dashboard-overview-preview") || args.Contains("--review-mood-preview") || args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if (args.Contains("--dashboard-charts-preview") || args.Contains("--dashboard-overview-preview") || args.Contains("--review-mood-preview") || args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--dashboard-overview-preview"))Check("dashboard overview native design proposal",DashboardOverviewPreview.Run);
+    if(args.Contains("--dashboard-charts-preview"))Check("dashboard charts and heatmap native design proposal",DashboardChartsPreview.Run);
+    else if(args.Contains("--dashboard-overview-preview"))Check("dashboard overview native design proposal",DashboardOverviewPreview.Run);
     else if(args.Contains("--review-mood-preview"))Check("review feelings and mood native design proposals",ReviewMoodPreview.Run);
     else if(args.Contains("--review-allocation-preview"))Check("review allocation native design proposals",ReviewAllocationPreview.Run);
     else if(args.Contains("--review-projects-preview"))Check("review projects native design proposals",ReviewProjectsPreview.Run);
