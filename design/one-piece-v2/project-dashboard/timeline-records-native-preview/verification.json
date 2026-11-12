@@ -1,0 +1,95 @@
+{
+  "status": "native-design-preview-not-production",
+  "checks": [
+    {
+      "state": "day",
+      "records": 4,
+      "visibleRecordRows": 4,
+      "totalMinutes": 245,
+      "timelineSegments": 4,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "week",
+      "records": 8,
+      "visibleRecordRows": 8,
+      "totalMinutes": 665,
+      "timelineSegments": 9,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "project",
+      "records": 2,
+      "visibleRecordRows": 2,
+      "totalMinutes": 170,
+      "timelineSegments": 2,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "overnight",
+      "records": 6,
+      "visibleRecordRows": 6,
+      "totalMinutes": 277,
+      "timelineSegments": 6,
+      "body": 606.6666666666666,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "many-records",
+      "records": 43,
+      "visibleRecordRows": 20,
+      "totalMinutes": 1390,
+      "timelineSegments": 43,
+      "body": 1704.6666666666667,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "read-only",
+      "records": 4,
+      "visibleRecordRows": 4,
+      "totalMinutes": 245,
+      "timelineSegments": 4,
+      "body": 551.3333333333334,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "empty",
+      "records": 0,
+      "visibleRecordRows": 1,
+      "totalMinutes": 0,
+      "timelineSegments": 0,
+      "body": 513.3333333333334,
+      "viewport": 513.3333333333334,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "state": "compact",
+      "records": 4,
+      "visibleRecordRows": 4,
+      "totalMinutes": 245,
+      "timelineSegments": 4,
+      "body": 540.6666666666666,
+      "viewport": 354,
+      "width": 760,
+      "height": 560
+    }
+  ],
+  "execution": "Private Windows desktop; drawing-only Avalonia app; synthetic data; no app settings, hooks, persistence or live timer handlers.",
+  "newRuntimeArtwork": 0
+}

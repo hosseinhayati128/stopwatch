@@ -222,7 +222,7 @@ public partial class ProjectDashboardWindow : Window
         }
 
         List<DisplayInterval> intervals = CollectIntervals(history, utcRange, selectedProject?.Key, asOfUtc);
-        _records = intervals;
+        _records = _navigatorTimeline == null ? intervals : intervals.OrderByDescending(i => i.Source.StartUtc).ThenBy(i => i.Source.Id).ToList();
 
         UpdateSummaryKPIs(intervals, history, asOfUtc);
         UpdateRangeHeader(asOfLocal, targetLocalDay);
@@ -813,6 +813,7 @@ public partial class ProjectDashboardWindow : Window
 
     private void RenderTimeline(IReadOnlyList<DisplayInterval> intervals)
     {
+        if (_navigatorTimeline != null) { RenderNavigatorTimeline(); return; }
         TimelineDaysPanel.Children.Clear();
         List<DayFragment> fragments = intervals
             .SelectMany(SplitByLocalDay)
@@ -999,7 +1000,8 @@ public partial class ProjectDashboardWindow : Window
     {
         ProjectRecordsExpander.IsExpanded = true;
         RenderRecords();
-        ProjectRecordsExpander.BringIntoView();
+        if (_navigatorTimeline != null) _navigatorRecordsCard.BringIntoView();
+        else ProjectRecordsExpander.BringIntoView();
     }
 
     private void PreviousRecordsPageButton_Click(object? sender, RoutedEventArgs e)
@@ -1019,6 +1021,7 @@ public partial class ProjectDashboardWindow : Window
 
     private void RenderRecords()
     {
+        if (_navigatorTimeline != null) { RenderNavigatorRecords(); return; }
         RecordsPanel.Children.Clear();
         if (_history == null)
         {

@@ -1,0 +1,25 @@
+{
+  "NativeGroupsPassed": 11,
+  "UnitTestsPassed": 1052,
+  "UnitTestsFailed": 0,
+  "NativeBuildWarnings": 0,
+  "NativeBuildErrors": 0,
+  "UnitBuildWarnings": "NU1900: NuGet vulnerability metadata unavailable (2 warnings)",
+  "TestsOnPrivateDesktop": true,
+  "SyntheticHistory": true,
+  "InstalledExecutableUnchanged": true,
+  "UnrelatedTodoImagesUnchanged": true,
+  "Review": "Fresh read-only review: no findings",
+  "AuthorPartialRunningRegression": "Observed failure before fix; passed after fix",
+  "Captures": [
+    "compact-records.png",
+    "compact.png",
+    "day.png",
+    "empty.png",
+    "overnight.png",
+    "paged-records.png",
+    "project.png",
+    "read-only.png",
+    "week.png"
+  ]
+}
