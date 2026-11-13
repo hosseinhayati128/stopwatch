@@ -152,7 +152,8 @@ public partial class SettingsWindow
             _appearancePreviewCaption!.Text=theme+" · active clock";
             return;
         }
-        string key=$"{_settings.ThemeMode}|{_settings.NikaBackground}|{_settings.NikaTypography}|{_settings.NikaSidebarArtwork}|{_settings.PanelBackgroundId}|{_settings.PanelBackgroundStrength}";
+        var controllerText=_settings.Typography.Resolve("Controller");
+        string key=$"{_settings.ThemeMode}|{_settings.NikaBackground}|{_settings.NikaTypography}|{_settings.NikaSidebarArtwork}|{_settings.PanelBackgroundId}|{_settings.PanelBackgroundStrength}|{controllerText.SizePercent}|{controllerText.Color}";
         if(key==_appearanceSnapshotKey)return;
         _appearanceController??=new ControllerWindow(new AppSettings{ThemeMode=AppThemeCatalog.Nika});
         var snapshot=_appearanceController.RenderAppearancePreview(_settings);

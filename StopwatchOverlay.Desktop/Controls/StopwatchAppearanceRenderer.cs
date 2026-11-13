@@ -62,18 +62,20 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         // This independently styled overlay owns its palette, including when an
         // older installation still has the shared text setting fixed to White.
         var palette=StopwatchTextPalette.For(profile.Background);
+        var timeBrush=face.TypographyBrush??palette.Time;
+        var nameBrush=face.TypographyBrush??palette.Name;
         double timeWidth=StopwatchTypography.Width(face.Text,typography,face.TextSize);
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.TimeText)),bounds))
         // ContentInsets already fit a safe rectangle inside the border. Text
         // needs only this cheap clip, not another full decorative stencil.
         using(context.PushClip(content))
-            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,palette.Time,palette.Edge);
+            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,timeBrush,palette.Edge);
 
         double nameMaxWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));
-        var key=(face.ProjectName,typography,scale,nameMaxWidth,palette.Name);
+        var key=(face.ProjectName,typography,scale,nameMaxWidth,nameBrush);
         if(cachedName==null||nameKey!=key)
         {
-            cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,palette.Name);
+            cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,nameBrush);
             cachedName.MaxTextWidth=nameMaxWidth;cachedName.MaxTextHeight=32*scale;cachedName.Trimming=TextTrimming.CharacterEllipsis;
             nameEdge=palette.Edge==null?null:cachedName.BuildGeometry(default);nameKey=key;
         }

@@ -37,13 +37,41 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
-if(args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing"))
+if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    if(args.Contains("--settings-typography-regressions"))
+    {
+        var typography=typeof(SettingsWindow).Assembly.GetType("StopwatchOverlay.Desktop.DesktopTypography")!;
+        typography.GetMethod("Initialize",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[new TypographySettings()]);
+        Check("Typography default preserves Settings shell",SettingsShellNativeChecks.Layout);
+        Check("Typography default preserves Settings controls",SettingsShellNativeChecks.Controls);
+        Check("Typography default preserves Appearance actions",SettingsAppearanceNativeChecks.LayoutAndActions);
+        Check("Typography default preserves Appearance previews",SettingsAppearanceNativeChecks.PreviewIsolation);
+        Check("Typography default preserves controller sizing",ControllerSizingChecks.Run);
+        Check("Typography default preserves overlay resource caching",StopwatchPerformanceChecks.RepeatedPresentation);
+        Check("Typography default preserves dashboard layout",DashboardOverviewNativeChecks.Layout);
+        typography.GetMethod("Shutdown",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,null);
+        Environment.Exit(failures==0?0:1);
+    }
+    if(args.Contains("--settings-typography-native"))
+    {
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml")});
+        Check("Desktop typography sources and scope inheritance",SettingsTypographyNativeChecks.Application);
+        Check("Fonts and colors approved panel",SettingsTypographyNativeChecks.Panel);
+        Check("Typography popup ownership and painted overlays",SettingsTypographyNativeChecks.PopupsAndClocks);
+        Check("Typography production controls and scale captures",SettingsTypographyNativeChecks.ProductionEvidence);
+        Check("Typography selection, deferred work and cleanup",SettingsTypographyNativeChecks.SelectionAndLifecycle);
+        Check("Typography preview scope matches live clocks",SettingsTypographyNativeChecks.PreviewScopes);
+        Check("Typography persisted custom color selection",SettingsTypographyNativeChecks.ReopenedCustomColor);
+        Check("Typography real routed gesture callbacks",SettingsTypographyNativeChecks.GestureRouting);
+        Check("Typography updates cached application previews",SettingsTypographyNativeChecks.ApplicationPreview);
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--controller-sizing"))
     {
         Check("Controller scaled panel fills the native window",ControllerSizingChecks.Run);
@@ -187,12 +215,13 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-appearance-preview"))
+if(args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    Check("settings Appearance native design proposal",SettingsAppearancePreview.Run);
+    if(args.Contains("--settings-typography-preview"))Check("settings Fonts and colors native design proposal",SettingsTypographyPreview.Run);
+    else Check("settings Appearance native design proposal",SettingsAppearancePreview.Run);
     Environment.Exit(failures==0?0:1);
 }
 

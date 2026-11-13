@@ -1181,9 +1181,10 @@ public partial class ControllerWindow : Window
         }
     }
 
+    private bool _pendingTypography;
     private void OnSettingsChanged(SettingsChangeKind change)
     {
-        bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength))==0;
+        bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography))==0;
         if((change & (SettingsChangeKind.OverlayScreen|SettingsChangeKind.OverlayPosition))!=0)
             InvalidateOverlayPlacement((change & SettingsChangeKind.OverlayPosition)!=0);
         if ((change & SettingsChangeKind.Startup) != 0 && PlatformServices.Startup.IsSupported)
@@ -1203,6 +1204,11 @@ public partial class ControllerWindow : Window
             ApplyControllerTheme();
         }
         if((change & SettingsChangeKind.ApplicationScale)!=0)_pendingPageScale=true;
+        if((change & (SettingsChangeKind.Typography|SettingsChangeKind.Theme))!=0)
+        {
+            _pendingTypography=_settingsInteractionActive;
+            if(!_pendingTypography)DesktopTypography.Apply(_settings.Typography);
+        }
         if(SettingsChangePolicy.RequiresBackgroundApply(change)||(change & SettingsChangeKind.ApplicationScale)!=0)
             DesktopPageAppearance.Apply(_settings,!_settingsInteractionActive);
         if(!_settingsInteractionActive)_pendingPageScale=false;
@@ -1236,6 +1242,7 @@ public partial class ControllerWindow : Window
     private void CompleteSettingsInteraction()
     {
         _settingsInteractionActive=false;
+        if(_pendingTypography){_pendingTypography=false;DesktopTypography.Apply(_settings.Typography);}
         if(!_pendingPageScale)return;
         _pendingPageScale=false;
         DesktopPageAppearance.Apply(_settings,true);

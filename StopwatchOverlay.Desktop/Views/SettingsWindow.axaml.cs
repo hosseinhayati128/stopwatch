@@ -334,18 +334,20 @@ public partial class SettingsWindow : Window
 
     private void LoadTypographyEditors()
     {
+        RestoreTypographyPage();
         _settings.Typography.Normalize();
         GlobalTypographyEditor.Children.Clear();
         SectionTypographyEditors.Children.Clear();
         AddTypographyEditor(GlobalTypographyEditor, _settings.Typography.Global, "Global text", false);
         foreach (var (key, label) in TypographySettings.Scopes)
             AddTypographyEditor(SectionTypographyEditors, _settings.Typography.Sections[key], label, true);
+        if(_navigatorSettingsBody!=null)UpdateNavigatorCategory();
     }
 
     private void AddTypographyEditor(Panel host, TypographyStyle style, string label, bool isOverride)
     {
         var editor = new TypographyEditor(style, label, isOverride);
-        editor.Changed += () => CommitControls(SettingsChangeKind.Typography);
+        editor.Changed += () => {CommitControls(SettingsChangeKind.Typography);RefreshTypographyPreview();};
         editor.InteractionStarted += BeginSliderInteraction;
         editor.InteractionCompleted += EndSliderInteraction;
         host.Children.Add(editor);

@@ -1,0 +1,42 @@
+{
+  "status": "production-native",
+  "states": [
+    {
+      "name": "wide-70",
+      "scale": 70,
+      "nativeWidth": 1120,
+      "nativeHeight": 720
+    },
+    {
+      "name": "wide-90",
+      "scale": 90,
+      "nativeWidth": 1120,
+      "nativeHeight": 720
+    },
+    {
+      "name": "wide-125",
+      "scale": 125,
+      "nativeWidth": 1120,
+      "nativeHeight": 720
+    },
+    {
+      "name": "compact-70",
+      "scale": 70,
+      "nativeWidth": 840,
+      "nativeHeight": 600
+    },
+    {
+      "name": "compact-90",
+      "scale": 90,
+      "nativeWidth": 840,
+      "nativeHeight": 600
+    },
+    {
+      "name": "compact-125",
+      "scale": 125,
+      "nativeWidth": 840,
+      "nativeHeight": 600
+    }
+  ],
+  "execution": "Private desktop; synthetic settings; no persistence, installation or restart"
+}

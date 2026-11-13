@@ -130,6 +130,9 @@ public sealed class PirateActionPanel : WrapPanel
 /// <summary>Engraved live timer lettering; the value remains bound to the accessible time display.</summary>
 public sealed class PirateTimerText : Control
 {
+    private double _textScale=1;
+    private IBrush? _textBrush;
+    internal void SetTypography(double scale,IBrush? brush){if(_textScale==scale&&Equals(_textBrush,brush))return;_textScale=scale;_textBrush=brush;InvalidateMeasure();InvalidateVisual();}
     protected override AutomationPeer OnCreateAutomationPeer() => new TimerPeer(this);
     private sealed class TimerPeer(PirateTimerText owner) : ControlAutomationPeer(owner)
     {
@@ -141,7 +144,7 @@ public sealed class PirateTimerText : Control
     public string Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
     static PirateTimerText() { AffectsMeasure<PirateTimerText>(TextProperty); AffectsRender<PirateTimerText>(TextProperty); }
     private Geometry Lettering() => new FormattedText(Text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
-        new Typeface(new FontFamily("avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Almendra")), 132, Brushes.Black).BuildGeometry(new Point()) ?? new GeometryGroup();
+        new Typeface(new FontFamily("avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Almendra")), 132*_textScale, Brushes.Black).BuildGeometry(new Point()) ?? new GeometryGroup();
     protected override Size MeasureOverride(Size availableSize)
     {
         var bounds = Lettering().Bounds;
@@ -160,7 +163,7 @@ public sealed class PirateTimerText : Control
             gold.GradientStops.Add(new GradientStop(Color.Parse("#CEA969"), .45));
             gold.GradientStops.Add(new GradientStop(Color.Parse("#835C2C"), .7));
             gold.GradientStops.Add(new GradientStop(Color.Parse("#E8C786"), 1));
-            context.DrawGeometry(gold, new Pen(Brush.Parse("#2F1E13"), 3), geometry);
+            context.DrawGeometry(_textBrush??gold, new Pen(Brush.Parse("#2F1E13"), 3), geometry);
             context.DrawGeometry(null, new Pen(Brush.Parse("#B4F7DD9E"), .65), geometry);
         }
     }

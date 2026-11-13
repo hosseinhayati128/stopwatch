@@ -1,10 +1,14 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Automation;
+using Avalonia.LogicalTree;
+using System.Linq;
 
 namespace StopwatchOverlay.Desktop.Controls;
 
@@ -17,11 +21,16 @@ internal sealed class TypographyEditor : StackPanel
     private readonly ComboBox _colors;
     private readonly TextBox _hex;
     private readonly TextBlock _validation;
+    private readonly ColorPicker _picker;
+    private readonly TextBlock _customLabel=new(){Text="Custom color",FontSize=11,IsVisible=false};
+    private readonly string _label;
+    private readonly bool _isOverride;
     private bool _syncing;
 
     internal TypographyEditor(TypographyStyle style, string label, bool isOverride)
     {
         _style = style;
+        _label=label;_isOverride=isOverride;
         Margin = new Thickness(0, 0, 0, isOverride ? 22 : 0);
         var fields = new StackPanel { IsEnabled = !isOverride || style.Enabled, Spacing = 6 };
 
@@ -64,21 +73,27 @@ internal sealed class TypographyEditor : StackPanel
                 Changed?.Invoke();
             }
         };
-        slider.PointerPressed += (_, _) => InteractionStarted?.Invoke();
-        slider.PointerReleased += (_, _) => InteractionCompleted?.Invoke();
+        // Thumb/track handlers consume input; begin before they change Value and observe handled completion too.
+        slider.AddHandler(PointerPressedEvent,(_,_)=>InteractionStarted?.Invoke(),RoutingStrategies.Tunnel,handledEventsToo:true);
+        slider.AddHandler(PointerReleasedEvent,(_,_)=>InteractionCompleted?.Invoke(),RoutingStrategies.Bubble,handledEventsToo:true);
         slider.PointerCaptureLost += (_, _) => InteractionCompleted?.Invoke();
+        slider.AddHandler(Thumb.DragCompletedEvent,(_,_)=>InteractionCompleted?.Invoke(),handledEventsToo:true);
+        slider.LostFocus+=(_,_)=>InteractionCompleted?.Invoke();
+        slider.AddHandler(KeyDownEvent,(_,e)=>{if(IsAdjustmentKey(e.Key))InteractionStarted?.Invoke();},RoutingStrategies.Tunnel,handledEventsToo:true);
+        slider.AddHandler(KeyUpEvent,(_,e)=>{if(IsAdjustmentKey(e.Key))InteractionCompleted?.Invoke();},RoutingStrategies.Bubble,handledEventsToo:true);
         fields.Children.Add(slider);
 
         fields.Children.Add(new TextBlock { Text = "Font color", FontSize = 12, Margin = new Thickness(0, 0, 0, 4) });
 
         _colors = new ComboBox
         {
-            ItemsSource = TypographySettings.ColorChoices,
+            ItemsSource = ColorChoices(style.Color),
             SelectedItem = style.Color,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Margin = new Thickness(0, 0, 0, 8)
         };
         fields.Children.Add(_colors);
+        fields.Children.Add(_customLabel);
 
         var custom = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         _hex = new TextBox
@@ -91,7 +106,7 @@ internal sealed class TypographyEditor : StackPanel
         Grid.SetColumn(_hex, 0);
         custom.Children.Add(_hex);
 
-        var picker = new ColorPicker
+        var picker = _picker = new ColorPicker
         {
             Margin = new Thickness(8, 0, 0, 0),
             IsAlphaEnabled = false
@@ -102,7 +117,7 @@ internal sealed class TypographyEditor : StackPanel
         }
         picker.ColorChanged += (_, e) =>
         {
-            SetColor($"#{e.NewColor.R:X2}{e.NewColor.G:X2}{e.NewColor.B:X2}");
+            if(!_syncing)SetColor($"#{e.NewColor.R:X2}{e.NewColor.G:X2}{e.NewColor.B:X2}");
         };
         Grid.SetColumn(picker, 1);
         custom.Children.Add(picker);
@@ -119,6 +134,8 @@ internal sealed class TypographyEditor : StackPanel
         if (Application.Current?.TryFindResource("WarningBrush", out var wb) == true && wb is IBrush wBrush)
             _validation.Foreground = wBrush;
         fields.Children.Add(_validation);
+        DesktopTypography.SetPreserveColor(_validation,true);
+        AutomationProperties.SetName(slider,"Text size");AutomationProperties.SetName(_colors,"Text color preset");AutomationProperties.SetName(_hex,"Custom text color");
 
         Children.Add(fields);
 
@@ -160,10 +177,20 @@ internal sealed class TypographyEditor : StackPanel
     {
         _syncing = true;
         _style.Color = color;
+        _colors.ItemsSource=ColorChoices(color);
         _colors.SelectedItem = color;
         _hex.Text = color.StartsWith('#') ? color : "";
+        if(TypographySettings.TryHexColor(color,out var rgb))_picker.Color=Color.FromRgb(rgb.R,rgb.G,rgb.B);
         _validation.IsVisible = false;
         _syncing = false;
         Changed?.Invoke();
     }
+    internal void UseNavigatorStyle(bool enabled)
+    {
+        Classes.Set("navigatorTypography",enabled);Margin=new(0,0,0,!enabled&&_isOverride?22:0);_customLabel.IsVisible=enabled;
+        foreach(var field in this.GetLogicalDescendants().OfType<TemplatedControl>().Where(c=>c is TextBox or ComboBox))field.Classes.Set("editorField",enabled);
+        if(_isOverride)((CheckBox)Children[0]).Content=enabled?"Use separate text settings":_label;
+    }
+    private static string[] ColorChoices(string color)=>TypographySettings.ColorChoices.Contains(color)?TypographySettings.ColorChoices:TypographySettings.ColorChoices.Append(color).ToArray();
+    private static bool IsAdjustmentKey(Key key)=>key is Key.Left or Key.Right or Key.Up or Key.Down or Key.Home or Key.End or Key.PageUp or Key.PageDown;
 }

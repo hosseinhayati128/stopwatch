@@ -41,8 +41,11 @@ public partial class App : Application
         {
             // By default on desktop, don't exit when the last window closes if tray icon is active
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            DesktopPageAppearance.Initialize(SettingsStore.Load());
+            var settings=SettingsStore.Load();
+            DesktopPageAppearance.Initialize(settings);
+            DesktopTypography.Initialize(settings.Typography);
             desktop.Exit += (_, _) => DesktopPageAppearance.Shutdown();
+            desktop.Exit += (_, _) => DesktopTypography.Shutdown();
             desktop.MainWindow = new Views.ControllerWindow();
         }
 

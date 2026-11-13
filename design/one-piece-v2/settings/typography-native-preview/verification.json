@@ -1,0 +1,75 @@
+{
+  "status": "design-preview-only",
+  "execution": "Private Windows desktop; synthetic settings; no persistence subscribers or installation.",
+  "states": [
+    {
+      "name": "wide-70",
+      "percent": 70,
+      "windowWidth": 1120,
+      "windowHeight": 720,
+      "layout": "side-by-side",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    },
+    {
+      "name": "wide-90",
+      "percent": 90,
+      "windowWidth": 1120,
+      "windowHeight": 720,
+      "layout": "side-by-side",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    },
+    {
+      "name": "wide-125",
+      "percent": 125,
+      "windowWidth": 1120,
+      "windowHeight": 720,
+      "layout": "stacked",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    },
+    {
+      "name": "compact-70",
+      "percent": 70,
+      "windowWidth": 840,
+      "windowHeight": 600,
+      "layout": "side-by-side",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    },
+    {
+      "name": "compact-90",
+      "percent": 90,
+      "windowWidth": 840,
+      "windowHeight": 600,
+      "layout": "stacked",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    },
+    {
+      "name": "compact-125",
+      "percent": 125,
+      "windowWidth": 840,
+      "windowHeight": 600,
+      "layout": "stacked",
+      "nativeRenderer": true,
+      "panelChoices": 6,
+      "colorChoices": 10
+    }
+  ],
+  "checks": [
+    "Six window and scale combinations",
+    "Shared frame and 13 navigation items",
+    "Fixed Done footer",
+    "No horizontal overflow",
+    "Panel inheritance retains choices",
+    "Native custom color validation",
+    "Preview responds to existing editor events"
+  ]
+}

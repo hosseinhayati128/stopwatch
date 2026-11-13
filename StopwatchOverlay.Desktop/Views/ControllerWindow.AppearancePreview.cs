@@ -24,25 +24,33 @@ public partial class ControllerWindow
         Width=1120;Height=736;
         ApplyControllerTheme();ApplyTemplate();
         var root=(Control)Content!;
+        DesktopTypography.SetScope(root,"Controller");
         TimerRailList.ItemsPanel=new FuncTemplate<Panel?>(()=>new StackPanel());
         root.Measure(new Size(1120,736));root.Arrange(new Rect(0,0,1120,736));
-        // Scroll presenters bind their owner's content on visual attachment; this window is never shown.
-        for(int pass=0;pass<3;pass++)
+        RenderTargetBitmap? bitmap=null;
+        try
         {
-            foreach(var presenter in root.GetVisualDescendants().OfType<ScrollContentPresenter>().ToArray())
-                if(presenter.Content==null&&presenter.TemplatedParent is ScrollViewer owner)
-                {
-                    presenter.Content=owner.Content;presenter.ContentTemplate=owner.ContentTemplate;presenter.UpdateChild();
-                }
-            foreach(var control in root.GetVisualDescendants().OfType<Control>().Reverse())control.InvalidateMeasure();
-            root.InvalidateMeasure();
-            root.Measure(new Size(1120,736));root.Arrange(new Rect(0,0,1120,736));
+            // Scroll presenters bind their owner's content on visual attachment; this window is never shown.
+            for(int pass=0;pass<3;pass++)
+            {
+                foreach(var presenter in root.GetVisualDescendants().OfType<ScrollContentPresenter>().ToArray())
+                    if(presenter.Content==null&&presenter.TemplatedParent is ScrollViewer owner)
+                    {
+                        presenter.Content=owner.Content;presenter.ContentTemplate=owner.ContentTemplate;presenter.UpdateChild();
+                    }
+                DesktopTypography.Refresh(root);
+                foreach(var control in root.GetVisualDescendants().OfType<Control>().Reverse())control.InvalidateMeasure();
+                root.InvalidateMeasure();
+                root.Measure(new Size(1120,736));root.Arrange(new Rect(0,0,1120,736));
+            }
+            var frame=ControllerFrame;
+            frame.Measure(new Size(frame.Width,frame.Height));frame.Arrange(new Rect(0,0,frame.Width,frame.Height));
+            // Snapshot before the Viewbox shrinks it, avoiding nested draw-list clipping.
+            bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(frame.Width),(int)Math.Ceiling(frame.Height)),new Vector(96,96));
+            bitmap.Render(frame);
+            return bitmap;
         }
-        var frame=ControllerFrame;
-        frame.Measure(new Size(frame.Width,frame.Height));frame.Arrange(new Rect(0,0,frame.Width,frame.Height));
-        // Snapshot before the Viewbox shrinks it, avoiding nested draw-list clipping.
-        var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(frame.Width),(int)Math.Ceiling(frame.Height)),new Vector(96,96));
-        bitmap.Render(frame);
-        return bitmap;
+        catch{bitmap?.Dispose();throw;}
+        finally{DesktopTypography.ReleasePreview(root);}
     }
 }

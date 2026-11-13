@@ -20,6 +20,7 @@ namespace StopwatchOverlay.Desktop.Controls;
 /// <summary>The shared floating-clock renderer used by live overlays and settings previews.</summary>
 public sealed class ThemedClockFace : Control
 {
+    public ThemedClockFace()=>DesktopTypography.SetScope(this,"Overlay");
     protected override AutomationPeer OnCreateAutomationPeer() => new ClockPeer(this);
     private sealed class ClockPeer(ThemedClockFace owner) : ControlAutomationPeer(owner)
     {
@@ -83,9 +84,17 @@ public sealed class ThemedClockFace : Control
     }
     public string EffectiveOverlayTheme { get; private set; } = OverlayThemeCatalog.Midnight;
     public bool IsNavigator => EffectiveOverlayTheme == OverlayThemeCatalog.Pirate;
-    public double TextSize { get; private set; } = 48;
-    public IBrush TimerBrush { get; private set; } = Brushes.White;
-    public IBrush NameBrush { get; private set; } = Brushes.White;
+    private double _baseTextSize=48,_typographyScale=1;
+    private IBrush _timerBrush=Brushes.White,_nameBrush=Brushes.White;
+    internal IBrush? TypographyBrush {get;private set;}
+    public double TextSize => _baseTextSize*_typographyScale;
+    public IBrush TimerBrush => TypographyBrush??_timerBrush;
+    public IBrush NameBrush => TypographyBrush??_nameBrush;
+    internal void SetTypography(double scale,IBrush? brush)
+    {
+        if(_typographyScale==scale&&Equals(TypographyBrush,brush))return;
+        _typographyScale=scale;TypographyBrush=brush;InvalidateMeasure();InvalidateVisual();
+    }
     public FontFamily TimerFont { get; private set; } = new("Consolas");
     public double SurfaceOpacity { get; private set; } = .5;
     public IBrush OutlineBrush { get; private set; } = Brushes.Black;
@@ -123,14 +132,14 @@ public sealed class ThemedClockFace : Control
     public void ApplyAppearance(Color textColor, Color borderColor, double size, double outlineWidth, string family,
         double opacity, bool themeText, NavigatorOpaqueParts parts)
     {
-        TextSize = double.IsFinite(size) ? Math.Clamp(size, 16, 120) : 48;
+        _baseTextSize = double.IsFinite(size) ? Math.Clamp(size, 16, 120) : 48;
         UsesThemeTextColor = themeText;
         OutlineWidth = double.IsFinite(outlineWidth) ? Math.Clamp(outlineWidth, 0, 20) : 2;
         SurfaceOpacity = OverlayPresentationPolicy.ClampBackgroundOpacity(opacity);
         OpaqueParts = parts & NavigatorOpaqueParts.All;
         OutlineBrush = new SolidColorBrush(borderColor);
-        TimerBrush = themeText ? BrushToken("OverlayTimerForegroundBrush", new SolidColorBrush(textColor)) : new SolidColorBrush(textColor);
-        NameBrush = themeText ? BrushToken("OverlayProjectForegroundBrush", TimerBrush) : TimerBrush;
+        _timerBrush = themeText ? BrushToken("OverlayTimerForegroundBrush", new SolidColorBrush(textColor)) : new SolidColorBrush(textColor);
+        _nameBrush = themeText ? BrushToken("OverlayProjectForegroundBrush", _timerBrush) : _timerBrush;
         // Consolas is the legacy default. Explicit nondefault families continue to win.
         TimerFont = string.IsNullOrWhiteSpace(family) || family.Equals("Consolas", StringComparison.OrdinalIgnoreCase)
             || family.Equals("Cascadia Mono", StringComparison.OrdinalIgnoreCase)

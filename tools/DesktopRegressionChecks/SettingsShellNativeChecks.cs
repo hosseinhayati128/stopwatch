@@ -38,7 +38,8 @@ internal static class SettingsShellNativeChecks
             {
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);
                 string key=button.Name![12..];Require((string)category.GetValue(window)! == key,"Navigation did not select "+key);
-                if(key is not ("Overlay" or "Appearance"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key is not ("Overlay" or "Appearance" or "Typography"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key=="Typography")Require(Find<Grid>(window,"TypographyPage").IsEffectivelyVisible,"Navigation hid Typography fields.");
                 if(key=="Appearance")Require(window.FindControl<ComboBox>("ThemeCombo")!.IsEffectivelyVisible,"Navigation hid Appearance fields.");
                 if(key is "StopwatchAppearance" or "TodoAppearance")Save(window,key+"-retained");
             }
