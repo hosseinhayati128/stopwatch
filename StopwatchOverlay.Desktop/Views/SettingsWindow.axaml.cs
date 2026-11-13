@@ -63,6 +63,7 @@ public partial class SettingsWindow : Window
         HabiticaPanel.Bind(_settings, () => SettingsChanged?.Invoke(SettingsChangeKind.None));
         UpdatePreviewSafely();
         TelegramOutboxStore.OutboxChanged += OnOutboxChanged;
+        Screens.Changed += SettingsScreensChanged;
     }
 
     internal void ReloadFromSettings()
@@ -557,6 +558,7 @@ public partial class SettingsWindow : Window
                            | SettingsChangeKind.OverlayTheme
                            | SettingsChangeKind.OverlayAppearance
                            | SettingsChangeKind.OverlayGeometry
+                           | SettingsChangeKind.ApplicationScale
                            | SettingsChangeKind.BackgroundSelection
                            | SettingsChangeKind.BackgroundStrength)) != 0)
             {
@@ -565,6 +567,7 @@ public partial class SettingsWindow : Window
 
             CrashLogger.RecordUiAction($"Settings change: {change}", CurrentCategory);
             SettingsChanged?.Invoke(change);
+            UpdateNavigatorInteraction();
         }
         finally
         {
@@ -612,6 +615,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
+            UpdateNavigatorSettingsTheme();
             if (AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika)
                 SettingsHeaderSurface.Resources["PrimaryTextBrush"] = new SolidColorBrush(Color.Parse("#F6E6BF"));
             else
@@ -627,6 +631,8 @@ public partial class SettingsWindow : Window
                 _ => "00:05:10.5"
             };
             PreviewClock.ProjectName = "Programming";
+            RefreshNavigatorSettingsPreview();
+            RefreshAppearancePreview();
             PreviewClock.ApplyToolbar(PreviewToolbarSurface,
                 new[] { PreviewCloseButton, PreviewPauseButton, PreviewResetButton, PreviewEditButton, PreviewSeparateMergeButton });
 
@@ -804,6 +810,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        UpdateNavigatorCategory();
         UpdateTodoPreviewVisibility(tag);
         OverlayPanel.IsVisible = tag == "Overlay";
         AppearancePanel.IsVisible = tag == "Appearance";
@@ -1558,11 +1565,19 @@ public partial class SettingsWindow : Window
 
     private void DoneButton_Click(object? sender, RoutedEventArgs e) => Close();
 
+    private void SettingsScreensChanged(object? sender, EventArgs e)
+    {
+        if(_closed)return;
+        LoadControls();RefreshNavigatorSettingsPreview();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
         _previewTimer.Stop();
+        ReleaseAppearancePreview();
         TelegramOutboxStore.OutboxChanged -= OnOutboxChanged;
+        Screens.Changed -= SettingsScreensChanged;
         EndSliderInteraction();
         base.OnClosed(e);
     }

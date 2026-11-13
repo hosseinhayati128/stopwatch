@@ -317,7 +317,7 @@
                                 <TextBlock Text="Application background" Classes="sectionHeader" Margin="0,6,0,0"/>
                                 <Grid ColumnDefinitions="*,Auto,Auto">
                                     <ComboBox x:Name="BackgroundCombo" HorizontalAlignment="Stretch"/>
-                                    <Button Grid.Column="1" Content="Add" Classes="modern" Height="34" Margin="8,0,0,0" Click="AddBackgroundButton_Click"/>
+                                    <Button x:Name="AddBackgroundButton" Grid.Column="1" Content="Add" Classes="modern" Height="34" Margin="8,0,0,0" Click="AddBackgroundButton_Click"/>
                                     <Button x:Name="RemoveBackgroundButton" Grid.Column="2" Content="Remove" Classes="modern" Height="34" Margin="8,0,0,0" Click="RemoveBackgroundButton_Click"/>
                                 </Grid>
 

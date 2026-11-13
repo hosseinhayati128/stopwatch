@@ -14,16 +14,24 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
         ThemeResources.ApplyApplication(SettingsStore.Load().ThemeMode);
+        ConfigureBackgroundValidation();
+    }
 
-        AppBackgroundCatalog.ImageDimensionReader = (stream, _) =>
+    internal static void ConfigureBackgroundValidation()
+    {
+        AppBackgroundCatalog.ImageDimensionReader = (stream, extension) =>
         {
-            using var bmp = new Bitmap(stream);
-            return (bmp.PixelSize.Width, bmp.PixelSize.Height);
+            if (!AppBackgroundCatalog.TryReadImageDimensions(stream, extension.ToLowerInvariant(), out int width, out int height))
+                throw new InvalidDataException("The background image header is invalid.");
+            return (width, height);
         };
-        AppBackgroundCatalog.ImageValidator = (stream, _) =>
+        AppBackgroundCatalog.ImageValidator = (stream, extension) =>
         {
-            using var bmp = new Bitmap(stream);
-            return (bmp.PixelSize.Width, bmp.PixelSize.Height);
+            if (!AppBackgroundCatalog.TryReadImageDimensions(stream, extension.ToLowerInvariant(), out int width, out int height))
+                throw new InvalidDataException("The background image header is invalid.");
+            stream.Position=0;
+            using var validated = DesktopPageAppearance.DecodeBackground(stream, extension);
+            return (width, height);
         };
     }
 
@@ -33,6 +41,8 @@ public partial class App : Application
         {
             // By default on desktop, don't exit when the last window closes if tray icon is active
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            DesktopPageAppearance.Initialize(SettingsStore.Load());
+            desktop.Exit += (_, _) => DesktopPageAppearance.Shutdown();
             desktop.MainWindow = new Views.ControllerWindow();
         }
 

@@ -1,0 +1,92 @@
+{
+  "status": "implemented and verified; not installed or published",
+  "nativeExecution": "Private Windows desktops; no desktop switching",
+  "nativeCheckGroups": 16,
+  "unitTests": {
+    "passed": 1052,
+    "failed": 0,
+    "skipped": 0
+  },
+  "desktopBuild": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "review": {
+    "deferred": 0,
+    "critical": 0,
+    "importantFindingsFixed": 2
+  },
+  "runtimeArtworkAdded": 0,
+  "installedExecutableSha256": "DCEF41CD526883BD1168C5D360A0182884B888C43F9766F705C1946FAC6A6F6E",
+  "unrelatedTodoPngsPreserved": 6,
+  "limitations": [
+    "NuGet online vulnerability audit unavailable (NU1900)",
+    "Physical multi-monitor interaction not repeated"
+  ],
+  "sources": [
+    {
+      "path": "StopwatchOverlay.Core/AppBackgroundCatalog.cs",
+      "sha256": "755272F1EDB7B3819945517CD1EBD6F0DF2578CCCA9870FC5A1E9B8D1B7961EC"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/DesktopPageAppearance.cs",
+      "sha256": "6CD28F5C4FDBEF7D0F01631E34CFF49BDE9952E5B011C5C265359724AD9E08EA"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/ControllerWindow.AppearancePreview.cs",
+      "sha256": "FCAEAACC8E57E744856425FE624A3882857808E8609645EAEAA27478949D7F2F"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.Appearance.cs",
+      "sha256": "869836B8CB34D30E77BDE443EB9A7B34EA6C8C3A8AEC8749BE84A63FCE44CDD9"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\App.axaml.cs",
+      "sha256": "C3A9FC5BC31BA3AAB86FBBA731130C655F8BC331AF022D77240EC1C7E71062C5"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Controls\\StopwatchFrameSurface.cs",
+      "sha256": "1DC6929D2E7F56753E35FF6E6DCDFF9EF445A0290346E12B13923764173148DF"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\ThemeResources.cs",
+      "sha256": "6B852DBBF94653F75EBC43F9269F18470D3B65AE0BCEEE6B044F86F73321313F"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\ControllerWindow.axaml",
+      "sha256": "B2A165735435B716636A7162209216BFFC1D7573302CAFAC495F004F4B512EB7"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\ControllerWindow.axaml.cs",
+      "sha256": "697F2A03D15E5E4478D17D682903DE7C3AD19762843E022A4A91B451E3168C2F"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\ControllerWindow.Pirate.cs",
+      "sha256": "3A8608B824ADE0F11D0D83F50D11183A8DDE4B9D008F7FAD963D1AF483342C30"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\SettingsWindow.axaml",
+      "sha256": "288F3B8AE9AB534D0AFB6200A71DDE9B03A06A322C80FE07DEB8516D04DCD1F7"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\SettingsWindow.axaml.cs",
+      "sha256": "29FD90B386F50ADB0C08AF7BF5BA9B649A84F711899317980CAB52C1BE3E0EF9"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop\\Views\\SettingsWindow.Navigator.cs",
+      "sha256": "35C242D0B9FE59C5AD670F79C7BF323E95E5DAE44FF5281C6681E20C7C1474CE"
+    },
+    {
+      "path": "tools/DesktopRegressionChecks/Program.cs",
+      "sha256": "2B9C099427EF157C0D2996A21FE91AAD9B90BD86A6DAC27AE3EBA1BF3F41759B"
+    },
+    {
+      "path": "tools/DesktopRegressionChecks/SettingsAppearanceNativeChecks.cs",
+      "sha256": "50E1A2AAFB636010721AA9262D34C5AB49EF614C3CF62D122C9A5BB7093AFF3C"
+    },
+    {
+      "path": "tools/DesktopRegressionChecks/SettingsShellNativeChecks.cs",
+      "sha256": "75C1D8C5FF9A5805DF2CE0C8F0C45048FAFB21B1A6CF44B08139AC45B8D3336B"
+    }
+  ]
+}

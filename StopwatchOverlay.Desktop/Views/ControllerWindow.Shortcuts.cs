@@ -133,9 +133,12 @@ public partial class ControllerWindow
     private void ApplyTimerOverlayVisibility(OverlayWindow overlay, TimerSession session)
     {
         bool visible = IsTimerOverlayVisible(session);
-        if (visible == overlay.IsVisible) return;
-        if (visible) overlay.Show();
-        else overlay.Hide();
+        if (visible != overlay.IsVisible)
+        {
+            if (visible) overlay.Show();
+            else overlay.Hide();
+        }
+        SynchronizeOverlayDisplays(overlay,session);
     }
 
     private void ToggleActiveTimerOverlay()

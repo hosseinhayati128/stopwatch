@@ -54,6 +54,8 @@ public partial class ControllerWindow : Window
 
     private bool _updatingUi;
     private bool _isExiting;
+    private readonly bool _previewMode;
+    private bool _settingsInteractionActive,_pendingPageScale;
 
     private TimerSession CurrentTimer => _timerManager.Active ?? _timerManager.Sessions.FirstOrDefault() ?? _emptyTimer;
     private readonly TimerSession _emptyTimer = new(1);
@@ -65,11 +67,13 @@ public partial class ControllerWindow : Window
     // Explicit synthetic settings isolate visual regression previews from user data and services.
     internal ControllerWindow(AppSettings? previewSettings)
     {
+        _previewMode = previewSettings != null;
         InitializeComponent();
 
         _settings = previewSettings ?? SettingsStore.Load();
         ApplyControllerTheme();
         SizeChanged += (_, _) => UpdateControllerLayout();
+        if(!_previewMode)Screens.Changed += OverlayScreensChanged;
         if (previewSettings != null)
         {
             _timer = new DispatcherTimer();
@@ -474,6 +478,7 @@ public partial class ControllerWindow : Window
         {
             if (!ReferenceEquals(_herdOverlay, overlay)) return;
             _herdOverlay = null;
+            ClearDisplayOverlays(overlay);
             if (!_isExiting && GetActiveHerdSession() is { } session)
                 _overlayVisibilityOverrides[session.Id] = false;
         };
@@ -481,46 +486,7 @@ public partial class ControllerWindow : Window
         _herdOverlay.SetClickThrough(_settings.ClickThrough);
         _herdOverlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
 
-        _herdOverlay.CloseRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null) CloseSession(herdSession);
-        };
-        _herdOverlay.PauseResumeRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null) ToggleSessionStartPause(herdSession);
-        };
-        _herdOverlay.ResetRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null) ResetSession(herdSession);
-        };
-        _herdOverlay.EditRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null) OpenTimerEditor(herdSession);
-        };
-        _herdOverlay.ActivationRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null)
-            {
-                _timerManager.Activate(herdSession);
-                RefreshTimerRail();
-                UpdateActiveTimerDisplay();
-                UpdateOverlayStates();
-            }
-        };
-        _herdOverlay.SeparateMergeRequested += () =>
-        {
-            var herdSession = GetActiveHerdSession();
-            if (herdSession != null)
-            {
-                _timerManager.Activate(herdSession);
-                SeparateActiveSession();
-            }
-        };
+        WireOverlayCommands(_herdOverlay,GetActiveHerdSession);
 
         ApplyOverlayStyle(_herdOverlay);
         return _herdOverlay;
@@ -536,6 +502,7 @@ public partial class ControllerWindow : Window
         {
             if (_overlays.GetValueOrDefault(session.Id) != overlay) return;
             _overlays.Remove(session.Id);
+            ClearDisplayOverlays(overlay);
             // Merge/delete change membership before closing their old window.
             // A native close hides the overlay while leaving its timer intact.
             if (!_isExiting && session.IsSeparated && _timerManager.Sessions.Contains(session))
@@ -548,22 +515,7 @@ public partial class ControllerWindow : Window
         overlay.SetClickThrough(_settings.ClickThrough);
         overlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
 
-        overlay.CloseRequested += () => CloseSession(session);
-        overlay.PauseResumeRequested += () => ToggleSessionStartPause(session);
-        overlay.ResetRequested += () => ResetSession(session);
-        overlay.EditRequested += () => OpenTimerEditor(session);
-        overlay.ActivationRequested += () =>
-        {
-            _timerManager.Activate(session);
-            RefreshTimerRail();
-            UpdateActiveTimerDisplay();
-            UpdateOverlayStates();
-        };
-        overlay.SeparateMergeRequested += () =>
-        {
-            _timerManager.Activate(session);
-            MergeActiveSession();
-        };
+        WireOverlayCommands(overlay,()=>session);
 
         ApplyOverlayStyle(overlay);
         if (_herdOverlay != null)
@@ -601,6 +553,7 @@ public partial class ControllerWindow : Window
         else if (_herdOverlay != null)
         {
             _herdOverlay.Hide();
+            ClearDisplayOverlays(_herdOverlay);
         }
 
         var separatedIds = _timerManager.SeparatedSessions.Select(s => s.Id).ToHashSet();
@@ -1215,6 +1168,9 @@ public partial class ControllerWindow : Window
                 _settings.StartWithWindows = PlatformServices.Startup.IsEnabled();
             _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow));
             _settingsWindow.SettingsChanged += OnSettingsChanged;
+            _settingsWindow.SettingsInteractionStarted += () => _settingsInteractionActive=true;
+            _settingsWindow.SettingsInteractionCompleted += CompleteSettingsInteraction;
+            _settingsWindow.ShowOverlayRequested += ToggleActiveTimerOverlay;
             _settingsWindow.PeriodicReviewRequested += OpenPeriodicReview;
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
@@ -1227,6 +1183,9 @@ public partial class ControllerWindow : Window
 
     private void OnSettingsChanged(SettingsChangeKind change)
     {
+        bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength))==0;
+        if((change & (SettingsChangeKind.OverlayScreen|SettingsChangeKind.OverlayPosition))!=0)
+            InvalidateOverlayPlacement((change & SettingsChangeKind.OverlayPosition)!=0);
         if ((change & SettingsChangeKind.Startup) != 0 && PlatformServices.Startup.IsSupported)
         {
             PlatformServices.Startup.SetEnabled(_settings.StartWithWindows);
@@ -1237,12 +1196,16 @@ public partial class ControllerWindow : Window
                 _settingsWindow?.ReloadFromSettings();
             }
         }
-        _todoOverlayWindow?.ApplySettings();
+        if(!pageOnly)_todoOverlayWindow?.ApplySettings();
         if ((change & SettingsChangeKind.Theme) != 0)
         {
             ThemeResources.ApplyApplication(_settings.ThemeMode);
             ApplyControllerTheme();
         }
+        if((change & SettingsChangeKind.ApplicationScale)!=0)_pendingPageScale=true;
+        if(SettingsChangePolicy.RequiresBackgroundApply(change)||(change & SettingsChangeKind.ApplicationScale)!=0)
+            DesktopPageAppearance.Apply(_settings,!_settingsInteractionActive);
+        if(!_settingsInteractionActive)_pendingPageScale=false;
         bool settingsSaved = SettingsStore.Save(_settings);
         _settingsWindow?.ReportPersistenceResult(settingsSaved);
         if (!settingsSaved)
@@ -1251,6 +1214,7 @@ public partial class ControllerWindow : Window
                 new IOException("Unable to save application settings."),
                 "ControllerWindow.OnSettingsChanged");
         }
+        if(pageOnly)return;
         if (_herdOverlay != null)
         {
             ApplyOverlayStyle(_herdOverlay);
@@ -1263,9 +1227,18 @@ public partial class ControllerWindow : Window
             overlay.SetClickThrough(_settings.ClickThrough);
             overlay.SetHideFromCapture(_settings.HideOverlayFromCapture);
         }
+        RefreshDisplayOverlayAppearance();
         UpdateOverlayStates();
         UpdateLightRing();
         UpdateActiveTimerDisplay();
+    }
+
+    private void CompleteSettingsInteraction()
+    {
+        _settingsInteractionActive=false;
+        if(!_pendingPageScale)return;
+        _pendingPageScale=false;
+        DesktopPageAppearance.Apply(_settings,true);
     }
 
     private async void ShortcutsButton_Click(object? sender, RoutedEventArgs e)
@@ -1366,23 +1339,26 @@ public partial class ControllerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isExiting = true;
+        if(!_previewMode)Screens.Changed -= OverlayScreensChanged;
+        InvalidateOverlayPlacement();
         _timerCommandDialog?.Close();
         _activeClocksShelf?.Close();
-        StopHabiticaSync();
+        if(!_previewMode)StopHabiticaSync();
         _todoOverlayWindow?.Close();
         _todoOverlayWindow = null;
         _timer.Stop();
         _saveTimer.Stop();
         _idleTimer.Stop();
         _commandModeTimer?.Stop();
-        PlatformServices.HotKey.HotKeyPressed -= OnHotKeyPressed;
-        PlatformServices.HotKey.CommandKeyPressed -= OnCommandKeyPressed;
-        ExitShortcutCommandMode();
         _herdOverlay?.Close();
         _herdOverlay = null;
         foreach (var overlay in _overlays.Values.ToArray())
             overlay.Close();
         _overlays.Clear();
+        if(_previewMode){base.OnClosed(e);return;}
+        PlatformServices.HotKey.HotKeyPressed -= OnHotKeyPressed;
+        PlatformServices.HotKey.CommandKeyPressed -= OnCommandKeyPressed;
+        ExitShortcutCommandMode();
         if (PlatformServices.HotKey is PortalHotKeyService portal)
             portal.RegistrationStatusChanged -= OnPortalRegistrationStatusChanged;
         PlatformServices.HotKey.Dispose();

@@ -1,0 +1,73 @@
+{
+  "status": "native-design-preview-not-production",
+  "checks": [
+    {
+      "state": "overview",
+      "width": 1120,
+      "height": 720,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 391.3333333333333,
+      "contentHeight": 514,
+      "viewport": 514,
+      "clockRenderer": "ThemedClockFace"
+    },
+    {
+      "state": "interaction",
+      "width": 1120,
+      "height": 720,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 391.3333333333333,
+      "contentHeight": 514,
+      "viewport": 514,
+      "clockRenderer": "ThemedClockFace"
+    },
+    {
+      "state": "all-displays",
+      "width": 1120,
+      "height": 720,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 391.3333333333333,
+      "contentHeight": 514,
+      "viewport": 514,
+      "clockRenderer": "ThemedClockFace"
+    },
+    {
+      "state": "custom-position",
+      "width": 1120,
+      "height": 720,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 391.3333333333333,
+      "contentHeight": 514,
+      "viewport": 514,
+      "clockRenderer": "ThemedClockFace"
+    },
+    {
+      "state": "long-name-rtl",
+      "width": 1120,
+      "height": 720,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 391.3333333333333,
+      "contentHeight": 514,
+      "viewport": 514,
+      "clockRenderer": "ThemedClockFace"
+    },
+    {
+      "state": "compact",
+      "width": 840,
+      "height": 600,
+      "categories": 13,
+      "positionChoices": 7,
+      "fieldWidth": 254.66666666666666,
+      "contentHeight": 515.3333333333334,
+      "viewport": 394,
+      "clockRenderer": "ThemedClockFace"
+    }
+  ],
+  "execution": "Private desktop, synthetic displays and settings; no live settings, persistence or platform hooks.",
+  "newRuntimeArtwork": 0
+}

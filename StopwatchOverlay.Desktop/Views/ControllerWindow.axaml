@@ -107,6 +107,7 @@
             <controls:NikaArtwork Classes="nikaOnly" Grid.RowSpan="2" Part="Navy"/>
             <controls:NikaArtwork x:Name="NikaMural" Classes="nikaOnly" Grid.RowSpan="2" Part="Mural" Margin="4,435,4,112" Opacity="0.56"/>
             <controls:NikaArtwork x:Name="NikaMap" Classes="nikaOnly" Grid.Column="1" Grid.RowSpan="2" Part="Map"/>
+            <Border Classes="nikaOnly" Grid.Column="1" Grid.RowSpan="2" Background="{DynamicResource DesktopPanelPattern}" IsHitTestVisible="False"/>
             <!-- Left Rail: Timers List -->
             <Border Classes="rail" Grid.Column="0" Grid.RowSpan="2"
 

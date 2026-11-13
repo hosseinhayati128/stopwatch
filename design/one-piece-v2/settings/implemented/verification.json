@@ -1,0 +1,32 @@
+{
+  "Status": "implemented-native-verified",
+  "CapturedFrom": "Production SettingsWindow and ThemedClockFace",
+  "NativeGroupsPassed": 9,
+  "NativeFailures": 0,
+  "UnitTestsPassed": 1052,
+  "UnitTestsFailed": 0,
+  "UnitTestsSkipped": 0,
+  "Execution": "Private Windows desktop; no desktop switching",
+  "DesktopBuildWarnings": 0,
+  "DesktopBuildErrors": 0,
+  "UnitBuildNote": "Two NU1900 warnings: package audit service unavailable",
+  "Review": "Fresh read-only review; dark-theme presentation restoration finding reproduced and fixed",
+  "InstalledAppUpdated": false,
+  "NewRuntimeArtwork": 0,
+  "Unverified": [
+    "Physical monitor hot-plug and mixed-DPI movement",
+    "Physical capture exclusion and click-through",
+    "Linux native drag completion"
+  ],
+  "Captures": [
+    "compact-controls.png",
+    "compact.png",
+    "custom-position.png",
+    "interaction.png",
+    "legacy-midnight.png",
+    "overview.png",
+    "save-failure.png",
+    "StopwatchAppearance-retained.png",
+    "TodoAppearance-retained.png"
+  ]
+}

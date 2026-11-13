@@ -179,6 +179,16 @@ public static class AppBackgroundCatalog
         AppSettings settings,
         string? managedDirectory = null)
     {
+        var choice = GetSelectedChoice(settings, managedDirectory);
+        if (choice.IsAvailable) return choice;
+        settings.PanelBackgroundId = ThemeDefault;
+        return BuiltInChoices[0];
+    }
+
+    public static AppBackgroundChoice GetSelectedChoice(
+        AppSettings settings,
+        string? managedDirectory = null)
+    {
         ArgumentNullException.ThrowIfNull(settings);
         NormalizeSettings(settings);
 
@@ -193,16 +203,15 @@ public static class AppBackgroundCatalog
             CustomAppBackground? custom = settings.CustomBackgrounds.FirstOrDefault(item =>
                 item.Id.Equals(requestedId, StringComparison.OrdinalIgnoreCase));
             string root = managedDirectory ?? ManagedDirectory;
-            if (custom != null
-                && TryResolveManagedPath(root, custom.FileName, out string fullPath)
-                && CanReadManagedImage(fullPath))
+            if (custom != null)
             {
+                bool resolved = TryResolveManagedPath(root, custom.FileName, out string fullPath);
                 return new AppBackgroundChoice(
                     CustomSelectionId(custom.Id),
                     custom.DisplayName,
                     null,
-                    fullPath,
-                    true);
+                    resolved ? fullPath : null,
+                    true) { IsAvailable = resolved && CanReadManagedImage(fullPath) };
             }
         }
 
@@ -443,7 +452,7 @@ public static class AppBackgroundCatalog
         }
     }
 
-    private static bool TryReadImageDimensions(Stream stream, string extension, out int width, out int height)
+    public static bool TryReadImageDimensions(Stream stream, string extension, out int width, out int height)
     {
         width = 0;
         height = 0;
@@ -551,6 +560,7 @@ public static class AppBackgroundCatalog
 
     public static bool IsExpectedImageBoundaryFailure(Exception exception)
         => exception is IOException
+            or InvalidDataException
             or UnauthorizedAccessException
             or System.Security.SecurityException
             or NotSupportedException

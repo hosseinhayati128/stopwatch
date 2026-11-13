@@ -37,6 +37,54 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
+if(args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    if(args.Contains("--controller-sizing"))
+    {
+        Check("Controller scaled panel fills the native window",ControllerSizingChecks.Run);
+        Environment.Exit(failures==0?0:1);
+    }
+    Check("Appearance controls, independent themes and navigation",SettingsAppearanceNativeChecks.LayoutAndActions);
+    Check("Appearance native page scale and background application",SettingsAppearanceNativeChecks.Presentation);
+    Check("Appearance cached backgrounds and theme restoration",SettingsAppearanceNativeChecks.BackgroundsAndRestoration);
+    Check("Appearance bounded image decoding",SettingsAppearanceNativeChecks.BoundedImages);
+    Check("Appearance production metadata and selected-image lookup",SettingsAppearanceNativeChecks.ProductionBackgroundLookup);
+    Check("Appearance closes during pending scale without recreating previews",SettingsAppearanceNativeChecks.CloseDuringScaleAdjustment);
+    Check("Appearance preview isolation and compact footer",SettingsAppearanceNativeChecks.PreviewIsolation);
+    Environment.Exit(failures==0?0:1);
+}
+
+if(args.Contains("--settings-shell-native")||args.Contains("--settings-shell-regressions"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
+        { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    if(args.Contains("--settings-shell-regressions"))
+    {
+        StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-12-settings-shell-native/render-regression";
+        Check("retained stopwatch inspector controls and preview isolation",StopwatchAppearanceUiChecks.Run);
+        Check("retained Todo settings and dialogs",TodoAppearanceChecks.InspectorAndDialogs);
+        Check("controller mode selections",ControllerModeChecks.Run);
+        Check("unchanged overlay state keeps cached resources",StopwatchPerformanceChecks.RepeatedPresentation);
+        Environment.Exit(failures==0?0:1);
+    }
+    Check("settings shell layout and retained navigation",SettingsShellNativeChecks.Layout);
+    Check("settings immediate changes and persistence feedback",SettingsShellNativeChecks.Controls);
+    Check("settings active overlay visibility wiring",SettingsShellNativeChecks.OverlayActions);
+    Check("settings monitor work-area, DPI and custom placement",SettingsShellNativeChecks.Placement);
+    Check("settings display mirrors, retention and cleanup",SettingsShellNativeChecks.Mirrors);
+    Console.WriteLine($"Settings native checks: {failures} failed");
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if(args.Contains("--dashboard-overview-native") || args.Contains("--dashboard-charts-native") || args.Contains("--dashboard-timeline-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -139,13 +187,23 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
-// This visual spike needs only Avalonia drawing services, without application settings or hooks.
-if (args.Contains("--dashboard-timeline-preview") || args.Contains("--dashboard-charts-preview") || args.Contains("--dashboard-overview-preview") || args.Contains("--review-mood-preview") || args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+if(args.Contains("--settings-appearance-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--dashboard-timeline-preview"))Check("dashboard timeline and records native design proposal",DashboardTimelinePreview.Run);
+    Check("settings Appearance native design proposal",SettingsAppearancePreview.Run);
+    Environment.Exit(failures==0?0:1);
+}
+
+// This visual spike needs only Avalonia drawing services, without application settings or hooks.
+if (args.Contains("--settings-shell-preview") || args.Contains("--dashboard-timeline-preview") || args.Contains("--dashboard-charts-preview") || args.Contains("--dashboard-overview-preview") || args.Contains("--review-mood-preview") || args.Contains("--review-allocation-preview") || args.Contains("--review-projects-preview") || args.Contains("--time-record-preview") || args.Contains("--project-chooser-preview") || args.Contains("--timer-editor-states") || args.Contains("--timer-editor-preview") || args.Contains("--running-clocks-state-preview") || args.Contains("--running-clocks-preview") || args.Contains("--clock-picker-state-preview") || args.Contains("--clock-picker-row-preview") || args.Contains("--frame-size-preview") || args.Contains("--frame-modules-preview") || args.Contains("--frame-catalog-audit") || args.Contains("--frame-join-refinement") || args.Contains("--frame-production-audit") || args.Contains("--shared-frames-only"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    if(args.Contains("--settings-shell-preview"))Check("settings first-layer native design proposal",SettingsShellPreview.Run);
+    else if(args.Contains("--dashboard-timeline-preview"))Check("dashboard timeline and records native design proposal",DashboardTimelinePreview.Run);
     else if(args.Contains("--dashboard-charts-preview"))Check("dashboard charts and heatmap native design proposal",DashboardChartsPreview.Run);
     else if(args.Contains("--dashboard-overview-preview"))Check("dashboard overview native design proposal",DashboardOverviewPreview.Run);
     else if(args.Contains("--review-mood-preview"))Check("review feelings and mood native design proposals",ReviewMoodPreview.Run);

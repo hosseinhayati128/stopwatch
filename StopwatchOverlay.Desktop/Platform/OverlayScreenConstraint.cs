@@ -68,6 +68,18 @@ internal sealed class OverlayScreenConstraint
                               Math.Clamp(anchor.Y, area.Y, Math.Max(area.Y, area.Bottom - height)));
     }
 
+    internal static PixelPoint PlaceOnScreen(string preset, PixelPoint custom, Size logicalSize, Screen screen)
+    {
+        var area=screen.WorkingArea;
+        int width=(int)Math.Ceiling(logicalSize.Width*screen.Scaling),height=(int)Math.Ceiling(logicalSize.Height*screen.Scaling);
+        int right=Math.Max(area.X,area.Right-width),bottom=Math.Max(area.Y,area.Bottom-height);
+        if(preset=="Custom")return new(Math.Clamp(custom.X,area.X,right),Math.Clamp(custom.Y,area.Y,bottom));
+        int margin=(int)Math.Round(12*screen.Scaling);
+        int x=preset.EndsWith("Left")?area.X+margin:preset.EndsWith("Right")?right-margin:area.X+(area.Width-width)/2;
+        int y=preset.StartsWith("Bottom")?bottom-margin:area.Y+margin;
+        return new(Math.Clamp(x,area.X,right),Math.Clamp(y,area.Y,bottom));
+    }
+
     private static double DistanceToScreen(PixelPoint anchor, PixelRect bounds)
     {
         double dx = (double)anchor.X - Math.Clamp(anchor.X, bounds.X, bounds.Right);

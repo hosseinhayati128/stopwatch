@@ -146,7 +146,8 @@ public partial class SettingsWindow
 
     internal void ReportPersistenceResult(bool saved)
     {
-        foreach(var status in new[]{_todoSaveStatus,_stopwatchSaveStatus})
+        _settingsSaved=saved;
+        foreach(var status in new[]{_todoSaveStatus,_stopwatchSaveStatus,_navigatorSaveStatus})
         {
             if(status==null)continue;
             status.Text=saved?"Changes apply immediately.":"Applied for this session, but settings could not be saved. Check disk space and try again.";
@@ -174,6 +175,7 @@ public partial class SettingsWindow
 
     private void UpdateTodoResponsiveLayout()
     {
+        if(_navigatorSettingsBody!=null){ResizeNavigatorSettings();return;}
         if(SettingsColumns==null)return;
         string layout=ClientSize.Width<1000?CurrentCategory switch{"TodoAppearance"=>"200,160,*","StopwatchAppearance"=>"220,170,*",_=>"340,190,*"}:"340,190,*";
         if(layout==_appearanceColumnLayout)return;

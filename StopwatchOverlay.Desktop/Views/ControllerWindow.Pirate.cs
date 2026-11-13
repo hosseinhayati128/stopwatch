@@ -18,11 +18,12 @@ public partial class ControllerWindow
         UpdateControllerLayout();
     }
 
-    private void UpdateControllerLayout()
+    internal void UpdateControllerLayout()
     {
         bool nika = Classes.Contains("nika");
-        double width = ClientSize.Width > 0 ? ClientSize.Width : Width;
-        double height = ClientSize.Height > 0 ? ClientSize.Height : Height;
+        double pageScale = DesktopPageAppearance.Scale(this);
+        double width = _appearancePreviewSize?.Width ?? (ClientSize.Width > 0 ? ClientSize.Width : Width) / pageScale;
+        double height = _appearancePreviewSize?.Height ?? (ClientSize.Height > 0 ? ClientSize.Height : Height) / pageScale;
         bool compact = !nika && width < 900;
         if (nika) Resources["ControllerModeMargin"] = new Avalonia.Thickness(0,0,84,0);
         Classes.Set("compact", compact);

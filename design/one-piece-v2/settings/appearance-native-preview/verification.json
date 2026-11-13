@@ -1,0 +1,62 @@
+{
+  "status": "design-preview-only",
+  "execution": "Private desktop; synthetic settings; no persistence or application installation.",
+  "states": [
+    {
+      "state": "application",
+      "width": 1120,
+      "height": 720,
+      "applicationThemes": 7,
+      "nikaBackgrounds": 12,
+      "typography": 4,
+      "artworks": 17,
+      "clockThemes": 11,
+      "nativeRenderer": true
+    },
+    {
+      "state": "alternate-style",
+      "width": 1120,
+      "height": 720,
+      "applicationThemes": 7,
+      "nikaBackgrounds": 12,
+      "typography": 4,
+      "artworks": 17,
+      "clockThemes": 11,
+      "nativeRenderer": true
+    },
+    {
+      "state": "floating-clock",
+      "width": 1120,
+      "height": 720,
+      "applicationThemes": 7,
+      "nikaBackgrounds": 12,
+      "typography": 4,
+      "artworks": 17,
+      "clockThemes": 11,
+      "nativeRenderer": true
+    },
+    {
+      "state": "classic-clock",
+      "width": 1120,
+      "height": 720,
+      "applicationThemes": 7,
+      "nikaBackgrounds": 12,
+      "typography": 4,
+      "artworks": 17,
+      "clockThemes": 11,
+      "nativeRenderer": true
+    },
+    {
+      "state": "compact",
+      "width": 840,
+      "height": 600,
+      "applicationThemes": 7,
+      "nikaBackgrounds": 12,
+      "typography": 4,
+      "artworks": 17,
+      "clockThemes": 11,
+      "nativeRenderer": true
+    }
+  ],
+  "newRuntimeArtwork": 0
+}

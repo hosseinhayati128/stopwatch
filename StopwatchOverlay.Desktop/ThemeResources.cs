@@ -17,6 +17,7 @@ internal static class ThemeResources
     {
         if (Application.Current is not { } app) return;
         string normalized = AppThemeCatalog.Normalize(theme);
+        app.Resources.Remove("AppBackgroundBrush");
         string file = normalized switch
         {
             AppThemeCatalog.PixelDeckNight => "PixelDeck",
@@ -29,6 +30,7 @@ internal static class ThemeResources
         app.Resources.MergedDictionaries.Add(Load(file));
         app.RequestedThemeVariant = normalized is AppThemeCatalog.Daylight or AppThemeCatalog.PixelDeckDay or AppThemeCatalog.Acanthus or AppThemeCatalog.Pirate or AppThemeCatalog.Nika
             ? ThemeVariant.Light : ThemeVariant.Dark;
+        DesktopPageAppearance.RefreshTheme();
     }
 
     internal static string OverlayFile(string theme) => theme switch

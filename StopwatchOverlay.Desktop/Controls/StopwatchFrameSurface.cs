@@ -11,13 +11,16 @@ public sealed class StopwatchFrameSurface:Decorator
     public static readonly StyledProperty<double> ArtworkScaleProperty=AvaloniaProperty.Register<StopwatchFrameSurface,double>(nameof(ArtworkScale),.18,
         validate:value=>double.IsFinite(value)&&value>0);
     public static readonly StyledProperty<IBrush?> BackgroundProperty=Border.BackgroundProperty.AddOwner<StopwatchFrameSurface>();
+    public static readonly StyledProperty<IBrush?> PatternProperty=AvaloniaProperty.Register<StopwatchFrameSurface,IBrush?>(nameof(Pattern));
+    public IBrush? Pattern{get=>GetValue(PatternProperty);set=>SetValue(PatternProperty,value);}
+    public StopwatchFrameSurface()=>this.Bind(PatternProperty,this.GetResourceObservable("DesktopPanelPattern"));
     public string Frame{get=>GetValue(FrameProperty);set=>SetValue(FrameProperty,value);}
     public double ArtworkScale{get=>GetValue(ArtworkScaleProperty);set=>SetValue(ArtworkScaleProperty,value);}
     public IBrush? Background{get=>GetValue(BackgroundProperty);set=>SetValue(BackgroundProperty,value);}
     static StopwatchFrameSurface()
     {
         AffectsMeasure<StopwatchFrameSurface>(FrameProperty,ArtworkScaleProperty,PaddingProperty);
-        AffectsRender<StopwatchFrameSurface>(FrameProperty,ArtworkScaleProperty,BackgroundProperty);
+        AffectsRender<StopwatchFrameSurface>(FrameProperty,ArtworkScaleProperty,BackgroundProperty,PatternProperty);
     }
     private StopwatchFrameLayout Layout(Size size)=>StopwatchFrameRenderer.GetLayout(StopwatchAppearanceAssets.Shared.Get("frame",Frame),size,ArtworkScale);
     private Thickness Insets(StopwatchFrameLayout layout)=>new(layout.ContentInsets.Left+Padding.Left,layout.ContentInsets.Top+Padding.Top,
@@ -49,7 +52,11 @@ public sealed class StopwatchFrameSurface:Decorator
     {
         if(Bounds.Width<=0||Bounds.Height<=0)return;
         var layout=Layout(Bounds.Size);
-        using(context.PushGeometryClip(layout.BackgroundClip))context.DrawRectangle(Background,null,new Rect(Bounds.Size));
+        using(context.PushGeometryClip(layout.BackgroundClip))
+        {
+            context.DrawRectangle(Background,null,new Rect(Bounds.Size));
+            context.DrawRectangle(Pattern,null,new Rect(Bounds.Size));
+        }
         StopwatchFrameRenderer.Draw(context,StopwatchAppearanceAssets.Shared.Get("frame",Frame),new Rect(Bounds.Size),ArtworkScale);
     }
 }
