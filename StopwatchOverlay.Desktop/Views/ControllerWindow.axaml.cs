@@ -42,7 +42,6 @@ public partial class ControllerWindow : Window
 
     private OverlayWindow? _herdOverlay;
     private readonly Dictionary<Guid, OverlayWindow> _overlays = new();
-    private LightRingWindow? _lightRingWindow;
     private ProjectDashboardWindow? _dashboardWindow;
     private SettingsWindow? _settingsWindow;
     private ShortcutsWindow? _shortcutsWindow;
@@ -143,7 +142,6 @@ public partial class ControllerWindow : Window
         StartHabiticaSync();
         EnsureTodoOverlay().Show();
         UpdateOverlayStates();
-        UpdateLightRing();
     }
 
     private TodoOverlayWindow EnsureTodoOverlay()
@@ -541,6 +539,7 @@ public partial class ControllerWindow : Window
                 herdOverlay.SetTimerName(herdSession.Name);
                 herdOverlay.UpdateTime(FormatDisplayTime(herdSession));
                 herdOverlay.SetRunning(herdSession.IsRunning);
+                herdOverlay.SetRecIndicatorVisible(ShowTimerRec(herdSession));
                 herdOverlay.SetPauseResumeEnabled(herdSession.Mode != 1);
 
                 bool isHerdActive = active != null && !active.IsSeparated && herdSession == active;
@@ -570,6 +569,7 @@ public partial class ControllerWindow : Window
             overlay.SetTimerName(session.Name);
             overlay.UpdateTime(FormatDisplayTime(session));
             overlay.SetRunning(session.IsRunning);
+            overlay.SetRecIndicatorVisible(ShowTimerRec(session));
             overlay.SetPauseResumeEnabled(session.Mode != 1);
 
             bool isSessionActive = session == active;
@@ -639,53 +639,22 @@ public partial class ControllerWindow : Window
         _ => fallback
     };
 
-    private void UpdateLightRing()
-    {
-        if (_settings.LightRingEnabled)
-        {
-            if (_lightRingWindow == null)
-            {
-                _lightRingWindow = new LightRingWindow();
-                _lightRingWindow.Show();
-            }
-            _lightRingWindow.ApplySettings(
-                _settings.LightRingBrightness / 100.0,
-                (int)_settings.LightRingWidth,
-                _settings.LightRingHideFromCapture);
-            _lightRingWindow.PositionOnScreen(Screens.Primary);
-        }
-        else if (_lightRingWindow != null)
-        {
-            _lightRingWindow.Close();
-            _lightRingWindow = null;
-        }
-    }
-
     private void OnTimerTick(object? sender, EventArgs e)
     {
         DateTime now = DateTime.UtcNow;
 
         foreach (var session in _timerManager.Sessions)
         {
-            if (session.Mode == 2 && session.IsRunning)
-            {
-                if (session.LastCountdownUpdateUtc == default)
-                    session.LastCountdownUpdateUtc = now;
+            int runningMode = session.Mode == 1 ? session.LastNonClockMode : session.Mode;
+            if (!session.IsRunning || runningMode != 2) continue;
 
-                var delta = now - session.LastCountdownUpdateUtc;
-                session.LastCountdownUpdateUtc = now;
-
-                if (session.CountdownRemaining > delta)
-                {
-                    session.CountdownRemaining -= delta;
-                }
-                else
-                {
-                    session.CountdownRemaining = TimeSpan.Zero;
-                    session.IsRunning = false;
-                    session.Stopwatch.Stop();
-                }
-            }
+            var delta = session.LastCountdownUpdateUtc == default ? TimeSpan.Zero : now - session.LastCountdownUpdateUtc;
+            session.LastCountdownUpdateUtc = now;
+            var remaining = session.UseClockTarget && session.ClockTarget != default
+                ? session.ClockTarget - now.ToLocalTime()
+                : session.CountdownRemaining - delta;
+            session.CountdownRemaining = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+            if (remaining <= TimeSpan.Zero) PauseBehaviorTimer(session, now);
         }
 
         UpdateOverlayStates();
@@ -705,7 +674,7 @@ public partial class ControllerWindow : Window
 
         StartStopButton.Content = session.IsRunning ? "Pause" : "Start";
         StartStopButton.IsEnabled = LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && session.Mode != 1;
-        RecIndicator.IsVisible = session.IsRunning && _settings.ShowRecIndicator && !Classes.Contains("nika");
+        RecIndicator.IsVisible = ShowTimerRec(session) && !Classes.Contains("nika");
 
         StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;
         StatusText.Text = DateTime.UtcNow < _shortcutFeedbackUntil ? _shortcutFeedback : session.IsRunning ? "Running" : "Paused";
@@ -748,6 +717,7 @@ public partial class ControllerWindow : Window
             CountdownModeRadio.IsChecked = CurrentTimer.Mode == 2;
             TimecodeModeRadio.IsChecked = CurrentTimer.Mode == 3;
             CountdownPanel.IsVisible = CurrentTimer.Mode == 2;
+            if (CurrentTimer.Mode == 2) UpdateCountdownInputs(CurrentTimer);
         }
         finally
         {
@@ -755,11 +725,13 @@ public partial class ControllerWindow : Window
         }
     }
 
-    private string FormatDisplayTime(TimerSession session)
+    private string FormatDisplayTime(TimerSession session) => FormatDisplayTime(session, DateTime.UtcNow);
+
+    private string FormatDisplayTime(TimerSession session, DateTime nowUtc)
     {
         TimeSpan time = session.Mode switch
         {
-            1 => DateTime.Now.TimeOfDay,
+            1 => nowUtc.ToLocalTime().TimeOfDay,
             2 => session.CountdownRemaining,
             _ => session.Elapsed
         };
@@ -768,7 +740,7 @@ public partial class ControllerWindow : Window
         time = time.Duration();
         long hours = (long)time.TotalHours;
         long minutes = session.Mode == 1 ? time.Minutes : (long)time.TotalMinutes;
-        return _settings.TimeFormat switch
+        string text = _settings.TimeFormat switch
         {
             1 => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}",
             2 => $"{sign}{minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}",
@@ -776,6 +748,7 @@ public partial class ControllerWindow : Window
             4 => $"{sign}{hours:00}:{time.Minutes:00}",
             _ => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}"
         };
+        return session.Mode == 1 && _settings.BlinkColon && nowUtc.Millisecond >= 500 ? text.Replace(':', ' ') : text;
     }
 
     private void RefreshTimerRail()
@@ -823,19 +796,7 @@ public partial class ControllerWindow : Window
     {
         try
         {
-            var idleTime = PlatformServices.IdleDetection.GetIdleTime();
-            var session = CurrentTimer;
-            if (session.IsRunning && idleTime.TotalMinutes >= _settings.DefaultIdleStopTimeoutMinutes)
-            {
-                session.IsRunning = false;
-                session.Stopwatch.Stop();
-                if (_settings.IdleStopSubtractDuration && session.Elapsed > idleTime)
-                {
-                    session.RestoreElapsed(session.Elapsed - idleTime, false);
-                }
-                UpdateActiveTimerDisplay();
-                RefreshTimerRail();
-            }
+            ApplyIdleStop(PlatformServices.IdleDetection.GetIdleTime(), DateTime.UtcNow);
         }
         catch (Exception ex)
         {
@@ -851,18 +812,8 @@ public partial class ControllerWindow : Window
     private void ToggleSessionStartPause(TimerSession session)
     {
         if (session.Mode == 1 || !_timerManager.Sessions.Contains(session)) return;
-        if (session.Mode == 2 && !session.IsRunning && session.CountdownRemaining <= TimeSpan.Zero)
-            session.CountdownRemaining = session.CountdownDuration;
-        session.IsRunning = !session.IsRunning;
-        if (session.IsRunning)
-        {
-            session.Stopwatch.Start();
-            session.LastCountdownUpdateUtc = DateTime.UtcNow;
-        }
-        else
-        {
-            session.Stopwatch.Stop();
-        }
+        if (session.IsRunning) PauseBehaviorTimer(session, DateTime.UtcNow);
+        else if (!StartBehaviorTimer(session)) return;
 
         UpdateActiveTimerDisplay();
         RefreshTimerRail();
@@ -880,9 +831,13 @@ public partial class ControllerWindow : Window
         if (!_timerManager.Sessions.Contains(session) || session.Mode == 1) return;
         session.IsRunning = false;
         session.ResetElapsed();
+        session.LastPauseUtc = null;
+        _behaviorRunStarts.Remove(session.Id);
         session.LapTimes.Clear();
         session.LapCount = 0;
-        session.CountdownRemaining = session.CountdownDuration;
+        session.CountdownRemaining = session.UseClockTarget ? TimeSpan.Zero : session.CountdownDuration;
+        session.CountdownInitialized = false;
+        ClearCountdownError(session);
         session.LastCountdownUpdateUtc = default;
 
         UpdateActiveTimerDisplay();
@@ -902,9 +857,12 @@ public partial class ControllerWindow : Window
 
     private void ToggleOverlayVisibility()
     {
+        var active = _timerManager.Active;
+        bool wasVisible = active != null && IsTimerOverlayVisible(active);
         _overlaysVisible = !_overlaysVisible;
         _overlayVisibilityOverrides.Clear();
         ToggleOverlayButton.Content = _overlaysVisible ? "Hide overlay" : "Show overlay";
+        if (active != null && !wasVisible && _overlaysVisible) AutoStartShownTimer(active);
         UpdateOverlayStates();
     }
 
@@ -958,6 +916,8 @@ public partial class ControllerWindow : Window
         await ShowTimerCommandDialog(dialog);
 
         if (!dialog.Result || _isExiting || !_timerManager.Close(session)) return;
+        _behaviorRunStarts.Remove(session.Id);
+        ClearCountdownError(session);
         _overlayVisibilityOverrides.Remove(session.Id);
         if (_lastTimerEdit?.Session == session) _lastTimerEdit = null;
 
@@ -999,10 +959,12 @@ public partial class ControllerWindow : Window
             if (session.Mode == 2)
             {
                 session.CountdownRemaining = editor.NewTimeValue;
+                if (session.UseClockTarget) session.ClockTarget = DateTime.Now + session.CountdownRemaining;
                 session.RestoreElapsed(session.Elapsed, session.IsRunning);
             }
             else if (session.Mode != 1)
                 session.RestoreElapsed(editor.NewTimeValue, session.IsRunning);
+            ResetBehaviorRunBoundary(session);
             session.LastCountdownUpdateUtc = session.IsRunning ? DateTime.UtcNow : default;
             session.Name = editor.NewProjectName ?? "";
             session.Category = editor.NewCategory;
@@ -1059,17 +1021,34 @@ public partial class ControllerWindow : Window
 
     private void CountdownTypeRadio_Checked(object? sender, RoutedEventArgs e)
     {
-        // Toggle countdown duration vs until-clock-time
+        if (_updatingUi || sender is not RadioButton { IsChecked: true } selected || SmartCountdownInputBox == null) return;
+        if (_timerManager.Active is not { Mode: 2, IsRunning: false } session) return;
+        if (session.UseClockTarget && selected == CountdownDurationRadio)
+            session.SmartInputText = $"{session.CountdownMinutesText}m {session.CountdownSecondsText}s";
+        session.UseClockTarget = selected == CountdownUntilRadio;
+        session.CountdownInitialized = false;
+        session.CountdownRemaining = session.UseClockTarget ? TimeSpan.Zero : session.CountdownDuration;
+        if (!session.UseClockTarget && int.TryParse(session.CountdownMinutesText, out int minutes)
+            && int.TryParse(session.CountdownSecondsText, out int seconds))
+            session.CountdownDuration = session.CountdownRemaining = TimeSpan.FromSeconds(Math.Clamp(minutes, 0, 999) * 60 + Math.Clamp(seconds, 0, 59));
+        ClearCountdownError(session);
+        UpdateActiveTimerDisplay();
     }
 
     private void PresetButton_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && int.TryParse(btn.Tag?.ToString(), out int minutes))
         {
-            CountdownMinutesBox.Value = minutes;
-            CountdownSecondsBox.Value = 0;
+            if (_timerManager.Active is not { Mode: 2, IsRunning: false } session) return;
+            session.CountdownMinutesText = minutes.ToString();
+            session.CountdownSecondsText = "00";
+            session.SmartInputText = $"{minutes}m";
+            session.UseClockTarget = false;
+            session.CountdownInitialized = false;
             CurrentTimer.CountdownDuration = TimeSpan.FromMinutes(minutes);
             CurrentTimer.CountdownRemaining = CurrentTimer.CountdownDuration;
+            ClearCountdownError(session);
+            UpdateActiveTimerDisplay();
         }
     }
 
@@ -1235,7 +1214,6 @@ public partial class ControllerWindow : Window
         }
         RefreshDisplayOverlayAppearance();
         UpdateOverlayStates();
-        UpdateLightRing();
         UpdateActiveTimerDisplay();
     }
 
@@ -1335,7 +1313,6 @@ public partial class ControllerWindow : Window
             foreach (var overlay in _overlays.Values.ToArray())
                 overlay.Close();
             _overlays.Clear();
-            _lightRingWindow?.Close();
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.Shutdown();
@@ -1346,6 +1323,8 @@ public partial class ControllerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isExiting = true;
+        _behaviorFocusQueue.Clear();
+        _behaviorFocusPrompt?.Close();
         if(!_previewMode)Screens.Changed -= OverlayScreensChanged;
         InvalidateOverlayPlacement();
         _timerCommandDialog?.Close();

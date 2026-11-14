@@ -52,7 +52,6 @@ internal static class Program
             TextSize = 48, BorderWidth = 1, BackgroundOpacity = 88, TimeFormat = 1,
             Shortcuts = AppSettings.DefaultShortcuts(), CustomBackgrounds = new(),
             PanelBackgroundId = AppBackgroundCatalog.ThemeDefault,
-            LightRingEnabled = true, LightRingBrightness = 65, LightRingWidth = 30
         };
         // A supported custom-shortcut state keeps the longer overlay caption
         // concise; all other sample controller bindings use the normal defaults.
@@ -82,15 +81,6 @@ internal static class Program
         AssertPreview(inspector);
         Save(Render((FrameworkElement)inspector.Content, 1040, 880, 960),
             "settings-acanthus", settings.ThemeMode, "Appearance and independent overlay theme");
-
-        ApplyTheme(settings, AppThemeCatalog.PixelDeckNight);
-        settings.OverlayTheme = OverlayThemeCatalog.PixelDeckNight;
-        Invoke(inspector, "ReloadFromSettings");
-        Node<ListBox>(inspector, "NavigationList").SelectedIndex = 2;
-        Invoke(inspector, "UpdatePreviewSafely");
-        AssertPreview(inspector);
-        Save(Render((FrameworkElement)inspector.Content, 1040, 668, 880),
-            "settings-light-ring", settings.ThemeMode, "Light ring controls");
 
         // The callbacks operate on this in-memory fixture only. The screenshot
         // path never invokes editing, but ordinary enabled buttons render accurately.
@@ -387,7 +377,7 @@ internal static class Program
         bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
         if (pixels.Distinct().Take(100).Count() < 100 || pixels.Count(p => (p & unchecked((int)0xFF000000)) != 0) < pixels.Length / 2)
             throw new InvalidOperationException(name + " is blank or not a real rendered screenshot.");
-        bool textured = name is "controller-pixel-deck-night" or "controller-pixel-deck-day" or "settings-light-ring";
+        bool textured = name is "controller-pixel-deck-night" or "controller-pixel-deck-day";
         BitmapEncoder encoder = textured
             ? new JpegBitmapEncoder { QualityLevel = 90 }
             : new PngBitmapEncoder { Interlace = PngInterlaceOption.Off };

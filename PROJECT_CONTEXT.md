@@ -19,7 +19,7 @@
 - **Detached Hover Controls**: Hovering over an overlay displays a floating `Popup` toolbar containing Close, Pause/Resume, and Reset buttons. These do not affect the measured size or layout of the timing text.
 - **Automatic & Manual Project Tracking**: Running named timers automatically record UTC work intervals in a crash-safe local database. Completed records can be viewed, filtered, manually created, edited, and deleted via an analytics dashboard.
 - **Independent Theme System**: Five application panel themes (Midnight, Daylight, Pixel Deck Night, Pixel Deck Day, Acanthus) and nine floating-clock themes (including three dark Acanthus variants and a "Follow Application Theme" option) can be selected independently without cross-contamination.
-- **Seamless Tiled Backgrounds & Light Ring**: Nine built-in patterns or validated user-imported images can be composited over panel backgrounds and clock surfaces. An optional screen-edge illumination light ring supports webcam lighting.
+- **Seamless Tiled Backgrounds**: Nine built-in patterns or validated user-imported images can be composited over panel backgrounds and clock surfaces.
 
 ---
 
@@ -33,7 +33,7 @@
 | **Combined vs Separate Overlay** | **Implemented** | [`OverlayPresentationPolicy`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/OverlayPresentationPolicy.cs) & Win+F12 presentation toggle dynamically display the active timer in a shared shell without altering underlying timer run states. |
 | **Project Time History & Analytics** | **Implemented** | [`ProjectTimeStore`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ProjectTimeStore.cs), [`ProjectTimeHistory`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ProjectTimeHistory.cs), and [`ProjectDashboardAnalytics`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ProjectDashboardAnalytics.cs) manage UTC work sessions, half-open date clipping, 53-week heatmap, and CRUD operations. |
 | **Crash Logging & Recovery** | **Implemented** | [`CrashLogger`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/CrashLogger.cs) handles unhandled exceptions with path redaction and 10-log retention under `%LOCALAPPDATA%\StopwatchOverlay\Logs`. Startup recovery guards prevent overwriting valid data if an existing store is locked or transiently unreadable. |
-| **Screen Capture Exclusion** | **Implemented** | Win32 `SetWindowDisplayAffinity` (`WDA_EXCLUDEFROMCAPTURE`) is hooked for overlays and light ring windows. |
+| **Screen Capture Exclusion** | **Implemented** | Win32 `SetWindowDisplayAffinity` (`WDA_EXCLUDEFROMCAPTURE`) is hooked for overlays. |
 
 ---
 
@@ -56,7 +56,6 @@ stopwatch-main/
 │   ├── ControllerWindow.xaml / .cs         # Main control panel, timer ticking, hotkey handling, window management
 │   ├── OverlayWindow.xaml / .cs            # Transparent floating clock overlay with hover popup
 │   ├── SettingsWindow.xaml / .cs           # Categorized preferences editor, live preview, interaction throttling
-│   ├── LightRingWindow.xaml / .cs          # Non-activating, click-through border illumination window
 │   ├── ProjectDashboardWindow.xaml / .cs   # Analytics dashboard, charts, timeline, inline record editor
 │   ├── ProjectRecordEditorWindow.xaml / .cs# Local-time CRUD modal dialog for historical project intervals
 │   ├── ProjectRecordDeleteWindow.xaml / .cs# Deletion confirmation dialog for closed project intervals
@@ -289,7 +288,7 @@ All persistent files are stored under Windows user profile paths:
 ### 1. Settings
 - **Path**: `%APPDATA%\StopwatchOverlay\settings.json` (and `.bak`)
 - **Format**: JSON (`AppSettings`)
-- **Key Fields**: `ThemeMode`, `OverlayTheme`, `PanelBackgroundId`, `PanelBackgroundStrength`, `TextColor`, `BorderColor`, `FontFamily`, `TextSize`, `BackgroundOpacity`, `Position`, `CustomPositions`, `LightRing*`, `Shortcuts`.
+- **Key Fields**: `ThemeMode`, `OverlayTheme`, `PanelBackgroundId`, `PanelBackgroundStrength`, `TextColor`, `BorderColor`, `FontFamily`, `TextSize`, `BackgroundOpacity`, `Position`, `CustomPositions`, `Shortcuts`.
 
 ### 2. Timer Workspace
 - **Path**: `%APPDATA%\StopwatchOverlay\workspace.json` (and `.bak`)
@@ -392,7 +391,7 @@ When making future changes, start in the following locations:
 6. **Pristine Data Protection**: Never treat an inaccessible or locked file as an empty workspace. Enter protected recovery mode and retry until readable.
 7. **Single-Instance Enforcement**: Only one instance of the app may run at a time; secondary launches must signal the existing instance and exit.
 8. **Tray Residency**: Closing the main window (X) minimizes to the system notification area; true exit occurs only via Tray menu Exit or explicit app shutdown.
-9. **Native Input & Capture Affinity**: Value sliders must retain native WPF slider templates with integer steps. `LightRingWindow` must strictly remain non-activating and click-through (`WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE`).
+9. **Native Input**: Value sliders must retain native WPF slider templates with integer steps.
 
 ---
 
@@ -402,8 +401,8 @@ When making future changes, start in the following locations:
    - *Code pointer*: [`AppThemeManager.cs:L81-L90`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/AppThemeManager.cs#L81-L90)
    - *Detail*: In .NET 9/10, setting `Application.Current.ThemeMode` can cause recursive style evaluations on `ScrollViewer`/`Slider` controls if changed while a `Thumb` is captured. The codebase protects this with an idempotency check (`_currentTheme == theme`) and deferral, but any future panel theme switching logic must remain mindful of this WPF runtime hazard.
 2. **Multi-Monitor DPI & Scaling Boundary**:
-   - *Code pointer*: [`ControllerWindow.xaml.cs:L39-L42`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ControllerWindow.xaml.cs#L39-L42) & [`LightRingWindow.xaml.cs:L129-L141`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/LightRingWindow.xaml.cs#L129-L141)
-   - *Detail*: Overlay and Light Ring windows calculate bounds using `System.Windows.Forms.Screen` and manual DPI scaling transforms. Systems with mixed DPI monitors (e.g. 100% and 175%) rely on Win32 coordinate mapping which requires careful verification if repositioning logic is altered.
+   - *Code pointer*: [`ControllerWindow.xaml.cs:L39-L42`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ControllerWindow.xaml.cs#L39-L42)
+   - *Detail*: Overlay windows calculate bounds using `System.Windows.Forms.Screen` and manual DPI scaling transforms. Systems with mixed DPI monitors (e.g. 100% and 175%) rely on Win32 coordinate mapping which requires careful verification if repositioning logic is altered.
 3. **Large Single Controller Window (`ControllerWindow.xaml.cs`)**:
    - *Code pointer*: [`ControllerWindow.xaml.cs`](file:///c:/Users/h128/Documents/Projects/stopwatch-main/StopwatchOverlay/ControllerWindow.xaml.cs) (4,546 lines)
    - *Detail*: `ControllerWindow` acts as the central coordinator for timer ticking, overlay window lifecycle, tray icon, settings syncing, hotkeys, and project recovery. While well-structured with `#region`s and helper policies, its size requires careful attention when modifying window event lifecycles.

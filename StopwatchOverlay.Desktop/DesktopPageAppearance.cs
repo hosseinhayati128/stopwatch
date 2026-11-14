@@ -50,7 +50,7 @@ internal static class DesktopPageAppearance
     internal static double Scale(Window window)=>Pages.ContainsKey(window)?_scale:1;
     internal static object? Content(Window window)=>Pages.TryGetValue(window,out var transform)?transform.Child:window.Content;
     private static bool IsPage(Window window)=>window.GetType().Namespace==typeof(ControllerWindow).Namespace&&window is not
-        (OverlayWindow or TodoOverlayWindow or LightRingWindow or ActiveClocksShelfWindow or ShortcutCommandHintWindow or NoteCommandHintWindow);
+        (OverlayWindow or TodoOverlayWindow or ActiveClocksShelfWindow or ShortcutCommandHintWindow or NoteCommandHintWindow);
     private static void Attach(Window window)
     {
         if(!IsPage(window)||Pages.ContainsKey(window)||window.Content is not Control content)return;

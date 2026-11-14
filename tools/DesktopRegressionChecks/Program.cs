@@ -37,6 +37,23 @@ void Press(SharpHookHotKeyService service, KeyboardHookEventArgs key) =>
 void Release(SharpHookHotKeyService service, KeyCode key) =>
     typeof(SharpHookHotKeyService).GetMethod("OnKeyReleased", Private)?.Invoke(service, new object?[] { null, Key(key) });
 
+if(args.Contains("--panel-frame-baseline")||args.Contains("--panel-frame-checks"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    if(args.Contains("--panel-frame-baseline"))Check("Panel frame and floating clock baseline",PanelFrameChecks.Baseline);
+    else
+    {
+        Check("Panel connectors preserve ornament openings",PanelFrameChecks.CleanOrnaments);
+        Check("Floating clocks remain pixel-identical",PanelFrameChecks.UnchangedClocks);
+        Check("Panel masks, scaling and cache isolation",PanelFrameChecks.PanelLayouts);
+        Check("Panel join captures",()=>PanelFrameChecks.CapturePanels("after"));
+        Check("Native Settings and picker integration",PanelFrameChecks.SettingsPreview);
+    }
+    Environment.Exit(failures==0?0:1);
+}
+
 if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -87,8 +104,9 @@ if(args.Contains("--settings-typography-regressions")||args.Contains("--settings
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-shell-native")||args.Contains("--settings-shell-regressions"))
+if(args.Contains("--settings-shell-native")||args.Contains("--settings-shell-regressions")||args.Contains("--settings-without-light-ring"))
 {
+    if(args.Contains("--settings-without-light-ring"))SettingsShellNativeChecks.OutputOverride="design/one-piece-v2/settings/light-ring-removed";
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
@@ -215,12 +233,53 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview"))
+if (args.Contains("--settings-application-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if(args.Contains("--settings-typography-preview"))Check("settings Fonts and colors native design proposal",SettingsTypographyPreview.Run);
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("Application preferences, callbacks, keyboard and theme restoration", SettingsApplicationNativeChecks.Controls);
+    Check("Application responsive layout and native captures", SettingsApplicationNativeChecks.Layout);
+    SettingsShellNativeChecks.OutputOverride = ".superpowers/sdd/2026-11-14-settings-application/shell";
+    Check("Settings shell layout and retained navigation", SettingsShellNativeChecks.Layout);
+    Check("Settings persistence feedback and theme recovery", SettingsShellNativeChecks.Controls);
+    Check("Behavior preferences and project rules", SettingsBehaviorNativeChecks.Settings);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--settings-behavior-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("Behavior reads stored preferences and project rules", SettingsBehaviorNativeChecks.Settings);
+    Check("Behavior four tabs, compact layout, and theme recovery", SettingsBehaviorNativeChecks.Layout);
+    Check("Behavior idle stop, exclusions, and earlier elapsed time", SettingsBehaviorNativeChecks.Idle);
+    Check("Behavior overlay autostart, show-only and clock indicators", SettingsBehaviorNativeChecks.Timer);
+    Check("Behavior smart countdown and resume prompt", SettingsBehaviorNativeChecks.CountdownAndFocus);
+    Check("Behavior clock target persistence and reset", SettingsBehaviorNativeChecks.CountdownTarget);
+    SettingsShellNativeChecks.OutputOverride = ".superpowers/sdd/2026-11-14-settings-behavior/shell";
+    Check("Settings shell layout and retained navigation", SettingsShellNativeChecks.Layout);
+    Check("Settings immediate changes and persistence feedback", SettingsShellNativeChecks.Controls);
+    Check("Settings active overlay visibility wiring", SettingsShellNativeChecks.OverlayActions);
+    Check("Controller mode selections", ControllerModeChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    if (args.Contains("--settings-application-preview")) Check("settings Application native design proposal", SettingsApplicationPreview.Run);
+    else if (args.Contains("--settings-behavior-preview")) Check("settings Behavior native design proposal", SettingsBehaviorPreview.Run);
+    else if(args.Contains("--settings-typography-preview"))Check("settings Fonts and colors native design proposal",SettingsTypographyPreview.Run);
     else Check("settings Appearance native design proposal",SettingsAppearancePreview.Run);
     Environment.Exit(failures==0?0:1);
 }
@@ -462,9 +521,10 @@ if (args.Contains("--shared-frames-ui"))
     Check("shared frame overlay layout and state",StopwatchAppearanceChecks.Renderer);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
-if (args.Contains("--shared-frames-regression"))
+if (args.Contains("--shared-frames-regression")||args.Contains("--panel-frame-regressions"))
 {
-    StopwatchAppearanceChecks.OutputOverride=".superpowers/sdd/2026-11-05-shared-modular-frames/render-checks";
+    bool panelRepair=args.Contains("--panel-frame-regressions");
+    StopwatchAppearanceChecks.OutputOverride=panelRepair?".superpowers/sdd/2026-11-14-panel-frame/render-checks":".superpowers/sdd/2026-11-05-shared-modular-frames/render-checks";
     Check("production frames match reviewed artwork",SharedFrameChecks.ReviewedArtwork);
     Check("shared frame masks, padding, small sizes and cache",SharedFrameChecks.Layouts);
     Check("wave mask preserves separate interior spans",SharedFrameChecks.WaveRecesses);
@@ -475,7 +535,7 @@ if (args.Contains("--shared-frames-regression"))
     Check("Stopwatch appearance inspector and preview isolation",StopwatchAppearanceUiChecks.Run);
     Check("Stopwatch controller routing, native flags and cached resources",StopwatchAppearanceChecks.ControllerAndResources);
     Check("timer shortcut actions",ShortcutChecks.Timers);
-    Check("production shared frame visual evidence",SharedFrameUiChecks.Evidence);
+    if(!panelRepair)Check("production shared frame visual evidence",SharedFrameUiChecks.Evidence);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 if (args.Contains("--stopwatch-appearance-only"))

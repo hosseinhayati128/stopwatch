@@ -156,7 +156,6 @@
                     <ListBoxItem Content="Overlay &amp; position" Tag="Overlay" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Appearance" Tag="Appearance" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Fonts &amp; colors" Tag="Typography" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
-                    <ListBoxItem Content="Light ring" Tag="LightRing" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Behavior" Tag="Behavior" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Application" Tag="Application" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian" Padding="10" Style="{StaticResource PirateNavigationItem}"/>
@@ -325,36 +324,6 @@
                                         AutomationProperties.Name="Application background strength"/>
                             </StackPanel>
                         </Border>
-                    </StackPanel>
-
-                    <StackPanel x:Name="LightRingPanel" Visibility="Collapsed">
-                        <TextBlock Text="Light Ring" Style="{StaticResource DisplayHeadingText}"/>
-                        <TextBlock Text="A capture-aware guide around the selected display."
-                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,22"/>
-                        <Border Style="{StaticResource SettingsCard}"><StackPanel>
-                            <CheckBox x:Name="LightRingEnabledCheck" Content="Enable light ring" Margin="0,0,0,16" Style="{StaticResource PirateSettingsSwitch}"/>
-                            <Grid>
-                                <TextBlock Text="Brightness" Style="{StaticResource SectionHeaderText}"/>
-                                <TextBlock x:Name="LightRingBrightnessValueText" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
-                            </Grid>
-                            <Slider x:Name="LightRingBrightnessSlider" Minimum="10" Maximum="100"
-                                    Style="{StaticResource PirateSettingsSlider}"
-                                    SmallChange="1" LargeChange="10" TickFrequency="1"
-                                    IsSnapToTickEnabled="True" Margin="0,6,0,16"
-                                    AutomationProperties.Name="Light ring brightness"/>
-                            <Grid>
-                                <TextBlock Text="Ring width" Style="{StaticResource SectionHeaderText}"/>
-                                <TextBlock x:Name="LightRingWidthValueText" HorizontalAlignment="Right"
-                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
-                            </Grid>
-                            <Slider x:Name="LightRingWidthSlider" Minimum="5" Maximum="100"
-                                    Style="{StaticResource PirateSettingsSlider}"
-                                    SmallChange="1" LargeChange="10" TickFrequency="1"
-                                    IsSnapToTickEnabled="True" Margin="0,6,0,16"
-                                    AutomationProperties.Name="Light ring width"/>
-                            <CheckBox x:Name="LightRingCaptureCheck" Content="Hide ring from screen capture" Style="{StaticResource PirateSettingsSwitch}"/>
-                        </StackPanel></Border>
                     </StackPanel>
 
                     <StackPanel x:Name="BehaviorPanel" Visibility="Collapsed">

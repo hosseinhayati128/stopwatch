@@ -144,7 +144,9 @@ public partial class ControllerWindow
     private void ToggleActiveTimerOverlay()
     {
         if (_timerManager.Active is not { } session) return;
-        _overlayVisibilityOverrides[session.Id] = !IsTimerOverlayVisible(session);
+        bool show = !IsTimerOverlayVisible(session);
+        _overlayVisibilityOverrides[session.Id] = show;
+        if (show) AutoStartShownTimer(session);
         UpdateOverlayStates();
     }
 
@@ -199,8 +201,10 @@ public partial class ControllerWindow
         session.ScorePerHour = undo.ScorePerHour;
         session.Mode = undo.Mode;
         session.CountdownRemaining = undo.CountdownRemaining;
+        if (session.UseClockTarget) session.ClockTarget = DateTime.Now + session.CountdownRemaining;
         session.IsRunning = undo.IsRunning;
         session.RestoreElapsed(undo.Elapsed, undo.IsRunning);
+        ResetBehaviorRunBoundary(session);
         session.LastCountdownUpdateUtc = undo.IsRunning ? DateTime.UtcNow : default;
         _projectHistory.RestoreTimerIntervalsSnapshot(session.Id, undo.Intervals);
         _projectTimeStore.Save(_projectHistory);

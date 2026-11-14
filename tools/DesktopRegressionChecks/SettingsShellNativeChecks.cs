@@ -13,6 +13,7 @@ using StopwatchOverlay.Desktop.Views;
 
 internal static class SettingsShellNativeChecks
 {
+    internal static string? OutputOverride { get; set; }
     const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
     internal static T Find<T>(Window window,string name) where T:Control => window.GetVisualDescendants().OfType<T>().First(c=>c.Name==name);
     static void Require(bool condition,string message){if(!condition)throw new Exception(message);}
@@ -28,7 +29,8 @@ internal static class SettingsShellNativeChecks
         try
         {
             Require(window.SystemDecorations==SystemDecorations.None&&window.Content is StopwatchFrameSurface,"Approved standalone Settings frame is missing.");
-            Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==13,"Not all 13 categories are reachable.");
+            Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==12,"Expected 12 retained Settings categories.");
+            Require(!window.FindControl<ListBox>("NavigationList")!.Items.OfType<ListBoxItem>().Any(i=>Equals(i.Tag,"LightRing")),"Removed Light ring category remains in navigation.");
             Save(window,"overview");
             int changes=0;Action<SettingsChangeKind> changed=_=>changes++;
             typeof(SettingsWindow).GetEvent("SettingsChanged",Hidden)!.GetAddMethod(true)!.Invoke(window,[changed]);
@@ -38,8 +40,10 @@ internal static class SettingsShellNativeChecks
             {
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);
                 string key=button.Name![12..];Require((string)category.GetValue(window)! == key,"Navigation did not select "+key);
-                if(key is not ("Overlay" or "Appearance" or "Typography"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key is not ("Overlay" or "Appearance" or "Typography" or "Behavior" or "Application"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key=="Application")Require(Find<ScrollViewer>(window,"ApplicationScroll").IsEffectivelyVisible,"Navigation hid Application fields.");
                 if(key=="Typography")Require(Find<Grid>(window,"TypographyPage").IsEffectivelyVisible,"Navigation hid Typography fields.");
+                if(key=="Behavior")Require(Find<Grid>(window,"BehaviorPage").IsEffectivelyVisible,"Navigation hid Behavior fields.");
                 if(key=="Appearance")Require(window.FindControl<ComboBox>("ThemeCombo")!.IsEffectivelyVisible,"Navigation hid Appearance fields.");
                 if(key is "StopwatchAppearance" or "TodoAppearance")Save(window,key+"-retained");
             }
@@ -168,7 +172,7 @@ internal static class SettingsShellNativeChecks
 
     private static void Save(Window window,string name)
     {
-        const string folder="design/one-piece-v2/settings/implemented";Directory.CreateDirectory(folder);
+        string folder=OutputOverride??"design/one-piece-v2/settings/implemented";Directory.CreateDirectory(folder);
         var root=(Control)window.Content!;using var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(root.Bounds.Width),(int)Math.Ceiling(root.Bounds.Height)),new Vector(96,96));bitmap.Render(root);bitmap.Save(Path.Combine(folder,name+".png"));
     }
 }

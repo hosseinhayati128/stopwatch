@@ -70,6 +70,9 @@ internal static class ShortcutChecks
                 if (window.IsVisible && window != Controller) window.Close();
             ClockOverlayChecks.Pump(10);
             Controller.Close();
+            // Preview controllers skip live-service disposal; detach after child dialogs can restore shortcuts.
+            _hook.HotKeyPressed -= typeof(ControllerWindow).GetMethod("OnHotKeyPressed", Private)!.CreateDelegate<EventHandler<ShortcutAction>>(Controller);
+            _hook.CommandKeyPressed -= typeof(ControllerWindow).GetMethod("OnCommandKeyPressed", Private)!.CreateDelegate<EventHandler<uint>>(Controller);
             _openedHandler.Dispose();
             if (Directory.Exists(_dataDirectory)) Directory.Delete(_dataDirectory, recursive: true);
         }

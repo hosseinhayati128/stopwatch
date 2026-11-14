@@ -150,7 +150,7 @@ internal static class SettingsAppearancePreview
             {
                 Draw();window.Show();ClockOverlayChecks.Pump(65);
                 Require(formScroll.Extent.Width<=formScroll.Viewport.Width+1,"Appearance form overflows horizontally.");
-                Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==13,"Shell navigation changed.");
+                Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==12,"Shell navigation changed.");
                 var done=window.GetVisualDescendants().OfType<Button>().Single(b=>b.Name=="SettingsDone");double footerY=done.TranslatePoint(default,window)!.Value.Y;
                 Save(window,state);
                 if(state is "application" or "classic-clock" or "compact")

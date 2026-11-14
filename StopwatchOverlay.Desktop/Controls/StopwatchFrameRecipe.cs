@@ -70,6 +70,27 @@ internal static class StopwatchFrameRecipe
         }
     }
 
+    internal static Plan PanelFiligree(StopwatchAsset asset,Size size)
+    {
+        var b=new Builder(size,new Size(asset.Bitmap.PixelSize.Width,asset.Bitmap.PixelSize.Height));
+        double corner=290*Scale,top=300*Scale,bottom=294*Scale,badge=130*Scale,center=(size.Height-badge)/2;
+        b.Horizontal("top-rail",new Rect(900,78,64,44),corner,b.W-corner,78*Scale);
+        b.Horizontal("bottom-rail",new Rect(900,570,64,44),corner,b.W-corner,b.H-154*Scale);
+        // Separate rail bands align with the side stems and stop outside transparent ornament openings.
+        foreach(bool right in new[]{false,true})
+        foreach(var (offset,sourceY) in new[]{(53d,80d),(72d,106d)})
+        {
+            var strip=new Rect(900,sourceY,64,16);
+            double x=right?b.W-(offset+16)*Scale:offset*Scale;
+            b.Vertical(right?"right-upper-rail":"left-upper-rail",strip,x,top,center,rotate:true);
+            b.Vertical(right?"right-lower-rail":"left-lower-rail",strip,x,center+badge,b.H-bottom,rotate:true);
+        }
+        b.Corners(290,300,290,294);
+        b.Fixed("left-ornament",new Rect(0,300,140,130),0,center);
+        b.Fixed("right-ornament",new Rect(b.SW-140,300,140,130),b.W-140*Scale,center);
+        return new(asset.Id,"Panel ornaments with aligned rail pairs",new Size(104.4,131.4),"",b.Pieces);
+    }
+
     internal static Plan Create(string id,StopwatchAsset asset,Size size)
     {
         double sw=asset.Bitmap.PixelSize.Width,sh=asset.Bitmap.PixelSize.Height;

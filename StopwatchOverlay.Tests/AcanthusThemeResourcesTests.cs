@@ -303,7 +303,7 @@ public sealed class AcanthusThemeResourcesTests
     {
         RunSta(() =>
         {
-            var checkBox = new CheckBox { Content = "Light ring", IsThreeState = true };
+            var checkBox = new CheckBox { Content = "Show overlay", IsThreeState = true };
             ResourceDictionary palette = Load("Acanthus.xaml");
             foreach (object key in palette.Keys)
                 checkBox.Resources[key] = palette[key];

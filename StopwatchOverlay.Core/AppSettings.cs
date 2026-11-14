@@ -219,12 +219,6 @@ namespace StopwatchOverlay
         public int TodoOverlayLeft { get; set; }
         public int TodoOverlayTop { get; set; }
 
-        // Light ring
-        public bool LightRingEnabled { get; set; } = false;
-        public double LightRingBrightness { get; set; } = 100;
-        public double LightRingWidth { get; set; } = 20;
-        public bool LightRingHideFromCapture { get; set; } = false;
-
         // Options
         public bool AutoStart { get; set; } = false;
         public bool ShowRecIndicator { get; set; } = false;
@@ -640,8 +634,6 @@ namespace StopwatchOverlay
             BorderWidth = NormalizeRange(BorderWidth, 1, 5, 2);
             BackgroundOpacity = NormalizeRange(BackgroundOpacity, 0, 100, 50);
             OpaqueOverlayParts &= NavigatorOpaqueParts.All;
-            LightRingBrightness = NormalizeRange(LightRingBrightness, 10, 100, 100);
-            LightRingWidth = NormalizeRange(LightRingWidth, 5, 100, 20);
             ScreenIndex = Math.Clamp(ScreenIndex, -1, 64);
             if (!double.IsFinite(CustomLeft) || !double.IsFinite(CustomTop))
             {

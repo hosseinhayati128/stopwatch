@@ -144,7 +144,7 @@ internal static class SettingsTypographyPreview
                 void CheckLayout()
                 {
                     Require(scroll.Extent.Width<=scroll.Viewport.Width+1,"Content overflows horizontally.");
-                    Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==13,"Shell navigation changed.");
+                    Require(window.GetVisualDescendants().OfType<Button>().Count(b=>b.Name?.StartsWith("SettingsNav_")==true)==12,"Shell navigation changed.");
                     var bottom=done.TranslatePoint(new Point(done.Bounds.Width,done.Bounds.Height),window)!.Value;
                     Require(bottom.Y<=window.ClientSize.Height+1&&bottom.X<=window.ClientSize.Width+1,"Done is outside window.");
                     Require(window.Content is LayoutTransformControl scale&&Math.Abs(scale.LayoutTransform!.Value.M11-percent/100d)<.001,"Actual page scale not applied.");
@@ -152,7 +152,7 @@ internal static class SettingsTypographyPreview
             }
             finally{window.Close();Page("Shutdown");}
         }
-        File.WriteAllText(Path.Combine(Output,"verification.json"),JsonSerializer.Serialize(new{status="design-preview-only",execution="Private Windows desktop; synthetic settings; no persistence subscribers or installation.",states=evidence,checks=new[]{"Six window and scale combinations","Shared frame and 13 navigation items","Fixed Done footer","No horizontal overflow","Panel inheritance retains choices","Native custom color validation","Preview responds to existing editor events"}},new JsonSerializerOptions{WriteIndented=true}));
+        File.WriteAllText(Path.Combine(Output,"verification.json"),JsonSerializer.Serialize(new{status="design-preview-only",execution="Private Windows desktop; synthetic settings; no persistence subscribers or installation.",states=evidence,checks=new[]{"Six window and scale combinations","Shared frame and 12 navigation items","Fixed Done footer","No horizontal overflow","Panel inheritance retains choices","Native custom color validation","Preview responds to existing editor events"}},new JsonSerializerOptions{WriteIndented=true}));
         Console.WriteLine("PASS native Fonts & colors preview: six scale/layout combinations, override/inheritance, custom hex validation, fixed footer; synthetic settings only.");
     }
 

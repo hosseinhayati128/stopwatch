@@ -118,7 +118,6 @@ namespace StopwatchOverlay
         private DateTime _projectHistoryRetryBaselineUtc;
         private bool _projectHistoryRecoveredFromBackup;
         private bool _skipProjectHistoryReconciliation;
-        private readonly List<LightRingWindow> _lightRingWindows = new();
         private ProjectDashboardWindow? _projectDashboardWindow;
         private SettingsWindow? _settingsWindow;
         private ActiveClocksShelfWindow? _activeClocksShelfWindow;
@@ -301,16 +300,6 @@ namespace StopwatchOverlay
             UpdateButtonStates();
             UpdateShortcutLabels();
             _initializationComplete = true;
-            if (_settings.LightRingEnabled)
-            {
-                Dispatcher.BeginInvoke(
-                    new Action(() =>
-                    {
-                        if (!_isExiting)
-                            ShowLightRing();
-                    }),
-                    DispatcherPriority.Loaded);
-            }
             _timer.Start();
             _blinkTimer.Start();
             _stateSaveTimer.Start();
@@ -5583,116 +5572,6 @@ namespace StopwatchOverlay
             }
         }
 
-        #region Light Ring
-
-        private void LightRingCheckBox_Changed(object sender, RoutedEventArgs e)
-        {
-            if (!_initializationComplete || _syncingDedicatedSettings)
-                return;
-
-            _settings.LightRingEnabled = LightRingCheckBox?.IsChecked == true;
-            if (LightRingCheckBox?.IsChecked == true)
-            {
-                ShowLightRing();
-            }
-            else
-            {
-                HideLightRing();
-            }
-            CheckpointState();
-        }
-
-        private void LightRingSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (LightRingBrightnessLabel != null)
-                LightRingBrightnessLabel.Text = $"{(int)LightRingBrightnessSlider.Value}%";
-            if (LightRingWidthLabel != null)
-                LightRingWidthLabel.Text = $"{(int)LightRingWidthSlider.Value}px";
-
-            if (!_initializationComplete || _syncingDedicatedSettings)
-                return;
-
-            _settings.LightRingBrightness = LightRingBrightnessSlider.Value;
-            _settings.LightRingWidth = LightRingWidthSlider.Value;
-            
-            UpdateLightRingSettings();
-            MarkStateDirty();
-        }
-
-        private void LightRingSliderChanged(object sender, RoutedEventArgs e)
-        {
-            // Overload for checkbox events
-            if (!_initializationComplete || _syncingDedicatedSettings)
-                return;
-
-            _settings.LightRingHideFromCapture = LightRingHideFromCaptureCheckBox.IsChecked == true;
-            UpdateLightRingSettings();
-            CheckpointState();
-        }
-
-        private void ShowLightRing()
-        {
-            HideLightRing();
-
-            if (_isExiting || !_settings.LightRingEnabled)
-                return;
-
-            var selectedItem = ScreenSelector.SelectedItem as ComboBoxItem;
-            
-            if (selectedItem?.Tag == null) // "All Screens"
-            {
-                foreach (var screen in Screen.AllScreens)
-                {
-                    CreateLightRingForScreen(screen);
-                }
-            }
-            else if (selectedItem.Tag is Screen screen)
-            {
-                CreateLightRingForScreen(screen);
-            }
-        }
-
-        private void CreateLightRingForScreen(Screen screen)
-        {
-            var lightRing = new LightRingWindow();
-            double brightness = _settings.LightRingBrightness / 100.0;
-            int width = (int)Math.Round(_settings.LightRingWidth);
-            bool hideFromCapture = _settings.LightRingHideFromCapture;
-            
-            lightRing.Show();
-            lightRing.PositionOnScreen(screen);
-            lightRing.ApplySettings(brightness, width, hideFromCapture);
-            
-            _lightRingWindows.Add(lightRing);
-        }
-
-        private void HideLightRing()
-        {
-            foreach (var lightRing in _lightRingWindows)
-            {
-                lightRing.Close();
-            }
-            _lightRingWindows.Clear();
-        }
-
-        private void UpdateLightRingSettings()
-        {
-            _lightRingWindows.RemoveAll(window => !window.IsLoaded);
-            if (_lightRingWindows.Count == 0)
-                return;
-
-            double brightness = _settings.LightRingBrightness / 100.0;
-            int width = (int)Math.Round(_settings.LightRingWidth);
-            bool hideFromCapture = _settings.LightRingHideFromCapture;
-
-            foreach (var lightRing in _lightRingWindows)
-            {
-                lightRing.ApplySettings(brightness, width, hideFromCapture);
-            }
-        }
-
-        #endregion
-
         private void ApplyAllOverlaySettings()
         {
             foreach (var instance in _overlayInstances)
@@ -5990,7 +5869,7 @@ namespace StopwatchOverlay
             BackgroundOpacitySlider.Value = _settings.BackgroundOpacity;
             HideOverlayFromCaptureCheckBox.IsChecked = _settings.HideOverlayFromCapture;
 
-            // Layout (screen before light ring, which reads the screen selection).
+            // Layout.
             // The legacy coordinates in settings.json seed only a brand-new
             // workspace; restored sessions own their individual positions.
             if (!_workspaceWasRestored)
@@ -6016,9 +5895,6 @@ namespace StopwatchOverlay
                 _settings.ScreenIndex,
                 Screen.AllScreens.Length);
 
-            LightRingBrightnessSlider.Value = _settings.LightRingBrightness;
-            LightRingWidthSlider.Value = _settings.LightRingWidth;
-            LightRingHideFromCaptureCheckBox.IsChecked = _settings.LightRingHideFromCapture;
 
             AutoStartCheckBox.IsChecked = _settings.AutoStart;
             ShowRecIndicatorCheckBox.IsChecked = _settings.ShowRecIndicator;
@@ -6039,8 +5915,6 @@ namespace StopwatchOverlay
                 }
             }
 
-            // Light ring last, after screen selection is settled.
-            LightRingCheckBox.IsChecked = _settings.LightRingEnabled;
 
             // Countdown input mode (classic vs smart text).
             ApplyCountdownInputMode();
@@ -6073,10 +5947,6 @@ namespace StopwatchOverlay
             _settings.CustomLeft = _customLeft;
             _settings.CustomTop = _customTop;
 
-            _settings.LightRingEnabled = LightRingCheckBox.IsChecked == true;
-            _settings.LightRingBrightness = LightRingBrightnessSlider.Value;
-            _settings.LightRingWidth = LightRingWidthSlider.Value;
-            _settings.LightRingHideFromCapture = LightRingHideFromCaptureCheckBox.IsChecked == true;
 
             _settings.AutoStart = AutoStartCheckBox.IsChecked == true;
             _settings.ShowRecIndicator = ShowRecIndicatorCheckBox.IsChecked == true;
@@ -6201,15 +6071,6 @@ namespace StopwatchOverlay
                     HideOverlayFromCaptureCheckBox.IsChecked = _settings.HideOverlayFromCapture;
                 }
 
-                if ((change & (SettingsChangeKind.LightRingVisibility
-                               | SettingsChangeKind.LightRingAppearance)) != 0)
-                {
-                    LightRingCheckBox.IsChecked = _settings.LightRingEnabled;
-                    LightRingBrightnessSlider.Value = _settings.LightRingBrightness;
-                    LightRingWidthSlider.Value = _settings.LightRingWidth;
-                    LightRingHideFromCaptureCheckBox.IsChecked = _settings.LightRingHideFromCapture;
-                }
-
                 if ((change & SettingsChangeKind.Behavior) != 0)
                 {
                     AutoStartCheckBox.IsChecked = _settings.AutoStart;
@@ -6256,7 +6117,6 @@ namespace StopwatchOverlay
                                                   | SettingsChangeKind.OverlayTheme)) != 0
                     || (themeChanged && OverlayThemeCatalog.Normalize(_settings.OverlayTheme)
                         == OverlayThemeCatalog.FollowApplicationTheme);
-                bool rebuildLightRing = SettingsChangePolicy.RequiresLightRingRebuild(changes);
 
                 if (themeChanged)
                 {
@@ -6315,18 +6175,6 @@ namespace StopwatchOverlay
 
                 if ((changes & SettingsChangeKind.OverlayInteraction) != 0)
                     ApplyOverlayInteractionSettings();
-
-                if (rebuildLightRing)
-                {
-                    if (_settings.LightRingEnabled)
-                        ShowLightRing();
-                    else
-                        HideLightRing();
-                }
-                else if ((changes & SettingsChangeKind.LightRingAppearance) != 0)
-                {
-                    UpdateLightRingSettings();
-                }
 
                 if ((changes & SettingsChangeKind.Behavior) != 0)
                 {
@@ -6621,7 +6469,6 @@ namespace StopwatchOverlay
 
             foreach (var instance in _overlayInstances.ToList()) instance.Window.Close();
             foreach (var instance in _combinedOverlayInstances.ToList()) instance.Window.Close();
-            HideLightRing();
             _projectDashboardWindow?.Close();
             _projectDashboardWindow = null;
             _timer.Stop();

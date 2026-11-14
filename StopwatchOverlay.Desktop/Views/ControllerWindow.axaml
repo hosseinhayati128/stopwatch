@@ -201,11 +201,16 @@
                             <!-- Fixed duration inputs -->
                             <StackPanel x:Name="CountdownDurationPanel" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                 <TextBlock Text="Duration:" VerticalAlignment="Center"/>
-                                <NumericUpDown x:Name="CountdownMinutesBox" Minimum="0" Maximum="999" Value="5" FormatString="0" Width="80"/>
+                                <NumericUpDown x:Name="CountdownMinutesBox" Minimum="0" Maximum="999" Value="5" FormatString="0" Width="80" ValueChanged="CountdownDuration_ValueChanged"/>
                                 <TextBlock Text="min" VerticalAlignment="Center"/>
-                                <NumericUpDown x:Name="CountdownSecondsBox" Minimum="0" Maximum="59" Value="0" FormatString="0" Width="70"/>
+                                <NumericUpDown x:Name="CountdownSecondsBox" Minimum="0" Maximum="59" Value="0" FormatString="0" Width="70" ValueChanged="CountdownDuration_ValueChanged"/>
                                 <TextBlock Text="sec" VerticalAlignment="Center"/>
                             </StackPanel>
+
+                            <TextBox x:Name="SmartCountdownInputBox" IsVisible="False" Watermark="e.g. 5m 30s"
+                                     AutomationProperties.Name="Countdown duration or target time" TextChanging="SmartCountdownInput_TextChanging"/>
+                            <TextBlock x:Name="CountdownInputError" IsVisible="False" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource DangerTextBrush}" FontSize="12" MaxWidth="310"/>
 
                             <!-- Presets -->
                             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">

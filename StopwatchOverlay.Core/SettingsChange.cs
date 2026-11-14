@@ -14,8 +14,6 @@ public enum SettingsChangeKind
     BackgroundSelection = 1 << 5,
     BackgroundStrength = 1 << 6,
     OverlayInteraction = 1 << 7,
-    LightRingVisibility = 1 << 8,
-    LightRingAppearance = 1 << 9,
     Behavior = 1 << 10,
     Startup = 1 << 11,
     OverlayTheme = 1 << 12,
@@ -37,7 +35,6 @@ public static class SettingsChangePolicy
         SettingsChangeKind.OverlayAppearance
         | SettingsChangeKind.OverlayGeometry
         | SettingsChangeKind.BackgroundStrength
-        | SettingsChangeKind.LightRingAppearance
         | SettingsChangeKind.ApplicationScale
         | SettingsChangeKind.Typography;
 
@@ -51,9 +48,6 @@ public static class SettingsChangePolicy
         => (change & (SettingsChangeKind.Theme
                       | SettingsChangeKind.BackgroundSelection
                       | SettingsChangeKind.BackgroundStrength)) != 0;
-
-    public static bool RequiresLightRingRebuild(SettingsChangeKind change)
-        => (change & (SettingsChangeKind.LightRingVisibility | SettingsChangeKind.OverlayScreen)) != 0;
 
     public static int ResolveScreenComboIndex(int persistedIndex, int screenCount)
     {

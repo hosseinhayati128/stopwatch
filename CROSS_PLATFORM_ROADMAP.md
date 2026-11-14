@@ -224,9 +224,6 @@ graph TD
     - Preset buttons, stopwatch, countdown, and clock modes.
     - Integrated with `TimerSessionManager`, `TimerWorkspaceStore`, and `ProjectTimeStore`.
     - Wire global hotkeys via `SharpHookHotKeyService` and system tray.
-  - `LightRingWindow.xaml` ➔ `LightRingWindow.axaml` & `.axaml.cs`:
-    - Visual screen-edge pulse/glow indicator.
-    - Border thickness, brightness alpha, and capture exclusion.
   - `ShortcutsWindow.xaml` ➔ `ShortcutsWindow.axaml` & `.axaml.cs`:
     - Keyboard shortcut configuration and command mode reference table.
 

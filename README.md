@@ -38,7 +38,7 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 - 📋 **Floating notes viewer** — Floating popup (Win+F3 → 4) with tabs for All, Todos, Notes, and Reminders, auto-close countdown, and keyboard dismissal
 - 🔤 **Custom typography & UI scaling** — Granular text scaling (75%–175%), colors, and panel overrides via Settings → Fonts & colors, plus whole-page UI scaling (70%–125%)
 - 🧵 **Tiled background library** — Choose from nine bundled seamless patterns or import a JPG, PNG, or BMP; the selection, strength, and managed custom copy survive restarts
-- 🖌️ **Deep overlay customization** — Choose display, position, text and outline colors, font, format, size, thickness, opacity, and optional light ring
+- 🖌️ **Deep overlay customization** — Choose display, position, text and outline colors, font, format, size, thickness, and opacity
 - 🖥️ **Multi-monitor and presentation tools** — Show timers on one or every display, keep them always on top, enable click-through, or hide overlays from screen capture
 - 🖱️ **Direct overlay controls** — Click a timer to activate it; hover for close, pause/resume, and reset controls
 - ⌨️ **Timer command mode** — Press Win+F2 then a single key (Space, R, O, L, C, N, T, X, P, D, W, E) to control timers, projects, and the dashboard from any application
@@ -56,15 +56,6 @@ Stopwatch Overlay places customizable timers on top of all your windows — incl
 </p>
 
 Choose the application and floating-clock themes separately, then adjust text, font, size, background opacity, and more. Your custom values stay yours when switching themes.
-
-<details>
-<summary>See the Pixel Deck Night light-ring settings</summary>
-
-<p align="center">
-  <img src="docs/screenshots/settings-light-ring.jpg" alt="Pixel Deck Night Settings with Autumn Patchwork, light-ring brightness, width, capture protection, and a live clock preview" width="820" loading="lazy">
-</p>
-
-</details>
 
 ### Analytics with a populated project history
 

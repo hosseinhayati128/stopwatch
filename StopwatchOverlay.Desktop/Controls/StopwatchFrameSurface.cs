@@ -22,7 +22,7 @@ public sealed class StopwatchFrameSurface:Decorator
         AffectsMeasure<StopwatchFrameSurface>(FrameProperty,ArtworkScaleProperty,PaddingProperty);
         AffectsRender<StopwatchFrameSurface>(FrameProperty,ArtworkScaleProperty,BackgroundProperty,PatternProperty);
     }
-    private StopwatchFrameLayout Layout(Size size)=>StopwatchFrameRenderer.GetLayout(StopwatchAppearanceAssets.Shared.Get("frame",Frame),size,ArtworkScale);
+    private StopwatchFrameLayout Layout(Size size)=>StopwatchFrameRenderer.GetLayout(StopwatchAppearanceAssets.Shared.Get("frame",Frame),size,ArtworkScale,panelFrame:true);
     private Thickness Insets(StopwatchFrameLayout layout)=>new(layout.ContentInsets.Left+Padding.Left,layout.ContentInsets.Top+Padding.Top,
         layout.ContentInsets.Right+Padding.Right,layout.ContentInsets.Bottom+Padding.Bottom);
     protected override Size MeasureOverride(Size availableSize)
@@ -57,6 +57,6 @@ public sealed class StopwatchFrameSurface:Decorator
             context.DrawRectangle(Background,null,new Rect(Bounds.Size));
             context.DrawRectangle(Pattern,null,new Rect(Bounds.Size));
         }
-        StopwatchFrameRenderer.Draw(context,StopwatchAppearanceAssets.Shared.Get("frame",Frame),new Rect(Bounds.Size),ArtworkScale);
+        layout.Paint(context);
     }
 }

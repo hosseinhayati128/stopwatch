@@ -18,6 +18,24 @@ namespace StopwatchOverlay.Tests;
 public sealed class AppSettingsStoreTests
 {
     [Fact]
+    public void LegacyLightRingSettings_LoadOtherPreferencesAndDisappearOnSave()
+    {
+        using var scope = new TemporarySettingsFile();
+        File.WriteAllText(scope.Path, """
+            {"ThemeMode":"Nika","TextSize":72,"Position":"Bottom Right",
+             "LightRingEnabled":true,"LightRingBrightness":65,"LightRingWidth":30,"LightRingHideFromCapture":true}
+            """);
+
+        AppSettings settings = SettingsStore.Load(scope.Path);
+        Assert.Equal(AppThemeCatalog.Nika, settings.ThemeMode);
+        Assert.Equal(72, settings.TextSize);
+        Assert.Equal("Bottom Right", settings.Position);
+        Assert.True(SettingsStore.Save(settings, scope.Path));
+        Assert.DoesNotContain("LightRing", File.ReadAllText(scope.Path));
+        Assert.Equal(72, SettingsStore.Load(scope.Path).TextSize);
+    }
+
+    [Fact]
     public void DefaultTheme_IsMidnight()
     {
         Assert.Equal(AppThemeCatalog.Midnight, new AppSettings().ThemeMode);
@@ -624,8 +642,6 @@ public sealed class AppSettingsStoreTests
             HasCustomPosition = true,
             CustomLeft = double.PositiveInfinity,
             CustomTop = 25,
-            LightRingBrightness = 2,
-            LightRingWidth = double.NegativeInfinity,
             Mode = -5
         };
 
@@ -644,8 +660,6 @@ public sealed class AppSettingsStoreTests
         Assert.False(settings.HasCustomPosition);
         Assert.Equal(0, settings.CustomLeft);
         Assert.Equal(0, settings.CustomTop);
-        Assert.Equal(10, settings.LightRingBrightness);
-        Assert.Equal(20, settings.LightRingWidth);
         Assert.Equal(0, settings.Mode);
     }
 
@@ -660,9 +674,6 @@ public sealed class AppSettingsStoreTests
         expected.BackgroundOpacity = 37;
         expected.PanelBackgroundId = AppBackgroundCatalog.AzureMosaic;
         expected.PanelBackgroundStrength = 42;
-        expected.LightRingEnabled = true;
-        expected.LightRingBrightness = 71;
-        expected.LightRingWidth = 34;
         expected.Shortcuts[ShortcutAction.Reset] = new Shortcut(
             Shortcut.MOD_CONTROL | Shortcut.MOD_SHIFT,
             0x52);
@@ -681,9 +692,6 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(37, recovered.BackgroundOpacity);
         Assert.Equal(AppBackgroundCatalog.AzureMosaic, recovered.PanelBackgroundId);
         Assert.Equal(42, recovered.PanelBackgroundStrength);
-        Assert.True(recovered.LightRingEnabled);
-        Assert.Equal(71, recovered.LightRingBrightness);
-        Assert.Equal(34, recovered.LightRingWidth);
         Assert.Equal(
             new Shortcut(Shortcut.MOD_CONTROL | Shortcut.MOD_SHIFT, 0x52),
             recovered.Shortcuts[ShortcutAction.Reset]);
@@ -705,7 +713,6 @@ public sealed class AppSettingsStoreTests
         Assert.True(SettingsChangePolicy.IsContinuous(SettingsChangeKind.OverlayAppearance));
         Assert.True(SettingsChangePolicy.IsContinuous(SettingsChangeKind.OverlayGeometry));
         Assert.True(SettingsChangePolicy.IsContinuous(SettingsChangeKind.BackgroundStrength));
-        Assert.True(SettingsChangePolicy.IsContinuous(SettingsChangeKind.LightRingAppearance));
         Assert.True(SettingsChangePolicy.IsContinuous(
             SettingsChangeKind.Behavior | SettingsChangeKind.OverlayGeometry));
         Assert.False(SettingsChangePolicy.IsContinuous(SettingsChangeKind.Theme));
@@ -717,12 +724,6 @@ public sealed class AppSettingsStoreTests
             SettingsChangeKind.BackgroundSelection));
         Assert.True(SettingsChangePolicy.RequiresBackgroundApply(
             SettingsChangeKind.BackgroundStrength));
-        Assert.True(SettingsChangePolicy.RequiresLightRingRebuild(
-            SettingsChangeKind.LightRingVisibility));
-        Assert.True(SettingsChangePolicy.RequiresLightRingRebuild(
-            SettingsChangeKind.OverlayScreen));
-        Assert.False(SettingsChangePolicy.RequiresLightRingRebuild(
-            SettingsChangeKind.LightRingAppearance));
     }
 
     [Theory]

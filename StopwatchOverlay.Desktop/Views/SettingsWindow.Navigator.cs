@@ -89,14 +89,14 @@ public partial class SettingsWindow
         _navigatorPage=new Grid{Children={_navigatorFields,_navigatorPreviewCard}};
         _navigatorSettingsScroll=new ScrollViewer{Name="NavigatorSettingsScroll",Content=_navigatorPage,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Padding=new(0,0,5,0)};
         var nav=new StackPanel{Spacing=2};
-        var groups=new[]{("OVERLAY",new[]{"Overlay","Appearance","StopwatchAppearance","TodoAppearance","Typography","LightRing"}),("APPLICATION",new[]{"Behavior","Application"}),("CONNECTIONS",new[]{"Obsidian","Telegram","Habitica","ActivityWatch","Internet"})};
+        var groups=new[]{("OVERLAY",new[]{"Overlay","Appearance","StopwatchAppearance","TodoAppearance","Typography"}),("APPLICATION",new[]{"Behavior","Application"}),("CONNECTIONS",new[]{"Obsidian","Telegram","Habitica","ActivityWatch","Internet"})};
         foreach(var (heading,keys) in groups)
         {
             var label=SettingsLabel(heading,9);label.Margin=new(10,nav.Children.Count==0?0:12,0,5);nav.Children.Add(label);
             foreach(string key in keys)
             {
                 var item=NavigationList.Items.OfType<ListBoxItem>().First(i=>i.Tag?.ToString()==key);
-                string title=key switch{"Overlay"=>"Overlay & position","Typography"=>"Fonts & colors","LightRing"=>"Light ring","StopwatchAppearance"=>"Stopwatch appearance","TodoAppearance"=>"Todo appearance",_=>item.Content?.ToString()??key};
+                string title=key switch{"Overlay"=>"Overlay & position","Typography"=>"Fonts & colors","StopwatchAppearance"=>"Stopwatch appearance","TodoAppearance"=>"Todo appearance",_=>item.Content?.ToString()??key};
                 var text=SettingsLabel(title,12,SettingsInk);text.TextWrapping=TextWrapping.NoWrap;text.TextTrimming=TextTrimming.CharacterEllipsis;text.HorizontalAlignment=HorizontalAlignment.Left;
                 var row=new Grid{Children={text}};
                 var button=SettingsAction(title,"SettingsNav_"+key);button.Content=row;button.Height=28;button.BorderThickness=new(0);button.HorizontalAlignment=HorizontalAlignment.Stretch;button.SizeChanged+=(_,_)=>row.Width=Math.Max(0,button.Bounds.Width-20);
@@ -117,6 +117,7 @@ public partial class SettingsWindow
         header.PointerPressed+=(_,e)=>{if(e.GetCurrentPoint(header).Properties.IsLeftButtonPressed&&e.Source is TextBlock)BeginMoveDrag(e);};
         var done=SettingsAction("Done","SettingsDone");done.Width=124;done.Classes.Add("editorPrimary");done.Click+=DoneButton_Click;
         _navigatorSaveStatus=SettingsLabel("Changes apply immediately",11);_navigatorSaveStatus.Name="SettingsSaveStatus";
+        _navigatorSaveStatus.TextWrapping=TextWrapping.NoWrap;_navigatorSaveStatus.TextTrimming=TextTrimming.CharacterEllipsis;
         var footerRow=new Grid{ColumnDefinitions=new("*,20,124"),Children={_navigatorSaveStatus,done}};Grid.SetColumn(done,2);
         var footer=new Grid{RowDefinitions=new("16,38"),Margin=new(0,10,0,0),Children={new Border{Height=1,Background=SettingsRule,VerticalAlignment=VerticalAlignment.Top},footerRow}};Grid.SetRow(footerRow,1);
         header.MinHeight=76;
@@ -132,6 +133,8 @@ public partial class SettingsWindow
     {
         RestoreTypographyPage();
         RestoreAppearanceControls();
+        RestoreBehaviorPage();
+        RestoreApplicationPage();
         ((Grid)SettingsColumns.Parent!).Children.Remove(SettingsColumns);
         foreach(var item in _navigatorMovedControls)((Panel)item.Control.Parent!).Children.Remove(item.Control);
         foreach(var item in _navigatorMovedControls.OrderBy(i=>i.Index))
@@ -163,15 +166,23 @@ public partial class SettingsWindow
         bool overlay=CurrentCategory=="Overlay";
         bool appearance=CurrentCategory=="Appearance";
         bool typography=CurrentCategory=="Typography";
+        bool behavior=CurrentCategory=="Behavior";
+        bool application=CurrentCategory=="Application";
         if(typography&&_typographyPage==null)BuildTypographyPage((Grid)SettingsColumns.Parent!);
         if(appearance&&_appearancePage==null)BuildAppearancePage((Grid)SettingsColumns.Parent!);
-        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography;_navigatorSettingsScroll!.IsVisible=overlay;
+        if(behavior&&_behaviorPage==null)BuildBehaviorPage((Grid)SettingsColumns.Parent!);
+        if(application&&_applicationPage==null)BuildApplicationPage((Grid)SettingsColumns.Parent!);
+        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography&&!behavior&&!application;_navigatorSettingsScroll!.IsVisible=overlay;
         if(_typographyPage!=null)_typographyPage.IsVisible=typography;
         if(_appearancePage!=null)_appearancePage.IsVisible=appearance;
+        if(_behaviorPage!=null)_behaviorPage.IsVisible=behavior;
+        if(_applicationPage!=null)_applicationPage.IsVisible=application;
         foreach(var (button,text,key) in _navigatorCategories){button.Classes.Set("editorPrimary",key==CurrentCategory);text.Foreground=key==CurrentCategory?ClockPickerPresentation.Cream:SettingsInk;}
         ResizeNavigatorSettings();
         RefreshAppearancePreview();
         RefreshTypographyPreview();
+        RefreshBehaviorPreview();
+        RefreshApplicationChoices();
     }
 
     private void ResizeNavigatorSettings()

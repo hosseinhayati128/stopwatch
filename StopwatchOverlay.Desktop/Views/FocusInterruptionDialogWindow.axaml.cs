@@ -212,8 +212,11 @@ public partial class FocusInterruptionDialogWindow : Window
                 break;
             case Key.Enter:
             case Key.Space:
-            case Key.Escape:
                 ApplyDefaultAndClose();
+                e.Handled = true;
+                break;
+            case Key.Escape:
+                SelectReason(FocusPauseReason.Unspecified);
                 e.Handled = true;
                 break;
         }
@@ -225,7 +228,9 @@ public partial class FocusInterruptionDialogWindow : Window
         _timer.Stop();
         if (!_handled)
         {
-            ApplyDefaultAndClose();
+            _handled = true;
+            SelectedReason = FocusPauseReason.Unspecified;
+            _onResult?.Invoke(FocusPauseReason.Unspecified);
         }
     }
 }

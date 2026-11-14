@@ -92,6 +92,7 @@ public partial class ControllerWindow
             if(window!=source)
             {
                 window.SetTimerName(session.Name);window.UpdateTime(FormatDisplayTime(session));window.SetRunning(session.IsRunning);window.SetPauseResumeEnabled(session.Mode!=1);
+                window.SetRecIndicatorVisible(ShowTimerRec(session));
                 bool active=session==_timerManager.Active;window.SetActive(active);window.SetInactiveSeparated(!active,StopwatchAppearancePolicy.ResolveInactiveOpacityPercent(_settings)/100.0);window.SetSeparateMergeState(session.IsSeparated);
                 if(source.IsVisible&&!window.IsVisible)window.Show();else if(!source.IsVisible&&window.IsVisible)window.Hide();
             }

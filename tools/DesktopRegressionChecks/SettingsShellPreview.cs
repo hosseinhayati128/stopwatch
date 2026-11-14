@@ -23,7 +23,7 @@ internal static class SettingsShellPreview
     private static readonly IBrush Navy=Brush.Parse("#102B3B"),Muted=Brush.Parse("#655539"),Paper=Brush.Parse("#EBD3A5"),Gold=Brush.Parse("#AF7C29"),Rule=Brush.Parse("#509A7B48"),Teal=Brush.Parse("#2D7169");
     private static readonly FontFamily Body=StopwatchTypography.Resolve("modern-deck").NameFont;
     private static readonly string[] Positions=["Top Left","Top Center","Top Right","Bottom Left","Bottom Center","Bottom Right","Custom"];
-    private static readonly string[][] Categories=[["OVERLAY","Overlay & position","Appearance","Stopwatch appearance","Todo appearance","Fonts & colors","Light ring"],["APPLICATION","Behavior","Application"],["CONNECTIONS","Obsidian / Markdown","Telegram","Habitica","ActivityWatch","Internet & Network"]];
+    private static readonly string[][] Categories=[["OVERLAY","Overlay & position","Appearance","Stopwatch appearance","Todo appearance","Fonts & colors"],["APPLICATION","Behavior","Application"],["CONNECTIONS","Obsidian / Markdown","Telegram","Habitica","ActivityWatch","Internet & Network"]];
 
     internal static void Run()
     {
@@ -131,7 +131,7 @@ internal static class SettingsShellPreview
             try
             {
                 window.Show();ClockOverlayChecks.Pump(45);DrawGuide();ClockOverlayChecks.Pump(25);
-                Require(navButtons.Count==13&&screen.Items.Count==3&&position.Items.Count==7,"Existing navigation or placement choices were lost.");
+                Require(navButtons.Count==12&&screen.Items.Count==3&&position.Items.Count==7,"Existing navigation or placement choices were lost.");
                 Require(contentScroll.Extent.Width<=contentScroll.Viewport.Width+1&&navScroll.Extent.Width<=navScroll.Viewport.Width+1,"Preview has horizontal overflow.");
                 Require(screen.Bounds.Width>=230&&position.Bounds.Width>=230,"Placement fields collapsed.");
                 if(compact)Require(position.TranslatePoint(default,contentScroll)!.Value.Y+position.Bounds.Height<=contentScroll.Viewport.Height,"Compact preview pushes placement fields out of view.");
@@ -152,7 +152,7 @@ internal static class SettingsShellPreview
             finally{window.Close();}
         }
         File.WriteAllText(Path.Combine(Output,"verification.json"),JsonSerializer.Serialize(new{status="native-design-preview-not-production",checks=evidence,execution="Private desktop, synthetic displays and settings; no live settings, persistence or platform hooks.",newRuntimeArtwork=0},new JsonSerializerOptions{WriteIndented=true}));
-        Console.WriteLine("PASS six native settings states; all 13 categories, seven positions, layout bounds, preview state and fixed Done checked.");
+        Console.WriteLine("PASS six native settings states; all 12 categories, seven positions, layout bounds, preview state and fixed Done checked.");
     }
     private static TextBlock Label(string text,double size,IBrush? ink=null)=>new(){Text=text,FontFamily=Body,FontSize=size,Foreground=ink??Muted,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center};
     private static Border Pane(Control child)=>new(){Padding=new(14),CornerRadius=new(7),Background=Brush.Parse("#40FFF6E4"),BorderBrush=Rule,BorderThickness=new(1),Child=child};

@@ -162,7 +162,6 @@
                     <ListBoxItem Content="Stopwatch appearance" Tag="StopwatchAppearance"/>
                     <ListBoxItem Content="Todo appearance" Tag="TodoAppearance"/>
                     <ListBoxItem Content="Fonts &amp; colors" Tag="Typography"/>
-                    <ListBoxItem Content="Light ring" Tag="LightRing"/>
                     <ListBoxItem Content="Behavior" Tag="Behavior"/>
                     <ListBoxItem Content="Application" Tag="Application"/>
                     <ListBoxItem Content="Obsidian / Markdown" Tag="Obsidian"/>
@@ -330,32 +329,6 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Panel 4: Light Ring -->
-                    <StackPanel x:Name="LightRingPanel" Spacing="6" IsVisible="False">
-                        <TextBlock Text="Light Ring" Classes="heading"/>
-                        <TextBlock Text="A capture-aware guide around the selected display."
-                                   Classes="subheading" Margin="0,0,0,16"/>
-                        <Border Classes="settingsCard">
-                            <StackPanel Spacing="10">
-                                <CheckBox x:Name="LightRingEnabledCheck" Content="Enable light ring" Margin="0,0,0,6"/>
-
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="Brightness" Classes="sectionHeader" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="LightRingBrightnessValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
-                                </Grid>
-                                <Slider x:Name="LightRingBrightnessSlider" Minimum="10" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
-
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-                                    <TextBlock Text="Ring width" Classes="sectionHeader" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="LightRingWidthValueText" Grid.Column="1" Classes="subheading" VerticalAlignment="Center"/>
-                                </Grid>
-                                <Slider x:Name="LightRingWidthSlider" Minimum="5" Maximum="100" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True"/>
-
-                                <CheckBox x:Name="LightRingCaptureCheck" Content="Hide ring from screen capture" Margin="0,8,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
                     <!-- Panel 5: Behavior -->
                     <StackPanel x:Name="BehaviorPanel" Spacing="6" IsVisible="False">
                         <TextBlock Text="Behavior" Classes="heading"/>
@@ -435,14 +408,15 @@
                                 <TextBlock Text="Activate or deactivate idle stopping for individual projects (default: deactive for all projects)."
                                            Classes="subheading" TextWrapping="Wrap"/>
 
-                                <ComboBox x:Name="IdleProjectComboBox" HorizontalAlignment="Stretch" Margin="0,4,0,4"/>
+                                <ComboBox x:Name="IdleProjectComboBox" HorizontalAlignment="Stretch" Margin="0,4,0,4"
+                                          SelectionChanged="IdleProjectComboBox_SelectionChanged"/>
 
                                 <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12">
                                     <StackPanel Spacing="8">
                                         <CheckBox x:Name="IdleProjectActiveCheck" Content="Active for selected project" Click="IdleProjectActiveCheck_Click"/>
                                         <Grid ColumnDefinitions="*,100">
                                             <TextBlock Text="Project idle timeout (minutes)" VerticalAlignment="Center" Classes="sectionHeader"/>
-                                            <TextBox x:Name="IdleProjectTimeoutTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" TextChanged="IdleProjectTimeoutTextBox_TextChanged"/>
+                                            <TextBox x:Name="IdleProjectTimeoutTextBox" Grid.Column="1" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" TextChanging="IdleProjectTimeoutTextBox_TextChanging"/>
                                         </Grid>
                                         <TextBlock x:Name="IdleProjectStatusSummaryText" Text="Status: Deactive" Classes="subheading"/>
                                     </StackPanel>

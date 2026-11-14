@@ -27,6 +27,7 @@ public partial class SettingsWindow : Window
     private bool _sliderInteractionActive;
     private bool _closed;
     private bool _previewFailureReported;
+    private bool _updatingIdleProject;
 
     internal event Action<SettingsChangeKind>? SettingsChanged;
     internal event Action? SettingsInteractionStarted;
@@ -139,10 +140,6 @@ public partial class SettingsWindow : Window
             BackgroundStrengthSlider.Value = _settings.PanelBackgroundStrength;
             ClickThroughCheck.IsChecked = _settings.ClickThrough;
             HideOverlayCaptureCheck.IsChecked = _settings.HideOverlayFromCapture;
-            LightRingEnabledCheck.IsChecked = _settings.LightRingEnabled;
-            LightRingBrightnessSlider.Value = _settings.LightRingBrightness;
-            LightRingWidthSlider.Value = _settings.LightRingWidth;
-            LightRingCaptureCheck.IsChecked = _settings.LightRingHideFromCapture;
             AutoStartCheck.IsChecked = _settings.AutoStart;
             RecCheck.IsChecked = _settings.ShowRecIndicator;
             BlinkCheck.IsChecked = _settings.BlinkColon;
@@ -198,9 +195,14 @@ public partial class SettingsWindow : Window
             UpdateDependentControlStates();
             UpdateTelegramOutboxUi();
             LoadIdleStopControls();
+            FocusTrackingEnabledCheck.IsChecked = _settings.FocusTrackingEnabled;
+            FocusDistractionThresholdTextBox.Text = _settings.FocusDistractionThresholdMinutes.ToString();
+            FocusMinimumPauseTextBox.Text = _settings.FocusMinimumPauseSeconds.ToString();
+            UpdateBehaviorControlStates();
             LoadCategoryControls();
             LoadTodoAppearance();
             LoadStopwatchAppearance();
+            RefreshApplicationChoices();
         }
         finally
         {
@@ -229,7 +231,11 @@ public partial class SettingsWindow : Window
         FontCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayGeometry);
         FormatCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayGeometry);
         BackgroundCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.BackgroundSelection);
-        CloseActionCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Behavior);
+        CloseActionCombo.SelectionChanged += (_, _) =>
+        {
+            CommitControls(SettingsChangeKind.Behavior);
+            RefreshApplicationChoices();
+        };
 
         WireSlider(TextSizeSlider, SettingsChangeKind.OverlayGeometry);
         WireSlider(UiScaleSlider, SettingsChangeKind.ApplicationScale);
@@ -237,16 +243,12 @@ public partial class SettingsWindow : Window
         WireSlider(BackgroundOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(InactiveSeparatedOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundStrengthSlider, SettingsChangeKind.BackgroundStrength);
-        WireSlider(LightRingBrightnessSlider, SettingsChangeKind.LightRingAppearance);
-        WireSlider(LightRingWidthSlider, SettingsChangeKind.LightRingAppearance);
         WireSlider(CommandChainingTimeoutSlider, SettingsChangeKind.Behavior);
 
         WireCheckBox(ClickThroughCheck, SettingsChangeKind.OverlayInteraction);
         WireCheckBox(HideOverlayCaptureCheck, SettingsChangeKind.OverlayInteraction);
         foreach (var (control, _) in TransparencyPartControls)
             WireCheckBox(control, SettingsChangeKind.OverlayAppearance);
-        WireCheckBox(LightRingEnabledCheck, SettingsChangeKind.LightRingVisibility);
-        WireCheckBox(LightRingCaptureCheck, SettingsChangeKind.LightRingAppearance);
         WireCheckBox(AutoStartCheck, SettingsChangeKind.Behavior);
         WireCheckBox(RecCheck, SettingsChangeKind.Behavior);
         WireCheckBox(BlinkCheck, SettingsChangeKind.Behavior);
@@ -297,11 +299,22 @@ public partial class SettingsWindow : Window
 
         WireCheckBox(IdleStopUnnamedCheck, SettingsChangeKind.IdleStop);
         WireCheckBox(IdleStopSubtractCheck, SettingsChangeKind.IdleStop);
-        IdleStopDefaultTimeoutTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.IdleStop);
+        IdleStopDefaultTimeoutTextBox.TextChanging += (_, _) =>
+        {
+            if (_loading || !TryBehaviorNumber(IdleStopDefaultTimeoutTextBox, 1440, out _)) return;
+            CommitControls(SettingsChangeKind.IdleStop);
+            UpdateSelectedProjectIdleUi(IdleProjectComboBox.SelectedItem as string);
+        };
 
         WireCheckBox(FocusTrackingEnabledCheck, SettingsChangeKind.FocusTracking);
-        FocusDistractionThresholdTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
-        FocusMinimumPauseTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.FocusTracking);
+        FocusDistractionThresholdTextBox.TextChanging += (_, _) =>
+        {
+            if (!_loading && TryBehaviorNumber(FocusDistractionThresholdTextBox, 1440, out _)) CommitControls(SettingsChangeKind.FocusTracking);
+        };
+        FocusMinimumPauseTextBox.TextChanging += (_, _) =>
+        {
+            if (!_loading && TryBehaviorNumber(FocusMinimumPauseTextBox, 3600, out _)) CommitControls(SettingsChangeKind.FocusTracking);
+        };
     }
 
     private void WireSlider(Slider slider, SettingsChangeKind change)
@@ -450,15 +463,7 @@ public partial class SettingsWindow : Window
                 _settings.HideOverlayFromCapture = HideOverlayCaptureCheck.IsChecked == true;
             }
 
-            if ((change & (SettingsChangeKind.LightRingVisibility | SettingsChangeKind.LightRingAppearance)) != 0)
-            {
-                _settings.LightRingEnabled = LightRingEnabledCheck.IsChecked == true;
-                _settings.LightRingBrightness = LightRingBrightnessSlider.Value;
-                _settings.LightRingWidth = LightRingWidthSlider.Value;
-                _settings.LightRingHideFromCapture = LightRingCaptureCheck.IsChecked == true;
-            }
-
-            if ((change & (SettingsChangeKind.Behavior | SettingsChangeKind.IdleStop)) != 0)
+            if ((change & SettingsChangeKind.Behavior) != 0)
             {
                 _settings.AutoStart = AutoStartCheck.IsChecked == true;
                 _settings.ShowRecIndicator = RecCheck.IsChecked == true;
@@ -471,9 +476,13 @@ public partial class SettingsWindow : Window
                     2 => CloseActionChoice.Exit,
                     _ => CloseActionChoice.Ask
                 };
+            }
+
+            if ((change & SettingsChangeKind.IdleStop) != 0)
+            {
                 _settings.IdleStopUnnamedTimers = IdleStopUnnamedCheck.IsChecked == true;
                 _settings.IdleStopSubtractDuration = IdleStopSubtractCheck.IsChecked == true;
-                if (int.TryParse(IdleStopDefaultTimeoutTextBox.Text?.Trim(), out int defaultIdleMin) && defaultIdleMin > 0)
+                if (TryBehaviorNumber(IdleStopDefaultTimeoutTextBox, 1440, out int defaultIdleMin))
                 {
                     _settings.DefaultIdleStopTimeoutMinutes = defaultIdleMin;
                 }
@@ -482,11 +491,11 @@ public partial class SettingsWindow : Window
             if ((change & SettingsChangeKind.FocusTracking) != 0)
             {
                 _settings.FocusTrackingEnabled = FocusTrackingEnabledCheck.IsChecked == true;
-                if (int.TryParse(FocusDistractionThresholdTextBox.Text?.Trim(), out int thresh) && thresh > 0)
+                if (TryBehaviorNumber(FocusDistractionThresholdTextBox, 1440, out int thresh))
                 {
                     _settings.FocusDistractionThresholdMinutes = thresh;
                 }
-                if (int.TryParse(FocusMinimumPauseTextBox.Text?.Trim(), out int minPause) && minPause > 0)
+                if (TryBehaviorNumber(FocusMinimumPauseTextBox, 3600, out int minPause))
                 {
                     _settings.FocusMinimumPauseSeconds = minPause;
                 }
@@ -556,6 +565,11 @@ public partial class SettingsWindow : Window
 
             UpdateValueLabels();
             UpdateDependentControlStates();
+            if ((change & (SettingsChangeKind.Behavior | SettingsChangeKind.FocusTracking)) != 0)
+            {
+                UpdateBehaviorControlStates();
+                RefreshBehaviorPreview();
+            }
             if ((change & (SettingsChangeKind.Theme
                            | SettingsChangeKind.OverlayTheme
                            | SettingsChangeKind.OverlayAppearance
@@ -585,8 +599,6 @@ public partial class SettingsWindow : Window
         BackgroundOpacityValueText.Text = $"{Math.Round(BackgroundOpacitySlider.Value):0}%";
         InactiveSeparatedOpacityValueText.Text = $"{Math.Round(InactiveSeparatedOpacitySlider.Value):0}%";
         BackgroundStrengthValueText.Text = $"{Math.Round(BackgroundStrengthSlider.Value):0}%";
-        LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
-        LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";
         CommandChainingTimeoutValueText.Text = $"{CommandChainingTimeoutSlider.Value:0.0} s";
     }
 
@@ -607,10 +619,6 @@ public partial class SettingsWindow : Window
         RemoveBackgroundButton.IsEnabled = BackgroundCombo.SelectedItem is AppBackgroundChoice
             { IsCustom: true };
 
-        bool ringEnabled = LightRingEnabledCheck.IsChecked == true;
-        LightRingBrightnessSlider.IsEnabled = ringEnabled;
-        LightRingWidthSlider.IsEnabled = ringEnabled;
-        LightRingCaptureCheck.IsEnabled = ringEnabled;
     }
 
     private void UpdatePreviewSafely()
@@ -817,7 +825,6 @@ public partial class SettingsWindow : Window
         OverlayPanel.IsVisible = tag == "Overlay";
         AppearancePanel.IsVisible = tag == "Appearance";
         TypographyPanel.IsVisible = tag == "Typography";
-        LightRingPanel.IsVisible = tag == "LightRing";
         BehaviorPanel.IsVisible = tag == "Behavior";
         ApplicationPanel.IsVisible = tag == "Application";
         ObsidianPanel.IsVisible = tag == "Obsidian";
@@ -1123,6 +1130,18 @@ public partial class SettingsWindow : Window
 
     private void UpdateSelectedProjectIdleUi(string? projectName)
     {
+        _updatingIdleProject = true;
+        try
+        {
+            UpdateSelectedProjectIdleFields(projectName);
+            IdleProjectTimeoutTextBox.Classes.Remove("invalidTime");
+            ToolTip.SetTip(IdleProjectTimeoutTextBox, null);
+        }
+        finally { _updatingIdleProject = false; }
+    }
+
+    private void UpdateSelectedProjectIdleFields(string? projectName)
+    {
         if (string.IsNullOrWhiteSpace(projectName))
         {
             IdleProjectActiveCheck.IsEnabled = false;
@@ -1141,15 +1160,19 @@ public partial class SettingsWindow : Window
         bool isActive = _settings.IsIdleStopActiveForProject(projectName, out int timeoutMinutes, out _);
         IdleProjectActiveCheck.IsChecked = isActive;
         IdleProjectTimeoutTextBox.Text = timeoutMinutes.ToString();
+        UpdateIdleProjectStatus(isActive, timeoutMinutes);
+    }
 
+    private void UpdateIdleProjectStatus(bool isActive, int timeoutMinutes)
+    {
         if (isActive)
         {
-            IdleProjectStatusSummaryText.Text = $"Status: Active (stops timer when idle for {timeoutMinutes}m)";
-            IdleProjectStatusSummaryText.Foreground = Brushes.LimeGreen;
+            IdleProjectStatusSummaryText.Text = $"Pauses after {timeoutMinutes} min idle";
+            IdleProjectStatusSummaryText.Foreground = _behaviorPage != null ? BehaviorTeal : Brushes.LimeGreen;
         }
         else
         {
-            IdleProjectStatusSummaryText.Text = "Status: Deactive (timer will not stop on idle)";
+            IdleProjectStatusSummaryText.Text = "Idle stopping is off for this project.";
             if (Application.Current?.TryFindResource("SecondaryTextBrush", out var stBrush) == true && stBrush is IBrush brush)
                 IdleProjectStatusSummaryText.Foreground = brush;
         }
@@ -1160,9 +1183,8 @@ public partial class SettingsWindow : Window
         if (IdleProjectComboBox.SelectedItem is string selectedProject && !string.IsNullOrWhiteSpace(selectedProject))
         {
             bool enabled = IdleProjectActiveCheck.IsChecked == true;
-            int timeout = int.TryParse(IdleProjectTimeoutTextBox.Text?.Trim(), out int parsed) && parsed > 0
-                ? parsed
-                : _settings.DefaultIdleStopTimeoutMinutes;
+            _settings.IsIdleStopActiveForProject(selectedProject, out int savedTimeout, out _);
+            int timeout = TryBehaviorNumber(IdleProjectTimeoutTextBox, 1440, out int parsed) ? parsed : savedTimeout;
 
             _settings.SetProjectIdleRule(selectedProject, enabled, timeout);
             UpdateSelectedProjectIdleUi(selectedProject);
@@ -1171,16 +1193,16 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void IdleProjectTimeoutTextBox_TextChanged(object? sender, TextChangedEventArgs e)
+    private void IdleProjectTimeoutTextBox_TextChanging(object? sender, TextChangingEventArgs e)
     {
-        if (_loading) return;
+        if (_loading || _updatingIdleProject || _closed) return;
         if (IdleProjectComboBox.SelectedItem is string selectedProject && !string.IsNullOrWhiteSpace(selectedProject))
         {
-            if (int.TryParse(IdleProjectTimeoutTextBox.Text?.Trim(), out int timeout) && timeout > 0)
+            if (TryBehaviorNumber(IdleProjectTimeoutTextBox, 1440, out int timeout))
             {
                 bool enabled = IdleProjectActiveCheck.IsChecked == true;
                 _settings.SetProjectIdleRule(selectedProject, enabled, timeout);
-                UpdateSelectedProjectIdleUi(selectedProject);
+                UpdateIdleProjectStatus(enabled, timeout);
                 RefreshIdleProjectsOverview();
                 CommitControls(SettingsChangeKind.IdleStop);
             }
@@ -1263,6 +1285,11 @@ public partial class SettingsWindow : Window
         }
 
         CategoriesItemsControl.ItemsSource = items;
+        if (_behaviorCategories != null)
+        {
+            _behaviorCategories.ItemsSource = items.Where(item => item.CanDelete).ToArray();
+            _behaviorCategoryEmpty!.IsVisible = !items.Any(item => item.CanDelete);
+        }
     }
 
     private void AddCategorySettingsButton_Click(object? sender, RoutedEventArgs e)
@@ -1305,18 +1332,16 @@ public partial class SettingsWindow : Window
 
         CategoryValidationStatusText.IsVisible = false;
         NewCategoryTextBox.Text = "";
-        SettingsStore.Save(_settings);
         CommitControls(SettingsChangeKind.Behavior);
         PopulateCategories();
     }
 
     private void DeleteCategory_Click(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string catName })
+        if (sender is Button { Tag: string catName } && !AppSettings.DefaultProjectCategories.Contains(catName, StringComparer.OrdinalIgnoreCase))
         {
             _settings.ProjectCategories?.RemoveAll(c => string.Equals(c, catName, StringComparison.OrdinalIgnoreCase));
             _settings.NormalizeForRuntime();
-            SettingsStore.Save(_settings);
             CommitControls(SettingsChangeKind.Behavior);
             PopulateCategories();
         }

@@ -44,7 +44,6 @@ public sealed class AppUiScaleTests
             HasCustomPosition = true,
             CustomLeft = -830.25,
             CustomTop = 127.5,
-            LightRingWidth = 36,
             ThemeMode = AppThemeCatalog.PixelDeckNight,
             OverlayTheme = OverlayThemeCatalog.Daylight
         };
@@ -59,7 +58,6 @@ public sealed class AppUiScaleTests
         Assert.True(restored.HasCustomPosition);
         Assert.Equal(-830.25, restored.CustomLeft);
         Assert.Equal(127.5, restored.CustomTop);
-        Assert.Equal(36, restored.LightRingWidth);
         Assert.Equal(AppThemeCatalog.PixelDeckNight, restored.ThemeMode);
         Assert.Equal(OverlayThemeCatalog.Daylight, restored.OverlayTheme);
     }
@@ -97,12 +95,11 @@ public sealed class AppUiScaleTests
     }
 
     [Fact]
-    public void ApplicationScale_IsContinuousWithoutRequestingThemeBackgroundOrLightRingRebuild()
+    public void ApplicationScale_IsContinuousWithoutRequestingThemeOrBackgroundRebuild()
     {
         Assert.True(SettingsChangePolicy.IsContinuous(SettingsChangeKind.ApplicationScale));
         Assert.False(SettingsChangePolicy.RequiresThemeApply(SettingsChangeKind.ApplicationScale));
         Assert.False(SettingsChangePolicy.RequiresBackgroundApply(SettingsChangeKind.ApplicationScale));
-        Assert.False(SettingsChangePolicy.RequiresLightRingRebuild(SettingsChangeKind.ApplicationScale));
     }
 
     private sealed class SettingsFiles : IDisposable

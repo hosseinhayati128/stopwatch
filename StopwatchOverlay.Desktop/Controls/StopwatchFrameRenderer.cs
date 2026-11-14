@@ -19,27 +19,28 @@ public sealed class StopwatchFrameLayout
 /// <summary>Shared modular artwork and matching clips. No files are decoded or masks rebuilt on timer ticks.</summary>
 public static class StopwatchFrameRenderer
 {
-    private readonly record struct Key(StopwatchAsset Asset,Size Size,double Scale);
+    private readonly record struct Key(StopwatchAsset Asset,Size Size,double Scale,bool PanelFrame);
     private static readonly Dictionary<Key,LinkedListNode<(Key Key,StopwatchFrameLayout Layout)>> Cache=new();
     private static readonly LinkedList<(Key Key,StopwatchFrameLayout Layout)> Recent=new();
     private static readonly object Gate=new();
     private const int Capacity=32;
     public static int CachedLayoutCount {get{lock(Gate)return Cache.Count;}}
 
-    public static StopwatchFrameLayout GetLayout(StopwatchAsset asset,Size size,double artworkScale)
+    public static StopwatchFrameLayout GetLayout(StopwatchAsset asset,Size size,double artworkScale,bool panelFrame=false)
     {
         if(!double.IsFinite(size.Width)||!double.IsFinite(size.Height)||size.Width<=0||size.Height<=0||!double.IsFinite(artworkScale)||artworkScale<=0)
             throw new ArgumentOutOfRangeException(nameof(size),"Frame dimensions and scale must be positive and finite.");
-        var key=new Key(asset,size,artworkScale);
+        panelFrame&=asset.Id=="engraved-filigree";
+        var key=new Key(asset,size,artworkScale,panelFrame);
         lock(Gate)
         {
             if(Cache.TryGetValue(key,out var existing))
             {Recent.Remove(existing);Recent.AddFirst(existing);return existing.Value.Layout;}
-            var minimum=Minimum(asset);
+            var minimum=panelFrame?new Size(104.4,131.4):Minimum(asset);
             double requestedRatio=artworkScale/.18;
             double ratio=Math.Min(requestedRatio,Math.Min(size.Width/minimum.Width,size.Height/minimum.Height));
             var logical=new Size(size.Width/ratio,size.Height/ratio);
-            var plan=StopwatchFrameRecipe.Create(asset.Id,asset,logical);
+            var plan=panelFrame?StopwatchFrameRecipe.PanelFiligree(asset,logical):StopwatchFrameRecipe.Create(asset.Id,asset,logical);
             StopwatchFrameRecipe.Validate(plan,asset);
             void Paint(DrawingContext dc)
             {

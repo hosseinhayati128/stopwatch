@@ -117,10 +117,6 @@ public partial class SettingsWindow : Window
             BackgroundStrengthSlider.Value = _settings.PanelBackgroundStrength;
             ClickThroughCheck.IsChecked = _settings.ClickThrough;
             HideOverlayCaptureCheck.IsChecked = _settings.HideOverlayFromCapture;
-            LightRingEnabledCheck.IsChecked = _settings.LightRingEnabled;
-            LightRingBrightnessSlider.Value = _settings.LightRingBrightness;
-            LightRingWidthSlider.Value = _settings.LightRingWidth;
-            LightRingCaptureCheck.IsChecked = _settings.LightRingHideFromCapture;
             AutoStartCheck.IsChecked = _settings.AutoStart;
             RecCheck.IsChecked = _settings.ShowRecIndicator;
             BlinkCheck.IsChecked = _settings.BlinkColon;
@@ -222,16 +218,12 @@ public partial class SettingsWindow : Window
         WireSlider(BackgroundOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(InactiveSeparatedOpacitySlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundStrengthSlider, SettingsChangeKind.BackgroundStrength);
-        WireSlider(LightRingBrightnessSlider, SettingsChangeKind.LightRingAppearance);
-        WireSlider(LightRingWidthSlider, SettingsChangeKind.LightRingAppearance);
         WireSlider(CommandChainingTimeoutSlider, SettingsChangeKind.Behavior);
 
         WireCheckBox(ClickThroughCheck, SettingsChangeKind.OverlayInteraction);
         WireCheckBox(HideOverlayCaptureCheck, SettingsChangeKind.OverlayInteraction);
         foreach (var (control, _) in TransparencyPartControls)
             WireCheckBox(control, SettingsChangeKind.OverlayAppearance);
-        WireCheckBox(LightRingEnabledCheck, SettingsChangeKind.LightRingVisibility);
-        WireCheckBox(LightRingCaptureCheck, SettingsChangeKind.LightRingAppearance);
         WireCheckBox(AutoStartCheck, SettingsChangeKind.Behavior);
         WireCheckBox(RecCheck, SettingsChangeKind.Behavior);
         WireCheckBox(BlinkCheck, SettingsChangeKind.Behavior);
@@ -438,14 +430,6 @@ public partial class SettingsWindow : Window
                 _settings.HideOverlayFromCapture = HideOverlayCaptureCheck.IsChecked == true;
             }
 
-            if ((change & (SettingsChangeKind.LightRingVisibility | SettingsChangeKind.LightRingAppearance)) != 0)
-            {
-                _settings.LightRingEnabled = LightRingEnabledCheck.IsChecked == true;
-                _settings.LightRingBrightness = LightRingBrightnessSlider.Value;
-                _settings.LightRingWidth = LightRingWidthSlider.Value;
-                _settings.LightRingHideFromCapture = LightRingCaptureCheck.IsChecked == true;
-            }
-
             if ((change & (SettingsChangeKind.Behavior | SettingsChangeKind.IdleStop)) != 0)
             {
                 _settings.AutoStart = AutoStartCheck.IsChecked == true;
@@ -580,8 +564,6 @@ public partial class SettingsWindow : Window
         BackgroundOpacityValueText.Text = $"{Math.Round(BackgroundOpacitySlider.Value):0}%";
         InactiveSeparatedOpacityValueText.Text = $"{Math.Round(InactiveSeparatedOpacitySlider.Value):0}%";
         BackgroundStrengthValueText.Text = $"{Math.Round(BackgroundStrengthSlider.Value):0}%";
-        LightRingBrightnessValueText.Text = $"{Math.Round(LightRingBrightnessSlider.Value):0}%";
-        LightRingWidthValueText.Text = $"{Math.Round(LightRingWidthSlider.Value):0} px";
         BackgroundReminderIntervalValueText.Text = $"{Math.Round(BackgroundReminderIntervalSlider.Value):0} min";
         BackgroundReminderAckIntervalValueText.Text = $"{Math.Round(BackgroundReminderAckIntervalSlider.Value):0} min";
         BackgroundReminderDurationValueText.Text = $"{Math.Round(BackgroundReminderDurationSlider.Value):0} s";
@@ -601,10 +583,6 @@ public partial class SettingsWindow : Window
         RemoveBackgroundButton.IsEnabled = BackgroundCombo.SelectedItem is AppBackgroundChoice
             { IsCustom: true };
 
-        bool ringEnabled = LightRingEnabledCheck.IsChecked == true;
-        LightRingBrightnessSlider.IsEnabled = ringEnabled;
-        LightRingWidthSlider.IsEnabled = ringEnabled;
-        LightRingCaptureCheck.IsEnabled = ringEnabled;
     }
 
     private void UpdatePreviewSafely()
@@ -804,7 +782,6 @@ public partial class SettingsWindow : Window
         OverlayPanel.Visibility = tag == "Overlay" ? Visibility.Visible : Visibility.Collapsed;
         AppearancePanel.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
         TypographyPanel.Visibility = tag == "Typography" ? Visibility.Visible : Visibility.Collapsed;
-        LightRingPanel.Visibility = tag == "LightRing" ? Visibility.Visible : Visibility.Collapsed;
         BehaviorPanel.Visibility = tag == "Behavior" ? Visibility.Visible : Visibility.Collapsed;
         ApplicationPanel.Visibility = tag == "Application" ? Visibility.Visible : Visibility.Collapsed;
         ObsidianPanel.Visibility = tag == "Obsidian" ? Visibility.Visible : Visibility.Collapsed;

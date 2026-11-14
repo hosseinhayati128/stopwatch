@@ -136,11 +136,10 @@ public sealed class OverlayThemeSettingsTests
     }
 
     [Fact]
-    public void OverlayThemeChange_DoesNotApplyPanelThemeBackgroundOrLightRing()
+    public void OverlayThemeChange_DoesNotApplyPanelThemeOrBackground()
     {
         Assert.False(SettingsChangePolicy.RequiresThemeApply(SettingsChangeKind.OverlayTheme));
         Assert.False(SettingsChangePolicy.RequiresBackgroundApply(SettingsChangeKind.OverlayTheme));
-        Assert.False(SettingsChangePolicy.RequiresLightRingRebuild(SettingsChangeKind.OverlayTheme));
         Assert.False(SettingsChangePolicy.IsContinuous(SettingsChangeKind.OverlayTheme));
         Assert.True(SettingsChangePolicy.RequiresThemeApply(
             SettingsChangeKind.Theme | SettingsChangeKind.OverlayTheme));
@@ -180,10 +179,6 @@ public sealed class OverlayThemeSettingsTests
         CustomTop = 53.5,
         ClickThrough = true,
         HideOverlayFromCapture = true,
-        LightRingEnabled = true,
-        LightRingBrightness = 37,
-        LightRingWidth = 43,
-        LightRingHideFromCapture = true,
         ShowRecIndicator = true,
         AutoStart = true,
         BlinkColon = true,

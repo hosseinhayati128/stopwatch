@@ -69,15 +69,6 @@
       "sha256": "7732416CB629D7784CE7F95F9AF7261CCF2C8C8AFC1DB38F573C9A8EB77FF097"
     },
     {
-      "file": "settings-light-ring.jpg",
-      "theme": "Pixel Deck Night",
-      "view": "Light ring controls",
-      "width": 880,
-      "height": 566,
-      "bytes": 100585,
-      "sha256": "2AC1928E0B718430BF11280AC35F243A80174A508A4F4B165C0F1081B4EB5215"
-    },
-    {
       "file": "analytics-daylight.png",
       "theme": "Daylight",
       "view": "Seven-day summary, project totals and activity heatmap",
