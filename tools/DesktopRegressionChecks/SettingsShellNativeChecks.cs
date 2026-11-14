@@ -40,7 +40,8 @@ internal static class SettingsShellNativeChecks
             {
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);
                 string key=button.Name![12..];Require((string)category.GetValue(window)! == key,"Navigation did not select "+key);
-                if(key is not ("Overlay" or "Appearance" or "Typography" or "Behavior" or "Application"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key is not ("Overlay" or "Appearance" or "Typography" or "Behavior" or "Application" or "Obsidian"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key=="Obsidian")Require(window.FindControl<TextBox>("ObsidianFolderTextBox")!.IsEffectivelyVisible,"Navigation hid Obsidian fields.");
                 if(key=="Application")Require(Find<ScrollViewer>(window,"ApplicationScroll").IsEffectivelyVisible,"Navigation hid Application fields.");
                 if(key=="Typography")Require(Find<Grid>(window,"TypographyPage").IsEffectivelyVisible,"Navigation hid Typography fields.");
                 if(key=="Behavior")Require(Find<Grid>(window,"BehaviorPage").IsEffectivelyVisible,"Navigation hid Behavior fields.");

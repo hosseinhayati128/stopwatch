@@ -135,6 +135,7 @@ public partial class SettingsWindow
         RestoreAppearanceControls();
         RestoreBehaviorPage();
         RestoreApplicationPage();
+        RestoreObsidianPage();
         ((Grid)SettingsColumns.Parent!).Children.Remove(SettingsColumns);
         foreach(var item in _navigatorMovedControls)((Panel)item.Control.Parent!).Children.Remove(item.Control);
         foreach(var item in _navigatorMovedControls.OrderBy(i=>i.Index))
@@ -168,21 +169,25 @@ public partial class SettingsWindow
         bool typography=CurrentCategory=="Typography";
         bool behavior=CurrentCategory=="Behavior";
         bool application=CurrentCategory=="Application";
+        bool obsidian=CurrentCategory=="Obsidian";
         if(typography&&_typographyPage==null)BuildTypographyPage((Grid)SettingsColumns.Parent!);
         if(appearance&&_appearancePage==null)BuildAppearancePage((Grid)SettingsColumns.Parent!);
         if(behavior&&_behaviorPage==null)BuildBehaviorPage((Grid)SettingsColumns.Parent!);
         if(application&&_applicationPage==null)BuildApplicationPage((Grid)SettingsColumns.Parent!);
-        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography&&!behavior&&!application;_navigatorSettingsScroll!.IsVisible=overlay;
+        if(obsidian&&_obsidianPage==null)BuildObsidianPage((Grid)SettingsColumns.Parent!);
+        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography&&!behavior&&!application&&!obsidian;_navigatorSettingsScroll!.IsVisible=overlay;
         if(_typographyPage!=null)_typographyPage.IsVisible=typography;
         if(_appearancePage!=null)_appearancePage.IsVisible=appearance;
         if(_behaviorPage!=null)_behaviorPage.IsVisible=behavior;
         if(_applicationPage!=null)_applicationPage.IsVisible=application;
+        if(_obsidianPage!=null)_obsidianPage.IsVisible=obsidian;
         foreach(var (button,text,key) in _navigatorCategories){button.Classes.Set("editorPrimary",key==CurrentCategory);text.Foreground=key==CurrentCategory?ClockPickerPresentation.Cream:SettingsInk;}
         ResizeNavigatorSettings();
         RefreshAppearancePreview();
         RefreshTypographyPreview();
         RefreshBehaviorPreview();
         RefreshApplicationChoices();
+        ResizeObsidianPage();
     }
 
     private void ResizeNavigatorSettings()

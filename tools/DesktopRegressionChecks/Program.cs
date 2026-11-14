@@ -233,6 +233,20 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--settings-obsidian-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("Obsidian settings, destination, navigation and theme restoration", SettingsObsidianNativeChecks.Controls);
+    Check("Obsidian real export and recoverable destination failures", SettingsObsidianNativeChecks.Export);
+    Check("Obsidian responsive layout and native captures", SettingsObsidianNativeChecks.Layout);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--settings-application-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -272,12 +286,13 @@ if (args.Contains("--settings-behavior-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview"))
+if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if (args.Contains("--settings-application-preview")) Check("settings Application native design proposal", SettingsApplicationPreview.Run);
+    if (args.Contains("--settings-obsidian-preview")) Check("settings Obsidian native design proposal", SettingsObsidianPreview.Run);
+    else if (args.Contains("--settings-application-preview")) Check("settings Application native design proposal", SettingsApplicationPreview.Run);
     else if (args.Contains("--settings-behavior-preview")) Check("settings Behavior native design proposal", SettingsBehaviorPreview.Run);
     else if(args.Contains("--settings-typography-preview"))Check("settings Fonts and colors native design proposal",SettingsTypographyPreview.Run);
     else Check("settings Appearance native design proposal",SettingsAppearancePreview.Run);

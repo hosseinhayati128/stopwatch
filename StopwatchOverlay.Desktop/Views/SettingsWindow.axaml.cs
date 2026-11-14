@@ -841,52 +841,48 @@ public partial class SettingsWindow : Window
     {
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel == null) return;
-
-        var options = new FolderPickerOpenOptions
+        try
         {
-            Title = "Select Obsidian Vault or Target Folder",
-            AllowMultiple = false
-        };
-
-        if (!string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder) && Directory.Exists(_settings.ObsidianVaultFolder))
-        {
-            var startFolder = await topLevel.StorageProvider.TryGetFolderFromPathAsync(_settings.ObsidianVaultFolder);
-            if (startFolder != null)
-                options.SuggestedStartLocation = startFolder;
+            var options = new FolderPickerOpenOptions
+            {
+                Title = "Select Obsidian Vault or Target Folder", AllowMultiple = false
+            };
+            if (!string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder) && Directory.Exists(_settings.ObsidianVaultFolder))
+                options.SuggestedStartLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(_settings.ObsidianVaultFolder);
+            var result = await topLevel.StorageProvider.OpenFolderPickerAsync(options);
+            if (!_closed && result.Count > 0 && result[0].TryGetLocalPath() is string localPath)
+                ObsidianFolderTextBox.Text = localPath;
         }
-
-        var result = await topLevel.StorageProvider.OpenFolderPickerAsync(options);
-        if (result.Count > 0 && result[0].TryGetLocalPath() is string localPath)
+        catch (Exception ex)
         {
-            ObsidianFolderTextBox.Text = localPath;
+            CrashLogger.LogRecoverable(ex, "Settings.ObsidianFolder");
+            if (!_closed) SetObsidianStatus("Could not choose a folder", ex.Message, true);
         }
     }
 
     private void ExportNowButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_historyProvider == null)
+        if (string.IsNullOrWhiteSpace(ObsidianFolderTextBox.Text))
         {
-            ExportStatusText.Text = "History records are not available.";
-            ExportStatusText.Foreground = Brushes.OrangeRed;
+            RefreshObsidianDestination();
             return;
         }
-
-        var history = _historyProvider();
-        var result = ObsidianLogSync.SyncHistory(
-            history,
-            _settings,
-            ObsidianFolderTextBox.Text ?? "",
-            ObsidianFileNameTextBox.Text ?? "");
-
-        if (result.Success)
+        if (_historyProvider == null)
         {
-            ExportStatusText.Text = $"{result.Message} ({DateTime.Now:HH:mm:ss})";
-            ExportStatusText.Foreground = Brushes.DeepSkyBlue;
+            SetObsidianStatus("Export unavailable", "History records are not available.", true);
+            return;
         }
-        else
+        try
         {
-            ExportStatusText.Text = result.Message ?? "Export failed.";
-            ExportStatusText.Foreground = Brushes.OrangeRed;
+            var result = ObsidianLogSync.SyncHistory(_historyProvider(), _settings,
+                ObsidianFolderTextBox.Text ?? "", ObsidianFileNameTextBox.Text ?? "");
+            SetObsidianStatus(result.Success ? "Export complete" : "Export failed",
+                result.Success ? $"{result.Message} ({DateTime.Now:HH:mm:ss})" : result.Message ?? "Export failed.", !result.Success);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "Settings.ObsidianExport");
+            SetObsidianStatus("Export failed", ex.Message, true);
         }
     }
 
@@ -1576,6 +1572,7 @@ public partial class SettingsWindow : Window
         {
             ObsidianPathPreviewText.Text = Path.Combine(folder, fileName);
         }
+        RefreshObsidianDestination();
     }
 
     private void ShowOverlayButton_Click(object? sender, RoutedEventArgs e)
