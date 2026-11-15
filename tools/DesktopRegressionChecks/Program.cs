@@ -175,7 +175,7 @@ if(args.Contains("--dashboard-overview-native") || args.Contains("--dashboard-ch
 }
 
 // Review fixtures load production styles without initializing live settings, hooks or tray.
-if(args.Contains("--review-projects-native") || args.Contains("--review-allocation-native") || args.Contains("--review-mood-native"))
+if(args.Contains("--review-project-selection") || args.Contains("--review-projects-native") || args.Contains("--review-allocation-native") || args.Contains("--review-mood-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
@@ -183,6 +183,17 @@ if(args.Contains("--review-projects-native") || args.Contains("--review-allocati
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
         { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    if(args.Contains("--review-project-selection"))
+    {
+        ReviewProjectsNativeChecks.OutputOverride=".superpowers/sdd/2026-11-15-review-project-selection/captures";
+        Check("Review project visibility without appearance services",()=>ReviewProjectsNativeChecks.SelectionVisibility(false,false));
+        Check("Review project visibility with typography",()=>ReviewProjectsNativeChecks.SelectionVisibility(false,true));
+        Check("Review project visibility with application scale",()=>ReviewProjectsNativeChecks.SelectionVisibility(true,false));
+        Check("Review project visibility with scale and typography",()=>ReviewProjectsNativeChecks.SelectionVisibility(true,true));
+        Check("Review project visibility at 70 percent",()=>ReviewProjectsNativeChecks.SelectionVisibility(true,true,70));
+        Check("Review project visibility at 125 percent",()=>ReviewProjectsNativeChecks.SelectionVisibility(true,true,125));
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--review-mood-native"))
     {
         Check("review mood shared frame and fixed actions",ReviewMoodNativeChecks.Layout);

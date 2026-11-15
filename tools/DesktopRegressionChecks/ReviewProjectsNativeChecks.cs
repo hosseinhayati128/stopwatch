@@ -17,7 +17,8 @@ using StopwatchOverlay.Mood;
 
 internal static class ReviewProjectsNativeChecks
 {
-    private const string Output="design/one-piece-v2/activity-review/native-implementation";
+    internal static string? OutputOverride;
+    private static string Output=>OutputOverride??"design/one-piece-v2/activity-review/native-implementation";
     private const BindingFlags Private=BindingFlags.Instance|BindingFlags.NonPublic;
     private static void Require(bool condition,string message){if(!condition)throw new Exception(message);}
     private static void Click(Button button){button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);}
@@ -67,6 +68,46 @@ internal static class ReviewProjectsNativeChecks
         public void Dispose()=>Window.Close();
     }
     private static ActivitySummaryGroup Activity(string name,string category,int seconds,double percentage)=>new(){App=name,Title=name,Category=category,TotalDuration=TimeSpan.FromSeconds(seconds),Percentage=percentage};
+    internal static void SelectionVisibility(bool scaling=true,bool typography=true,double scale=90)
+    {
+        Directory.CreateDirectory(Output);
+        var settings=new AppSettings{ThemeMode=AppThemeCatalog.Nika,UiScalePercent=scale};
+        void Desktop(string type,string method,params object[] args)=>typeof(App).Assembly.GetType("StopwatchOverlay.Desktop."+type)!
+            .GetMethod(method,BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,args);
+        if(scaling)Desktop("DesktopPageAppearance","Initialize",settings);
+        if(typography)Desktop("DesktopTypography","Initialize",settings.Typography);
+        try
+        {
+            using var f=new Fixture(extraProjects:12,feelings:true);
+            var grid=f.Named<Grid>("ReviewProjectsGrid");var scroll=f.Named<ScrollViewer>("ReviewProjectsScroll");
+            int count=grid.Children.Count;
+            void Visible(string state)
+            {
+                int visible=grid.Children.OfType<Button>().Count(button=>button.IsEffectivelyVisible&&button.Bounds.Width>1&&button.Bounds.Height>1&&
+                    button.TranslatePoint(default,scroll) is {} point&&new Rect(point,button.Bounds.Size).Intersects(new Rect(scroll.Bounds.Size)));
+                Console.WriteLine($"{state}: projects={grid.Children.Count}; visible={visible}; grid={grid.Bounds}; viewport={scroll.Viewport}; offset={scroll.Offset}; step={f.Step}");
+                if(visible==0)foreach(var node in grid.Children[0].GetVisualAncestors().OfType<Control>().Prepend(grid.Children[0]))
+                    Console.WriteLine($"  {node.GetType().Name}/{node.Name}: bounds={node.Bounds}; desired={node.DesiredSize}; measure={node.IsMeasureValid}; arrange={node.IsArrangeValid}; visible={node.IsEffectivelyVisible}");
+                Capture(f,$"{(scaling?$"scaled-{scale}":"unscaled")}-{(typography?"typography":"plain")}-{state}");
+                Require(grid.Children.Count==count&&visible>0&&scroll.Viewport.Height>20,"Choosing a project hid the project list: "+state);
+                var frame=f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+                Require(frame.IsMeasureValid&&frame.IsArrangeValid,"Frame layout did not settle: "+state);
+                if(f.Selections.Count>0)Require(f.Named<WrapPanel>("SelectedSequenceChipsContainer").Children.OfType<Border>()
+                    .Any(chip=>chip.IsEffectivelyVisible&&chip.Bounds.Width>1&&chip.Bounds.Height>1),"Selected sequence disappeared: "+state);
+            }
+            Visible("before-selection");
+            f.Project("Programming").Focus();f.Add("Programming");ClockOverlayChecks.Pump(150);Visible("after-first-selection");
+            f.Project("Reading").Focus();f.Add("Reading");ClockOverlayChecks.Pump(150);Visible("after-second-selection");
+            f.Project("Programming").Focus();f.Add("Programming");ClockOverlayChecks.Pump(150);Visible("after-repeat-selection");
+            Click(f.Remove("Programming"));ClockOverlayChecks.Pump(150);Visible("after-removal");
+            f.Named<TextBox>("NewProjectTextBox").Text="New test project";Click(f.Named<Button>("AddNewProjectButton"));
+            count++;ClockOverlayChecks.Pump(150);Visible("after-new-project");
+            Require(f.Registrations==1&&f.Selections.Last().ProjectName=="New test project","New project was not registered and selected once.");
+            Click(f.Next);Require(f.Step==2,"Selection did not continue to time allocation.");
+            Key(f.Window,Avalonia.Input.Key.Escape);ClockOverlayChecks.Pump(150);Visible("after-back");
+        }
+        finally { Desktop("DesktopTypography","Shutdown");Desktop("DesktopPageAppearance","Shutdown"); }
+    }
     internal static void Layout()
     {
         using var f=new Fixture(extraProjects:24);f.Seed();

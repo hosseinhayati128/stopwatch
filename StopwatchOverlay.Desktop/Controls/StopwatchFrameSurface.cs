@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
 using Avalonia.Media;
 
 namespace StopwatchOverlay.Desktop.Controls;
@@ -29,6 +30,12 @@ public sealed class StopwatchFrameSurface:Decorator
     {
         var probe=new Size(double.IsFinite(availableSize.Width)&&availableSize.Width>0?availableSize.Width:Bounds.Width>0?Bounds.Width:460,
             double.IsFinite(availableSize.Height)&&availableSize.Height>0?availableSize.Height:Bounds.Height>0?Bounds.Height:480);
+        // Match ArrangeCore's pixel rounding so scaled pages do not alternate child measurements forever.
+        if(UseLayoutRounding)
+        {
+            double scale=LayoutHelper.GetLayoutScale(this);
+            probe=LayoutHelper.RoundLayoutSizeUp(probe,scale,scale);
+        }
         var layout=Layout(probe);var insets=Insets(layout);
         Child?.Measure(probe.Deflate(insets));
         var desired=(Child?.DesiredSize??default).Inflate(insets);
