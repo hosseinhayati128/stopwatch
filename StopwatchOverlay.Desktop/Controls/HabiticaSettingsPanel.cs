@@ -10,7 +10,7 @@ using StopwatchOverlay.Habitica;
 namespace StopwatchOverlay.Desktop.Controls;
 
 /// <summary>Connection drafts and secrets stay separate from serialized settings.</summary>
-public sealed class HabiticaSettingsPanel : Border
+public sealed partial class HabiticaSettingsPanel : Border
 {
     protected override Type StyleKeyOverride => typeof(Border);
     private readonly TextBox _account = new() { Watermark = "Habitica User ID" };
@@ -32,7 +32,7 @@ public sealed class HabiticaSettingsPanel : Border
     private string _importScope = "";
     private string? _importError;
     private readonly DispatcherTimer _refresh = new() { Interval = TimeSpan.FromSeconds(2) };
-    private readonly Button _test;
+    private readonly Button _test, _saveConnection, _pasteToken;
     private AppSettings? _settings;
     private Action? _save;
     private Action? _confirmed;
@@ -57,11 +57,11 @@ public sealed class HabiticaSettingsPanel : Border
         var pasteToken = new MenuItem { Header = "Paste", InputGesture = TextBox.PasteGesture };
         pasteToken.Click += (_, _) => _token.Paste();
         _token.ContextMenu = new ContextMenu { Items = { pasteToken } };
-        var pasteButton = ActionButton("Paste", () => _token.Paste());
-        pasteButton.Name = "PasteHabiticaTokenButton";
-        pasteButton.Focusable = false; // preserve the token field's selection when replacing text
-        Avalonia.Automation.AutomationProperties.SetName(pasteButton, "Paste Habitica API token");
-        _token.InnerRightContent = pasteButton;
+        _pasteToken = ActionButton("Paste", () => _token.Paste());
+        _pasteToken.Name = "PasteHabiticaTokenButton";
+        _pasteToken.Focusable = false; // preserve the token field's selection when replacing text
+        Avalonia.Automation.AutomationProperties.SetName(_pasteToken, "Paste Habitica API token");
+        _token.InnerRightContent = _pasteToken;
         Classes.Add("settingsCard");
         var content = new StackPanel { Spacing = 10 };
         var title = Label("Habitica");
@@ -77,7 +77,8 @@ public sealed class HabiticaSettingsPanel : Border
         content.Children.Add(Label("This field clears after saving. Leaving it blank keeps any previously saved token; it does not delete it."));
         content.Children.Add(Label("Tokens use the operating system's protected secret store when available. Otherwise they last for this session only and must be entered again after restart."));
         content.Children.Add(_credentials);
-        content.Children.Add(ActionButton("Save connection", () => Run(SaveConnection)));
+        _saveConnection = ActionButton("Save connection", () => Run(SaveConnection));
+        content.Children.Add(_saveConnection);
         content.Children.Add(_enabled);
         _enabled.IsCheckedChanged += (_, _) =>
         {
@@ -131,7 +132,7 @@ public sealed class HabiticaSettingsPanel : Border
                 if (!_integration.EnableHere(_settings, takeOver: true))
                     throw new InvalidOperationException("Unable to move this linked vault to this installation.");
                 _save?.Invoke();
-                _feedback.Text = "This linked vault now syncs from this installation. Separate local vaults are unaffected.";
+                SetFeedback("This linked vault now syncs from this installation. Separate local vaults are unaffected.");
             });
         })));
         copiedVaultOptions.Content = copiedVaultContent;
@@ -140,11 +141,11 @@ public sealed class HabiticaSettingsPanel : Border
         {
             if (_settings == null) return;
             int count = _integration.CountMissing(_settings);
-            if (count == 0) { _feedback.Text = "No missing linked tasks need recreation."; return; }
+            if (count == 0) { SetFeedback("No missing linked tasks need recreation."); return; }
             Confirm($"Recreate {count} previously linked tasks that Habitica reported missing? Their current local text and checklist will be used. Review Habitica first to avoid recreating deliberately deleted tasks.", () =>
             {
                 _integration.RecreateMissing(_settings);
-                _feedback.Text = "Missing tasks queued for explicit recreation.";
+                SetFeedback("Missing tasks queued for explicit recreation.");
             });
         })));
         _confirmPanel.Children.Add(_confirmation);
@@ -162,15 +163,17 @@ public sealed class HabiticaSettingsPanel : Border
         content.Children.Add(_feedback);
         content.Children.Add(_status);
         Child = content;
-        _account.TextChanged += (_, _) => ClearConfirmation();
-        _client.TextChanged += (_, _) => ClearConfirmation();
-        _token.TextChanged += (_, _) => ClearConfirmation();
-        _refresh.Tick += (_, _) => RefreshStatus();
-        AttachedToVisualTree += (_, _) => { _refresh.Start(); RefreshStatus(); };
+        _account.TextChanged += (_, _) => ConnectionDraftChanged();
+        _client.TextChanged += (_, _) => ConnectionDraftChanged();
+        _token.TextChanged += (_, _) => ConnectionDraftChanged();
+        _refresh.Tick += (_, _) => { if (IsEffectivelyVisible) RefreshStatus(); };
+        AttachedToVisualTree += (_, _) => UpdateRefreshLoop();
+        PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) UpdateRefreshLoop(); };
         DetachedFromVisualTree += (_, _) =>
         {
             _refresh.Stop();
-            _testCancellation?.Cancel();
+            HideConnectionDraft();
+            _lastDraft = (_account.Text ?? "", _client.Text ?? "", "");
             _token.Text = "";
             ClearConfirmation();
         };
@@ -186,8 +189,12 @@ public sealed class HabiticaSettingsPanel : Border
     public void Reload()
     {
         if (_settings == null) return;
-        _account.Text = _settings.HabiticaUserId;
-        _client.Text = _settings.HabiticaClientId;
+        bool changed = _account.Text != _settings.HabiticaUserId || _client.Text != _settings.HabiticaClientId;
+        _loading = true;
+        _account.Text = _settings.HabiticaUserId; _client.Text = _settings.HabiticaClientId;
+        _lastDraft = Draft(); _loading = false;
+        if (changed) { HideConnectionDraft(); SetFeedback("Check the connection for this account.", "Ready to test"); }
+        else if (string.IsNullOrEmpty(_feedback.Text)) SetFeedback("Enter your User ID, public client identifier, and API token.", "Connect your account");
         RefreshStatus();
     }
 
@@ -204,17 +211,17 @@ public sealed class HabiticaSettingsPanel : Border
             // including a token copied with a leading blank line. Normalize before insertion.
             string? text = (await _readTokenClipboard().WaitAsync(TimeSpan.FromSeconds(3)))?.Trim();
             if (owner != TopLevel.GetTopLevel(this) || !IsVisible || previous != _token.Text || account != _account.Text || client != _client.Text) return;
-            if (string.IsNullOrEmpty(text)) { _feedback.Text = "The clipboard contains no text API token. Copy the token again, then paste."; return; }
-            if (text.Any(char.IsControl)) { _feedback.Text = "Copy just the API token, without other lines of text."; return; }
+            if (string.IsNullOrEmpty(text)) { SetFeedback("The clipboard contains no text API token. Copy the token again, then paste.", "Paste needs attention", true); return; }
+            if (text.Any(char.IsControl)) { SetFeedback("Copy just the API token, without other lines of text.", "Paste needs attention", true); return; }
             _token.SelectionStart = start; _token.SelectionEnd = end;
             _token.SelectedText = text;
-            _feedback.Text = "API token pasted. Choose Save connection to store it.";
+            SetFeedback("API token pasted. Choose Save connection to store it.", "Unsaved changes");
         }
         catch
         {
             // Do not include clipboard contents or exception messages in feedback or logs.
             if (owner == TopLevel.GetTopLevel(this) && IsVisible)
-                _feedback.Text = "Could not read the clipboard. Copy the API token again and retry Paste.";
+                SetFeedback("Could not read the clipboard. Copy the API token again and retry Paste.", "Paste needs attention", true);
         }
         finally { _pastingToken = false; }
     }
@@ -222,56 +229,67 @@ public sealed class HabiticaSettingsPanel : Border
     private void SaveConnection()
     {
         if (_settings == null) return;
-        string account = _account.Text?.Trim() ?? "";
-        string client = _client.Text?.Trim() ?? "";
-        string? configurationError = HabiticaApiClient.ConfigurationError(account, client);
-        if (configurationError != null) throw new InvalidOperationException(configurationError);
-        var integration = _integration;
-        if (_settings.HabiticaUserId != account || _settings.HabiticaClientId != client)
+        string account = _account.Text?.Trim() ?? "", client = _client.Text?.Trim() ?? "";
+        string? error = HabiticaApiClient.ConfigurationError(account, client);
+        if (error != null) throw new InvalidOperationException(error);
+        string? token = _token.Text?.Trim(); bool replacing = !string.IsNullOrWhiteSpace(token);
+        // Write the replacement before committing the account, so storage failures leave the old connection intact.
+        if (replacing) _integration.SetToken(account, token!);
+        _savingConnection = true;
+        try
         {
-            _testCancellation?.Cancel();
-            integration.CancelPendingRequests();
-            integration.Disable(_settings);
+            if (_settings.HabiticaUserId != account || _settings.HabiticaClientId != client)
+            { _testCancellation?.Cancel(); _integration.CancelPendingRequests(); _integration.Disable(_settings); }
+            _settings.HabiticaUserId = account; _settings.HabiticaClientId = client;
+            if (replacing)
+            {
+                _credentialAccount = account.ToLowerInvariant(); _credentialMissing = false; _credentialStatus = _integration.CredentialStatus;
+                _token.Text = "";
+            }
+            SetTokenVisible(false); _lastDraft = Draft();
+            _integration.Configure(_settings); _save?.Invoke();
+            SetFeedback(replacing ? "Connection settings saved. " + _integration.CredentialStatus : "Connection settings saved. Any previously stored token was kept.", "Connection saved");
         }
-        _settings.HabiticaUserId = account;
-        _settings.HabiticaClientId = client;
-        string? tokenDraft = _token.Text;
-        bool replacingToken = !string.IsNullOrWhiteSpace(tokenDraft);
-        if (replacingToken)
-        {
-            if (!Guid.TryParse(account, out _))
-                throw new InvalidOperationException("Enter a valid Habitica User ID before saving a token.");
-            integration.SetToken(account, tokenDraft!.Trim());
-            _token.Text = "";
-            _token.Watermark = integration.CredentialStatus.Contains("session-only", StringComparison.OrdinalIgnoreCase)
-                ? "Token kept for this session — blank keeps it"
-                : "Token saved securely — blank keeps it";
-        }
-        integration.Configure(_settings);
-        _save?.Invoke();
-        _feedback.Text = replacingToken ? "Connection settings saved. " + integration.CredentialStatus
-            : "Connection settings saved. Any previously stored token was kept.";
+        finally { _savingConnection = false; }
     }
 
     private async Task TestAsync()
     {
-        if (_settings == null) return;
-        _test.IsEnabled = false;
+        if (_settings == null || _testing || !_test.IsEnabled) return;
+        _testing = true;
+        CancellationTokenSource? cancellation = null;
+        string scope = "";
+        (string Account, string Client, string Token) draft = default;
+        bool Current() => cancellation != null && !cancellation.IsCancellationRequested && IsEffectivelyVisible &&
+            _testCancellation == cancellation && _settings != null && ImportScope(_settings) == scope && Draft() == draft;
         try
         {
             SaveConnection();
-            _testCancellation?.Cancel();
-            using var cancellation = new CancellationTokenSource();
-            _testCancellation = cancellation;
-            _feedback.Text = "Testing connection…";
-            var result = await _integration.TestConnectionAsync(_settings, cancellation.Token);
-            if (!cancellation.IsCancellationRequested)
-                _feedback.Text = ConnectionTestMessage(result);
+            cancellation = new CancellationTokenSource(); _testCancellation = cancellation;
+            scope = ImportScope(_settings); draft = Draft();
+            var snapshot = new AppSettings { HabiticaUserId = _settings.HabiticaUserId, HabiticaClientId = _settings.HabiticaClientId,
+                HabiticaEnabled = _settings.HabiticaEnabled, ObsidianVaultFolder = _settings.ObsidianVaultFolder, NotesSubfolder = _settings.NotesSubfolder };
+            SetFeedback("Checking your Habitica account…", "Testing connection"); UpdateConnectionActions();
+            var result = await _integration.TestConnectionAsync(snapshot, cancellation.Token);
+            if (!Current()) return;
+            if (result.Error is not (HabiticaErrorKind.Conflict or HabiticaErrorKind.RateLimited or HabiticaErrorKind.Storage))
+            {
+                string account = snapshot.HabiticaUserId.ToLowerInvariant();
+                // Cached secret reads do not identify their protection; retain only this account's save evidence.
+                if (_credentialAccount != account) _credentialStatus = "";
+                _credentialAccount = account; _credentialMissing = result.Error == HabiticaErrorKind.Configuration;
+            }
+            SetFeedback(ConnectionTestMessage(result), result.Success ? "Last test succeeded" : result.Error == HabiticaErrorKind.RateLimited ? "Waiting to retry" : "Connection needs attention", !result.Success);
         }
-        catch (OperationCanceledException) { _feedback.Text = "Connection test canceled."; }
-        catch (InvalidOperationException ex) { _feedback.Text = ex.Message; }
-        catch { _feedback.Text = "Connection test failed. Check configuration and network connectivity."; }
-        finally { _testCancellation = null; _test.IsEnabled = true; RefreshStatus(); }
+        catch (OperationCanceledException) { }
+        catch (InvalidOperationException ex) { if (cancellation == null || Current()) SetFeedback(ex.Message, "Check connection details", true); }
+        catch { if (cancellation == null || Current()) SetFeedback("Connection test failed. Check configuration and network connectivity.", "Connection needs attention", true); }
+        finally
+        {
+            if (_testCancellation == cancellation) _testCancellation = null;
+            cancellation?.Dispose(); _testing = false;
+            if (IsEffectivelyVisible) RefreshStatus();
+        }
     }
 
     private string ConnectionTestMessage(HabiticaApiResult<string> result)
@@ -304,6 +322,7 @@ public sealed class HabiticaSettingsPanel : Border
             UpdateImportProgress(status);
             _loading = true;
             _enabled.IsChecked = _settings.HabiticaEnabled && status.IsOwner;
+            UpdateNavigatorStatus(status);
         }
         catch { _status.Text = "Sync status unavailable. Check the vault location and access permissions."; }
         finally { _loading = false; }
@@ -328,7 +347,7 @@ public sealed class HabiticaSettingsPanel : Border
         {
             await Task.Run(() => _integration.ImportExisting(snapshot));
             if (_settings != null && ImportScope(_settings) == _importScope)
-                _feedback.Text = "Existing items queued. Progress counts items confirmed by Habitica.";
+                SetFeedback("Existing items queued. Progress counts items confirmed by Habitica.");
         }
         catch (InvalidOperationException ex)
         {
@@ -383,8 +402,8 @@ public sealed class HabiticaSettingsPanel : Border
     private void Run(Action action)
     {
         try { action(); }
-        catch (InvalidOperationException ex) { _feedback.Text = ex.Message; Reveal(_feedback); }
-        catch { _feedback.Text = "Unable to save Habitica changes. Check configuration and storage access."; Reveal(_feedback); }
+        catch (InvalidOperationException ex) { SetFeedback(ex.Message, "Action needs attention", true); Reveal(_feedback); }
+        catch { SetFeedback("Unable to save Habitica changes. Check configuration and storage access.", "Action needs attention", true); Reveal(_feedback); }
         RefreshStatus();
     }
 
@@ -402,9 +421,10 @@ public sealed class HabiticaSettingsPanel : Border
         Reveal(_confirmPanel);
     }
 
-    private static void Reveal(Control control) => Dispatcher.UIThread.Post(() =>
+    private void Reveal(Control control) => Dispatcher.UIThread.Post(() =>
     {
-        if (!control.IsVisible) return;
+        if (!IsEffectivelyVisible || !control.IsVisible) return;
+        if (_navigatorRecovery != null && (control == _confirmPanel || control == _importProgress)) _navigatorRecovery.IsExpanded = true;
         control.UpdateLayout();
         control.BringIntoView();
     }, DispatcherPriority.Background);

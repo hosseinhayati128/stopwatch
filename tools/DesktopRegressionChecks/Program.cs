@@ -233,6 +233,45 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--settings-habitica-native") || args.Contains("--settings-habitica-recovery-examples"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    if (args.Contains("--settings-habitica-recovery-examples"))
+    {
+        Check("Habitica recovery structure, confirmation and local queue examples without HTTP", SettingsHabiticaNativeChecks.RecoveryExamples);
+        Environment.Exit(failures == 0 ? 0 : 1);
+    }
+    Check("Habitica drafts, masking, callbacks and theme restoration", SettingsHabiticaNativeChecks.Controls);
+    Check("Habitica real test outcomes, stale results and save failure", SettingsHabiticaNativeChecks.Actions);
+    Check("Habitica storage, request delays and retained recovery", SettingsHabiticaNativeChecks.StatusAndRecovery);
+    Check("Habitica closed-window result", SettingsHabiticaNativeChecks.ClosedResult);
+    Check("Habitica account-specific storage and missing token", SettingsHabiticaNativeChecks.AccountStorage);
+    Check("Habitica canceled-test feedback after navigation", SettingsHabiticaNativeChecks.CanceledResult);
+    Check("Habitica pause and validation with invalid drafts", SettingsHabiticaNativeChecks.PauseWithInvalidDraft);
+    Check("Habitica responsive layout and native captures", SettingsHabiticaNativeChecks.Layout);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--settings-telegram-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("Telegram preferences, token masking and theme restoration", SettingsTelegramNativeChecks.Controls);
+    Check("Telegram connection, retries and stale async results", SettingsTelegramNativeChecks.Actions);
+    Check("Telegram vault scan confirmation and cancellation", SettingsTelegramNativeChecks.Scan);
+    Check("Telegram responsive layout and native captures", SettingsTelegramNativeChecks.Layout);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--settings-obsidian-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -286,12 +325,14 @@ if (args.Contains("--settings-behavior-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview"))
+if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview") || args.Contains("--settings-telegram-preview") || args.Contains("--settings-habitica-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if (args.Contains("--settings-obsidian-preview")) Check("settings Obsidian native design proposal", SettingsObsidianPreview.Run);
+    if (args.Contains("--settings-habitica-preview")) Check("settings Habitica connection native design proposal", SettingsHabiticaPreview.Run);
+    else if (args.Contains("--settings-telegram-preview")) Check("settings Telegram native design proposal", SettingsTelegramPreview.Run);
+    else if (args.Contains("--settings-obsidian-preview")) Check("settings Obsidian native design proposal", SettingsObsidianPreview.Run);
     else if (args.Contains("--settings-application-preview")) Check("settings Application native design proposal", SettingsApplicationPreview.Run);
     else if (args.Contains("--settings-behavior-preview")) Check("settings Behavior native design proposal", SettingsBehaviorPreview.Run);
     else if(args.Contains("--settings-typography-preview"))Check("settings Fonts and colors native design proposal",SettingsTypographyPreview.Run);

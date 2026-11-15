@@ -150,7 +150,7 @@ public partial class SettingsWindow
         foreach(var status in new[]{_todoSaveStatus,_stopwatchSaveStatus,_navigatorSaveStatus})
         {
             if(status==null)continue;
-            status.Text=saved?"Changes apply immediately.":"Applied for this session, but settings could not be saved. Check disk space and try again.";
+            status.Text=saved?(status==_navigatorSaveStatus&&CurrentCategory=="Habitica"?"Connection details save with Save or Test.":"Changes apply immediately."):"Applied for this session, but settings could not be saved. Check disk space and try again.";
             status.Foreground=saved?TodoVisuals.Muted(new TodoAppearanceProfile()):Brush.Parse("#AD3434");
         }
     }

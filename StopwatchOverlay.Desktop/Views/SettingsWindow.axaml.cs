@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -42,7 +41,11 @@ public partial class SettingsWindow : Window
     }
 
     public SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider = null)
+        : this(settings, historyProvider, null) { }
+
+    public SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider, System.Net.Http.HttpClient? telegramClient)
     {
+        _telegramClient = telegramClient;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _historyProvider = historyProvider;
         InitializeComponent();
@@ -193,7 +196,7 @@ public partial class SettingsWindow : Window
             RefreshBackgroundChoices(_settings.PanelBackgroundId);
             UpdateValueLabels();
             UpdateDependentControlStates();
-            UpdateTelegramOutboxUi();
+            RefreshTelegramConfiguration();
             LoadIdleStopControls();
             FocusTrackingEnabledCheck.IsChecked = _settings.FocusTrackingEnabled;
             FocusDistractionThresholdTextBox.Text = _settings.FocusDistractionThresholdMinutes.ToString();
@@ -581,6 +584,9 @@ public partial class SettingsWindow : Window
                 SchedulePreviewFromAppliedSettings();
             }
 
+            if ((change & (SettingsChangeKind.Telegram | SettingsChangeKind.ObsidianExport)) != 0)
+                RefreshTelegramConfiguration();
+
             CrashLogger.RecordUiAction($"Settings change: {change}", CurrentCategory);
             SettingsChanged?.Invoke(change);
             UpdateNavigatorInteraction();
@@ -820,6 +826,8 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        if (tag != "Telegram") SetTelegramTokenVisible(false);
+        if (tag != "Habitica") HabiticaPanel.HideConnectionDraft();
         UpdateNavigatorCategory();
         UpdateTodoPreviewVisibility(tag);
         OverlayPanel.IsVisible = tag == "Overlay";
@@ -883,172 +891,6 @@ public partial class SettingsWindow : Window
         {
             CrashLogger.LogRecoverable(ex, "Settings.ObsidianExport");
             SetObsidianStatus("Export failed", ex.Message, true);
-        }
-    }
-
-    public async void TestTelegramButton_Click(object? sender, RoutedEventArgs e)
-    {
-        TestTelegramButton.IsEnabled = false;
-        TelegramStatusText.Text = "Testing Telegram connection...";
-        TelegramStatusText.Foreground = Brushes.DeepSkyBlue;
-
-        try
-        {
-            var testSettings = new AppSettings
-            {
-                TelegramEnabled = TelegramEnabledCheck.IsChecked == true,
-                TelegramBotToken = TelegramBotTokenTextBox.Text?.Trim() ?? "",
-                TelegramChatId = TelegramChatIdTextBox.Text?.Trim() ?? "",
-                TelegramNotesTopicId = TelegramNotesTopicTextBox.Text?.Trim() ?? "",
-                TelegramTodosTopicId = TelegramTodosTopicTextBox.Text?.Trim() ?? "",
-                TelegramRemindersTopicId = TelegramRemindersTopicTextBox.Text?.Trim() ?? ""
-            };
-
-            var result = await TelegramNotesSync.TestConnectionAsync(testSettings);
-            if (result.Success)
-            {
-                TelegramStatusText.Text = "✓ " + result.Message;
-                TelegramStatusText.Foreground = Brushes.DeepSkyBlue;
-            }
-            else
-            {
-                TelegramStatusText.Text = "✗ " + result.Message;
-                TelegramStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            TelegramStatusText.Text = "✗ Connection error: " + ex.Message;
-            TelegramStatusText.Foreground = Brushes.OrangeRed;
-        }
-        finally
-        {
-            TestTelegramButton.IsEnabled = true;
-        }
-    }
-
-    private void UpdateTelegramOutboxUi()
-    {
-        if (_closed) return;
-        int count = TelegramOutboxStore.PendingCount;
-        if (count == 0)
-        {
-            TelegramOutboxStatusText.Text = "Outbox: 0 notes pending";
-            TelegramOutboxDetailText.Text = "All notes are up to date.";
-            SendPendingNotesButton.IsEnabled = false;
-        }
-        else
-        {
-            TelegramOutboxStatusText.Text = $"Outbox: {count} note(s) pending delivery";
-            TelegramOutboxDetailText.Text = "Notes queued while offline. Will send automatically when online.";
-            SendPendingNotesButton.IsEnabled = true;
-        }
-    }
-
-    private void OnOutboxChanged()
-    {
-        if (_closed) return;
-        Dispatcher.UIThread.Post(UpdateTelegramOutboxUi);
-    }
-
-    private async void SendPendingNotesButton_Click(object? sender, RoutedEventArgs e)
-    {
-        SendPendingNotesButton.IsEnabled = false;
-        TelegramOutboxDetailText.Text = "Sending pending notes to Telegram...";
-        try
-        {
-            var (sent, remaining, lastError) = await TelegramNotesSync.FlushOutboxAsync(_settings);
-            if (remaining == 0)
-            {
-                TelegramOutboxDetailText.Text = $"Successfully sent {sent} note(s)!";
-                TelegramStatusText.Text = $"✓ Flushed outbox: {sent} note(s) sent.";
-                TelegramStatusText.Foreground = Brushes.ForestGreen;
-            }
-            else
-            {
-                TelegramOutboxDetailText.Text = $"Sent {sent} note(s). {remaining} remaining. (Error: {lastError})";
-                TelegramStatusText.Text = $"✗ Outbox flush paused: {lastError}";
-                TelegramStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            TelegramOutboxDetailText.Text = "Error flushing outbox: " + ex.Message;
-        }
-        finally
-        {
-            UpdateTelegramOutboxUi();
-        }
-    }
-
-    private async void ScanVaultNotesButton_Click(object? sender, RoutedEventArgs e)
-    {
-        ScanVaultNotesButton.IsEnabled = false;
-        try
-        {
-            var unsentNotes = TelegramNotesSync.GetUnsentVaultNotes(_settings, lookbackDays: 3);
-            if (unsentNotes.Count == 0)
-            {
-                await ConfirmationDialogWindow.ShowAsync(
-                    this,
-                    "Vault Scan Complete",
-                    "Scan Result",
-                    "No unsent notes found in your Obsidian vault from the last 3 days.",
-                    "OK",
-                    destructive: false);
-                return;
-            }
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Found {unsentNotes.Count} note(s) from the last 3 days that are not in your Telegram sent history:\n");
-            foreach (var note in unsentNotes.Take(5))
-            {
-                string preview = note.Text.Length > 60 ? note.Text[..57] + "..." : note.Text;
-                sb.AppendLine($"• [{note.Type}] {note.Timestamp:yyyy-MM-dd HH:mm} - {preview}");
-            }
-            if (unsentNotes.Count > 5)
-            {
-                sb.AppendLine($"... and {unsentNotes.Count - 5} more.");
-            }
-            sb.AppendLine("\nWould you like to add these notes to the Telegram outbox and send them now?");
-
-            bool confirmed = await ConfirmationDialogWindow.ShowAsync(
-                this,
-                "Unsent Notes Found",
-                "Sync Notes to Telegram",
-                sb.ToString(),
-                "Send Now",
-                destructive: false);
-
-            if (confirmed)
-            {
-                int queued = TelegramNotesSync.QueueVaultNotes(unsentNotes);
-                UpdateTelegramOutboxUi();
-                var (sent, remaining, lastError) = await TelegramNotesSync.FlushOutboxAsync(_settings);
-                await ConfirmationDialogWindow.ShowAsync(
-                    this,
-                    "Notes Queued & Sent",
-                    "Delivery Status",
-                    $"Queued {queued} note(s).\nSuccessfully sent: {sent}\nRemaining in outbox: {remaining}" +
-                    (lastError != null ? $"\n(Last note status: {lastError})" : ""),
-                    "OK",
-                    destructive: remaining > 0);
-            }
-        }
-        catch (Exception ex)
-        {
-            await ConfirmationDialogWindow.ShowAsync(
-                this,
-                "Error",
-                "Scan Failed",
-                "Failed to scan vault: " + ex.Message,
-                "OK",
-                destructive: true);
-        }
-        finally
-        {
-            ScanVaultNotesButton.IsEnabled = true;
-            UpdateTelegramOutboxUi();
         }
     }
 
@@ -1598,6 +1440,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
+        SetTelegramTokenVisible(false);
         _previewTimer.Stop();
         ReleaseAppearancePreview();
         TelegramOutboxStore.OutboxChanged -= OnOutboxChanged;

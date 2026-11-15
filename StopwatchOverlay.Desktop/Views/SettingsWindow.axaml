@@ -580,7 +580,7 @@
                                 <CheckBox x:Name="TelegramEnabledCheck" Content="Enable Telegram sync for notes, todos, and reminders"/>
 
                                 <TextBlock Text="Bot Token" Classes="sectionHeader" Margin="0,6,0,0"/>
-                                <TextBox x:Name="TelegramBotTokenTextBox" Height="34" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="TelegramBotTokenTextBox" PasswordChar="●" Height="34" VerticalContentAlignment="Center"/>
                                 <TextBlock Text="The HTTP API token provided by @BotFather (e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ)."
                                            Classes="subheading" TextWrapping="Wrap"/>
 
