@@ -233,23 +233,39 @@ public partial class ControllerWindow
         if (editor.SavedRecord != null) _dashboardWindow?.RefreshData();
     }
 
-    private async void OpenPeriodicReview()
+    private void OpenPeriodicReview() => _ = OpenPeriodicReviewAsync();
+
+    private async Task OpenPeriodicReviewAsync(DateTime? startUtc = null, DateTime? endUtc = null)
     {
-        if (_timerCommandDialog != null) return;
-        DateTime now = DateTime.UtcNow;
-        DateTime start = _settings.LastPeriodicReviewCompletedUtc is DateTime last && last < now && now - last <= TimeSpan.FromDays(1)
-            ? last : now.AddMinutes(-Math.Clamp(_settings.PeriodicReviewIntervalMinutes, 1, 1440));
-        var review = new PeriodicReviewWindow(
-            start, now, _settings, _projectHistory.CreateView(now), _timerManager.Sessions,
-            SavePeriodicReview,
-            name =>
-            {
-                string canonical = _projectHistory.RegisterProject(name);
-                _projectTimeStore.Save(_projectHistory);
-                return canonical;
-            },
-            mood => MoodLogSync.AppendMood(mood, _settings));
-        await ShowTimerCommandDialog(review);
+        if (_isExiting || _timerCommandDialog != null)
+        { if (startUtc.HasValue) _periodicReviewService?.OnPromptIgnored(); return; }
+        CancelPeriodicReviewPrompt();
+        var service = _periodicReviewService;
+        service?.BeginReview();
+        try
+        {
+            DateTime now = endUtc ?? DateTime.UtcNow;
+            DateTime? last = _settings.LastPeriodicReviewCompletedUtc is DateTime value ? ProjectTimeHistory.NormalizeUtc(value) : null;
+            DateTime start = startUtc ?? (last.HasValue && last < now && now - last.Value <= TimeSpan.FromDays(1)
+                ? last.Value : now.AddMinutes(-Math.Clamp(_settings.PeriodicReviewIntervalMinutes, 1, 1440)));
+            var review = new PeriodicReviewWindow(
+                start, now, _settings, _projectHistory.CreateView(now), _timerManager.Sessions,
+                SavePeriodicReview,
+                name =>
+                {
+                    string canonical = _projectHistory.RegisterProject(name);
+                    _projectTimeStore.Save(_projectHistory);
+                    return canonical;
+                },
+                mood => MoodLogSync.AppendMood(mood, _settings));
+            await ShowTimerCommandDialog(review);
+        }
+        catch (Exception ex)
+        {
+            CrashLogger.LogRecoverable(ex, "ControllerWindow.OpenPeriodicReview");
+            if (!_isExiting) ShowShortcutFeedback("Couldn’t open activity review. Please try again.");
+        }
+        finally { if (ReferenceEquals(service, _periodicReviewService)) service?.ResetPromptShowing(); }
     }
 
     private void SavePeriodicReview(List<PeriodicReviewStopwatchSlot> slots)
@@ -269,6 +285,8 @@ public partial class ControllerWindow
         _projectHistory.DeduplicateIntervals();
         _projectTimeStore.Save(_projectHistory);
         _settings.LastPeriodicReviewCompletedUtc = DateTime.UtcNow;
+        _periodicReviewService?.OnReviewCompleted(_settings.LastPeriodicReviewCompletedUtc.Value);
+        if (_timerCommandDialog is PeriodicReviewWindow) _periodicReviewService?.BeginReview();
         SettingsStore.Save(_settings);
         ObsidianLogSync.SyncHistory(_projectHistory.CreateView(DateTime.UtcNow), _settings);
         _dashboardWindow?.RefreshData();

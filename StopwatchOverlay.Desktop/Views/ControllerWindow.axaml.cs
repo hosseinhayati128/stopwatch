@@ -141,6 +141,7 @@ public partial class ControllerWindow : Window
         InitializePlatformServices();
         StartHabiticaSync();
         StartActivityWatchSync();
+        StartPeriodicReview();
         EnsureTodoOverlay().Show();
         UpdateOverlayStates();
     }
@@ -1164,6 +1165,7 @@ public partial class ControllerWindow : Window
     private bool _pendingTypography;
     private void OnSettingsChanged(SettingsChangeKind change)
     {
+        if ((change & SettingsChangeKind.PeriodicReview) != 0) RestartPeriodicReview();
         if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0)
             _activityWatchSyncService?.RestartTimer();
         bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography))==0;
@@ -1326,6 +1328,7 @@ public partial class ControllerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isExiting = true;
+        StopPeriodicReview();
         StopActivityWatchSync();
         _behaviorFocusQueue.Clear();
         _behaviorFocusPrompt?.Close();

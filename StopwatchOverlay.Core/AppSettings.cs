@@ -738,7 +738,8 @@ namespace StopwatchOverlay
             else if (PeriodicReviewMinDurationSeconds > 3600)
                 PeriodicReviewMinDurationSeconds = 3600;
 
-            PeriodicReviewMinActivityPercent = Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0);
+            PeriodicReviewMinActivityPercent = double.IsFinite(PeriodicReviewMinActivityPercent)
+                ? Math.Clamp(PeriodicReviewMinActivityPercent, 0.0, 50.0) : 3.0;
             PeriodicReviewFixedCollisionBehavior = string.Equals(PeriodicReviewFixedCollisionBehavior, "StopAtFixed", StringComparison.OrdinalIgnoreCase)
                 ? "StopAtFixed"
                 : "CutAndContinue";

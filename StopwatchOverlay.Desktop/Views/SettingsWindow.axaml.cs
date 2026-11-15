@@ -186,7 +186,7 @@ public partial class SettingsWindow : Window
             PeriodicReviewSnoozeTextBox.Text = _settings.PeriodicReviewSnoozeMinutes.ToString();
             PeriodicReviewAutoDismissTextBox.Text = _settings.PeriodicReviewAutoDismissSeconds.ToString();
             PeriodicReviewMinDurationTextBox.Text = _settings.PeriodicReviewMinDurationSeconds.ToString();
-            PeriodicReviewMinPercentTextBox.Text = _settings.PeriodicReviewMinActivityPercent.ToString("0.#");
+            PeriodicReviewMinPercentTextBox.Text = _settings.PeriodicReviewMinActivityPercent.ToString();
             InternetMonitorEnabledCheck.IsChecked = _settings.InternetMonitorEnabled;
             InternetMonitorOnlyDuringTimersCheck.IsChecked = _settings.InternetMonitorOnlyDuringTimers;
             InternetCheckIntervalTextBox.Text = _settings.InternetMonitorIntervalMinutes.ToString();
@@ -214,6 +214,7 @@ public partial class SettingsWindow : Window
             LoadStopwatchAppearance();
             RefreshApplicationChoices();
             RefreshActivityWatchExport();
+            RefreshActivityWatchReview();
         }
         finally
         {
@@ -552,15 +553,15 @@ public partial class SettingsWindow : Window
             if ((change & SettingsChangeKind.PeriodicReview) != 0)
             {
                 _settings.PeriodicReviewEnabled = PeriodicReviewEnabledCheck.IsChecked == true;
-                if (int.TryParse(PeriodicReviewIntervalTextBox.Text?.Trim(), out int reviewInterval) && reviewInterval > 0)
+                if (ReviewInteger(PeriodicReviewIntervalTextBox, 1, 1440, out int reviewInterval))
                     _settings.PeriodicReviewIntervalMinutes = reviewInterval;
-                if (int.TryParse(PeriodicReviewSnoozeTextBox.Text?.Trim(), out int snooze) && snooze > 0)
+                if (ReviewInteger(PeriodicReviewSnoozeTextBox, 1, 1440, out int snooze))
                     _settings.PeriodicReviewSnoozeMinutes = snooze;
-                if (int.TryParse(PeriodicReviewAutoDismissTextBox.Text?.Trim(), out int dismiss) && dismiss > 0)
+                if (ReviewInteger(PeriodicReviewAutoDismissTextBox, 1, 120, out int dismiss))
                     _settings.PeriodicReviewAutoDismissSeconds = dismiss;
-                if (int.TryParse(PeriodicReviewMinDurationTextBox.Text?.Trim(), out int minDur) && minDur >= 0)
+                if (ReviewInteger(PeriodicReviewMinDurationTextBox, 0, 3600, out int minDur))
                     _settings.PeriodicReviewMinDurationSeconds = minDur;
-                if (double.TryParse(PeriodicReviewMinPercentTextBox.Text?.Trim(), out double minPct) && minPct >= 0)
+                if (ReviewPercent(out double minPct))
                     _settings.PeriodicReviewMinActivityPercent = minPct;
             }
 
@@ -601,6 +602,8 @@ public partial class SettingsWindow : Window
             UpdateNavigatorInteraction();
             if ((change & SettingsChangeKind.ActivityWatch) != 0) RefreshActivityWatchConnection();
             if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0) RefreshActivityWatchExport();
+            if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.PeriodicReview)) != 0)
+            { _reviewExampleAccepted = null; RefreshActivityWatchReview(); }
         }
         finally
         {
@@ -1337,7 +1340,8 @@ public partial class SettingsWindow : Window
     private void ReviewNowButton_Click(object? sender, RoutedEventArgs e)
     {
         CrashLogger.RecordUiAction("Periodic review requested manually from settings", CurrentCategory);
-        PeriodicReviewRequested?.Invoke();
+        RefreshActivityWatchReview();
+        if (ReviewDetailValid()) PeriodicReviewRequested?.Invoke();
     }
 
     private void DoneButton_Click(object? sender, RoutedEventArgs e) => Close();

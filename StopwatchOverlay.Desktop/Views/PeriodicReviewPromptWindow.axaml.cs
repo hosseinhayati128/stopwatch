@@ -107,8 +107,8 @@ public partial class PeriodicReviewPromptWindow : Window
         _handled = true;
         _timer.Stop();
         Result = result;
-        _onResult?.Invoke(result);
         Close();
+        _onResult?.Invoke(result);
     }
 
     private void ReviewNowButton_Click(object? sender, RoutedEventArgs e)
@@ -136,9 +136,11 @@ public partial class PeriodicReviewPromptWindow : Window
     {
         base.OnClosed(e);
         _timer.Stop();
+        _timer.Tick -= Timer_Tick;
         if (!_handled)
         {
-            Finish(PeriodicReviewPromptResult.Ignored);
+            _handled = true;
+            _onResult?.Invoke(PeriodicReviewPromptResult.Ignored);
         }
     }
 }
