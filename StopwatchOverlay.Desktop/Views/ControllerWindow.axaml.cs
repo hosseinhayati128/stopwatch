@@ -141,6 +141,7 @@ public partial class ControllerWindow : Window
         InitializePlatformServices();
         StartHabiticaSync();
         StartActivityWatchSync();
+        StartInternetMonitor();
         StartPeriodicReview();
         EnsureTodoOverlay().Show();
         UpdateOverlayStates();
@@ -661,6 +662,7 @@ public partial class ControllerWindow : Window
 
         UpdateOverlayStates();
         UpdateActiveTimerDisplay();
+        UpdateInternetTimerState();
     }
 
     private void UpdateActiveTimerDisplay()
@@ -1147,7 +1149,11 @@ public partial class ControllerWindow : Window
         {
             if (PlatformServices.Startup.IsSupported)
                 _settings.StartWithWindows = PlatformServices.Startup.IsEnabled();
-            _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow));
+            UpdateInternetTimerState();
+            _settingsWindow = new SettingsWindow(_settings, () => _projectHistory.CreateView(DateTime.UtcNow), null, null, null,
+                _internetMonitorService is {} monitor ? monitor.TestConnectionAsync : null,
+                () => System.Threading.Volatile.Read(ref _internetHasRunningTimer) != 0);
+            if (_internetLastResult != null) _settingsWindow.UpdateInternetConnection(_internetLastResult);
             _settingsWindow.SettingsChanged += OnSettingsChanged;
             _settingsWindow.SettingsInteractionStarted += () => _settingsInteractionActive=true;
             _settingsWindow.SettingsInteractionCompleted += CompleteSettingsInteraction;
@@ -1166,6 +1172,7 @@ public partial class ControllerWindow : Window
     private void OnSettingsChanged(SettingsChangeKind change)
     {
         if ((change & SettingsChangeKind.PeriodicReview) != 0) RestartPeriodicReview();
+        if ((change & SettingsChangeKind.InternetMonitor) != 0) RestartInternetMonitor();
         if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0)
             _activityWatchSyncService?.RestartTimer();
         bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography))==0;
@@ -1329,6 +1336,7 @@ public partial class ControllerWindow : Window
     {
         _isExiting = true;
         StopPeriodicReview();
+        StopInternetMonitor();
         StopActivityWatchSync();
         _behaviorFocusQueue.Clear();
         _behaviorFocusPrompt?.Close();

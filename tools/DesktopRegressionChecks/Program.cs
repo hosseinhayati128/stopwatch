@@ -244,6 +244,21 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--settings-internet-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (string resource in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(resource) });
+    Check("Internet results and independent monitoring settings", SettingsInternetNativeChecks.ResultsAndSettings);
+    Check("Internet pending checks, cancellation and late completion", SettingsInternetNativeChecks.Lifecycle);
+    Check("Internet native scale, typography and theme restoration", SettingsInternetNativeChecks.LayoutAndThemes);
+    Check("Internet desktop monitor ownership and shutdown", SettingsInternetNativeChecks.ControllerLifecycle);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--settings-activitywatch-review-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -394,12 +409,13 @@ if (args.Contains("--settings-behavior-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview") || args.Contains("--settings-telegram-preview") || args.Contains("--settings-habitica-preview") || args.Contains("--settings-activitywatch-preview") || args.Contains("--settings-activitywatch-export-preview") || args.Contains("--settings-activitywatch-review-preview"))
+if (args.Contains("--settings-internet-preview") || args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview") || args.Contains("--settings-telegram-preview") || args.Contains("--settings-habitica-preview") || args.Contains("--settings-activitywatch-preview") || args.Contains("--settings-activitywatch-export-preview") || args.Contains("--settings-activitywatch-review-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if (args.Contains("--settings-activitywatch-review-preview")) Check("settings ActivityWatch review prompts native design proposal", SettingsActivityWatchReviewPreview.Run);
+    if (args.Contains("--settings-internet-preview")) Check("settings Internet connection and monitoring native proposal", SettingsInternetPreview.Run);
+    else if (args.Contains("--settings-activitywatch-review-preview")) Check("settings ActivityWatch review prompts native design proposal", SettingsActivityWatchReviewPreview.Run);
     else if (args.Contains("--settings-activitywatch-export-preview")) Check("settings ActivityWatch sync and export native design proposal", SettingsActivityWatchExportPreview.Run);
     else if (args.Contains("--settings-activitywatch-preview")) Check("settings ActivityWatch connection native design proposal", SettingsActivityWatchPreview.Run);
     else if (args.Contains("--settings-habitica-preview")) Check("settings Habitica connection native design proposal", SettingsHabiticaPreview.Run);

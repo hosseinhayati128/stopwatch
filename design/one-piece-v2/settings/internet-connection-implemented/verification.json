@@ -1,0 +1,115 @@
+{
+  "status": "implemented-native-verified-not-installed",
+  "verifiedUtc": "2026-11-15T19:39:34.655466+00:00",
+  "baseCommit": "40633e9c164dc3d03f116a259da9a1517318293a",
+  "rendering": "production SettingsWindow with injected synthetic probe results on private Windows desktops",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "windowSizes": [
+    "1120 x 720",
+    "840 x 600"
+  ],
+  "enlargedTextPercent": 175,
+  "builds": {
+    "desktopNative": {
+      "warnings": 0,
+      "errors": 0,
+      "log": "build-review-fixes.log"
+    },
+    "unit": {
+      "warnings": 0,
+      "errors": 0,
+      "log": "build-unit-review-fixes.log"
+    }
+  },
+  "checks": {
+    "unit": {
+      "passed": 1103,
+      "failed": 0,
+      "skipped": 0,
+      "log": "review-unit-green/unit.log"
+    },
+    "internetNative": {
+      "groupsPassed": 4,
+      "log": "review-native-green/native.log"
+    },
+    "activityWatchConnection": {
+      "groupsPassed": 4,
+      "log": "activitywatch-regression.log"
+    },
+    "activityWatchExport": {
+      "groupsPassed": 5,
+      "log": "activitywatch-export-regression.log"
+    },
+    "activityWatchReview": {
+      "groupsPassed": 4,
+      "log": "activitywatch-review-regression.log"
+    },
+    "approvedPreview": {
+      "scaleWindowCasesPassed": 6,
+      "log": "approved-preview-regression.log"
+    }
+  },
+  "review": {
+    "importantFindings": 2,
+    "fixedWithFailingThenPassingRegressions": [
+      "Interval drafts must not persist intermediate prefixes",
+      "Manual and scheduled probes must not overlap"
+    ],
+    "criticalFindings": 0,
+    "minorFindings": 0,
+    "singleFixPassCompleted": true
+  },
+  "sourceSha256": {
+    "StopwatchOverlay.Core/Internet/InternetMonitorService.cs": "eef9dbe265720bcd28ae7e55a830c69e2f1c10f7a6c9f9d3e47a5de769b2c578",
+    "StopwatchOverlay.Desktop/Views/ControllerWindow.axaml.cs": "05738963d906344d450f4812fd825207781086d075d06f96f447ff282989e750",
+    "StopwatchOverlay.Desktop/Views/SettingsWindow.Navigator.cs": "ca80b3eba7817d7f9cfb6916ded696c94b65768d483bf1ca7c6b89d703f8cf4a",
+    "StopwatchOverlay.Desktop/Views/SettingsWindow.axaml": "8dccb72ea4c15092fca7ce2e32f7f14075e23bbb32756557cd948716a9ec2e67",
+    "StopwatchOverlay.Desktop/Views/SettingsWindow.axaml.cs": "ceb3564be6e189a4874cf84b08af84f4aaae40936bed55a761f4cee0b543d8e5",
+    "tools/DesktopRegressionChecks/Program.cs": "4f6324620f6348567e9094955079d02b3538a2e74daaf4f313301617c7a5e957",
+    "StopwatchOverlay.Desktop/Views/ControllerWindow.Internet.cs": "4de8b7581952683ea6d052a2eb187359b2a1517bbc851af162c8c78d254d28c6",
+    "StopwatchOverlay.Desktop/Views/SettingsWindow.Internet.cs": "4384cf42d4ded35c4032e00073d44f660050239a9a7a69016589cce78fdf7cb0",
+    "StopwatchOverlay.Desktop/Views/SettingsWindow.InternetActions.cs": "4e3d5d2287d8a9b83b67108d140a318213d281e12d3c82f912ee5946f43dab2e",
+    "StopwatchOverlay.Tests/InternetMonitorServiceTests.cs": "f17d9458960b2e58844a9afc960d8634204ffaacf16637ac3eeea7963f818ec4",
+    "design/one-piece-v2/settings/internet-connection-native-preview/README.md": "2fe4a296f719b53cbab3bf6263ca32e12b3c19cd2fb2f4ab9872c2167144667e",
+    "design/one-piece-v2/settings/internet-connection-native-preview/verification.json": "5df44acabe5aef7f29dbd8e63a77613fa24506cbc3aa8704eb59926e1542a20a",
+    "docs/superpowers/plans/2026-11-15-settings-internet-connection.md": "e4783684273a81725410f442cae66b3f36ff34aee8acee288843aa6d3fdc3814",
+    "tools/DesktopRegressionChecks/SettingsInternetNativeChecks.cs": "e4c4640468aea64175b8753e6c07487ab7c7fc9f593f51cb6d73409356bd7471",
+    "tools/DesktopRegressionChecks/SettingsInternetPreview.cs": "77f389e574c95ee72abad1d827ccb44e812e823890033495f107ac9a487ff965",
+    "design/one-piece-v2/settings/internet-connection-implemented/README.md": "3562534195b7a6d2cedef707d5b8611c44557ae261514e2411f6f062223cddc8"
+  },
+  "captureSha256": {
+    "checking.png": "e5acd04623b143f7c471416d459d9ac23bdb2afbec45de8331b4cef9f1b4a7ae",
+    "compact-125-monitoring.png": "bf912d2244f8967982116fb6c271ddc20e14242fcdadbef5792ce0e1e96356aa",
+    "compact-125.png": "ee4a44b4ceea0f948ba74ca4664a9bb5511d7cb487d6f911d9b7c732874ec379",
+    "compact-70-monitoring.png": "d1a01de1db03ac7aa989c460d31fafde716afee3b227df576430b2d7b2ede38f",
+    "compact-70.png": "d1a01de1db03ac7aa989c460d31fafde716afee3b227df576430b2d7b2ede38f",
+    "compact-90-monitoring.png": "ffe0113391ad9fe68369c2e1eec74d332915b7261bd1ff0cabd7452377e90526",
+    "compact-90.png": "408d44860d96ab2764148fd572f5ccb023b62f9921f355dde85cf7d6c0ff1387",
+    "large-text.png": "5cbf8ee358a015a6624a47446e7b61cb22d2fbcd51bc9b4f51afb8480baf5f80",
+    "long-network.png": "16c38eaab627d9184b8e1c765b1f13f96904f96052bb73621153448f7ed2dfd0",
+    "not-checked.png": "8586b415c95824b1e49c1b823322137afa59e6e7f66e8f7489a0f39e91344d59",
+    "partial-result.png": "4906e9ddddae84d383e44872f4f60e172de314be4d53ab8ae91550af6d8e1de0",
+    "slow.png": "9b81742c9aac93d67b5c4d177611630a3dbefd727fd27e4ee3428c8139d0ced6",
+    "unreachable.png": "1ba080f4481340535c13a857f29e4fca21408d41119ea351483be82024a110bd",
+    "waiting-for-timer.png": "232878458778ff64f39f00d57886dacb931bf809cf208409dc76e628a185e3e1",
+    "wide-125-monitoring.png": "238b2f1002bd7d7751710a211b9d840f0cf017faf86f11e43a215d2d3725fcbe",
+    "wide-125.png": "ea9a128f8fc29bb8411d5aa83bde0881d38f472ca78e6915b654e5f2d57112c0",
+    "wide-70-monitoring.png": "9b2b0414b4cde9e6dc1033746c52ac084b9113e80283589d389e693327be9b73",
+    "wide-70.png": "9b2b0414b4cde9e6dc1033746c52ac084b9113e80283589d389e693327be9b73",
+    "wide-90-monitoring.png": "b4c09ec7afd4ad3527575c274dc285069e11ff8cb1783094cd00987e2ddd7901",
+    "wide-90.png": "b4c09ec7afd4ad3527575c274dc285069e11ff8cb1783094cd00987e2ddd7901"
+  },
+  "logDirectory": ".superpowers/sdd/2026-11-15-settings-internet-connection",
+  "existingTestFlake": "One initial CrashLogger concurrent-write assertion failed; baseline rerun and final suite passed. Logger unchanged.",
+  "notPerformed": [
+    "live network probes",
+    "release packaging",
+    "installation or restart",
+    "Git publication",
+    "Linux rendering"
+  ]
+}

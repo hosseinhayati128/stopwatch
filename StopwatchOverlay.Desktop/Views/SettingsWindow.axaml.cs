@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,7 +48,14 @@ public partial class SettingsWindow : Window
 
     internal SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider,
         System.Net.Http.HttpClient? telegramClient, System.Net.Http.HttpClient? activityWatchClient, Func<bool>? activityWatchLauncher)
+        : this(settings, historyProvider, telegramClient, activityWatchClient, activityWatchLauncher, null, null) { }
+
+    internal SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider,
+        System.Net.Http.HttpClient? telegramClient, System.Net.Http.HttpClient? activityWatchClient, Func<bool>? activityWatchLauncher,
+        Func<int, System.Threading.CancellationToken, Task<InternetCheckResult>>? internetProbe, Func<bool>? internetTimerRunning)
     {
+        _internetProbe = internetProbe ?? ((bytes, token) => InternetSpeedProbe.CheckConnectionAsync(bytes, cancellationToken: token));
+        _internetTimerRunning = internetTimerRunning;
         _telegramClient = telegramClient;
         _activityWatchHttpClient = activityWatchClient;
         _activityWatchLauncher = activityWatchLauncher ?? ActivityWatchLauncher.TryLaunch;
@@ -306,7 +313,16 @@ public partial class SettingsWindow : Window
 
         WireCheckBox(InternetMonitorEnabledCheck, SettingsChangeKind.InternetMonitor);
         WireCheckBox(InternetMonitorOnlyDuringTimersCheck, SettingsChangeKind.InternetMonitor);
-        InternetCheckIntervalTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
+        InternetCheckIntervalTextBox.TextChanged += (_, _) =>
+        {
+            if (_loading) return;
+            RefreshInternetConnection();
+        };
+        InternetCheckIntervalTextBox.LostFocus += (_, _) => CommitInternetInterval();
+        InternetCheckIntervalTextBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { e.Handled = true; CommitInternetInterval(); }
+        };
         InternetFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
 
         WireCheckBox(IdleStopUnnamedCheck, SettingsChangeKind.IdleStop);
@@ -569,8 +585,6 @@ public partial class SettingsWindow : Window
             {
                 _settings.InternetMonitorEnabled = InternetMonitorEnabledCheck.IsChecked == true;
                 _settings.InternetMonitorOnlyDuringTimers = InternetMonitorOnlyDuringTimersCheck.IsChecked == true;
-                if (int.TryParse(InternetCheckIntervalTextBox.Text?.Trim(), out int interval) && interval > 0)
-                    _settings.InternetMonitorIntervalMinutes = interval;
                 _settings.InternetLogFileName = InternetFileNameTextBox.Text?.Trim() ?? "";
                 if (InternetRetentionCombo.SelectedItem is ComboBoxItem retItem && int.TryParse(retItem.Tag?.ToString(), out int rDays))
                     _settings.InternetLogRetentionDays = rDays;
@@ -600,6 +614,7 @@ public partial class SettingsWindow : Window
             CrashLogger.RecordUiAction($"Settings change: {change}", CurrentCategory);
             SettingsChanged?.Invoke(change);
             UpdateNavigatorInteraction();
+            if ((change & SettingsChangeKind.InternetMonitor) != 0) RefreshInternetConnection();
             if ((change & SettingsChangeKind.ActivityWatch) != 0) RefreshActivityWatchConnection();
             if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0) RefreshActivityWatchExport();
             if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.PeriodicReview)) != 0)
@@ -840,6 +855,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        if (tag != "Internet") CancelInternetCheck();
         if (tag != "ActivityWatch") { CancelActivityWatchConnection(); CancelActivityWatchExport(); }
         else RefreshActivityWatchExport();
         if (tag != "Telegram") SetTelegramTokenVisible(false);
@@ -1211,49 +1227,7 @@ public partial class SettingsWindow : Window
         => await RunActivityWatchExportAsync();
 
     private async void TestInternetButton_Click(object? sender, RoutedEventArgs e)
-    {
-        TestInternetButton.IsEnabled = false;
-        InternetStatusText.Text = "Testing network latency, download speed, and Wi-Fi...";
-        if (Application.Current?.TryFindResource("SecondaryTextBrush", out var stBrush) == true && stBrush is IBrush brush)
-            InternetStatusText.Foreground = brush;
-
-        try
-        {
-            CommitControls(SettingsChangeKind.InternetMonitor);
-            var result = await InternetSpeedProbe.CheckConnectionAsync(
-                sampleBytes: _settings.InternetSampleSizeBytes,
-                pingHost: "1.1.1.1");
-
-            string speedStr = result.DownloadMbps.HasValue ? $"{result.DownloadMbps.Value:F1} Mbps" : "N/A";
-            string pingStr = result.PingMs.HasValue ? $"{result.PingMs.Value} ms" : "N/A";
-            string netStr = !string.IsNullOrWhiteSpace(result.NetworkInfo.DisplayText) ? result.NetworkInfo.DisplayText : "Unknown";
-
-            if (result.Status == InternetStatus.Online)
-            {
-                InternetStatusText.Text = $"✓ {result.StatusBadge} | {netStr} | Ping: {pingStr} | Download: {speedStr} ({result.Notes})";
-                InternetStatusText.Foreground = Brushes.ForestGreen;
-            }
-            else if (result.Status == InternetStatus.Slow)
-            {
-                InternetStatusText.Text = $"⚠ {result.StatusBadge} | {netStr} | Ping: {pingStr} | Download: {speedStr} ({result.Notes})";
-                InternetStatusText.Foreground = Brushes.Goldenrod;
-            }
-            else
-            {
-                InternetStatusText.Text = $"✗ {result.StatusBadge} | {netStr} | {result.Notes}";
-                InternetStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            InternetStatusText.Text = "✗ Test error: " + ex.Message;
-            InternetStatusText.Foreground = Brushes.OrangeRed;
-        }
-        finally
-        {
-            TestInternetButton.IsEnabled = true;
-        }
-    }
+        => await RunInternetCheckAsync();
 
     private void InternetRetentionCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -1355,6 +1329,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
+        CancelInternetCheck();
         CancelActivityWatchConnection(); CancelActivityWatchExport();
         SetTelegramTokenVisible(false);
         _previewTimer.Stop();

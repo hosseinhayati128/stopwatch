@@ -1,0 +1,27 @@
+{
+  "status": "native-design-preview-not-production",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "windows": [
+    "1120 x 720",
+    "840 x 600"
+  ],
+  "states": [
+    "not-checked",
+    "checking",
+    "online",
+    "slow",
+    "unreachable",
+    "partial-result",
+    "monitoring-off",
+    "waiting-for-timer",
+    "invalid-interval"
+  ],
+  "checks": "Layout bounds, fixed footer, keyboard focus, sample action states, interval validation and zero settings events",
+  "networkRequests": 0,
+  "persistedSettings": 0,
+  "execution": "Private Windows desktop; synthetic data only"
+}
