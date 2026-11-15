@@ -138,6 +138,7 @@ public partial class SettingsWindow
         RestoreObsidianPage();
         RestoreTelegramPage();
         RestoreHabiticaPage();
+        RestoreActivityWatchPage();
         ((Grid)SettingsColumns.Parent!).Children.Remove(SettingsColumns);
         foreach(var item in _navigatorMovedControls)((Panel)item.Control.Parent!).Children.Remove(item.Control);
         foreach(var item in _navigatorMovedControls.OrderBy(i=>i.Index))
@@ -174,6 +175,7 @@ public partial class SettingsWindow
         bool obsidian=CurrentCategory=="Obsidian";
         bool telegram=CurrentCategory=="Telegram";
         bool habitica=CurrentCategory=="Habitica";
+        bool activityWatch=CurrentCategory=="ActivityWatch";
         if(typography&&_typographyPage==null)BuildTypographyPage((Grid)SettingsColumns.Parent!);
         if(appearance&&_appearancePage==null)BuildAppearancePage((Grid)SettingsColumns.Parent!);
         if(behavior&&_behaviorPage==null)BuildBehaviorPage((Grid)SettingsColumns.Parent!);
@@ -181,7 +183,8 @@ public partial class SettingsWindow
         if(obsidian&&_obsidianPage==null)BuildObsidianPage((Grid)SettingsColumns.Parent!);
         if(telegram&&_telegramPage==null)BuildTelegramPage((Grid)SettingsColumns.Parent!);
         if(habitica&&_habiticaPage==null)BuildHabiticaPage((Grid)SettingsColumns.Parent!);
-        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography&&!behavior&&!application&&!obsidian&&!telegram&&!habitica;_navigatorSettingsScroll!.IsVisible=overlay;
+        if(activityWatch&&_activityWatchPage==null)BuildActivityWatchPage((Grid)SettingsColumns.Parent!);
+        SettingsColumns.IsVisible=!overlay&&!appearance&&!typography&&!behavior&&!application&&!obsidian&&!telegram&&!habitica&&!activityWatch;_navigatorSettingsScroll!.IsVisible=overlay;
         if(_typographyPage!=null)_typographyPage.IsVisible=typography;
         if(_appearancePage!=null)_appearancePage.IsVisible=appearance;
         if(_behaviorPage!=null)_behaviorPage.IsVisible=behavior;
@@ -189,6 +192,7 @@ public partial class SettingsWindow
         if(_obsidianPage!=null)_obsidianPage.IsVisible=obsidian;
         if(_telegramPage!=null)_telegramPage.IsVisible=telegram;
         if(_habiticaPage!=null)_habiticaPage.IsVisible=habitica;
+        if(_activityWatchPage!=null)_activityWatchPage.IsVisible=activityWatch;
         ReportPersistenceResult(_settingsSaved);
         foreach(var (button,text,key) in _navigatorCategories){button.Classes.Set("editorPrimary",key==CurrentCategory);text.Foreground=key==CurrentCategory?ClockPickerPresentation.Cream:SettingsInk;}
         ResizeNavigatorSettings();
@@ -198,6 +202,7 @@ public partial class SettingsWindow
         RefreshApplicationChoices();
         ResizeObsidianPage();
         ResizeTelegramPage();
+        ResizeActivityWatchPage();
     }
 
     private void ResizeNavigatorSettings()

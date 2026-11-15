@@ -233,6 +233,21 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--settings-activitywatch-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("ActivityWatch connection controls, retained tabs and themes", SettingsActivityWatchNativeChecks.Controls);
+    Check("ActivityWatch actual client results, validation and launcher", SettingsActivityWatchNativeChecks.Actions);
+    Check("ActivityWatch duplicate operations, stale results and cancellation", SettingsActivityWatchNativeChecks.Lifecycle);
+    Check("ActivityWatch responsive production captures", SettingsActivityWatchNativeChecks.Layout);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--settings-habitica-native") || args.Contains("--settings-habitica-recovery-native") || args.Contains("--settings-habitica-recovery-examples") || args.Contains("--settings-habitica-recovery-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -337,12 +352,13 @@ if (args.Contains("--settings-behavior-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview") || args.Contains("--settings-telegram-preview") || args.Contains("--settings-habitica-preview"))
+if (args.Contains("--settings-appearance-preview") || args.Contains("--settings-typography-preview") || args.Contains("--settings-behavior-preview") || args.Contains("--settings-application-preview") || args.Contains("--settings-obsidian-preview") || args.Contains("--settings-telegram-preview") || args.Contains("--settings-habitica-preview") || args.Contains("--settings-activitywatch-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
-    if (args.Contains("--settings-habitica-preview")) Check("settings Habitica connection native design proposal", SettingsHabiticaPreview.Run);
+    if (args.Contains("--settings-activitywatch-preview")) Check("settings ActivityWatch connection native design proposal", SettingsActivityWatchPreview.Run);
+    else if (args.Contains("--settings-habitica-preview")) Check("settings Habitica connection native design proposal", SettingsHabiticaPreview.Run);
     else if (args.Contains("--settings-telegram-preview")) Check("settings Telegram native design proposal", SettingsTelegramPreview.Run);
     else if (args.Contains("--settings-obsidian-preview")) Check("settings Obsidian native design proposal", SettingsObsidianPreview.Run);
     else if (args.Contains("--settings-application-preview")) Check("settings Application native design proposal", SettingsApplicationPreview.Run);

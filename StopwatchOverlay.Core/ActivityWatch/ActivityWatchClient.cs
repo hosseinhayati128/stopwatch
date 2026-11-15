@@ -10,7 +10,7 @@ namespace StopwatchOverlay.ActivityWatch;
 
 public sealed class ActivityWatchClient
 {
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient SharedHttpClient = new()
     {
         Timeout = TimeSpan.FromSeconds(10)
     };
@@ -21,10 +21,12 @@ public sealed class ActivityWatchClient
     };
 
     private readonly string _baseUrl;
+    private readonly HttpClient _httpClient;
 
-    public ActivityWatchClient(string? baseUrl = null)
+    public ActivityWatchClient(string? baseUrl = null, HttpClient? httpClient = null)
     {
         _baseUrl = NormalizeBaseUrl(baseUrl);
+        _httpClient = httpClient ?? SharedHttpClient;
     }
 
     public static string NormalizeBaseUrl(string? url)
@@ -46,7 +48,7 @@ public sealed class ActivityWatchClient
     {
         try
         {
-            using var response = await HttpClient.GetAsync($"{_baseUrl}/api/0/info", ct).ConfigureAwait(false);
+            using var response = await _httpClient.GetAsync($"{_baseUrl}/api/0/info", ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 return (false, "", $"Server returned HTTP {(int)response.StatusCode}: {response.ReasonPhrase}");
@@ -75,7 +77,7 @@ public sealed class ActivityWatchClient
         try
         {
             // Note: Trailing slash is required by aw-server to prevent 307 redirects
-            using var response = await HttpClient.GetAsync($"{_baseUrl}/api/0/buckets/", ct).ConfigureAwait(false);
+            using var response = await _httpClient.GetAsync($"{_baseUrl}/api/0/buckets/", ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 return [];
 
@@ -102,7 +104,7 @@ public sealed class ActivityWatchClient
             string endIso = Uri.EscapeDataString(endUtc.ToString("o"));
             string url = $"{_baseUrl}/api/0/buckets/{Uri.EscapeDataString(bucketId)}/events?start={startIso}&end={endIso}&limit={limit}";
 
-            using var response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
+            using var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 return [];
 

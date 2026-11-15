@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,8 +44,14 @@ public partial class SettingsWindow : Window
         : this(settings, historyProvider, null) { }
 
     public SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider, System.Net.Http.HttpClient? telegramClient)
+        : this(settings, historyProvider, telegramClient, null, null) { }
+
+    internal SettingsWindow(AppSettings settings, Func<ProjectHistoryView>? historyProvider,
+        System.Net.Http.HttpClient? telegramClient, System.Net.Http.HttpClient? activityWatchClient, Func<bool>? activityWatchLauncher)
     {
         _telegramClient = telegramClient;
+        _activityWatchHttpClient = activityWatchClient;
+        _activityWatchLauncher = activityWatchLauncher ?? ActivityWatchLauncher.TryLaunch;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _historyProvider = historyProvider;
         InitializeComponent();
@@ -64,6 +70,7 @@ public partial class SettingsWindow : Window
 
         LoadControls();
         WireChanges();
+        RefreshActivityWatchConnection();
         HabiticaPanel.Bind(_settings, () => SettingsChanged?.Invoke(SettingsChangeKind.None));
         UpdatePreviewSafely();
         TelegramOutboxStore.OutboxChanged += OnOutboxChanged;
@@ -590,6 +597,7 @@ public partial class SettingsWindow : Window
             CrashLogger.RecordUiAction($"Settings change: {change}", CurrentCategory);
             SettingsChanged?.Invoke(change);
             UpdateNavigatorInteraction();
+            if ((change & SettingsChangeKind.ActivityWatch) != 0) RefreshActivityWatchConnection();
         }
         finally
         {
@@ -826,6 +834,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        if (tag != "ActivityWatch") CancelActivityWatchConnection();
         if (tag != "Telegram") SetTelegramTokenVisible(false);
         if (tag != "Habitica") HabiticaPanel.HideConnectionDraft();
         UpdateNavigatorCategory();
@@ -1186,82 +1195,10 @@ public partial class SettingsWindow : Window
     }
 
     private async void StartActivityWatchAppButton_Click(object? sender, RoutedEventArgs e)
-    {
-        StartActivityWatchAppButton.IsEnabled = false;
-        ActivityWatchStatusText.Text = "Attempting to start ActivityWatch...";
-        if (Application.Current?.TryFindResource("SecondaryTextBrush", out var stBrush) == true && stBrush is IBrush brush)
-            ActivityWatchStatusText.Foreground = brush;
-
-        try
-        {
-            bool launched = ActivityWatchLauncher.TryLaunch();
-            if (!launched)
-            {
-                ActivityWatchStatusText.Text = "✗ Could not locate ActivityWatch executable (aw-qt). Please start ActivityWatch manually.";
-                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-                return;
-            }
-
-            ActivityWatchStatusText.Text = "ActivityWatch starting, waiting for server to respond...";
-            var client = new ActivityWatchClient(ActivityWatchServerUrlTextBox.Text?.Trim() ?? "");
-            for (int i = 0; i < 12; i++)
-            {
-                await Task.Delay(500);
-                var (success, version, _) = await client.TestConnectionAsync();
-                if (success)
-                {
-                    ActivityWatchStatusText.Text = $"✓ ActivityWatch is running and connected (Version: {version})";
-                    ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
-                    return;
-                }
-            }
-
-            ActivityWatchStatusText.Text = "ActivityWatch was started, but server took longer than expected to respond. Try 'Test Connection' shortly.";
-            ActivityWatchStatusText.Foreground = Brushes.Goldenrod;
-        }
-        catch (Exception ex)
-        {
-            ActivityWatchStatusText.Text = "✗ Error: " + ex.Message;
-            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-        }
-        finally
-        {
-            StartActivityWatchAppButton.IsEnabled = true;
-        }
-    }
+        => await RunActivityWatchConnectionAsync(launch: true);
 
     private async void TestActivityWatchButton_Click(object? sender, RoutedEventArgs e)
-    {
-        TestActivityWatchButton.IsEnabled = false;
-        ActivityWatchStatusText.Text = "Testing connection to ActivityWatch...";
-        if (Application.Current?.TryFindResource("SecondaryTextBrush", out var stBrush) == true && stBrush is IBrush brush)
-            ActivityWatchStatusText.Foreground = brush;
-
-        try
-        {
-            var client = new ActivityWatchClient(ActivityWatchServerUrlTextBox.Text?.Trim() ?? "");
-            var (success, version, error) = await client.TestConnectionAsync();
-            if (success)
-            {
-                ActivityWatchStatusText.Text = $"✓ Connected to ActivityWatch (Version: {version})";
-                ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
-            }
-            else
-            {
-                ActivityWatchStatusText.Text = "✗ " + (error ?? "Could not connect to ActivityWatch.");
-                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            ActivityWatchStatusText.Text = "✗ Error: " + ex.Message;
-            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-        }
-        finally
-        {
-            TestActivityWatchButton.IsEnabled = true;
-        }
-    }
+        => await RunActivityWatchConnectionAsync(launch: false);
 
     private async void SyncActivityWatchNowButton_Click(object? sender, RoutedEventArgs e)
     {
@@ -1440,6 +1377,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
+        CancelActivityWatchConnection();
         SetTelegramTokenVisible(false);
         _previewTimer.Stop();
         ReleaseAppearancePreview();

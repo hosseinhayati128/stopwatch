@@ -644,7 +644,7 @@
                         <TextBlock Text="ActivityWatch Integration" Classes="heading"/>
                         <TextBlock Text="Sync background activity (active applications, Obsidian notes, VLC media, and Chrome tabs) into your Obsidian vault with idle/AFK filtering."
                                    Classes="subheading" Margin="0,0,0,16" TextWrapping="Wrap"/>
-                        <Border Classes="settingsCard">
+                        <Border x:Name="ActivityWatchSyncCard" Classes="settingsCard">
                             <StackPanel Spacing="10">
                                 <CheckBox x:Name="ActivityWatchEnabledCheck" Content="Enable ActivityWatch integration"/>
                                 <CheckBox x:Name="ActivityWatchSyncOnStopwatchCheck" Content="Auto-sync activity when stopwatch sessions are saved to Obsidian"/>
@@ -657,9 +657,9 @@
                                 <CheckBox x:Name="ActivityWatchIncludeTitlesCheck" Content="Include window &amp; document titles (Obsidian note names, VLC video titles, etc.)" Margin="0,4,0,0"/>
                                 <CheckBox x:Name="ActivityWatchIncludeWebCheck" Content="Include browser web activity (Chrome tab titles &amp; web domains)"/>
 
-                                <TextBlock Text="ActivityWatch Server URL" Classes="sectionHeader" Margin="0,6,0,0"/>
+                                <TextBlock x:Name="ActivityWatchServerLabel" Text="ActivityWatch Server URL" Classes="sectionHeader" Margin="0,6,0,0"/>
                                 <TextBox x:Name="ActivityWatchServerUrlTextBox" Height="34" VerticalContentAlignment="Center"/>
-                                <TextBlock Text="Local REST API address for ActivityWatch (default: http://localhost:5600)." Classes="subheading"/>
+                                <TextBlock x:Name="ActivityWatchServerHint" Text="Local REST API address for ActivityWatch (default: http://localhost:5600)." Classes="subheading"/>
 
                                 <TextBlock Text="Export file name (in Obsidian Vault)" Classes="sectionHeader" Margin="0,6,0,0"/>
                                 <TextBox x:Name="ActivityWatchFileNameTextBox" Height="34" VerticalContentAlignment="Center"/>
@@ -679,7 +679,7 @@
                         </Border>
 
                         <!-- Periodic Activity & Time Review Card -->
-                        <Border Classes="settingsCard">
+                        <Border x:Name="ActivityWatchReviewCard" Classes="settingsCard">
                             <StackPanel Spacing="10">
                                 <TextBlock Text="Periodic Activity &amp; Time Review" Classes="sectionHeader" FontSize="15"/>
                                 <TextBlock Text="Periodically prompt to review what you were doing since the last report, reconcile background activity with stopwatch project times, and allocate untracked time."
