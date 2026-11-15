@@ -34,6 +34,7 @@ public sealed partial class HabiticaSettingsPanel
     {
         _connectionHeading = title; _connectionFailed = failed; _feedback.Text = message;
         UpdateConnectionFeedback();
+        UpdateRecoveryFeedback();
         // Recovery can change the scroll viewport; refresh cached auto rows and their following section.
         if (_navigatorCards != null) Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -75,6 +76,7 @@ public sealed partial class HabiticaSettingsPanel
         _test.Content = _testing ? "Testing…" : wait > 0 ? $"Try again in {wait:0}s" : "Test connection";
         _enabled.IsEnabled = !_testing && (_enabled.IsChecked == true || valid);
         _syncExisting.IsEnabled = !_testing && !_queueing && _lastSyncStatus?.ImportProgress?.IsQueuing != true;
+        UpdateRecoveryActions();
         if (_navigatorReveal != null)
         {
             _navigatorReveal.IsEnabled = !string.IsNullOrEmpty(_token.Text);
@@ -85,6 +87,7 @@ public sealed partial class HabiticaSettingsPanel
     private void UpdateNavigatorStatus(HabiticaSyncStatus status)
     {
         _lastSyncStatus = status; UpdateConnectionActions(); UpdateCredentialFeedback();
+        UpdateRecoveryStatus(status);
         if (_navigatorSyncTitle == null) return;
         bool active = _settings?.HabiticaEnabled == true && status.IsOwner;
         _navigatorSyncTitle.Text = active ? "Sync enabled" : _settings?.HabiticaEnabled == true ? "Sync needs attention" : "Sync paused";

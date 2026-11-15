@@ -233,7 +233,7 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
-if (args.Contains("--settings-habitica-native") || args.Contains("--settings-habitica-recovery-examples"))
+if (args.Contains("--settings-habitica-native") || args.Contains("--settings-habitica-recovery-native") || args.Contains("--settings-habitica-recovery-examples") || args.Contains("--settings-habitica-recovery-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
@@ -241,6 +241,18 @@ if (args.Contains("--settings-habitica-native") || args.Contains("--settings-hab
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
         Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    if (args.Contains("--settings-habitica-recovery-native"))
+    {
+        Check("Habitica recovery navigation, drafts and guarded import", SettingsHabiticaNativeChecks.RecoveryActions);
+        Check("Habitica recovery actions after leaving navigator theme", SettingsHabiticaNativeChecks.RecoveryLegacyAvailability);
+        Check("Habitica recovery progress states and native layout", SettingsHabiticaNativeChecks.RecoveryLayout);
+        Environment.Exit(failures == 0 ? 0 : 1);
+    }
+    if (args.Contains("--settings-habitica-recovery-preview"))
+    {
+        Check("Habitica Sync & Recovery native design proposal", SettingsHabiticaNativeChecks.RecoveryPreview);
+        Environment.Exit(failures == 0 ? 0 : 1);
+    }
     if (args.Contains("--settings-habitica-recovery-examples"))
     {
         Check("Habitica recovery structure, confirmation and local queue examples without HTTP", SettingsHabiticaNativeChecks.RecoveryExamples);

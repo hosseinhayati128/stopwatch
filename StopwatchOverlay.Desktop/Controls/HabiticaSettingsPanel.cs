@@ -27,7 +27,8 @@ public sealed partial class HabiticaSettingsPanel : Border
     private readonly TextBlock _importProgressDetail = Label("");
     private readonly ProgressBar _importProgressBar = new() { Name = "HabiticaImportProgressBar", Height = 5, Minimum = 0, Maximum = 1 };
     private readonly HabiticaIntegration _integration;
-    private readonly Button _syncExisting;
+    private readonly Button _syncExisting, _transferVault, _restoreMissing, _confirmButton, _cancelConfirmation;
+    private Button? _confirmationSource;
     private bool _queueing;
     private string _importScope = "";
     private string? _importError;
@@ -105,9 +106,10 @@ public sealed partial class HabiticaSettingsPanel : Border
             SaveConnection();
             if (!_settings.HabiticaEnabled || !_integration.GetStatus(_settings).IsOwner)
                 throw new InvalidOperationException("Enable Habitica sync on this computer before queuing existing items.");
-            int count = _integration.CountExisting(_settings);
+            int count = _recoveryRoot != null ? _recoveryExistingCount ?? 0 : _integration.CountExisting(_settings);
+            if (count == 0) { SetFeedback("No existing items to sync."); return; }
             Confirm($"Sync {count} existing local todos and reminders to this Habitica account? Already linked items will be updated; existing Habitica tasks are not imported or matched by title.",
-                () => { _ = QueueExistingAsync(); });
+                () => { _ = QueueExistingAsync(); }, _syncExisting!, "Confirm sync");
         }));
         _syncExisting.Name = "SyncExistingHabiticaButton";
         content.Children.Add(_syncExisting);
@@ -123,21 +125,23 @@ public sealed partial class HabiticaSettingsPanel : Border
         var copiedVaultOptions = new Expander { Name = "HabiticaCopiedVaultOptions", Header = "Copied or shared vault (advanced)", IsExpanded = false };
         var copiedVaultContent = new StackPanel { Spacing = 8 };
         copiedVaultContent.Children.Add(Label("Use this only when moving an existing linked vault to another computer. Independent local vaults do not need a transfer. Do not run two writers against the same copied/shared Habitica metadata."));
-        copiedVaultContent.Children.Add(ActionButton("Move this linked vault here…", () => Run(() =>
+        _transferVault = ActionButton("Move this linked vault here…", () => Run(() =>
         {
             SaveConnection();
-            Confirm("For this copied/shared vault only: disable sync or close its old Stopwatch installation and finish copying the vault before moving these links here. Other computers with separate local vaults may keep syncing.", () =>
+            Confirm("Close Stopwatch or disable sync on the old copy first, and finish copying the vault. This transfers sync ownership; it does not copy files. Separate local vaults are unaffected.", () =>
             {
                 if (_settings == null) return;
                 if (!_integration.EnableHere(_settings, takeOver: true))
                     throw new InvalidOperationException("Unable to move this linked vault to this installation.");
                 _save?.Invoke();
                 SetFeedback("This linked vault now syncs from this installation. Separate local vaults are unaffected.");
-            });
-        })));
+            }, _transferVault!, "Confirm transfer");
+        }));
+        _transferVault.Name = "TransferHabiticaVaultButton";
+        copiedVaultContent.Children.Add(_transferVault);
         copiedVaultOptions.Content = copiedVaultContent;
         content.Children.Add(copiedVaultOptions);
-        content.Children.Add(ActionButton("Recreate missing linked tasks…", () => Run(() =>
+        _restoreMissing = ActionButton("Recreate missing linked tasks…", () => Run(() =>
         {
             if (_settings == null) return;
             int count = _integration.CountMissing(_settings);
@@ -146,19 +150,24 @@ public sealed partial class HabiticaSettingsPanel : Border
             {
                 _integration.RecreateMissing(_settings);
                 SetFeedback("Missing tasks queued for explicit recreation.");
-            });
-        })));
+            }, _restoreMissing!, $"Recreate {count} tasks");
+        }));
+        _restoreMissing.Name = "RestoreMissingHabiticaButton";
+        content.Children.Add(_restoreMissing);
         _confirmPanel.Children.Add(_confirmation);
-        var confirmationActions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-        var confirmButton = ActionButton("Confirm sync", () => Run(() =>
+        var confirmationActions = new WrapPanel();
+        _confirmButton = ActionButton("Confirm sync", () => Run(() =>
         {
             var action = _confirmed;
             ClearConfirmation();
             action?.Invoke();
         }));
-        confirmButton.Name = "ConfirmHabiticaActionButton";
-        confirmationActions.Children.Add(confirmButton);
-        confirmationActions.Children.Add(ActionButton("Cancel", ClearConfirmation));
+        _confirmButton.Name = "ConfirmHabiticaActionButton";
+        _confirmButton.Margin = new(0, 0, 8, 4);
+        confirmationActions.Children.Add(_confirmButton);
+        _cancelConfirmation = ActionButton("Cancel", () => { var source = _confirmationSource; ClearConfirmation(); source?.Focus(); });
+        _cancelConfirmation.Name = "CancelHabiticaActionButton";
+        confirmationActions.Children.Add(_cancelConfirmation);
         _confirmPanel.Children.Add(confirmationActions);
         content.Children.Add(_feedback);
         content.Children.Add(_status);
@@ -407,10 +416,12 @@ public sealed partial class HabiticaSettingsPanel : Border
         RefreshStatus();
     }
 
-    private void Confirm(string message, Action action)
+    private void Confirm(string message, Action action, Button source, string caption)
     {
         string Scope() => _settings == null ? "" : $"{_settings.HabiticaUserId}|{_settings.HabiticaClientId}|{_settings.ObsidianVaultFolder}|{_settings.NotesSubfolder}|{_settings.HabiticaEnabled}";
         string scope = Scope();
+        ClearConfirmation();
+        _confirmationSource = source; _confirmButton.Content = caption;
         _confirmation.Text = message;
         _confirmed = () =>
         {
@@ -418,18 +429,26 @@ public sealed partial class HabiticaSettingsPanel : Border
             action();
         };
         _confirmPanel.IsVisible = true;
+        PositionRecoveryConfirmation(source);
         Reveal(_confirmPanel);
+        Dispatcher.UIThread.Post(() => { if (_confirmPanel.IsEffectivelyVisible) _cancelConfirmation.Focus(); }, DispatcherPriority.Background);
     }
 
     private void Reveal(Control control) => Dispatcher.UIThread.Post(() =>
     {
+        if (control == _feedback && _recoveryRoot?.IsVisible == true && _recoveryFeedback != null) control = _recoveryFeedback;
         if (!IsEffectivelyVisible || !control.IsVisible) return;
-        if (_navigatorRecovery != null && (control == _confirmPanel || control == _importProgress)) _navigatorRecovery.IsExpanded = true;
         control.UpdateLayout();
         control.BringIntoView();
     }, DispatcherPriority.Background);
 
-    private void ClearConfirmation() { _confirmed = null; _confirmPanel.IsVisible = false; }
+    private void ClearConfirmation()
+    {
+        _confirmed = null; _confirmPanel.IsVisible = false;
+        if (_confirmationSource != null) _confirmationSource.IsVisible = true;
+        _confirmationSource = null;
+        if (_recoveryConfirmationBox != null) _recoveryConfirmationBox.IsVisible = false;
+    }
     private static TextBlock Label(string text)
     {
         var label = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };

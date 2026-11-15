@@ -13,7 +13,7 @@ using StopwatchOverlay.Habitica;
 using StopwatchOverlay.Desktop.Controls;
 using StopwatchOverlay.Desktop.Views;
 
-internal static class SettingsHabiticaNativeChecks
+internal static partial class SettingsHabiticaNativeChecks
 {
     private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     private const string Output = "design/one-piece-v2/settings/habitica-connection-implemented";
@@ -57,7 +57,7 @@ internal static class SettingsHabiticaNativeChecks
         var test = Field<Button>(f.Panel, "_test");
         Click(test); Wait(() => !Field<bool>(f.Panel, "_testing"));
         Require(f.Http.Requests == 1 && Text(f.Panel).Contains("succeeded", StringComparison.OrdinalIgnoreCase), "Connection requests=" + f.Http.Requests + "; feedback=" + Field<TextBlock>(f.Panel, "_feedback").Text);
-        Require(Field<Button>(f.Panel, "_syncExisting").IsEnabled, "Connection test left recovery actions disabled.");
+        Require(Field<Button>(f.Panel, "_saveConnection").IsEnabled, "Connection test left connection actions disabled.");
         Click(Field<CheckBox>(f.Panel, "_enabled")); Pump();
         Require(f.Model.HabiticaEnabled && f.Integration.GetStatus(f.Model).IsOwner, "Sync toggle lost local vault ownership behavior.");
         Save(f.Window, "connected");
@@ -82,21 +82,21 @@ internal static class SettingsHabiticaNativeChecks
         Require(Text(f.Panel).Contains("session", StringComparison.OrdinalIgnoreCase), "Session-only storage is not identified.");
         Save(f.Window, "session-only");
         Click(Field<CheckBox>(f.Panel, "_enabled")); Pump();
-        var recovery = Visual<Expander>(f.Window, "HabiticaRecovery"); recovery.IsExpanded = true; Pump();
-        Require(Field<Button>(f.Panel, "_syncExisting").IsEffectivelyVisible && Visual<Expander>(f.Window, "HabiticaCopiedVaultOptions").IsVisible, "Existing recovery controls disappeared.");
+        AddRecoveryItems(f, 3); OpenRecovery(f);
+        Require(Field<Button>(f.Panel, "_syncExisting").IsEffectivelyVisible && Visual<Button>(f.Window, "TransferHabiticaVaultButton").IsVisible, "Existing recovery controls disappeared.");
         Click(Field<Button>(f.Panel, "_syncExisting")); Pump();
         Require(Field<StackPanel>(f.Panel, "_confirmPanel").IsEffectivelyVisible && f.Http.Requests == 0, "Confirmation missing: " + Field<TextBlock>(f.Panel, "_feedback").Text);
-        Call(f.Panel, "ClearConfirmation"); recovery.IsExpanded = false;
+        Call(f.Panel, "ClearConfirmation"); Click(Visual<Button>(f.Window, "HabiticaConnectionTab"));
         f.Now = DateTimeOffset.UtcNow; f.Http.Code = HttpStatusCode.TooManyRequests;
         Click(Field<Button>(f.Panel, "_test")); Wait(() => !Field<bool>(f.Panel, "_testing"));
         Require(!Field<Button>(f.Panel, "_test").IsEnabled && Text(f.Panel).Contains("wait", StringComparison.OrdinalIgnoreCase), "Rate-limit feedback or saved deadline is missing.");
-        Pump(500); // Let the native recovery collapse transition finish before inspecting/capturing layout.
+        Pump(100);
         var feedback = Field<TextBlock>(f.Panel, "_feedback");
         Require(feedback.TextLayout.TextLines.Sum(line => line.Length) >= feedback.Text!.Length,
             $"Retry feedback omits text: {feedback.TextLayout.TextLines.Sum(line => line.Length)}/{feedback.Text.Length}; bounds {feedback.Bounds}; desired {feedback.DesiredSize}; layout {feedback.TextLayout.MaxWidth}/{feedback.TextLayout.MaxHeight}; lines {feedback.MaxLines}.");
         Require(feedback.TextLayout.Height <= feedback.Bounds.Height + 1, $"Retry feedback clips: text {feedback.TextLayout.Height}, bounds {feedback.Bounds.Height}.");
         var cards = Field<Grid>(f.Panel, "_navigatorCards");
-        Require(cards.Bounds.Y + cards.Children.Max(c => c.Bounds.Bottom) <= recovery.Bounds.Y + 1, "Growing feedback overlaps the recovery section.");
+        Require(cards.Children.All(c => c.Bounds.Bottom <= cards.Bounds.Height + 1), "Growing feedback leaves its connection cards.");
         Save(f.Window, "waiting");
     }
 
@@ -118,10 +118,8 @@ internal static class SettingsHabiticaNativeChecks
             ObsidianNotesSync.AppendEntry(f.Model.ObsidianVaultFolder, type, title, f.Model.NotesSubfolder, time = time.AddMinutes(1));
         Click(Field<CheckBox>(f.Panel, "_enabled")); Pump();
         Require(f.Integration.CountExisting(f.Model) == 3, "Recovery example must contain exactly three sample items.");
-        var recovery = Visual<Expander>(f.Window, "HabiticaRecovery"); recovery.IsExpanded = true; Pump(400);
-        var copiedVault = Visual<Expander>(f.Window, "HabiticaCopiedVaultOptions"); copiedVault.IsExpanded = true;
+        OpenRecovery(f); var recovery = Field<StackPanel>(f.Panel, "_recoveryRoot");
         Capture("expanded-structure");
-        copiedVault.IsExpanded = false; Pump(400);
         Click(Field<Button>(f.Panel, "_syncExisting")); Pump(400);
         Require(Field<StackPanel>(f.Panel, "_confirmPanel").IsEffectivelyVisible &&
             Field<TextBlock>(f.Panel, "_confirmation").Text!.Contains("Sync 3 existing"), "Missing three-item confirmation example.");
@@ -230,7 +228,7 @@ internal static class SettingsHabiticaNativeChecks
         private readonly HttpClient _client;
         internal Fixture(int percent = 90, bool compact = false, bool sessionOnly = false)
         {
-            string root = Path.GetFullPath(Path.Combine(".superpowers/sdd/2026-11-15-settings-habitica", "fixture-" + Guid.NewGuid().ToString("N")));
+            string root = Path.Combine(Path.GetTempPath(), "StopwatchHabiticaNative-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root); TelegramOutboxStore.SetCustomFilePath(Path.Combine(root, "outbox.json"));
             Model.UiScalePercent = percent; Desktop("ThemeResources", "ApplyApplication", Model.ThemeMode);
             Desktop("DesktopPageAppearance", "Initialize", Model); Desktop("DesktopTypography", "Initialize", Model.Typography);

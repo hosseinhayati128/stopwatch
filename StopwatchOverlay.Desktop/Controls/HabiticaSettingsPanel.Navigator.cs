@@ -16,7 +16,6 @@ public sealed partial class HabiticaSettingsPanel
 {
     private StackPanel? _legacyContent, _navigatorRoot;
     private Grid? _navigatorCards;
-    private Expander? _navigatorRecovery;
     private Button? _navigatorReveal;
     private TextBlock? _navigatorFeedbackTitle, _navigatorCredentialTitle, _navigatorCredentialDetail,
         _navigatorSyncTitle, _navigatorSyncDetail, _navigatorPending, _navigatorLastSync;
@@ -32,7 +31,7 @@ public sealed partial class HabiticaSettingsPanel
         if (!enabled) { RestoreNavigatorLayout(); return; }
         if (_navigatorRoot != null) return;
         _legacyContent = (StackPanel)Child!;
-        var recovery = _legacyContent.Children.Skip(_legacyContent.Children.IndexOf(_syncExisting)).TakeWhile(c => c != _feedback).ToArray();
+        var recovery = new Control[] { _syncExisting, _confirmPanel, _importProgress, _transferVault, _restoreMissing };
         foreach (var control in new Control[] { _account, _client, _token, _saveConnection, _test, _enabled, _feedback }.Concat(recovery))
         {
             var parent = (Panel)control.Parent!;
@@ -83,14 +82,11 @@ public sealed partial class HabiticaSettingsPanel
             Text("Sync runs while Stopwatch is open, including in the tray. Todos, reminders and checklist items sync; standalone notes stay local.", 12));
         var right = new StackPanel { Spacing = 14, Children = { status, sync } };
         _navigatorCards = new Grid { Children = { connection, right } };
-        _navigatorRecovery = new Expander { Name = "HabiticaRecovery", Header = "Sync & recovery", IsExpanded = false,
-            FontFamily = ClockPickerPresentation.Body, FontSize = 13, Foreground = Ink,
-            HorizontalAlignment = HorizontalAlignment.Stretch, Content = new StackPanel { Spacing = 10 } };
-        foreach (var control in recovery) ((StackPanel)_navigatorRecovery.Content).Children.Add(control);
+        var recoveryPage = BuildRecoveryPage();
         _navigatorRoot = new StackPanel { Spacing = 14, Children =
         {
             new StackPanel { Spacing = 4, Children = { Text("Habitica", 23, Ink), Text("Connect your account and follow sync on this computer.", 12) } },
-            _navigatorCards, _navigatorRecovery
+            BuildRecoveryTabs(), _navigatorCards, recoveryPage
         } };
         _navigatorRoot.Styles.Add(new Style(s => s.OfType<TextBox>().Class("editorField")) { Setters =
         {
@@ -109,6 +105,7 @@ public sealed partial class HabiticaSettingsPanel
     private void ResizeNavigatorLayout()
     {
         double width = _navigatorRoot?.Bounds.Width ?? 0;
+        ResizeRecoveryLayout(width);
         if (_navigatorCards == null || width <= 0) return;
         bool stacked = width < 720 * (_settings?.Typography.Resolve("Settings").SizePercent ?? 100) / 100;
         if (_navigatorStacked == stacked) return; _navigatorStacked = stacked;
@@ -120,6 +117,7 @@ public sealed partial class HabiticaSettingsPanel
     private void RestoreNavigatorLayout()
     {
         if (_navigatorRoot == null) return;
+        ClearConfirmation();
         if (_pasteToken.Parent is Panel tokenRow) tokenRow.Children.Remove(_pasteToken);
         foreach (var item in _navigatorMoved.OrderBy(item => item.Index))
         {
@@ -128,16 +126,19 @@ public sealed partial class HabiticaSettingsPanel
             item.Control.Classes.Remove("editorField"); item.Control.Classes.Remove("habiticaDetail");
             item.Parent.Children.Insert(item.Index, item.Control);
         }
-        foreach (var button in new[] { _saveConnection, _test, _pasteToken })
+        foreach (var button in new[] { _saveConnection, _test, _pasteToken, _syncExisting, _transferVault, _restoreMissing, _confirmButton, _cancelConfirmation })
         {
             button.Classes.Remove("habiticaAction"); button.Classes.Remove("editorAction"); button.Classes.Remove("editorPrimary"); button.Classes.Add("modern");
             button.ClearValue(TemplatedControl.FontFamilyProperty); button.ClearValue(MinWidthProperty); button.ClearValue(MinHeightProperty);
+            if (button == _syncExisting || button == _transferVault || button == _restoreMissing || button == _confirmButton || button == _cancelConfirmation)
+                button.ClearValue(TemplatedControl.PaddingProperty);
         }
         _enabled.Content = "Enable Habitica sync on this computer";
         _enabled.ClearValue(ContentControl.HorizontalContentAlignmentProperty); _enabled.ClearValue(ContentControl.VerticalContentAlignmentProperty);
         _token.InnerRightContent = _pasteToken;
         Child = _legacyContent; Classes.Add("settingsCard"); _navigatorMoved.Clear();
-        _navigatorRoot = null; _navigatorCards = null; _navigatorRecovery = null; _navigatorReveal = null; _navigatorStacked = null;
+        ResetRecoveryLayout();
+        _navigatorRoot = null; _navigatorCards = null; _navigatorReveal = null; _navigatorStacked = null;
         _navigatorFeedbackCard = null; _navigatorFeedbackTitle = null;
         _navigatorCredentialTitle = _navigatorCredentialDetail = _navigatorSyncTitle = _navigatorSyncDetail = _navigatorPending = _navigatorLastSync = null;
     }
