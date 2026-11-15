@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -12,6 +14,32 @@ namespace StopwatchOverlay.ActivityWatch;
 public static class ActivityWatchSync
 {
     public const string DefaultFileName = "ActivityWatch Log.md";
+    private static readonly ConcurrentDictionary<string, byte> PendingExports = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+    public static bool TryNormalizeExportFileName(string? raw, out string fileName)
+    {
+        fileName = string.IsNullOrWhiteSpace(raw) ? DefaultFileName : raw.Trim();
+        if (fileName.EndsWith('.') || fileName.Any(c => c < 32 || "<>:\"/\\|?*".Contains(c))) return false;
+        string stem = fileName.Split('.')[0].TrimEnd();
+        if (Regex.IsMatch(stem, @"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$", RegexOptions.IgnoreCase)) return false;
+        if (!fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) fileName += ".md";
+        return fileName.Length <= 255;
+    }
+
+    public static AppSettings SnapshotSettings(AppSettings settings) => new()
+    {
+        ObsidianVaultFolder = settings.ObsidianVaultFolder,
+        ActivityWatchServerUrl = settings.ActivityWatchServerUrl,
+        ActivityWatchExportFileName = settings.ActivityWatchExportFileName,
+        ActivityWatchMinDurationSeconds = settings.ActivityWatchMinDurationSeconds,
+        ActivityWatchIncludeTitles = settings.ActivityWatchIncludeTitles,
+        ActivityWatchIncludeWeb = settings.ActivityWatchIncludeWeb,
+        ActivityWatchEnabled = settings.ActivityWatchEnabled,
+        ActivityWatchSyncOnStopwatchSync = settings.ActivityWatchSyncOnStopwatchSync,
+        ActivityWatchPeriodicSyncEnabled = settings.ActivityWatchPeriodicSyncEnabled,
+        ActivityWatchPeriodicSyncIntervalMinutes = settings.ActivityWatchPeriodicSyncIntervalMinutes
+    };
 
     public static string FormatDuration(TimeSpan duration)
     {
@@ -39,16 +67,16 @@ public static class ActivityWatchSync
     public static async Task<AwDailyReport> GenerateDailyReportAsync(
         AppSettings settings,
         DateOnly date,
-        CancellationToken ct = default)
+        CancellationToken ct = default, HttpClient? httpClient = null)
     {
-        var client = new ActivityWatchClient(settings.ActivityWatchServerUrl);
+        var client = new ActivityWatchClient(settings.ActivityWatchServerUrl, httpClient);
 
         var startOfDayLocal = date.ToDateTime(TimeOnly.MinValue);
         var endOfDayLocal = date.ToDateTime(TimeOnly.MaxValue);
         DateTimeOffset startUtc = new DateTimeOffset(startOfDayLocal, DateTimeOffset.Now.Offset).ToUniversalTime();
         DateTimeOffset endUtc = new DateTimeOffset(endOfDayLocal, DateTimeOffset.Now.Offset).ToUniversalTime();
 
-        var buckets = await client.GetBucketsAsync(ct).ConfigureAwait(false);
+        var buckets = await client.GetBucketsAsync(ct, throwOnError: true).ConfigureAwait(false);
 
         // Find relevant buckets
         var afkBucket = buckets.Values.FirstOrDefault(b =>
@@ -60,11 +88,14 @@ public static class ActivityWatchSync
         var webBuckets = buckets.Values.Where(b =>
             b.Type == "web.tab.current" || b.Id.StartsWith("aw-watcher-web", StringComparison.OrdinalIgnoreCase)).ToList();
 
+        if (windowBucket == null && (!settings.ActivityWatchIncludeWeb || webBuckets.Count == 0))
+            throw new InvalidDataException("No activity watchers were found. Start an ActivityWatch window or browser watcher and try again.");
+
         // 1. Fetch AFK events to build idle intervals
         var rawAfkIntervals = new List<(DateTimeOffset Start, DateTimeOffset End)>();
         if (afkBucket != null)
         {
-            var afkEvents = await client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+            var afkEvents = await client.GetEventsAsync(afkBucket.Id, startUtc, endUtc, 50000, ct, throwOnError: true).ConfigureAwait(false);
             foreach (var evt in afkEvents)
             {
                 if (string.Equals(evt.Status, "afk", StringComparison.OrdinalIgnoreCase))
@@ -91,7 +122,7 @@ public static class ActivityWatchSync
 
         if (windowBucket != null)
         {
-            var windowEvents = await client.GetEventsAsync(windowBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+            var windowEvents = await client.GetEventsAsync(windowBucket.Id, startUtc, endUtc, 50000, ct, throwOnError: true).ConfigureAwait(false);
             foreach (var evt in windowEvents)
             {
                 var rawStart = evt.Timestamp;
@@ -176,7 +207,7 @@ public static class ActivityWatchSync
                     activeBrowserRanges = [];
                 }
 
-                var webEvents = await client.GetEventsAsync(webBucket.Id, startUtc, endUtc, 50000, ct).ConfigureAwait(false);
+                var webEvents = await client.GetEventsAsync(webBucket.Id, startUtc, endUtc, 50000, ct, throwOnError: true).ConfigureAwait(false);
                 foreach (var evt in webEvents)
                 {
                     var rawStart = evt.Timestamp;
@@ -245,56 +276,44 @@ public static class ActivityWatchSync
     public static async Task<ActivityWatchSyncResult> SyncAsync(
         AppSettings settings,
         DateOnly? targetDate = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default, HttpClient? httpClient = null)
     {
+        settings = SnapshotSettings(settings);
         string folder = (settings.ObsidianVaultFolder ?? "").Trim();
         if (string.IsNullOrWhiteSpace(folder))
-        {
-            return new ActivityWatchSyncResult(
-                false, 0, 0, "", "No Obsidian vault folder has been selected in Settings.");
-        }
+            return new(false, 0, 0, "", "Choose an Obsidian / Markdown folder first.");
+        if (!TryNormalizeExportFileName(settings.ActivityWatchExportFileName, out string fileName))
+            return new(false, 0, 0, "", "Enter a filename without folders or reserved characters.");
+        if (settings.ActivityWatchMinDurationSeconds is < 1 or > 3600)
+            return new(false, 0, 0, "", "Minimum activity must be 1–3600 seconds.");
 
-        if (!Directory.Exists(folder))
-        {
-            try
-            {
-                Directory.CreateDirectory(folder);
-            }
-            catch (Exception ex)
-            {
-                return new ActivityWatchSyncResult(
-                    false, 0, 0, folder, $"Could not create folder: {ex.Message}");
-            }
-        }
-
-        string fileName = !string.IsNullOrWhiteSpace(settings.ActivityWatchExportFileName)
-            ? settings.ActivityWatchExportFileName.Trim()
-            : DefaultFileName;
-
-        if (!fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-            fileName += ".md";
-
-        string targetFilePath = Path.Combine(folder, fileName);
-        DateOnly date = targetDate ?? DateOnly.FromDateTime(DateTime.Now);
-
+        string targetFilePath = "";
+        bool acquired = false;
         try
         {
-            var report = await GenerateDailyReportAsync(settings, date, ct).ConfigureAwait(false);
+            targetFilePath = Path.GetFullPath(Path.Combine(folder, fileName));
+            acquired = PendingExports.TryAdd(targetFilePath, 0);
+            if (!acquired) return new(false, 0, 0, targetFilePath, "An export to this file is already running. Try again when it finishes.");
+            DateOnly date = targetDate ?? DateOnly.FromDateTime(DateTime.Now);
+            var report = await GenerateDailyReportAsync(settings, date, ct, httpClient).ConfigureAwait(false);
             string markdownSection = FormatReportToMarkdown(report, settings);
-
-            await UpdateMarkdownFileAsync(targetFilePath, date, markdownSection).ConfigureAwait(false);
-
-            return new ActivityWatchSyncResult(
-                true,
-                report.Applications.Count,
-                report.WebSites.Count,
-                targetFilePath);
+            ct.ThrowIfCancellationRequested();
+            Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath)!);
+            await UpdateMarkdownFileAsync(targetFilePath, date, markdownSection, ct).ConfigureAwait(false);
+            return new(true, report.Applications.Count, report.WebSites.Count, targetFilePath);
+        }
+        catch (OperationCanceledException)
+        {
+            return new(false, 0, 0, targetFilePath, "ActivityWatch sync was canceled. The previous report was kept.");
         }
         catch (Exception ex)
         {
             CrashLogger.LogRecoverable(ex, "ActivityWatchSync");
-            return new ActivityWatchSyncResult(
-                false, 0, 0, targetFilePath, $"ActivityWatch sync failed: {ex.Message}");
+            return new(false, 0, 0, targetFilePath, $"ActivityWatch sync failed: {ex.Message}");
+        }
+        finally
+        {
+            if (acquired) PendingExports.TryRemove(targetFilePath, out _);
         }
     }
 
@@ -624,14 +643,14 @@ public static class ActivityWatchSync
         return result;
     }
 
-    private static async Task UpdateMarkdownFileAsync(string filePath, DateOnly date, string newSectionContent)
+    private static async Task UpdateMarkdownFileAsync(string filePath, DateOnly date, string newSectionContent, CancellationToken ct)
     {
         string dateHeading = $"## 📅 {date:yyyy-MM-dd}";
         string fullContent;
 
         if (File.Exists(filePath))
         {
-            fullContent = await File.ReadAllTextAsync(filePath, Encoding.UTF8).ConfigureAwait(false);
+            fullContent = await File.ReadAllTextAsync(filePath, Encoding.UTF8, ct).ConfigureAwait(false);
         }
         else
         {
@@ -659,7 +678,17 @@ public static class ActivityWatchSync
             fullContent = fullContent.TrimEnd() + "\n\n" + newSectionContent;
         }
 
-        await File.WriteAllTextAsync(filePath, fullContent, Encoding.UTF8).ConfigureAwait(false);
+        string temporaryPath = filePath + ".tmp." + Guid.NewGuid().ToString("N");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, fullContent, new UTF8Encoding(false), ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            File.Move(temporaryPath, filePath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
     }
 
     private static string CleanAppName(string raw)

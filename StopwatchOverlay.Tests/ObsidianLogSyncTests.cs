@@ -32,6 +32,21 @@ public sealed class ObsidianLogSyncTests : IDisposable
     }
 
     [Fact]
+    public void ExportNotification_ObserverFailureDoesNotChangeSuccessfulWrite()
+    {
+        var settings = new AppSettings { ObsidianVaultFolder = _testDirectory }; int observed = 0;
+        void Fail(AppSettings s) { if (ReferenceEquals(s, settings)) throw new InvalidOperationException("Sample observer failure"); }
+        void Observe(AppSettings s) { if (ReferenceEquals(s, settings)) observed++; }
+        ObsidianLogSync.ExportCompleted += Fail; ObsidianLogSync.ExportCompleted += Observe;
+        try
+        {
+            var result = ObsidianLogSync.SyncHistory(new ProjectTimeHistory().CreateView(DateTime.UtcNow), settings);
+            Assert.True(result.Success, result.Message); Assert.Equal(1, observed); Assert.True(File.Exists(result.TargetFilePath));
+        }
+        finally { ObsidianLogSync.ExportCompleted -= Fail; ObsidianLogSync.ExportCompleted -= Observe; }
+    }
+
+    [Fact]
     public void FormatDuration_FormatsExpectedStrings()
     {
         Assert.Equal("< 1m", ObsidianLogSync.FormatDuration(TimeSpan.FromSeconds(20)));

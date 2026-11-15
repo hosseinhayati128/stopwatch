@@ -27,7 +27,10 @@ public partial class SettingsWindow
     private void BuildActivityWatchPage(Grid host)
     {
         foreach (var control in new Control[] { ActivityWatchEnabledCheck, ActivityWatchServerUrlTextBox,
-            TestActivityWatchButton, StartActivityWatchAppButton, ActivityWatchSyncCard, ActivityWatchReviewCard })
+            TestActivityWatchButton, StartActivityWatchAppButton, ActivityWatchSyncCard, ActivityWatchReviewCard,
+            ActivityWatchSyncOnStopwatchCheck, ActivityWatchPeriodicSyncCheck, ActivityWatchPeriodicSyncIntervalTextBox,
+            ActivityWatchIncludeTitlesCheck, ActivityWatchIncludeWebCheck, ActivityWatchFileNameTextBox,
+            ActivityWatchMinDurationTextBox, SyncActivityWatchNowButton })
         {
             var parent = (Panel)control.Parent!;
             _activityWatchMoved.Add((control, parent, parent.Children.IndexOf(control), control.Margin, control.Height,
@@ -71,6 +74,7 @@ public partial class SettingsWindow
         var help = TelegramCard("How it works", SettingsLabel("ActivityWatch records app, window and browser activity through its watchers.", 12),
             SettingsLabel("Stopwatch reads that history for reports. Export choices and review prompts have their own settings.", 12));
         _activityWatchCards = new Grid { Children = { connection, new StackPanel { Spacing = 14, Children = { status, help } } } };
+        BuildActivityWatchExport();
         var tabs = new WrapPanel();
         foreach (var (title, name) in new[] { ("Connection & status", "Connection"), ("Sync & export", "Sync"), ("Review prompts", "Review") })
         {
@@ -80,24 +84,26 @@ public partial class SettingsWindow
             tab.Click += (_, _) => SelectActivityWatchTab(index); _activityWatchTabs.Add(tab); tabs.Children.Add(tab);
         }
         var heading = new StackPanel { Spacing = 4, Children = { SettingsLabel("ActivityWatch", 23, SettingsInk),
-            SettingsLabel("Connect your local activity history to Stopwatch.", 12) } };
+            SettingsLabel("Connect your activity history and choose how it updates your reports.", 12) } };
         _activityWatchPage = new ScrollViewer { Name = "ActivityWatchScroll", HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(0, 0, 5, 0), Content = new StackPanel { Spacing = 14,
-                Children = { heading, tabs, _activityWatchCards, ActivityWatchSyncCard, ActivityWatchReviewCard } } };
+                Children = { heading, tabs, _activityWatchCards, _activityWatchExportCards!, ActivityWatchSyncCard, ActivityWatchReviewCard } } };
         _activityWatchPage.Styles.Add(new Style(s => s.OfType<TextBox>().Class("editorField")) { Setters = {
             new Setter(FontFamilyProperty, ClockPickerPresentation.Body), new Setter(FontSizeProperty, 13d),
             new Setter(MinWidthProperty, 0d), new Setter(MinHeightProperty, 36d) } });
         _activityWatchPage.SizeChanged += (_, _) => ResizeActivityWatchPage(); heading.SizeChanged += (_, _) => ResizeActivityWatchPage();
-        host.Children.Add(_activityWatchPage); SelectActivityWatchTab(0); RefreshActivityWatchConnection();
+        host.Children.Add(_activityWatchPage); SelectActivityWatchTab(0); RefreshActivityWatchConnection(); RefreshActivityWatchExport();
     }
 
     private void SelectActivityWatchTab(int index)
     {
         if (index != 0) CancelActivityWatchConnection();
+        if (index != 1) CancelActivityWatchExport();
         _activityWatchCards!.IsVisible = index == 0;
-        ActivityWatchSyncCard.IsVisible = index == 1; ActivityWatchReviewCard.IsVisible = index == 2;
+        _activityWatchExportCards!.IsVisible = index == 1;
+        ActivityWatchSyncCard.IsVisible = false; ActivityWatchReviewCard.IsVisible = index == 2;
         for (int i = 0; i < _activityWatchTabs.Count; i++) _activityWatchTabs[i].Classes.Set("editorPrimary", i == index);
-        _activityWatchPage!.Offset = default;
+        _activityWatchPage!.Offset = default; RefreshActivityWatchExport();
     }
 
     private void ResizeActivityWatchPage()
@@ -106,14 +112,17 @@ public partial class SettingsWindow
         bool stacked = _activityWatchPage.Bounds.Width < 760 * _settings.Typography.Resolve("Settings").SizePercent / 100;
         if (_activityWatchStacked == stacked) return;
         _activityWatchStacked = stacked;
-        _activityWatchCards!.ColumnDefinitions = new(stacked ? "*" : "1.1*,16,1*");
-        _activityWatchCards.RowDefinitions = new(stacked ? "Auto,14,Auto" : "Auto");
-        Grid.SetColumn(_activityWatchCards.Children[1], stacked ? 0 : 2); Grid.SetRow(_activityWatchCards.Children[1], stacked ? 2 : 0);
+        foreach (var cards in new[] { _activityWatchCards!, _activityWatchExportCards! })
+        {
+            cards.ColumnDefinitions = new(stacked ? "*" : "1.1*,16,1*");
+            cards.RowDefinitions = new(stacked ? "Auto,14,Auto" : "Auto");
+            Grid.SetColumn(cards.Children[1], stacked ? 0 : 2); Grid.SetRow(cards.Children[1], stacked ? 2 : 0);
+        }
     }
 
     private void RestoreActivityWatchPage()
     {
-        CancelActivityWatchConnection();
+        CancelActivityWatchConnection(); CancelActivityWatchExport();
         if (_activityWatchPage == null) return;
         foreach (var item in _activityWatchMoved.OrderBy(item => item.Index))
         {
@@ -128,7 +137,7 @@ public partial class SettingsWindow
             else if (item.Control is Button button)
             {
                 button.Classes.Remove("editorAction"); button.Classes.Remove("editorPrimary"); button.Classes.Add("modern");
-                button.ClearValue(FontFamilyProperty); button.ClearValue(MinWidthProperty); button.ClearValue(MinHeightProperty);
+                button.ClearValue(HorizontalAlignmentProperty); button.ClearValue(FontFamilyProperty); button.ClearValue(MinWidthProperty); button.ClearValue(MinHeightProperty);
             }
             item.Parent.Children.Insert(item.Index, item.Control);
         }
@@ -138,7 +147,8 @@ public partial class SettingsWindow
         _activityWatchMoved.Clear(); _activityWatchTabs.Clear(); _activityWatchPage = null; _activityWatchCards = null;
         _activityWatchStacked = null; _activityWatchIntegration = _activityWatchAddressHint = _activityWatchLaunchHint = null;
         _activityWatchHeading = _activityWatchDetail = _activityWatchVersion = _activityWatchCheckedAt = null;
+        _activityWatchExportCards = null; _activityWatchChangeFolder = null;
         _activityWatchStateBox = null; _activityWatchProgress = null;
-        RefreshActivityWatchConnection();
+        RefreshActivityWatchConnection(); RefreshActivityWatchExport();
     }
 }

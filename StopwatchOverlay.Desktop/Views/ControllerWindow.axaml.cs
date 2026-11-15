@@ -140,6 +140,7 @@ public partial class ControllerWindow : Window
     {
         InitializePlatformServices();
         StartHabiticaSync();
+        StartActivityWatchSync();
         EnsureTodoOverlay().Show();
         UpdateOverlayStates();
     }
@@ -1163,6 +1164,8 @@ public partial class ControllerWindow : Window
     private bool _pendingTypography;
     private void OnSettingsChanged(SettingsChangeKind change)
     {
+        if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0)
+            _activityWatchSyncService?.RestartTimer();
         bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography))==0;
         if((change & (SettingsChangeKind.OverlayScreen|SettingsChangeKind.OverlayPosition))!=0)
             InvalidateOverlayPlacement((change & SettingsChangeKind.OverlayPosition)!=0);
@@ -1323,6 +1326,7 @@ public partial class ControllerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _isExiting = true;
+        StopActivityWatchSync();
         _behaviorFocusQueue.Clear();
         _behaviorFocusPrompt?.Close();
         if(!_previewMode)Screens.Changed -= OverlayScreensChanged;

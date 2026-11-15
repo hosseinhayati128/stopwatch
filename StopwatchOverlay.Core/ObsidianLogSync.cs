@@ -19,6 +19,8 @@ public sealed record ObsidianSyncResult(
 /// </summary>
 public static class ObsidianLogSync
 {
+    public static event Action<AppSettings>? ExportCompleted;
+
     public const string DefaultFileName = "Stopwatch Log.md";
 
     public static string FormatDuration(TimeSpan duration)
@@ -118,6 +120,10 @@ public static class ObsidianLogSync
 
             SyncFocusLog(history, settings, folder);
             SyncProjectScores(history, folder);
+            if (ExportCompleted is { } observers)
+                foreach (Action<AppSettings> observer in observers.GetInvocationList())
+                    try { observer(settings); }
+                    catch (Exception ex) { CrashLogger.LogRecoverable(ex, "ObsidianLogSync.ExportCompleted"); }
 
             return new ObsidianSyncResult(
                 true,

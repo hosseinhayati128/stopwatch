@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +20,19 @@ public sealed class ActivityWatchClient
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
+    };
+
+    private static readonly JsonSerializerOptions StrictEventJsonOptions = new(JsonOptions)
+    {
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers = { type =>
+            {
+                if (type.Type != typeof(AwEvent)) return;
+                foreach (var property in type.Properties)
+                    if (property.Name is "timestamp" or "duration" or "data") property.IsRequired = true;
+            } }
+        }
     };
 
     private readonly string _baseUrl;
@@ -72,20 +87,21 @@ public sealed class ActivityWatchClient
         }
     }
 
-    public async Task<Dictionary<string, AwBucketInfo>> GetBucketsAsync(CancellationToken ct = default)
+    public async Task<Dictionary<string, AwBucketInfo>> GetBucketsAsync(CancellationToken ct = default, bool throwOnError = false)
     {
         try
         {
             // Note: Trailing slash is required by aw-server to prevent 307 redirects
             using var response = await _httpClient.GetAsync($"{_baseUrl}/api/0/buckets/", ct).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-                return [];
+            response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<Dictionary<string, AwBucketInfo>>(content, JsonOptions)
-                   ?? [];
+            var buckets = JsonSerializer.Deserialize<Dictionary<string, AwBucketInfo>>(content, JsonOptions);
+            if (buckets == null || buckets.Values.Any(b => b == null || string.IsNullOrWhiteSpace(b.Id)))
+                throw new InvalidDataException("ActivityWatch returned an invalid watcher list.");
+            return buckets;
         }
-        catch
+        catch when (!throwOnError)
         {
             return [];
         }
@@ -96,7 +112,7 @@ public sealed class ActivityWatchClient
         DateTimeOffset startUtc,
         DateTimeOffset endUtc,
         int limit = 50000,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool throwOnError = false)
     {
         try
         {
@@ -105,14 +121,18 @@ public sealed class ActivityWatchClient
             string url = $"{_baseUrl}/api/0/buckets/{Uri.EscapeDataString(bucketId)}/events?start={startIso}&end={endIso}&limit={limit}";
 
             using var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-                return [];
+            response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<List<AwEvent>>(content, JsonOptions)
-                   ?? [];
+            var events = JsonSerializer.Deserialize<List<AwEvent>>(content, throwOnError ? StrictEventJsonOptions : JsonOptions);
+            if (throwOnError && (events == null || events.Any(e => e == null || e.Timestamp == default ||
+                    !double.IsFinite(e.DurationSeconds) || e.DurationSeconds < 0 || e.Data == null)))
+                throw new InvalidDataException("ActivityWatch returned invalid activity data.");
+            if (throwOnError && events!.Count >= limit)
+                throw new InvalidDataException("ActivityWatch reached the event limit; the report was not replaced with partial data.");
+            return events ?? [];
         }
-        catch
+        catch when (!throwOnError)
         {
             return [];
         }

@@ -213,6 +213,7 @@ public partial class SettingsWindow : Window
             LoadTodoAppearance();
             LoadStopwatchAppearance();
             RefreshApplicationChoices();
+            RefreshActivityWatchExport();
         }
         finally
         {
@@ -537,13 +538,14 @@ public partial class SettingsWindow : Window
                 _settings.ActivityWatchEnabled = ActivityWatchEnabledCheck.IsChecked == true;
                 _settings.ActivityWatchSyncOnStopwatchSync = ActivityWatchSyncOnStopwatchCheck.IsChecked == true;
                 _settings.ActivityWatchPeriodicSyncEnabled = ActivityWatchPeriodicSyncCheck.IsChecked == true;
-                if (int.TryParse(ActivityWatchPeriodicSyncIntervalTextBox.Text?.Trim(), out int syncInterval) && syncInterval > 0)
+                if (int.TryParse(ActivityWatchPeriodicSyncIntervalTextBox.Text?.Trim(), out int syncInterval) && syncInterval is >= 1 and <= 1440)
                     _settings.ActivityWatchPeriodicSyncIntervalMinutes = syncInterval;
                 _settings.ActivityWatchIncludeTitles = ActivityWatchIncludeTitlesCheck.IsChecked == true;
                 _settings.ActivityWatchIncludeWeb = ActivityWatchIncludeWebCheck.IsChecked == true;
                 _settings.ActivityWatchServerUrl = ActivityWatchServerUrlTextBox.Text?.Trim() ?? "";
-                _settings.ActivityWatchExportFileName = ActivityWatchFileNameTextBox.Text?.Trim() ?? "";
-                if (int.TryParse(ActivityWatchMinDurationTextBox.Text?.Trim(), out int minSec) && minSec > 0)
+                if (ActivityWatchSync.TryNormalizeExportFileName(ActivityWatchFileNameTextBox.Text, out _))
+                    _settings.ActivityWatchExportFileName = ActivityWatchFileNameTextBox.Text?.Trim() ?? "";
+                if (int.TryParse(ActivityWatchMinDurationTextBox.Text?.Trim(), out int minSec) && minSec is >= 1 and <= 3600)
                     _settings.ActivityWatchMinDurationSeconds = minSec;
             }
 
@@ -598,6 +600,7 @@ public partial class SettingsWindow : Window
             SettingsChanged?.Invoke(change);
             UpdateNavigatorInteraction();
             if ((change & SettingsChangeKind.ActivityWatch) != 0) RefreshActivityWatchConnection();
+            if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0) RefreshActivityWatchExport();
         }
         finally
         {
@@ -834,7 +837,8 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
-        if (tag != "ActivityWatch") CancelActivityWatchConnection();
+        if (tag != "ActivityWatch") { CancelActivityWatchConnection(); CancelActivityWatchExport(); }
+        else RefreshActivityWatchExport();
         if (tag != "Telegram") SetTelegramTokenVisible(false);
         if (tag != "Habitica") HabiticaPanel.HideConnectionDraft();
         UpdateNavigatorCategory();
@@ -1201,37 +1205,7 @@ public partial class SettingsWindow : Window
         => await RunActivityWatchConnectionAsync(launch: false);
 
     private async void SyncActivityWatchNowButton_Click(object? sender, RoutedEventArgs e)
-    {
-        SyncActivityWatchNowButton.IsEnabled = false;
-        ActivityWatchStatusText.Text = "Syncing today's activity into Obsidian vault...";
-        if (Application.Current?.TryFindResource("SecondaryTextBrush", out var stBrush) == true && stBrush is IBrush brush)
-            ActivityWatchStatusText.Foreground = brush;
-
-        try
-        {
-            CommitControls(SettingsChangeKind.ActivityWatch);
-            var result = await ActivityWatchSync.SyncAsync(_settings);
-            if (result.Success)
-            {
-                ActivityWatchStatusText.Text = $"✓ Synced {result.AppCount} applications and {result.WebCount} web domains into '{Path.GetFileName(result.TargetFilePath)}'.";
-                ActivityWatchStatusText.Foreground = Brushes.ForestGreen;
-            }
-            else
-            {
-                ActivityWatchStatusText.Text = "✗ " + (result.Message ?? "Failed to sync ActivityWatch log.");
-                ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            ActivityWatchStatusText.Text = "✗ Sync error: " + ex.Message;
-            ActivityWatchStatusText.Foreground = Brushes.OrangeRed;
-        }
-        finally
-        {
-            SyncActivityWatchNowButton.IsEnabled = true;
-        }
-    }
+        => await RunActivityWatchExportAsync();
 
     private async void TestInternetButton_Click(object? sender, RoutedEventArgs e)
     {
@@ -1377,7 +1351,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
-        CancelActivityWatchConnection();
+        CancelActivityWatchConnection(); CancelActivityWatchExport();
         SetTelegramTokenVisible(false);
         _previewTimer.Stop();
         ReleaseAppearancePreview();

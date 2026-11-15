@@ -292,7 +292,8 @@ public partial class ControllerWindow
         ShowShortcutFeedback("Syncing ActivityWatch…");
         try
         {
-            var result = await ActivityWatchSync.SyncAsync(_settings);
+            var result = await (_activityWatchSyncService?.TriggerSyncOnceAsync() ?? ActivityWatchSync.SyncAsync(_settings));
+            if (_isExiting) return;
             ShowShortcutFeedback(result.Success
                 ? $"ActivityWatch synced {result.AppCount} apps and {result.WebCount} web domains."
                 : result.Message ?? "ActivityWatch sync failed.");
@@ -300,7 +301,7 @@ public partial class ControllerWindow
         catch (Exception exception)
         {
             CrashLogger.LogRecoverable(exception, "Shortcut.ActivityWatchSync");
-            ShowShortcutFeedback("ActivityWatch sync failed.");
+            if (!_isExiting) ShowShortcutFeedback("ActivityWatch sync failed.");
         }
         finally { _shortcutSyncRunning = false; }
     }
