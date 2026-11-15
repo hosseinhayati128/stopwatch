@@ -434,6 +434,15 @@ AppBuilder.Configure<App>().UsePlatformDetect()
         ? new[] { Win32RenderingMode.AngleEgl,Win32RenderingMode.Software } : new[] { Win32RenderingMode.Software } })
     .With(new X11PlatformOptions { RenderingMode = new[] { X11RenderingMode.Software } })
     .WithInterFont().SetupWithoutStarting();
+if(args.Contains("--clock-mode-layout"))
+{
+    Check("clock mode hides the name and restores timer layout",ClockModeLayoutChecks.Modes);
+    Check("clock digits stay centered across typography and sizes",ClockModeLayoutChecks.Centering);
+    Check("HH:MM:SS defaults preserve saved formats",ClockModeLayoutChecks.DefaultFormat);
+    Check("unchanged presentation retains cached layout",StopwatchPerformanceChecks.RepeatedPresentation);
+    Check("clock mode selection remains stable",ControllerModeChecks.Run);
+    Environment.Exit(failures==0?0:1);
+}
 if(args.Contains("--project-chooser-native"))
 {
     Check("project chooser native layout and fixed footer",ProjectChooserNativeChecks.Layout);

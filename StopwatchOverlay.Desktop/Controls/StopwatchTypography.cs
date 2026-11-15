@@ -55,6 +55,19 @@ public static class StopwatchTypography
         return glyph;
     }
 
+    internal static Point CenteredTimeOrigin(string text,Point center,StopwatchTypographyProfile profile,double size)
+    {
+        double left=center.X-Width(text,profile,size)/2;
+        if(profile.DigitStyle==StopwatchDigitStyle.SevenSegment)return new(left,center.Y-size*.54);
+        double glyphSize=profile.DigitStyle==StopwatchDigitStyle.Pixel?size*.64:size;
+        // Use stable digit ink bounds so fonts center visually without jittering each second.
+        var digit=Glyph(profile,glyphSize,'0',Brushes.White,true);
+        var ink=digit.Shape!.Bounds;
+        double width=digit.Text.WidthIncludingTrailingWhitespace;
+        double fit=Math.Min(1,(Advance('0',profile,size)-size*.035)/Math.Max(1,width));
+        return new(left-(ink.Center.X-width/2)*fit,center.Y-ink.Center.Y-(size-glyphSize)*.55);
+    }
+
     public static void DrawTime(DrawingContext context,string text,Point origin,StopwatchTypographyProfile profile,double size,IBrush brush,IBrush? edge=null)
     {
         double x=origin.X;

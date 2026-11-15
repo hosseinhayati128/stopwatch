@@ -195,7 +195,7 @@ namespace StopwatchOverlay
         public string TextColor { get; set; } = "White";
         public string BorderColor { get; set; } = "Black";
         public string FontFamily { get; set; } = "Consolas";
-        public int TimeFormat { get; set; } = 0;
+        public int TimeFormat { get; set; } = 1;
         public double TextSize { get; set; } = 48;
         public double BorderWidth { get; set; } = 2;
         public double BackgroundOpacity { get; set; } = 50;

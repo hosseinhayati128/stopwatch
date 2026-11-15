@@ -25,11 +25,11 @@ public sealed class ThemedClockFace : Control
     private sealed class ClockPeer(ThemedClockFace owner) : ControlAutomationPeer(owner)
     {
         protected override string GetClassNameCore() => nameof(ThemedClockFace);
-        protected override string GetNameCore() => $"{owner.ProjectName} {owner.Text}".Trim();
+        protected override string GetNameCore() => $"{owner.VisibleProjectName} {owner.Text}".Trim();
         protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Text;
     }
 
-    private string _text = "00:00:00.0", _projectName = "";
+    private string _text = "00:00:00", _projectName = "";
     private bool _showRec;
     public string Text
     {
@@ -70,6 +70,7 @@ public sealed class ThemedClockFace : Control
     public bool UsesThemeTextColor { get; private set; }
     private StopwatchAppearanceSettings? _stopwatchAppearance;
     private StopwatchPresentationState _stopwatchState = new(false,false,false);
+    internal string VisibleProjectName => _stopwatchState.IsClockMode ? "" : ProjectName;
     private readonly StopwatchAppearanceRenderer _stopwatchRenderer = new(StopwatchAppearanceAssets.Shared);
     public bool HasStopwatchAppearance => _stopwatchAppearance != null;
     public void ApplyStopwatchAppearance(StopwatchAppearanceSettings? profile)
@@ -80,6 +81,7 @@ public sealed class ThemedClockFace : Control
     public void SetStopwatchPresentationState(StopwatchPresentationState state)
     {
         if (_stopwatchState == state) return;
+        if (_stopwatchState.IsClockMode != state.IsClockMode) InvalidateMeasure();
         _stopwatchState=state;InvalidateVisual();
     }
     public string EffectiveOverlayTheme { get; private set; } = OverlayThemeCatalog.Midnight;
@@ -340,7 +342,8 @@ public sealed class ThemedClockFace : Control
         return new Size(width, width * 2 / 3);
     }
 
-    public Rect MetalBounds => new(Bounds.Width * .155, Bounds.Height * .352, Bounds.Width * .705, Bounds.Height * .264);
+    public Rect MetalBounds => new(Bounds.Width * (_stopwatchState.IsClockMode ? .1475 : .155),
+        Bounds.Height * (_stopwatchState.IsClockMode ? .368 : .352), Bounds.Width * .705, Bounds.Height * .264);
     public Rect MetalInsetBounds => new(MetalBounds.X + MetalBounds.Width * .117, MetalBounds.Y + MetalBounds.Height * .12,
         MetalBounds.Width * .766, MetalBounds.Height * .76);
 
@@ -368,7 +371,7 @@ public sealed class ThemedClockFace : Control
         using (dc.PushOpacity(LayerOpacity(NavigatorOpaqueParts.MetalBorder)))
         using (dc.PushGeometryClip(rim)) DrawPlate(dc, plate);
         using (dc.PushOpacity(LayerOpacity(NavigatorOpaqueParts.TimerText))) DrawTime(dc, plate);
-        if (!string.IsNullOrWhiteSpace(ProjectName))
+        if (VisibleProjectName.Length > 0)
         {
             using (dc.PushOpacity(LayerOpacity(NavigatorOpaqueParts.ProjectName)))
             {
@@ -430,7 +433,7 @@ public sealed class ThemedClockFace : Control
     }
 
     private FormattedText StandardTime() => Format(Text, TimerFont, Em, TimerBrush, Token("OverlayTimerFontWeight", FontWeight.Bold));
-    private FormattedText StandardName() => Format(ProjectName, Token("AppFontFamily", new FontFamily("Inter")),
+    private FormattedText StandardName() => Format(VisibleProjectName, Token("AppFontFamily", new FontFamily("Inter")),
         Token("OverlayProjectFontSize", 13d), NameBrush, Token("OverlayProjectFontWeight", FontWeight.SemiBold));
     private Size MeasureStandard()
     {
@@ -438,7 +441,7 @@ public sealed class ThemedClockFace : Control
         double width = text.WidthIncludingTrailingWhitespace + padding.Left + padding.Right + OutlineWidth * 2 + (ShowRec ? 24 : 0);
         width = Math.Max(width, Token("OverlayMinimumWidth", 0d) * Em / 48);
         double height = text.Height + padding.Top + padding.Bottom + OutlineWidth * 2;
-        if (ProjectName.Length > 0) height += StandardName().Height + Token("OverlayProjectMargin", new Thickness(4, 2, 4, 0)).Top;
+        if (VisibleProjectName.Length > 0) height += StandardName().Height + Token("OverlayProjectMargin", new Thickness(4, 2, 4, 0)).Top;
         return new Size(width, height);
     }
     private void RenderStandard(DrawingContext dc)
@@ -451,12 +454,17 @@ public sealed class ThemedClockFace : Control
             dc.DrawRectangle(null, new Pen(BrushToken("OverlayInnerRuleBrush"), 1), rect.Deflate(8), 8, 8);
         var text = StandardTime(); var padding = ClockPadding;
         var pos = new Point((Bounds.Width - text.WidthIncludingTrailingWhitespace + (ShowRec ? 24 : 0)) / 2, padding.Top + OutlineWidth);
+        if (_stopwatchState.IsClockMode)
+        {
+            var ink = text.BuildGeometry(default)?.Bounds ?? new Rect(new Size(text.Width, text.Height));
+            pos = new Point(Bounds.Width / 2 - ink.Center.X, Bounds.Height / 2 - ink.Center.Y);
+        }
         var glyphs = text.BuildGeometry(pos);
         if (glyphs != null) dc.DrawGeometry(TimerBrush, OutlineWidth > 0 ? new Pen(OutlineBrush, OutlineWidth * 2) : null, glyphs);
         // Fill again over the stroke so outline growth never reduces the glyph face.
         dc.DrawText(text, pos);
         if (ShowRec) dc.DrawEllipse(BrushToken("RecBrush", Brushes.Red), null, new Point(pos.X - 17, pos.Y + text.Height / 2), 7, 7);
-        if (ProjectName.Length > 0)
+        if (VisibleProjectName.Length > 0)
         {
             var name = StandardName(); name.MaxTextWidth = Math.Max(1, Bounds.Width - padding.Left - padding.Right);
             name.Trimming = TextTrimming.CharacterEllipsis; name.TextAlignment = TextAlignment.Center;

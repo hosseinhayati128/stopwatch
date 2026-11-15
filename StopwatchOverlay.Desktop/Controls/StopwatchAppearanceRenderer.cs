@@ -65,46 +65,56 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         var timeBrush=face.TypographyBrush??palette.Time;
         var nameBrush=face.TypographyBrush??palette.Name;
         double timeWidth=StopwatchTypography.Width(face.Text,typography,face.TextSize);
+        var timeOrigin=state.IsClockMode
+            ? StopwatchTypography.CenteredTimeOrigin(face.Text,frameRect.Center,typography,face.TextSize)
+            : new Point((bounds.Width-timeWidth)/2,content.Top);
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.TimeText)),bounds))
         // ContentInsets already fit a safe rectangle inside the border. Text
         // needs only this cheap clip, not another full decorative stencil.
         using(context.PushClip(content))
-            StopwatchTypography.DrawTime(context,face.Text,new Point((bounds.Width-timeWidth)/2,content.Top),typography,face.TextSize,timeBrush,palette.Edge);
+            StopwatchTypography.DrawTime(context,face.Text,timeOrigin,typography,face.TextSize,timeBrush,palette.Edge);
 
-        double nameMaxWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));
-        var key=(face.ProjectName,typography,scale,nameMaxWidth,nameBrush);
-        if(cachedName==null||nameKey!=key)
+        if(!state.IsClockMode)
         {
-            cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,nameBrush);
-            cachedName.MaxTextWidth=nameMaxWidth;cachedName.MaxTextHeight=32*scale;cachedName.Trimming=TextTrimming.CharacterEllipsis;
-            nameEdge=palette.Edge==null?null:cachedName.BuildGeometry(default);nameKey=key;
-        }
-        var name=cachedName;
-        double nameWidth=Math.Min(name.WidthIncludingTrailingWhitespace,name.MaxTextWidth);
-        double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=content.Top+48*scale;
-        using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.ProjectName)),bounds))
-        using(context.PushClip(content))
-        using(context.PushTransform(Matrix.CreateTranslation(nameX,nameY)))
-        {
-            if(nameEdge!=null)context.DrawGeometry(null,new Pen(palette.Edge,1.6*scale,lineJoin:PenLineJoin.Round),nameEdge);
-            context.DrawText(name,default);
-        }
-        using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
-        {
-            bool running=StopwatchAppearancePolicy.MarkerFor(state.IsRunning,state.IsClockMode)==StopwatchMarker.Running;
-            var rect=new Rect(nameX-23*scale,nameY+7*scale,13*scale,14*scale);
-            if(running)
+            double nameMaxWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));
+            var key=(face.ProjectName,typography,scale,nameMaxWidth,nameBrush);
+            if(cachedName==null||nameKey!=key)
             {
-                var triangle=new StreamGeometry();using(var g=triangle.Open())
-                {g.BeginFigure(rect.TopLeft,true);g.LineTo(new Point(rect.Right,rect.Center.Y));g.LineTo(rect.BottomLeft);g.EndFigure(true);}
-                context.DrawGeometry(palette.Running,null,triangle);
+                cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,nameBrush);
+                cachedName.MaxTextWidth=nameMaxWidth;cachedName.MaxTextHeight=32*scale;cachedName.Trimming=TextTrimming.CharacterEllipsis;
+                nameEdge=palette.Edge==null?null:cachedName.BuildGeometry(default);nameKey=key;
             }
-            else
+            var name=cachedName;
+            double nameWidth=Math.Min(name.WidthIncludingTrailingWhitespace,name.MaxTextWidth);
+            double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=content.Top+48*scale;
+            using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.ProjectName)),bounds))
+            using(context.PushClip(content))
+            using(context.PushTransform(Matrix.CreateTranslation(nameX,nameY)))
             {
-                context.DrawRectangle(palette.Paused,null,new Rect(rect.X,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
-                context.DrawRectangle(palette.Paused,null,new Rect(rect.X+8*scale,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
+                if(nameEdge!=null)context.DrawGeometry(null,new Pen(palette.Edge,1.6*scale,lineJoin:PenLineJoin.Round),nameEdge);
+                context.DrawText(name,default);
             }
-            if(state.IsActive)DrawActive(context,bounds.Width,scale,StopwatchTypography.Resolve("navigator-bold").NameFont);
+            using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
+            {
+                bool running=StopwatchAppearancePolicy.MarkerFor(state.IsRunning,state.IsClockMode)==StopwatchMarker.Running;
+                var rect=new Rect(nameX-23*scale,nameY+7*scale,13*scale,14*scale);
+                if(running)
+                {
+                    var triangle=new StreamGeometry();using(var g=triangle.Open())
+                    {g.BeginFigure(rect.TopLeft,true);g.LineTo(new Point(rect.Right,rect.Center.Y));g.LineTo(rect.BottomLeft);g.EndFigure(true);}
+                    context.DrawGeometry(palette.Running,null,triangle);
+                }
+                else
+                {
+                    context.DrawRectangle(palette.Paused,null,new Rect(rect.X,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
+                    context.DrawRectangle(palette.Paused,null,new Rect(rect.X+8*scale,rect.Y,4*scale,rect.Height),.6*scale,.6*scale);
+                }
+            }
+        }
+        if(state.IsActive)
+        {
+            using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
+                DrawActive(context,bounds.Width,scale,StopwatchTypography.Resolve("navigator-bold").NameFont);
         }
         if(face.ShowRec)
         {
