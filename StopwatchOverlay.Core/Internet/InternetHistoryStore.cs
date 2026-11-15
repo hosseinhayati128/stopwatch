@@ -102,6 +102,38 @@ public static class InternetHistoryStore
         }
     }
 
+    public static bool TryClear(out string? error)
+    {
+        lock (Gate)
+        {
+            error = null;
+            try
+            {
+                EnsureLoadedUnderLock();
+                // Preserve recovered records durably before changing their only valid backup.
+                WriteFile(FilePath, JsonSerializer.Serialize(_cachedRecords, JsonOptions));
+                // Empty the fallback first so a cleared primary cannot revive old records on reload.
+                WriteFile(BackupPath, "[]"); WriteFile(FilePath, "[]");
+                _cachedRecords = new List<InternetCheckResult>(); return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message; CrashLogger.LogRecoverable(ex, "InternetHistoryStore.Clear"); return false;
+            }
+        }
+        static void WriteFile(string target, string json)
+        {
+            string temporary = target + $".tmp.{Guid.NewGuid():N}";
+            try
+            {
+                string? dir = Path.GetDirectoryName(target);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllText(temporary, json); File.Move(temporary, target, overwrite: true);
+            }
+            finally { try { if (File.Exists(temporary)) File.Delete(temporary); } catch { } }
+        }
+    }
+
     public static int PurgeOlderThanDays(int days)
     {
         if (days <= 0) return 0;

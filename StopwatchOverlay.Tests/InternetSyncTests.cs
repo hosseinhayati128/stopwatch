@@ -372,6 +372,130 @@ Automated network connection and speed monitoring logged periodically by Stopwat
         Assert.NotNull(result.Notes);
     }
 
+    [Fact]
+    public void ClearHistory_EmptiesConfiguredReportAndBackupWithoutReimport()
+    {
+        using var f = new ExportFixture();
+        Assert.True(InternetLogSync.AppendCheck(f.Sample, f.Settings).Success);
+        File.WriteAllText(Path.Combine(f.Root, "unrelated.md"), "keep");
+        ClearExport(f.Settings);
+        Assert.Empty(InternetHistoryStore.GetAll());
+        Assert.DoesNotContain("14:32", File.ReadAllText(f.Report));
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(f.Root, "unrelated.md")));
+        File.Delete(f.Store); InternetHistoryStore.SetCustomFilePath(f.Store);
+        Assert.Empty(InternetHistoryStore.GetAll());
+        Assert.True(InternetLogSync.SyncLog(f.Settings).Success);
+        Assert.Empty(InternetHistoryStore.GetAll());
+    }
+
+    [Fact]
+    public void ClearHistory_BlockedReportPreservesLocalRecords()
+    {
+        using var f = new ExportFixture(); InternetHistoryStore.Add(f.Sample);
+        Directory.CreateDirectory(f.Report);
+        var result = ClearExport(f.Settings);
+        Assert.False((bool)result.GetType().GetProperty("Success")!.GetValue(result)!);
+        Assert.Single(InternetHistoryStore.GetAll());
+        InternetHistoryStore.SetCustomFilePath(f.Store); Assert.Single(InternetHistoryStore.GetAll());
+    }
+
+    [Fact]
+    public void ClearHistory_NoFolderClearsOnlyLocalHistory()
+    {
+        using var f = new ExportFixture(); InternetHistoryStore.Add(f.Sample);
+        f.Settings.ObsidianVaultFolder = "";
+        var result = ClearExport(f.Settings);
+        Assert.True((bool)result.GetType().GetProperty("Success")!.GetValue(result)!);
+        Assert.Empty(InternetHistoryStore.GetAll());
+        Assert.False(File.Exists(f.Report));
+    }
+
+    [Fact]
+    public void ClearHistory_LocalWriteFailureIsNotReportedAsSuccess()
+    {
+        using var f = new ExportFixture(); InternetHistoryStore.Add(f.Sample);
+        using var locked = File.Open(f.Store, FileMode.Open, FileAccess.Read, FileShare.None);
+        var result = ClearExport(f.Settings);
+        Assert.False((bool)result.GetType().GetProperty("Success")!.GetValue(result)!);
+        Assert.Single(InternetHistoryStore.GetAll());
+    }
+
+    [Fact]
+    public void ClearHistory_BlockedCorruptPrimaryPreservesValidBackup()
+    {
+        using var f = new ExportFixture(); InternetHistoryStore.Add(f.Sample);
+        File.Copy(f.Store, f.Store + ".bak", overwrite: true);
+        File.WriteAllText(f.Store, "damaged JSON");
+        InternetHistoryStore.SetCustomFilePath(f.Store);
+        Assert.Single(InternetHistoryStore.GetAll());
+        using (File.Open(f.Store, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var result = ClearExport(f.Settings);
+            Assert.False(result.Success);
+            Assert.True(result.ReportCleared);
+        }
+        InternetHistoryStore.SetCustomFilePath(f.Store);
+        Assert.Single(InternetHistoryStore.GetAll());
+    }
+
+    [Theory]
+    [InlineData("../escape")]
+    [InlineData("sub\\escape")]
+    [InlineData("C:\\escape")]
+    [InlineData("CON.md")]
+    [InlineData("COM1")]
+    [InlineData("bad:name")]
+    [InlineData("report.")]
+    public void InternetExportRejectsUnsafeFileNames(string raw)
+    {
+        var method = typeof(InternetLogSync).GetMethod("TryNormalizeFileName");
+        Assert.NotNull(method);
+        object?[] args = [raw, null]; Assert.False((bool)method.Invoke(null, args)!);
+    }
+
+    [Fact]
+    public void SyncLog_InvalidDestinationDoesNotWriteOutsideVault()
+    {
+        using var f = new ExportFixture(); InternetHistoryStore.Add(f.Sample);
+        f.Settings.ObsidianVaultFolder = Path.Combine(f.Root, "vault");
+        f.Settings.InternetLogFileName = "../escape.md";
+        Assert.False(InternetLogSync.SyncLog(f.Settings).Success);
+        Assert.False(File.Exists(Path.Combine(f.Root, "escape.md")));
+        Assert.Single(InternetHistoryStore.GetAll());
+    }
+
+    [Fact]
+    public void SyncLog_PreservesImportedRowNotesAndAppliesRetention()
+    {
+        using var f = new ExportFixture();
+        var recent = f.Sample with { Timestamp = DateTime.Today.AddHours(14) };
+        var old = recent with { Timestamp = DateTime.Today.AddDays(-40) };
+        File.WriteAllText(f.Report, InternetLogSync.BuildMarkdownDocument([old, recent],
+            new() { [recent.Timestamp.ToString("yyyy-MM-dd HH:mm")] = "my retained note" }));
+        f.Settings.InternetLogRetentionDays = 7;
+        Assert.True(InternetLogSync.SyncLog(f.Settings).Success);
+        Assert.Single(InternetHistoryStore.GetAll());
+        Assert.Contains("my retained note", File.ReadAllText(f.Report));
+    }
+
+    private static InternetClearResult ClearExport(AppSettings settings) => InternetLogSync.ClearHistory(settings);
+
+    private sealed class ExportFixture : IDisposable
+    {
+        internal readonly string Root = Path.Combine(Path.GetTempPath(), "StopwatchInternetExport-" + Guid.NewGuid().ToString("N"));
+        internal string Store => Path.Combine(Root, "history.json");
+        internal string Report => Path.Combine(Root, "Network journal.md");
+        internal readonly AppSettings Settings;
+        internal readonly InternetCheckResult Sample = new(new DateTime(2026, 11, 16, 14, 32, 0), InternetStatus.Online, 24, 38.6,
+            new(true, "Wi-Fi", "Sample", 88, "Sample", "Sample"), "sample");
+        internal ExportFixture()
+        {
+            Directory.CreateDirectory(Root); InternetHistoryStore.SetCustomFilePath(Store);
+            Settings = new() { ObsidianVaultFolder = Root, InternetLogFileName = "Network journal.md" };
+        }
+        public void Dispose() { InternetHistoryStore.SetCustomFilePath(null); Directory.Delete(Root, true); }
+    }
+
     private static int RegexCount(string input, string pattern)
     {
         return System.Text.RegularExpressions.Regex.Matches(input, System.Text.RegularExpressions.Regex.Escape(pattern)).Count;

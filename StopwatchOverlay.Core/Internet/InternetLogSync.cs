@@ -10,12 +10,80 @@ namespace StopwatchOverlay.Internet;
 public sealed record InternetSyncResult(
     bool Success,
     string TargetFilePath,
-    string? Message = null);
+    string? Message = null)
+{
+    public int? CheckCount { get; init; }
+}
+
+public sealed record InternetClearResult(bool LocalHistoryCleared, bool ReportCleared, string TargetFilePath, string? Message)
+{
+    public bool Success => LocalHistoryCleared && (TargetFilePath.Length == 0 || ReportCleared);
+}
 
 public static class InternetLogSync
 {
     public const string DefaultFileName = "Internet Log.md";
     private static readonly object FileLock = new();
+
+    public static bool TryNormalizeFileName(string? raw, out string fileName) =>
+        ActivityWatch.ActivityWatchSync.TryNormalizeExportFileName(string.IsNullOrWhiteSpace(raw) ? DefaultFileName : raw, out fileName);
+
+    public static bool TryGetTargetPath(AppSettings settings, out string targetPath, out string error) =>
+        TryResolveTargetPath(settings.ObsidianVaultFolder, settings.InternetLogFileName, out targetPath, out error);
+
+    private static bool TryResolveTargetPath(string? folder, string? rawName, out string targetPath, out string error)
+    {
+        targetPath = ""; error = "";
+        if (!TryNormalizeFileName(rawName, out string name)) { error = "Use a file name without folders or reserved characters."; return false; }
+        if (string.IsNullOrWhiteSpace(folder)) { error = "Obsidian vault folder is not configured."; return false; }
+        try
+        {
+            string root = Path.GetFullPath(folder.Trim());
+            string path = Path.GetFullPath(Path.Combine(root, name));
+            if (!string.Equals(Path.GetDirectoryName(path), Path.TrimEndingDirectorySeparator(root),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            { error = "The report must stay inside the selected folder."; return false; }
+            targetPath = path; return true;
+        }
+        catch (Exception ex) { error = ex.Message; return false; }
+    }
+
+    public static InternetClearResult ClearHistory(AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        lock (FileLock)
+        {
+            if (!TryNormalizeFileName(settings.InternetLogFileName, out _))
+                return new(false, false, "", "Use a file name without folders or reserved characters.");
+            bool hasFolder = !string.IsNullOrWhiteSpace(settings.ObsidianVaultFolder);
+            string target = "";
+            if (hasFolder)
+            {
+                if (!TryGetTargetPath(settings, out target, out string error)) return new(false, false, target, error);
+                try { WriteDocument(target, BuildMarkdownDocument(Array.Empty<InternetCheckResult>())); }
+                catch (Exception ex)
+                {
+                    CrashLogger.LogRecoverable(ex, "InternetLogSync.ClearReport");
+                    return new(false, false, target, "The report could not be emptied. Local history was kept. " + ex.Message);
+                }
+            }
+            if (!InternetHistoryStore.TryClear(out string? localError))
+                return new(false, hasFolder, target, (hasFolder ? "The report was emptied, but local history could not be cleared. " : "Local history could not be cleared. ") + localError);
+            return new(true, hasFolder, target, hasFolder ? "Local checks removed and the selected report emptied." : "Local checks removed. Existing Markdown copies were not changed.");
+        }
+    }
+
+    private static void WriteDocument(string target, string content)
+    {
+        string temporary = target + $".tmp.{Guid.NewGuid():N}";
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(temporary, content, new UTF8Encoding(false));
+            File.Move(temporary, target, overwrite: true);
+        }
+        finally { try { if (File.Exists(temporary)) File.Delete(temporary); } catch { } }
+    }
 
     public static string FormatRow(InternetCheckResult result, string? customNote = null)
     {
@@ -89,19 +157,9 @@ public static class InternetLogSync
             ? customFolderPath.Trim()
             : settings.ObsidianVaultFolder.Trim();
 
-        if (string.IsNullOrWhiteSpace(folder))
-        {
-            return new InternetSyncResult(false, string.Empty, "Obsidian vault folder is not configured.");
-        }
-
-        string fileName = !string.IsNullOrWhiteSpace(customFileName)
-            ? customFileName.Trim()
-            : (!string.IsNullOrWhiteSpace(settings.InternetLogFileName) ? settings.InternetLogFileName.Trim() : DefaultFileName);
-
-        if (!fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-            fileName += ".md";
-
-        string targetPath = Path.Combine(folder, fileName);
+        string? rawName = !string.IsNullOrWhiteSpace(customFileName) ? customFileName : settings.InternetLogFileName;
+        if (!TryResolveTargetPath(folder, rawName, out string targetPath, out string error))
+            return new(false, "", error);
 
         try
         {
@@ -125,6 +183,7 @@ public static class InternetLogSync
                 catch (Exception ex)
                 {
                     CrashLogger.LogRecoverable(ex, "InternetLogSync.ImportExisting");
+                    return new(false, targetPath, "The existing report could not be read; it was not overwritten. " + ex.Message);
                 }
             }
 
@@ -138,12 +197,8 @@ public static class InternetLogSync
 
             string markdown = BuildMarkdownDocument(allRecords, existingNotes);
 
-            // Safe atomic write: write to temporary file, then atomic rename
-            string tempFile = targetPath + $".tmp.{Guid.NewGuid():N}";
-            File.WriteAllText(tempFile, markdown, new UTF8Encoding(false));
-            File.Move(tempFile, targetPath, overwrite: true);
-
-            return new InternetSyncResult(true, targetPath, $"Successfully synced {allRecords.Count} checks to {Path.GetFileName(targetPath)}.");
+            WriteDocument(targetPath, markdown);
+            return new InternetSyncResult(true, targetPath, $"Successfully synced {allRecords.Count} checks to {Path.GetFileName(targetPath)}.") { CheckCount = allRecords.Count };
         }
         catch (Exception ex)
         {

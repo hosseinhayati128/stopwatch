@@ -209,6 +209,7 @@ public partial class SettingsWindow
         ResizeActivityWatchPage();
         ResizeInternetPage();
         RefreshInternetConnection();
+        RefreshInternetExport();
     }
 
     private void ResizeNavigatorSettings()

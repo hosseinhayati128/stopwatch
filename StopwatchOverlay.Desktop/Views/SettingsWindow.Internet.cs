@@ -28,7 +28,7 @@ public partial class SettingsWindow
     private void BuildInternetPage(Grid host)
     {
         foreach (var control in new Control[] { InternetMonitorEnabledCheck, InternetMonitorOnlyDuringTimersCheck,
-            InternetCheckIntervalTextBox, TestInternetButton, InternetExportPanel })
+            InternetCheckIntervalTextBox, TestInternetButton, InternetExportPanel, InternetFileNameTextBox, InternetRetentionCombo, SyncInternetLogButton, ClearInternetLogButton })
         {
             var parent = (Panel)control.Parent!;
             _internetMoved.Add((control, parent, parent.Children.IndexOf(control), control.Margin, control.Height,
@@ -78,6 +78,7 @@ public partial class SettingsWindow
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, Children = { InternetCheckIntervalTextBox, SettingsLabel("minutes", 12) } }, _internetIntervalHint } },
             InternetMonitorOnlyDuringTimersCheck, _internetScheduleBox, SettingsLabel("Test now works even when automatic checks are off.", 11));
         _internetCards = new Grid { Children = { status, monitoring } };
+        BuildInternetExport();
         _internetConnectionTab = SettingsAction("Connection & monitoring", "InternetConnectionTab");
         _internetHistoryTab = SettingsAction("History & export", "InternetHistoryTab");
         foreach (var tab in new[] { _internetConnectionTab, _internetHistoryTab })
@@ -87,19 +88,21 @@ public partial class SettingsWindow
             SettingsLabel("Check your connection and choose when to monitor it.", 12) } };
         _internetPage = new ScrollViewer { Name = "InternetScroll", HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(0, 0, 5, 0),
-            Content = new StackPanel { Spacing = 14, Children = { heading, new WrapPanel { Children = { _internetConnectionTab, _internetHistoryTab } }, _internetCards, InternetExportPanel } } };
+            Content = new StackPanel { Spacing = 14, Children = { heading, new WrapPanel { Children = { _internetConnectionTab, _internetHistoryTab } }, _internetCards, _internetExportCards!, InternetExportPanel } } };
         _internetPage.Styles.Add(new Style(s => s.OfType<TextBox>().Class("editorField")) { Setters = {
             new Setter(FontFamilyProperty, ClockPickerPresentation.Body), new Setter(FontSizeProperty, 13d), new Setter(MinWidthProperty, 0d), new Setter(MinHeightProperty, 36d) } });
         _internetPage.SizeChanged += (_, _) => ResizeInternetPage(); heading.SizeChanged += (_, _) => ResizeInternetPage();
-        host.Children.Add(_internetPage); SelectInternetTab(false); RefreshInternetConnection();
+        host.Children.Add(_internetPage); SelectInternetTab(_internetShowingHistory); RefreshInternetConnection();
     }
 
     private void SelectInternetTab(bool history)
     {
-        if (history) CancelInternetCheck();
-        _internetCards!.IsVisible = !history; InternetExportPanel.IsVisible = history;
+        if (history) CancelInternetCheck(); else DismissInternetExport();
+        _internetShowingHistory = history;
+        _internetCards!.IsVisible = !history; _internetExportCards!.IsVisible = history; InternetExportPanel.IsVisible = false;
         _internetConnectionTab!.Classes.Set("editorPrimary", !history); _internetHistoryTab!.Classes.Set("editorPrimary", history);
-        _internetPage!.Offset = default; RefreshInternetConnection();
+        _internetPage!.Offset = default; RefreshInternetConnection(); RefreshInternetExport();
+        if (history) _ = LoadInternetHistoryAsync();
     }
 
     private void ResizeInternetPage()
@@ -111,11 +114,16 @@ public partial class SettingsWindow
         if (_internetStacked == stacked) return; _internetStacked = stacked;
         _internetCards!.ColumnDefinitions = new(stacked ? "*" : "1.05*,16,1*"); _internetCards.RowDefinitions = new(stacked ? "Auto,14,Auto" : "Auto");
         Grid.SetColumn(_internetCards.Children[1], stacked ? 0 : 2); Grid.SetRow(_internetCards.Children[1], stacked ? 2 : 0);
+        if (_internetExportCards != null)
+        {
+            _internetExportCards.ColumnDefinitions = new(stacked ? "*" : "1*,16,1.05*"); _internetExportCards.RowDefinitions = new(stacked ? "Auto,14,Auto" : "Auto");
+            Grid.SetColumn(_internetExportCards.Children[1], stacked ? 0 : 2); Grid.SetRow(_internetExportCards.Children[1], stacked ? 2 : 0);
+        }
     }
 
     private void RestoreInternetPage()
     {
-        CancelInternetCheck(); if (_internetPage == null) return;
+        CancelInternetCheck(); RestoreInternetExport(); if (_internetPage == null) return;
         foreach (var item in _internetMoved.OrderBy(item => item.Index))
         {
             ((Panel)item.Control.Parent!).Children.Remove(item.Control);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -1374,27 +1374,19 @@ public partial class SettingsWindow : Window
 
     private void ClearInternetLogButton_Click(object sender, RoutedEventArgs e)
     {
-        var confirm = MessageBox.Show(
-            "Are you sure you want to clear your internet connection history?\n\nThis will clear the local internet history store and clear 'Internet Log.md'.",
-            "Clear Internet Log",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (confirm != MessageBoxResult.Yes)
-            return;
-
+        if (!Internet.InternetLogSync.TryNormalizeFileName(_settings.InternetLogFileName, out string fileName))
+        { InternetStatusText.Text = "Use a file name without folders or reserved characters."; return; }
+        string scope = string.IsNullOrWhiteSpace(_settings.ObsidianVaultFolder)
+            ? "Clear local connection history? No export folder is selected; existing Markdown copies will not be changed."
+            : $"Clear local connection history and empty '{fileName}' in '{_settings.ObsidianVaultFolder}'?";
+        if (MessageBox.Show(scope, "Clear Internet Log", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         try
         {
-            Internet.InternetHistoryStore.Clear();
-            var res = Internet.InternetLogSync.SyncLog(_settings);
-            InternetStatusText.Text = "✓ Internet log and local history have been cleared.";
-            InternetStatusText.Foreground = Brushes.ForestGreen;
+            var result = Internet.InternetLogSync.ClearHistory(_settings);
+            InternetStatusText.Text = result.Message;
+            InternetStatusText.Foreground = result.Success ? Brushes.ForestGreen : Brushes.OrangeRed;
         }
-        catch (Exception ex)
-        {
-            InternetStatusText.Text = "✗ Clear error: " + ex.Message;
-            InternetStatusText.Foreground = Brushes.OrangeRed;
-        }
+        catch (Exception ex) { InternetStatusText.Text = "Clear error: " + ex.Message; InternetStatusText.Foreground = Brushes.OrangeRed; }
     }
 
     private void UpdateObsidianPathPreview()

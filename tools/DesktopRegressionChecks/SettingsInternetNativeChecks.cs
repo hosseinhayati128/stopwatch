@@ -145,6 +145,7 @@ internal static class SettingsInternetNativeChecks
         {
             Require(Application.Current is not StopwatchOverlay.Desktop.App, "Tests must not load live App.");
             TelegramOutboxStore.SetCustomFilePath(Path.Combine(Path.GetTempPath(), $"StopwatchInternet-{Guid.NewGuid():N}.json"));
+            InternetHistoryStore.SetCustomFilePath(Path.Combine(Path.GetTempPath(), $"StopwatchInternetHistory-{Guid.NewGuid():N}.json"));
             Model.UiScalePercent = scale; Desktop("ThemeResources", "ApplyApplication", Model.ThemeMode);
             Desktop("DesktopPageAppearance", "Initialize", Model); Desktop("DesktopTypography", "Initialize", Model.Typography);
             var ctor = typeof(SettingsWindow).GetConstructor(Hidden, null, [typeof(AppSettings), typeof(Func<ProjectHistoryView>), typeof(System.Net.Http.HttpClient), typeof(System.Net.Http.HttpClient), typeof(Func<bool>), typeof(Func<int, CancellationToken, Task<InternetCheckResult>>), typeof(Func<bool>)], null);
@@ -155,7 +156,7 @@ internal static class SettingsInternetNativeChecks
             Window.Show(); Pump(60); Click(Visual<Button>(Window, "SettingsNav_Internet")); Pump(60);
         }
         internal void Theme(string theme) { Model.ThemeMode = theme; Desktop("ThemeResources", "ApplyApplication", theme); Call(Window, "ReloadFromSettings"); Call(Window, "UpdatePreviewSafely"); Pump(80); }
-        public void Dispose() { Window.Close(); TelegramOutboxStore.SetCustomFilePath(null); Desktop("DesktopTypography", "Shutdown"); Desktop("DesktopPageAppearance", "Shutdown"); }
+        public void Dispose() { Window.Close(); InternetHistoryStore.SetCustomFilePath(null); TelegramOutboxStore.SetCustomFilePath(null); Desktop("DesktopTypography", "Shutdown"); Desktop("DesktopPageAppearance", "Shutdown"); }
     }
     private static string? Text(SettingsWindow w, string name) => Visual<TextBlock>(w, name).Text;
     private static T Find<T>(SettingsWindow w, string name) => (T)typeof(SettingsWindow).GetField(name, Hidden)!.GetValue(w)!;

@@ -1,0 +1,73 @@
+{
+  "status": "native-design-preview-not-production",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "windows": [
+    "1120 x 720",
+    "840 x 600"
+  ],
+  "states": [
+    "ready",
+    "syncing",
+    "synced",
+    "missing-folder",
+    "write-failed",
+    "empty-history",
+    "invalid-file",
+    "retention",
+    "clear-confirmation",
+    "clear-partial",
+    "cleared",
+    "long-path",
+    "large-text"
+  ],
+  "checks": "Six layout cases, fixed footer, keyboard focus, sample validation and action states, confirmation scope, zero settings events",
+  "realHistoryReads": 0,
+  "fileExports": 0,
+  "historyDeletes": 0,
+  "networkRequests": 0,
+  "execution": "Private Windows desktop; synthetic data only",
+  "verifiedUtc": "2026-11-15T21:02:16.984322+00:00",
+  "baseCommit": "f6d2372f0b0d4eeadf376fdc2a42afe41ab1921f",
+  "build": {
+    "warnings": 0,
+    "errors": 0,
+    "log": ".superpowers/sdd/2026-11-16-settings-internet-export-preview/build-refined.log"
+  },
+  "nativeLog": ".superpowers/sdd/2026-11-16-settings-internet-export-preview/native-final.log",
+  "sourceSha256": {
+    "tools/DesktopRegressionChecks/SettingsInternetExportPreview.cs": "7bed8f3791b7e894f50402ee5fbed11bb2201205753dab87606928fa5cca09f2",
+    "tools/DesktopRegressionChecks/Program.cs": "7b69e898f89f882b5c9147877976dd0e25de1bbd64ed3ff0a8976f7b05c1bf32",
+    "design/one-piece-v2/settings/internet-export-native-preview/README.md": "0d9c22a8064375cf3a5eb8eae6b1aa64d82643f22411825146e9747d6ea07f4f"
+  },
+  "captureSha256": {
+    "clear-confirmation.png": "f13eed57444e330d2773ae3ce6793d6d146e0650ca8b583df7790b0ba192a0db",
+    "clear-partial.png": "1db3b581a41bf56b5808f073b011a83f2c3b40d56f5f4c303a1aacaaaa4d917e",
+    "cleared.png": "c07099e624319bcc2263cf3919f57fab32f5f46503ffc4618f4b3227522baa74",
+    "compact-125-export.png": "d767ccd4880a71899f99599dec4c8b56dc0ea81a49866849ecfb717bf3d59c7d",
+    "compact-125.png": "3762c7bdf29fad260b07cf6d641d078d48efdaa7458086f7e508a8541177e2ac",
+    "compact-70-export.png": "d7956912e4530da7af20ce81c1efa37c0f28468484dcfb5914d4d75410cb4b1b",
+    "compact-70.png": "d7956912e4530da7af20ce81c1efa37c0f28468484dcfb5914d4d75410cb4b1b",
+    "compact-90-export.png": "d90ce6636d1e00f650a76770c0d4422fcae0c5c1bee7606ee7a01cebf1420a76",
+    "compact-90.png": "9de635eb7d9586f1ba442f3a4aa5db17a461a85d45d03a029aacf8f24bd8b56f",
+    "empty-history.png": "44d4e8f534386a7163fe0a7876503635339bfa01ddc68da4281430e6e0f081cf",
+    "invalid-file.png": "7e0e513aa0ed47f96612cd4b0e0c79ea84e1796023249435c2fd8f1877c79816",
+    "large-text.png": "7f3a13f94b17729c3f98c1645b14cd3dc0b3a0a6c68d206d627f716ce64c1206",
+    "long-path.png": "2e84e9148eb9faf13a575ec318ef963ef8be6f7e01027a31f0440c1f8aa2ffee",
+    "missing-folder.png": "827ff2e85e980ba558490d2cf93a82fd63be01a7f7ae00339450156438ab9b5a",
+    "retention.png": "4100af536d7cc2d2393354d1fe9c7c88411be6c03097fb35b95187461c883593",
+    "synced.png": "559c032d17fd94d94e5ee101dab1bd6f9623ac0cd578f99401c7f647fc5babad",
+    "syncing.png": "7b3159c64b572ba35ab4b77e80cc36302f7e7c7adce33d632b3c2e93a0935aa4",
+    "wide-125-export.png": "55f9cdfa80e73c27cbbe6beefe8cd1241543441fd8b712f3673a6726c4ba039e",
+    "wide-125.png": "255a284012882fd6a185699fed0e7644b4fa9b2f7385338f08b3b8dff541a7dc",
+    "wide-70-export.png": "3960802d20158ab0e32b2f6750f6d5346bc922e6121b18794fee8964192ec1a4",
+    "wide-70.png": "3960802d20158ab0e32b2f6750f6d5346bc922e6121b18794fee8964192ec1a4",
+    "wide-90-export.png": "367e0bb8dae265d2b295be41bedd0613e6716e208d8979aaab5d5a9e3684e7a4",
+    "wide-90.png": "367e0bb8dae265d2b295be41bedd0613e6716e208d8979aaab5d5a9e3684e7a4",
+    "write-failed.png": "ea6ff0f4b7abd51e7f85f0d9653d4962ae4051d8cec6b3c9818aae86e2a37602"
+  },
+  "installedBinaryUnchanged": true
+}

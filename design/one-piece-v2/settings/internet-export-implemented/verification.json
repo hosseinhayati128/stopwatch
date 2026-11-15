@@ -1,0 +1,228 @@
+{
+  "status": "implemented-native-verified-not-installed",
+  "verifiedUtc": "2026-11-15T21:36:11.8823826+00:00",
+  "baseCommit": "f6d2372f0b0d4eeadf376fdc2a42afe41ab1921f",
+  "branch": "codex/stopwatch-overlay",
+  "rendering": "Production SettingsWindow with synthetic history and temporary-file integration checks on private Windows desktops",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "windowSizes": [
+    "1120 x 720",
+    "840 x 600"
+  ],
+  "enlargedTextPercent": 175,
+  "evidenceRoot": ".superpowers/sdd/2026-11-16-settings-internet-export",
+  "builds": {
+    "desktopNative": {
+      "warnings": 0,
+      "errors": 0,
+      "log": "final-native-build.log"
+    },
+    "unitAndLegacyWpf": {
+      "warnings": 0,
+      "errors": 0,
+      "log": "review-green-build.log"
+    }
+  },
+  "checks": {
+    "unit": {
+      "passed": 1117,
+      "log": "review-green/unit.log",
+      "failed": 0,
+      "skipped": 0
+    },
+    "internetExportNative": {
+      "log": "final-native.log",
+      "groupsPassed": 3
+    },
+    "internetConnection": {
+      "log": "connection-regression.log",
+      "groupsPassed": 4
+    },
+    "activityWatchExport": {
+      "log": "activitywatch-regression.log",
+      "groupsPassed": 5
+    },
+    "approvedPreview": {
+      "log": "preview-regression.log",
+      "scaleWindowCasesPassed": 6
+    },
+    "archivedArtifactsRestoredAndHashVerified": 64
+  },
+  "review": {
+    "important": 1,
+    "critical": 0,
+    "redLog": "review-red/unit.log",
+    "regression": "ClearHistory_BlockedCorruptPrimaryPreservesValidBackup",
+    "minor": 0,
+    "fixed": 1,
+    "greenLog": "review-green/unit.log"
+  },
+  "decisions": [
+    "Clear report first; blocked report preserves local records. Local failure after report success is an explicit partial result.",
+    "Checkpoint valid local records before clearing backup and primary; successful clear does not retain a restorable old backup.",
+    "Existing ordinary-sync retention and monitor lock behavior preserved."
+  ],
+  "limits": [
+    "No installed app update or Git publication.",
+    "No live user-vault export or clear, release packaging or Linux rendering test.",
+    "Full existing unit suite includes a live network-probe smoke test.",
+    "Retention can apply before an ordinary export fails; existing monitor reconfiguration can wait on a background save."
+  ],
+  "installedBinarySha256": "ACD40A02BDEC61EC46F59E81C9665B787E1E960B612768AF0DB2F25BED2B7492",
+  "sourceHashes": [
+    {
+      "path": "StopwatchOverlay.Core/Internet/InternetHistoryStore.cs",
+      "sha256": "8F9EB1CB036DFB9C797F2F2BB6F1CE44883D7379B52C175352AB48F79174A4FE"
+    },
+    {
+      "path": "StopwatchOverlay.Core/Internet/InternetLogSync.cs",
+      "sha256": "4B6C4606A2CC893F9156DF91E9CA549C63B6C01CD0E6A8879A9E93AD09B64594"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.Internet.cs",
+      "sha256": "B76F6C9C4C16DC87B3E7E896075417A305559D4C8B663FD999DF3C997D4EB801"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.InternetActions.cs",
+      "sha256": "FD35E9DEAE4C5891374A7733B6FD465B85AC54BE86ACAC61A94776F785975E46"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.InternetExport.cs",
+      "sha256": "82EEF1EE39D4942D86E25DA248C74A62C3DD514963E4C5D1666DA7C8AE099435"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.InternetExportActions.cs",
+      "sha256": "2C36AFD18D7AB59B820B00B2EC36B3CE36CF7C2DD1693761C929ADC853E640DB"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.Navigator.cs",
+      "sha256": "8D2B9B5AA65AA5278EC9F26C3E9C96D1DC9182F0B5BD38D9DB53149175C6BB99"
+    },
+    {
+      "path": "StopwatchOverlay.Desktop/Views/SettingsWindow.axaml.cs",
+      "sha256": "BDA5076D4270BBB6E9773FB0DF901A03DC83A46C9E6668785C9473FE1EC848A1"
+    },
+    {
+      "path": "StopwatchOverlay/SettingsWindow.xaml.cs",
+      "sha256": "15DBFBA390B22DE349B3D6246BCB635A17EA57419BD4E4666DBF2206910761BC"
+    },
+    {
+      "path": "StopwatchOverlay.Tests/InternetSyncTests.cs",
+      "sha256": "68380D38E40A7585FEC6875A5323EB500095A97294023070DE5A2993C509D81E"
+    },
+    {
+      "path": "Tools/DesktopRegressionChecks/Program.cs",
+      "sha256": "B1106B4C8E22510AA866476E268D540AAE7D6B13EED5C4819AD21CB6EF1625DD"
+    },
+    {
+      "path": "Tools/DesktopRegressionChecks/SettingsInternetNativeChecks.cs",
+      "sha256": "56EA0E97679125496B2AE144DC232E045F36B51964A2A1A7CCB36E48F2119460"
+    },
+    {
+      "path": "Tools/DesktopRegressionChecks/SettingsInternetExportNativeChecks.cs",
+      "sha256": "E07D0A74209A08476C4BE9637FB2D0D3ED4B6E8F42342437134FC479065A528D"
+    },
+    {
+      "path": "Tools/DesktopRegressionChecks/SettingsInternetExportPreview.cs",
+      "sha256": "7BED8F3791B7E894F50402EE5FBED11BB2201205753DAB87606928FA5CCA09F2"
+    }
+  ],
+  "imageHashes": [
+    {
+      "path": "clear-confirmation.png",
+      "sha256": "278BFC0F2DB5DA274676121F2440785DD670632A918E81120AEBE856ECACEEFB"
+    },
+    {
+      "path": "clear-partial.png",
+      "sha256": "D62D7112DDA8B5DA3DC9560878F3B99A7E6FC55D617A3B287466554233F2E903"
+    },
+    {
+      "path": "compact-125-export.png",
+      "sha256": "2965FFFDD854A8D5D1DEB1BF993E6EECDA2EF8B109E47F04A0065E9EB7A575D5"
+    },
+    {
+      "path": "compact-125.png",
+      "sha256": "65AC0FA073A6DC9002610F40B210B1181DE70C9A8515371C6CAB74D76FD7D3FC"
+    },
+    {
+      "path": "compact-70-export.png",
+      "sha256": "D21CA480B1B2C5BD4A0ABAF3C6FA1B3E2AEEA0746D340D9520550102C475FB43"
+    },
+    {
+      "path": "compact-70.png",
+      "sha256": "D21CA480B1B2C5BD4A0ABAF3C6FA1B3E2AEEA0746D340D9520550102C475FB43"
+    },
+    {
+      "path": "compact-90-export.png",
+      "sha256": "236742F773C91274403200CE4B2D502C29A1B958CE3E9D64B27250E2FA9F748C"
+    },
+    {
+      "path": "compact-90.png",
+      "sha256": "AB588C03051886DFF6DA2B69E419855405C6F806145760EC2AEB27BD085A022E"
+    },
+    {
+      "path": "empty-history.png",
+      "sha256": "874E9A1B12858021576FFDD995C424B41893FB118F40B3434BE2B56B6190287A"
+    },
+    {
+      "path": "invalid-file.png",
+      "sha256": "DBC184038ED11C5E954B4058DC046845E50E59DAD669365D2F45214CE5C02FB3"
+    },
+    {
+      "path": "large-text.png",
+      "sha256": "3E373D893332B60421D1879985D996520FC1D86D49C6319059A46A02CF648190"
+    },
+    {
+      "path": "long-path.png",
+      "sha256": "98E9E2A003EAA5F5095EDEE61A99E70AF755D5450202C920EBFAECE0AF15CC27"
+    },
+    {
+      "path": "missing-folder.png",
+      "sha256": "9517C3F9748B1656A6D5BD4306BBAEDFAAE618BD8D3833319B2AAE9723DA0F96"
+    },
+    {
+      "path": "retention.png",
+      "sha256": "23E04D3FD69A3269262A10790D33EFE6F693C4A496A1A342D4B73AADF2D7AFC8"
+    },
+    {
+      "path": "synced.png",
+      "sha256": "723F71DABD7677A942600920EE0F222FA441B0B0D7252987BB5759FB492FA544"
+    },
+    {
+      "path": "syncing.png",
+      "sha256": "326418F6A2D4247A1E9BB7872412E743D300AC706144254CC569DD4ACC91A51C"
+    },
+    {
+      "path": "wide-125-export.png",
+      "sha256": "17B661417218044D818254214C734DFC94CDA2602F9EAAC9601BBF56E5AF2B1F"
+    },
+    {
+      "path": "wide-125.png",
+      "sha256": "B679D1DD91101D4AAC985B8530EED509427665A766C33C17642F923A6E7EA58C"
+    },
+    {
+      "path": "wide-70-export.png",
+      "sha256": "1226B0788025D56976BC3CE3D0C53729C7F730E70099B19348AEDB32708E0EC9"
+    },
+    {
+      "path": "wide-70.png",
+      "sha256": "1226B0788025D56976BC3CE3D0C53729C7F730E70099B19348AEDB32708E0EC9"
+    },
+    {
+      "path": "wide-90-export.png",
+      "sha256": "0487B59C61C4D835D7C28340E7A1223C745C400F44B05F025E981C45112E77B9"
+    },
+    {
+      "path": "wide-90.png",
+      "sha256": "0487B59C61C4D835D7C28340E7A1223C745C400F44B05F025E981C45112E77B9"
+    },
+    {
+      "path": "write-failed.png",
+      "sha256": "BC396641C4CC59DBDB170D001EBCF97BE21844CF47613F826FA05CA41D5A0749"
+    }
+  ]
+}

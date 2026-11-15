@@ -33,6 +33,7 @@ public partial class SettingsWindow
     {
         if (_closed || (_internetResult != null && result.Timestamp < _internetResult.Timestamp)) return;
         _internetResult = result; _internetMessage = null; RefreshInternetConnection();
+        if (InternetHistoryVisible) _ = LoadInternetHistoryAsync();
     }
 
     internal void RefreshInternetConnection()

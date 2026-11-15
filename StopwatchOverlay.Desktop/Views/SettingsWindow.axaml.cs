@@ -323,7 +323,9 @@ public partial class SettingsWindow : Window
         {
             if (e.Key == Key.Enter) { e.Handled = true; CommitInternetInterval(); }
         };
-        InternetFileNameTextBox.TextChanged += (_, _) => CommitControls(SettingsChangeKind.InternetMonitor);
+        InternetFileNameTextBox.TextChanged += (_, _) => { if (!_loading) RefreshInternetExport(); };
+        InternetFileNameTextBox.LostFocus += (_, _) => CommitInternetFile();
+        InternetFileNameTextBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; CommitInternetFile(); } };
 
         WireCheckBox(IdleStopUnnamedCheck, SettingsChangeKind.IdleStop);
         WireCheckBox(IdleStopSubtractCheck, SettingsChangeKind.IdleStop);
@@ -585,7 +587,6 @@ public partial class SettingsWindow : Window
             {
                 _settings.InternetMonitorEnabled = InternetMonitorEnabledCheck.IsChecked == true;
                 _settings.InternetMonitorOnlyDuringTimers = InternetMonitorOnlyDuringTimersCheck.IsChecked == true;
-                _settings.InternetLogFileName = InternetFileNameTextBox.Text?.Trim() ?? "";
                 if (InternetRetentionCombo.SelectedItem is ComboBoxItem retItem && int.TryParse(retItem.Tag?.ToString(), out int rDays))
                     _settings.InternetLogRetentionDays = rDays;
             }
@@ -615,6 +616,7 @@ public partial class SettingsWindow : Window
             SettingsChanged?.Invoke(change);
             UpdateNavigatorInteraction();
             if ((change & SettingsChangeKind.InternetMonitor) != 0) RefreshInternetConnection();
+            if ((change & (SettingsChangeKind.InternetMonitor | SettingsChangeKind.ObsidianExport)) != 0) RefreshInternetExport();
             if ((change & SettingsChangeKind.ActivityWatch) != 0) RefreshActivityWatchConnection();
             if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0) RefreshActivityWatchExport();
             if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.PeriodicReview)) != 0)
@@ -855,7 +857,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
-        if (tag != "Internet") CancelInternetCheck();
+        if (tag != "Internet") { CancelInternetCheck(); DismissInternetExport(); }
         if (tag != "ActivityWatch") { CancelActivityWatchConnection(); CancelActivityWatchExport(); }
         else RefreshActivityWatchExport();
         if (tag != "Telegram") SetTelegramTokenVisible(false);
@@ -872,6 +874,7 @@ public partial class SettingsWindow : Window
         HabiticaPanel.IsVisible = tag == "Habitica";
         ActivityWatchPanel.IsVisible = tag == "ActivityWatch";
         InternetPanel.IsVisible = tag == "Internet";
+        if (tag == "Internet") _ = LoadInternetHistoryAsync();
         CrashLogger.RecordUiAction("Settings category changed", CurrentCategory);
         if (SettingsScrollViewer != null)
             SettingsScrollViewer.Offset = new Vector(0, 0);
@@ -1234,56 +1237,9 @@ public partial class SettingsWindow : Window
         CommitControls(SettingsChangeKind.InternetMonitor);
     }
 
-    private void SyncInternetLogButton_Click(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var res = InternetLogSync.SyncLog(_settings);
-            if (res.Success)
-            {
-                int count = InternetHistoryStore.GetAll().Count;
-                InternetStatusText.Text = $"✓ Synced {count} check(s) to '{Path.GetFileName(res.TargetFilePath)}'.";
-                InternetStatusText.Foreground = Brushes.ForestGreen;
-            }
-            else
-            {
-                InternetStatusText.Text = "✗ " + (res.Message ?? "Failed to sync internet log.");
-                InternetStatusText.Foreground = Brushes.OrangeRed;
-            }
-        }
-        catch (Exception ex)
-        {
-            InternetStatusText.Text = "✗ Sync error: " + ex.Message;
-            InternetStatusText.Foreground = Brushes.OrangeRed;
-        }
-    }
+    private async void SyncInternetLogButton_Click(object? sender, RoutedEventArgs e) => await RunInternetExportAsync(false);
 
-    private async void ClearInternetLogButton_Click(object? sender, RoutedEventArgs e)
-    {
-        bool confirmed = await ConfirmationDialogWindow.ShowAsync(
-            this,
-            "Clear Internet Log",
-            "Clear History",
-            "Are you sure you want to clear your internet connection history?\n\nThis will clear the local internet history store and clear 'Internet Log.md'.",
-            "Clear History",
-            destructive: true);
-
-        if (!confirmed)
-            return;
-
-        try
-        {
-            InternetHistoryStore.Clear();
-            var res = InternetLogSync.SyncLog(_settings);
-            InternetStatusText.Text = "✓ Internet log and local history have been cleared.";
-            InternetStatusText.Foreground = Brushes.ForestGreen;
-        }
-        catch (Exception ex)
-        {
-            InternetStatusText.Text = "✗ Clear error: " + ex.Message;
-            InternetStatusText.Foreground = Brushes.OrangeRed;
-        }
-    }
+    private void ClearInternetLogButton_Click(object? sender, RoutedEventArgs e) => BeginInternetClear();
 
     private void UpdateObsidianPathPreview()
     {
@@ -1329,6 +1285,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
+        DismissInternetExport();
         CancelInternetCheck();
         CancelActivityWatchConnection(); CancelActivityWatchExport();
         SetTelegramTokenVisible(false);
