@@ -42,14 +42,19 @@ internal static class ShortcutChecks
 
         internal void Key(KeyCode code, ModifierMask modifiers = ModifierMask.None)
         {
-            foreach (var (method, type) in new[] { ("OnKeyPressed", EventType.KeyPressed), ("OnKeyReleased", EventType.KeyReleased) })
+            KeyEvent(code, true, modifiers);
+            KeyEvent(code, false, modifiers);
+        }
+
+        internal void KeyEvent(KeyCode code, bool pressed, ModifierMask modifiers = ModifierMask.None)
+        {
+            var args = new KeyboardHookEventArgs(new UioHookEvent
             {
-                var args = new KeyboardHookEventArgs(new UioHookEvent
-                {
-                    Type = type, Mask = modifiers, Keyboard = new KeyboardEventData { KeyCode = code }
-                });
-                typeof(SharpHookHotKeyService).GetMethod(method, Private)!.Invoke(_hook, new object?[] { null, args });
-            }
+                Type = pressed ? EventType.KeyPressed : EventType.KeyReleased, Mask = modifiers,
+                Keyboard = new KeyboardEventData { KeyCode = code }
+            });
+            typeof(SharpHookHotKeyService).GetMethod(pressed ? "OnKeyPressed" : "OnKeyReleased", Private)!
+                .Invoke(_hook, new object?[] { null, args });
         }
 
         internal void Command(KeyCode key, bool notes = false)
@@ -240,7 +245,8 @@ internal static class ShortcutChecks
             fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
             ClockOverlayChecks.Pump(35);
             var hint = fixture.Window("ShortcutCommandHintWindow");
-            Require(hint.FindControl<TextBlock>("TimerCommandsThird")!.Text?.Contains("1 Clocks") == true, "Hint showed a stale picker binding.");
+            var pickerRow = hint.GetVisualDescendants().OfType<Grid>().Single(row => row.Name == "TimerCommandRowShowAllClocks");
+            Require(pickerRow.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "1"), "Hint showed a stale picker binding.");
             fixture.Key(KeyCode.VcNumPad1);
             ClockOverlayChecks.Pump(35);
             fixture.Window("TimerPickerWindow");
@@ -285,6 +291,207 @@ internal static class ShortcutChecks
             fixture.Window("TimerPickerWindow");
         });
         Require(errors.Count == 0, string.Join(Environment.NewLine, errors));
+    }
+
+    internal static void TimerCommandsPopup()
+    {
+        using var fixture = new Fixture();
+        fixture.Settings.ThemeMode = AppThemeCatalog.Nika;
+        fixture.KeyEvent(KeyCode.VcF2, true, ModifierMask.LeftMeta);
+        fixture.KeyEvent(KeyCode.VcF2, true, ModifierMask.LeftMeta);
+        fixture.KeyEvent(KeyCode.VcF2, false, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(60);
+        var hint = fixture.Window("ShortcutCommandHintWindow");
+        string[] Actions() => hint.GetVisualDescendants().OfType<Grid>()
+            .Where(row => row.Name?.StartsWith("TimerCommandRow") == true).Select(row => row.Name!).ToArray();
+        Require(Actions().SequenceEqual(new[] { "StartStop", "Reset", "ToggleClock", "ToggleOverlay", "NextTimer", "ShowAllClocks" }
+            .Select(name => "TimerCommandRow" + name)), "Quick hint must show only Space, R, C, O, T and K in order.");
+        var top = hint.Position.Y;
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(60);
+        Require(hint.IsVisible && Actions().Length == 6, "Second F2 must keep the compact hint.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(hint.IsVisible && Actions().Length == 6, "Third F2 must keep the compact hint.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(hint.IsVisible && Actions().Length == 21, "Fourth F2 did not expand the same hint.");
+        Require(hint.Position.Y == top, "Expansion moved the top edge.");
+        fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 21, "Further leader presses must keep the full list open.");
+        var timer = (Avalonia.Threading.DispatcherTimer)typeof(ControllerWindow).GetField("_commandModeTimer", Private)!.GetValue(fixture.Controller)!;
+        Require(timer.Interval == TimeSpan.FromSeconds(5), "Expanded list needs the five-second reading timeout.");
+        fixture.Key(KeyCode.VcEscape);
+        ClockOverlayChecks.Pump(35);
+        Require(!hint.IsVisible && !PlatformServices.HotKey.IsInCommandMode, "Escape did not dismiss expanded mode.");
+        fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("ShortcutCommandHintWindow");
+        Require(Actions().Length == 6, "Reopening must start compact.");
+        fixture.Key(KeyCode.VcL);
+        ClockOverlayChecks.Pump(35);
+        Require(fixture.Timers.Active!.LapTimes.Count == 4, "An action omitted from the quick hint stopped working.");
+        Require(!hint.IsVisible, "Executing an omitted command left the popup visible.");
+
+        fixture.Call("ExitShortcutCommandMode");
+        fixture.Settings.CommandModeKeys[ShortcutAction.StartStop] = 0x71;
+        fixture.Settings.CommandModeKeys[ShortcutAction.Reset] = 0;
+        fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("ShortcutCommandHintWindow");
+        Require(Actions().Length == 5, "Unassigned quick actions should be omitted.");
+        Require(hint.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Text == "Win + F2") == 2,
+            "An assigned F2 needs a configured-leader expansion hint.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(fixture.Timers.Active!.IsRunning && !hint.IsVisible, "Custom F2 must run its command and dismiss the popup.");
+        fixture.Call("ExitShortcutCommandMode");
+        fixture.Settings.CommandModeKeys[ShortcutAction.StartStop] = 0x20;
+        fixture.Settings.LeaderShortcut = new Shortcut(Shortcut.MOD_CONTROL, 0x77);
+        fixture.Call("InitializePlatformServices");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("ShortcutCommandHintWindow");
+        Require(Actions().Length == 5 && timer.Interval == TimeSpan.FromSeconds(2), "Custom leader did not open a fresh quick view.");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 5 && timer.Interval == TimeSpan.FromSeconds(2), "Second custom leader must keep the compact view and refresh its timeout.");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 5, "Third custom leader must keep the compact view.");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 20, "Fourth custom leader did not expand.");
+        ClockOverlayChecks.Pump(2100);
+        Require(hint.IsVisible, "Expanded view retained the short quick timeout.");
+        ClockOverlayChecks.Pump(3100);
+        Require(!hint.IsVisible && !PlatformServices.HotKey.IsInCommandMode, "Expanded timeout did not release command capture.");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("ShortcutCommandHintWindow");
+        fixture.Key(KeyCode.VcT);
+        ClockOverlayChecks.Pump(35);
+        Require(!hint.IsVisible, "Next timer did not dismiss the popup.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(hint.IsVisible && Actions().Length == 5, "Second F2 did not restore the compact hint during chaining.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 5, "Third F2 expanded too early after reopening during chaining.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(Actions().Length == 20, "Fourth F2 did not expand after reopening during chaining.");
+        Require(hint.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == fixture.Timers.Active!.DisplayName + " · Esc cancels"),
+            "Next timer left stale active context in the hint.");
+        fixture.Key(KeyCode.VcF3, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(35);
+        var noteHint = fixture.Window("NoteCommandHintWindow");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(!noteHint.IsVisible && !PlatformServices.HotKey.IsInCommandMode, "Timer expansion intercepted note mode.");
+        fixture.Key(KeyCode.VcF8, ModifierMask.LeftCtrl);
+        ClockOverlayChecks.Pump(2100);
+        Require(!PlatformServices.HotKey.IsInCommandMode, "Quick timeout did not release command capture.");
+        Console.WriteLine("PASS quick actions, held keys, F2 expansion, custom leader/F2, actual timeouts, Escape, chaining, active context and note isolation");
+    }
+
+    internal static void TimerCommandsDismissal()
+    {
+        foreach (bool expanded in new[] { false, true })
+        foreach (var key in new[] { KeyCode.VcSpace, KeyCode.VcR, KeyCode.VcC, KeyCode.VcE, KeyCode.VcO, KeyCode.VcT, KeyCode.VcK })
+        {
+            using var fixture = new Fixture();
+            fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+            ClockOverlayChecks.Pump(35);
+            var hint = fixture.Window("ShortcutCommandHintWindow");
+            if (expanded) { fixture.Key(KeyCode.VcF2); fixture.Key(KeyCode.VcF2); fixture.Key(KeyCode.VcF2); ClockOverlayChecks.Pump(35); }
+            fixture.Key(key);
+            ClockOverlayChecks.Pump(35);
+            Require(!hint.IsVisible, $"{key} left the {(expanded ? "expanded" : "compact")} popup visible.");
+            if (key is KeyCode.VcE or KeyCode.VcK)
+            {
+                fixture.Window(key == KeyCode.VcE ? "TimerEditorWindow" : "TimerPickerWindow");
+                Require(!PlatformServices.HotKey.IsInCommandMode, "Opening a panel kept command capture active.");
+            }
+            else Require(PlatformServices.HotKey.IsInCommandMode, "Hiding the popup disabled shortcut chaining.");
+            if (key == KeyCode.VcC)
+            {
+                Require(fixture.Timers.Active!.Mode == 1, "C did not switch to clock mode.");
+                fixture.Key(KeyCode.VcC); ClockOverlayChecks.Pump(35);
+                Require(fixture.Timers.Active.Mode == 0 && !hint.IsVisible, "C did not switch back to stopwatch mode with the popup hidden.");
+            }
+            if (key == KeyCode.VcSpace)
+            {
+                Require(fixture.Timers.Active!.IsRunning, "Space did not start the timer.");
+                fixture.Key(KeyCode.VcSpace); ClockOverlayChecks.Pump(35);
+                Require(!fixture.Timers.Active.IsRunning && !hint.IsVisible, "Hidden chaining did not pause the timer.");
+                fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta); ClockOverlayChecks.Pump(35);
+                if (!expanded)
+                {
+                    Require(hint.IsVisible && hint.GetVisualDescendants().OfType<Grid>().Count(row => row.Name?.StartsWith("TimerCommandRow") == true) == 6,
+                        "Second leader must reopen compact during chaining.");
+                    fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta); ClockOverlayChecks.Pump(35);
+                    fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta); ClockOverlayChecks.Pump(35);
+                }
+                Require(hint.IsVisible && hint.GetVisualDescendants().OfType<Grid>().Count(row => row.Name?.StartsWith("TimerCommandRow") == true) == 21,
+                    "Repeated leader did not reopen the full hint during chaining.");
+                fixture.Key(KeyCode.VcSpace); ClockOverlayChecks.Pump(35);
+                Require(!hint.IsVisible, "Reopened full hint did not disappear after a command.");
+            }
+        }
+        Console.WriteLine("PASS Space/R/C/O/T/K and E dismiss hints, C toggles clock/stopwatch, hidden chaining and four-press reopening");
+    }
+
+    internal static void TimerCommandsFourthPress()
+    {
+        using var fixture = new Fixture();
+        fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+        ClockOverlayChecks.Pump(35);
+        var hint = fixture.Window("ShortcutCommandHintWindow");
+        int Rows() => hint.GetVisualDescendants().OfType<Grid>().Count(row => row.Name?.StartsWith("TimerCommandRow") == true);
+        fixture.KeyEvent(KeyCode.VcF2, true);
+        fixture.KeyEvent(KeyCode.VcF2, true);
+        ClockOverlayChecks.Pump(35);
+        bool stillCompact = Rows() == 6;
+        fixture.KeyEvent(KeyCode.VcF2, false);
+        Require(stillCompact, "Second press or a held repeat expanded before four deliberate F2 presses.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(Rows() == 6, "Third F2 press must remain compact.");
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        Require(Rows() == 21, "Fourth deliberate F2 press did not expand.");
+        fixture.Key(KeyCode.VcEscape);
+        fixture.Key(KeyCode.VcF2, ModifierMask.LeftMeta);
+        fixture.Key(KeyCode.VcF2);
+        fixture.Key(KeyCode.VcF2);
+        ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("ShortcutCommandHintWindow");
+        Require(Rows() == 6, "Expansion press count leaked into the next command session.");
+    }
+
+    internal static void TimerCommandsPortalDismissal()
+    {
+        using var fixture = new Fixture();
+        var hook = PlatformServices.HotKey;
+        using var portal = new PortalHotKeyService();
+        try
+        {
+            PlatformServices.HotKey = portal;
+            fixture.Call("EnterShortcutCommandMode", false);
+            ClockOverlayChecks.Pump(35);
+            var hint = fixture.Window("ShortcutCommandHintWindow");
+            fixture.Call("OnCommandKeyPressed", null, 0x20u);
+            ClockOverlayChecks.Pump(35);
+            Require(fixture.Timers.Active!.IsRunning && !hint.IsVisible && !portal.IsInCommandMode,
+                "Local portal command must execute and release capture when its focused popup disappears.");
+        }
+        finally
+        {
+            fixture.Call("ExitShortcutCommandMode");
+            PlatformServices.HotKey = hook;
+        }
     }
 
     internal static void Notes()

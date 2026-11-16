@@ -222,10 +222,7 @@ public partial class ControllerWindow : Window
                 case ShortcutAction.CommandLeader:
                     if (_isCommandModeActive && !_isNoteCommandModeActive)
                     {
-                        _commandModeTimer?.Stop();
-                        if (_commandModeTimer != null)
-                            _commandModeTimer.Interval = TimeSpan.FromSeconds(2);
-                        _commandModeTimer?.Start();
+                        AdvanceTimerCommandHint();
                     }
                     else
                     {
@@ -245,7 +242,8 @@ public partial class ControllerWindow : Window
 
         if (_commandHintWindow == null)
         {
-            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys) : new ShortcutCommandHintWindow(_settings.CommandModeKeys);
+            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys)
+                : new ShortcutCommandHintWindow(_settings.CommandModeKeys, _settings, _timerManager.Active?.DisplayName);
             var hint = _commandHintWindow;
             if (OperatingSystem.IsWindows()) hint.ShowActivated = false;
             if (PlatformServices.HotKey is PortalHotKeyService)
@@ -286,6 +284,16 @@ public partial class ControllerWindow : Window
         if (key == 0) return;
         e.Handled = true;
         OnCommandKeyPressed(sender, key);
+    }
+
+    private void AdvanceTimerCommandHint()
+    {
+        if (_commandHintWindow is not ShortcutCommandHintWindow hint) return;
+        bool expanded = hint.AdvanceExpansion();
+        hint.Show();
+        _commandModeTimer?.Stop();
+        if (_commandModeTimer != null) _commandModeTimer.Interval = TimeSpan.FromSeconds(expanded ? 5 : 2);
+        _commandModeTimer?.Start();
     }
 
     private void ExitShortcutCommandMode()
@@ -358,9 +366,17 @@ public partial class ControllerWindow : Window
                 return;
             }
 
+            if (vk == 0x71 && !ShortcutCommandMap.TryGetAction(vk, _settings.CommandModeKeys, out _))
+            {
+                AdvanceTimerCommandHint();
+                return;
+            }
+
             if (ShortcutCommandMap.TryGetAction(vk, _settings.CommandModeKeys, out var action))
             {
-                if (action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer
+                // Portal follow-up keys require a focused hint, so dismissal also ends local capture.
+                if (PlatformServices.HotKey is PortalHotKeyService
+                    || action is ShortcutAction.OpenController or ShortcutAction.OpenDashboard or ShortcutAction.NewTimer
                     or ShortcutAction.RenameTimer or ShortcutAction.EditTimer or ShortcutAction.AddRecord
                     or ShortcutAction.CloseTimer or ShortcutAction.ShowAllClocks or ShortcutAction.PeriodicReview
                     or ShortcutAction.SyncActivityWatch)
@@ -375,7 +391,9 @@ public partial class ControllerWindow : Window
                     _commandModeTimer?.Start();
                 }
 
+                _commandHintWindow?.Hide();
                 ExecuteShortcutAction(action);
+                (_commandHintWindow as ShortcutCommandHintWindow)?.UpdateActiveTimer(_timerManager.Active?.DisplayName);
             }
             else
             {

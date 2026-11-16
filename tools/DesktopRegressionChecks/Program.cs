@@ -244,6 +244,15 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--timer-commands-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Timer Commands native proposal", TimerCommandsPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--shortcuts-mappings-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -714,8 +723,17 @@ if(args.Contains("--stopwatch-redraw-regression")||args.Contains("--navigator-pi
 }
 if (args.Contains("--shortcuts-only"))
 {
+    Check("full timer commands require four deliberate presses", ShortcutChecks.TimerCommandsFourthPress);
+    Check("timer command popup dismisses on selection", ShortcutChecks.TimerCommandsDismissal);
+    Check("local portal command releases popup and capture", ShortcutChecks.TimerCommandsPortalDismissal);
+    Check("compact timer command popup", ShortcutChecks.TimerCommandsPopup);
     Check("timer shortcut actions", ShortcutChecks.Timers);
     Check("note shortcut actions and cancellation", ShortcutChecks.Notes);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--timer-commands-native"))
+{
+    Check("actual compact and expanded timer command layouts", TimerCommandsNativeChecks.Run);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 if (args.Contains("--stopwatch-renderer-only"))

@@ -1,0 +1,64 @@
+{
+  "kind": "native-design-preview",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "quickLogicalSize": [
+    620,
+    128
+  ],
+  "expandedLogicalSize": [
+    800,
+    280
+  ],
+  "buildErrors": 0,
+  "buildWarnings": 0,
+  "privateDesktopChecksPassed": true,
+  "transition": "Local routed F2 event expands quick hint",
+  "productionInputImplemented": false,
+  "logDirectory": ".superpowers/sdd/2026-11-16-timer-commands-two-stage-preview",
+  "captures": [
+    {
+      "file": "custom-expanded-90.png",
+      "sha256": "21F3F719DCD5FE961552DB74B1FEF87C2D725722C992DA1BD6CB75C4208BEDD5",
+      "bytes": 37952
+    },
+    {
+      "file": "custom-quick-90.png",
+      "sha256": "4C71112E43C0D5F8853E12DE33AB92BCF3D3BD9EC806074E354215F6705EA8A3",
+      "bytes": 12785
+    },
+    {
+      "file": "expanded-125.png",
+      "sha256": "578A2F793B8D253017D1D3D20F3070D2039A99D7D5DA6EDEB81FD8B23029A079",
+      "bytes": 64292
+    },
+    {
+      "file": "expanded-70.png",
+      "sha256": "77FFF523748BFA4E35B0F3ED17C790F7F1D2AD04C749C562FEF982BA5DE1E67E",
+      "bytes": 28278
+    },
+    {
+      "file": "expanded-90.png",
+      "sha256": "DCC4635B1352E2C2AA94F4AD6C3A0B5B5DBDE21C7CBF75E5C5519D8CFC14F58E",
+      "bytes": 39054
+    },
+    {
+      "file": "quick-125.png",
+      "sha256": "705116985D34F5C0289527956AADD5317649D19C3C81B25BB664AF4B833EC1D8",
+      "bytes": 22983
+    },
+    {
+      "file": "quick-70.png",
+      "sha256": "16AE439E9D4C32F529EE1131AB3FDC572B79FE840BCC0576ECF432ECBEF1C785",
+      "bytes": 10780
+    },
+    {
+      "file": "quick-90.png",
+      "sha256": "8C16E47D07654B924CE863F62C5BBC2B3E7ADC19156A195AF5DC1EF2E38531F5",
+      "bytes": 14146
+    }
+  ]
+}

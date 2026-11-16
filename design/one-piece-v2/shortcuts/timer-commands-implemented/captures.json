@@ -1,0 +1,86 @@
+[
+  {
+    "file": "expanded-125.png",
+    "width": 1000,
+    "height": 351,
+    "sha256": "48B71EB0C98B00DBAD967B92D3E64B04191F08E024ACF91EC29BE2926E4DE771"
+  },
+  {
+    "file": "expanded-70.png",
+    "width": 560,
+    "height": 196,
+    "sha256": "12917124A0AB08C1404BE8008D495986B653DA4D478708AE14DC106AA958617F"
+  },
+  {
+    "file": "expanded-90.png",
+    "width": 720,
+    "height": 252,
+    "sha256": "D5A6B9182EBA81E30A6ECA56B5185D1B5F762337733DCB1F64836F0AC1239B7D"
+  },
+  {
+    "file": "expanded-custom.png",
+    "width": 720,
+    "height": 276,
+    "sha256": "3C8770FF2E72726406D346D5DB3D9B19E7CC411F1FA6632AB0BA17DF85897241"
+  },
+  {
+    "file": "expanded-daylight.png",
+    "width": 720,
+    "height": 256,
+    "sha256": "C9A826AA656556C4B4A40F6E9E74E6FF858268C78B22BE3CE04ED7E432AFAB29"
+  },
+  {
+    "file": "expanded-midnight.png",
+    "width": 720,
+    "height": 256,
+    "sha256": "C0DA7DC0A6DFF4DE7D51E9A04DE25C916DE4F15655E388FE9BA61B084224507A"
+  },
+  {
+    "file": "quick-125.png",
+    "width": 775,
+    "height": 164,
+    "sha256": "F194376951233D28155B5ABFD021DF08EEC771D3038C8E8BAC4119429F72913D"
+  },
+  {
+    "file": "quick-70.png",
+    "width": 434,
+    "height": 92,
+    "sha256": "E4FF5859CCE54A35343EE37CCF7C8A120DD3CA016DFE5357F5A7A990271E5A48"
+  },
+  {
+    "file": "quick-90.png",
+    "width": 558,
+    "height": 118,
+    "sha256": "3486905CBAD1A07AF6A9FDAF0DE979B740D703C7E25AD7EE6A8761FD7C65BE58"
+  },
+  {
+    "file": "quick-custom.png",
+    "width": 558,
+    "height": 144,
+    "sha256": "3793A45B80085336907401866E697C5FF830E6DD381427AEC38E6F0A620C3C02"
+  },
+  {
+    "file": "quick-daylight.png",
+    "width": 558,
+    "height": 120,
+    "sha256": "8723CBB66B37543DB8B35E3E257EEB37EFB8EB867048DAEA1BAD6E932F47301F"
+  },
+  {
+    "file": "quick-midnight.png",
+    "width": 558,
+    "height": 120,
+    "sha256": "002B0807BF11BE4BE3A33D89E17DCB8943C56E4AAA02A72FC2C302432871ED6D"
+  },
+  {
+    "file": "quick-press2-90.png",
+    "width": 558,
+    "height": 118,
+    "sha256": "B8F15722CF5F1980AC60E1CC88ED2CFE3018E7A0DF7DE65C211DA6E817AEE3D5"
+  },
+  {
+    "file": "quick-press3-90.png",
+    "width": 558,
+    "height": 118,
+    "sha256": "B9686F17D75A4B537F2F5245844E3B10F66AB73039B33A0E9EB218DB8E5C2203"
+  }
+]
