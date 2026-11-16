@@ -12,10 +12,27 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class ShortcutsWindow : Window
 {
+    private bool _globalShortcutConflict;
+    private string? _registrationStatus;
+
+    private void ClearGlobalShortcutConflict()
+    {
+        if (!_globalShortcutConflict) return;
+        _globalShortcutConflict = false;
+        if (_registrationStatus != null) ShowRegistrationStatus(_registrationStatus);
+        else PortalRegistrationText.IsVisible = false;
+    }
     internal void SetRegistrationStatus(string status)
+    {
+        _registrationStatus = status;
+        if (!_globalShortcutConflict) ShowRegistrationStatus(status);
+    }
+
+    private void ShowRegistrationStatus(string status)
     {
         PortalRegistrationText.Text = status;
         PortalRegistrationText.IsVisible = true;
+        _shortcutScroll?.ScrollToHome();
     }
 
     private static readonly (ShortcutAction Action, string Description)[] WinF2Actions =
@@ -286,6 +303,7 @@ public partial class ShortcutsWindow : Window
         if (LeaderShortcutBox == null) return;
         var combo = _pendingLeader != null ? _pendingLeader.Format() : "";
         LeaderShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
+        UpdateShortcutExample();
     }
 
     private void RenderNoteLeaderBox()
@@ -362,6 +380,15 @@ public partial class ShortcutsWindow : Window
         if (sender is not TextBox box)
             return;
 
+        if (e.Key == Key.Tab && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Meta)) == 0)
+            return;
+        if (e.Key == Key.Escape && e.KeyModifiers == KeyModifiers.None)
+        {
+            e.Handled = true;
+            RenderAllBoxes();
+            FocusManager?.ClearFocus();
+            return;
+        }
         e.Handled = true;
 
         var key = e.Key;
@@ -400,7 +427,9 @@ public partial class ShortcutsWindow : Window
         {
             _pendingLeader = shortcut;
             box.Text = _pendingLeader.Format();
+            UpdateShortcutExample();
         }
+        ClearGlobalShortcutConflict();
     }
 
     private void CommandKeyBox_GotFocus(object? sender, GotFocusEventArgs e)
@@ -586,6 +615,7 @@ public partial class ShortcutsWindow : Window
     {
         if (sender is Button btn)
         {
+            ClearGlobalShortcutConflict();
             if (btn.Tag as string == "ShowActiveOverlay")
             {
                 _pendingShowActiveOverlay = new Shortcut(0, 0);
@@ -623,6 +653,7 @@ public partial class ShortcutsWindow : Window
 
     private void ResetDefaults_Click(object? sender, RoutedEventArgs e)
     {
+        ClearGlobalShortcutConflict();
         _pendingLeader = AppSettings.DefaultLeaderShortcut();
         _pendingNoteLeader = AppSettings.DefaultNoteLeaderShortcut();
         _pendingShowActiveOverlay = AppSettings.DefaultShowActiveOverlayShortcut();
@@ -648,7 +679,9 @@ public partial class ShortcutsWindow : Window
             .FirstOrDefault(group => group.Count() > 1);
         if (duplicate != null)
         {
-            SetRegistrationStatus($"{duplicate.First().Format()} is assigned to more than one global shortcut. Choose a unique combination.");
+            SelectShortcutPage(true);
+            _globalShortcutConflict = true;
+            ShowRegistrationStatus($"{duplicate.First().Format()} is assigned to more than one global shortcut. Choose a unique combination.");
             return;
         }
 
@@ -657,6 +690,7 @@ public partial class ShortcutsWindow : Window
             WinF2ValidationWarning.Text = f2Error;
             WinF2ValidationWarningBorder.IsVisible = true;
             CommandsTabControl.SelectedIndex = 0;
+            SelectShortcutPage(false);
             return;
         }
 
@@ -665,6 +699,7 @@ public partial class ShortcutsWindow : Window
             WinF3ValidationWarning.Text = f3Error;
             WinF3ValidationWarningBorder.IsVisible = true;
             CommandsTabControl.SelectedIndex = 1;
+            SelectShortcutPage(false);
             return;
         }
 

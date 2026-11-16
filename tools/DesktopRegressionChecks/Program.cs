@@ -244,6 +244,25 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--shortcuts-main-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Main Shortcuts native controls", ShortcutsMainNativeChecks.Run);
+    Check("Shortcut capture Escape", ShortcutsMainNativeChecks.EscapeCapture);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--shortcuts-main-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Main Shortcuts native proposal", ShortcutsMainPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--settings-internet-export-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

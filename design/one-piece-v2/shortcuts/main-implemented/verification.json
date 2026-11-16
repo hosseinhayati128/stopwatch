@@ -1,0 +1,82 @@
+{
+  "Status": "implemented-native-verified-not-installed",
+  "VerifiedUtc": "2026-11-15T22:15:49.5532593+00:00",
+  "Scales": [
+    70,
+    90,
+    125
+  ],
+  "BuildWarnings": 0,
+  "BuildErrors": 0,
+  "UnitPassed": 1117,
+  "NativeScaleCasesPassed": 3,
+  "CaptureAndStatusRegressionPassed": true,
+  "PrivateDesktop": true,
+  "ReviewImportantFixed": 1,
+  "ReviewCritical": 0,
+  "ReviewMinor": 0,
+  "InstalledBinaryUnchanged": true,
+  "InstalledSha256": "80755A4175E9313138D668BCA3D097E29ABE8925CA94093230D71010DE8DA2FD",
+  "SourceHashes": [
+    {
+      "Sha256": "3265810DC778A1921F78019714C0C910838D26F01AC33943F32F4277F107B86B",
+      "Path": "StopwatchOverlay.Desktop/Views/ShortcutsWindow.Navigator.cs"
+    },
+    {
+      "Sha256": "8EB9E7F820CEE4E2A29B45FD3DC3F7DE6ED83FBD17628683056EA4429A40415C",
+      "Path": "StopwatchOverlay.Desktop/Views/ShortcutsWindow.axaml.cs"
+    },
+    {
+      "Sha256": "DB8C63E93A68920079069FDF291EBE6EC97AD4E18E707EFC0D99FF67B54B0012",
+      "Path": "StopwatchOverlay.Desktop/Views/ControllerWindow.axaml.cs"
+    },
+    {
+      "Sha256": "516992FD7DF2E7E31A233DF062CF8B0391476484B5BE65DA56806AB78E76149C",
+      "Path": "tools/DesktopRegressionChecks/Program.cs"
+    },
+    {
+      "Sha256": "222C3D0E19D19643BF4670F724E8A27FB6F180177660EDF095C9EEC2F91933C6",
+      "Path": "tools/DesktopRegressionChecks/ShortcutsMainNativeChecks.cs"
+    }
+  ],
+  "ImageHashes": [
+    {
+      "Sha256": "FB64C68868E1C09CB15A57BAFD7C4088C765ADBF705D3874AC4F7CB588826FE8",
+      "Name": "duplicate.png"
+    },
+    {
+      "Sha256": "13440A0F890CF724A31B3ACD3D399417473A753C8AE5DB9BF6D3654DC1799918",
+      "Name": "main-125.png"
+    },
+    {
+      "Sha256": "E79C60D7034B647BC5616850C412BFCE83A21D47920F90A3FED91BC670539458",
+      "Name": "main-70.png"
+    },
+    {
+      "Sha256": "48A7C0E9A37D83A83EAF1CAD0BF587431B8AEBF5BE7FF3CA03B16FC325B3503B",
+      "Name": "main-90.png"
+    },
+    {
+      "Sha256": "DA179BDCE664640ED137E31C09F78F5844C25023B276D4C72BC42E981F1D319F",
+      "Name": "recording.png"
+    },
+    {
+      "Sha256": "6F52D7850B230BAEBB81C213806AC185A5879DA7F01643A40367060FA6F27B90",
+      "Name": "timing-125.png"
+    },
+    {
+      "Sha256": "E79C60D7034B647BC5616850C412BFCE83A21D47920F90A3FED91BC670539458",
+      "Name": "timing-70.png"
+    },
+    {
+      "Sha256": "48A7C0E9A37D83A83EAF1CAD0BF587431B8AEBF5BE7FF3CA03B16FC325B3503B",
+      "Name": "timing-90.png"
+    }
+  ],
+  "EvidenceRoot": ".superpowers/sdd/2026-11-16-shortcuts-main",
+  "Limitations": [
+    "No OS-level keyboard capture/registration or screen-reader verification.",
+    "No Linux rendering or physical keyboard traversal checks.",
+    "No install or Git publication."
+  ]
+}

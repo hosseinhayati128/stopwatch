@@ -1247,6 +1247,7 @@ public partial class ControllerWindow : Window
                 _settings.CommandChainingTimeoutSeconds,
                 _settings.CommandModeKeys,
                 _settings.NoteCommandModeKeys);
+            _shortcutsWindow.ApplyNavigatorLayout(_settings.ThemeMode);
             if (PlatformServices.HotKey is PortalHotKeyService portal)
                 _shortcutsWindow.SetRegistrationStatus(portal.RegistrationStatus);
             ExitShortcutCommandMode();

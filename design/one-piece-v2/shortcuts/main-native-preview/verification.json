@@ -1,0 +1,45 @@
+{
+  "Status": "native-design-preview-only",
+  "Scales": [
+    70,
+    90,
+    125
+  ],
+  "Window": "1120x720",
+  "PrivateDesktop": true,
+  "NativeCasesPassed": 3,
+  "BuildWarnings": 0,
+  "BuildErrors": 0,
+  "LiveSettingsChanged": false,
+  "GlobalHotkeysRegistered": false,
+  "Captures": [
+    {
+      "Name": "main-125.png",
+      "Sha256": "EF9BC2318B9CF142F8651C97FF45625AAF70200095CD78A4319C4A2E4206B71F"
+    },
+    {
+      "Name": "main-70.png",
+      "Sha256": "D6B3C92799379D41A7ACB63964A939DCF3ECC159B2BD39AF63A77DE6AFBC5BA6"
+    },
+    {
+      "Name": "main-90.png",
+      "Sha256": "32A97DC22BD79819ECB3F34DAC5FDCF74B8220752EF0BA186D2CF625A5884335"
+    },
+    {
+      "Name": "recording.png",
+      "Sha256": "68AA0F925DAB8052C9571ACDE6CA2AA893E32FDF8EFDF5BC343017DEAB058C43"
+    },
+    {
+      "Name": "timing-125.png",
+      "Sha256": "B0316693FAD9FF7B055FB75BCF801897FB35AD89ED36DFBD136D311145A65C02"
+    },
+    {
+      "Name": "timing-70.png",
+      "Sha256": "D6B3C92799379D41A7ACB63964A939DCF3ECC159B2BD39AF63A77DE6AFBC5BA6"
+    },
+    {
+      "Name": "timing-90.png",
+      "Sha256": "32A97DC22BD79819ECB3F34DAC5FDCF74B8220752EF0BA186D2CF625A5884335"
+    }
+  ]
+}
