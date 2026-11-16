@@ -244,6 +244,28 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--shortcuts-mappings-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Check("Command mappings production layout and captures", ShortcutsMappingsNativeChecks.Layout);
+    Check("Command mappings capture and family validation", ShortcutsMappingsNativeChecks.CaptureAndValidation);
+    Check("Command mappings draft examples and outcomes", ShortcutsMappingsNativeChecks.DraftsAndOutcomes);
+    Check("Command mappings keyboard traversal and legacy theme", ShortcutsMappingsNativeChecks.KeyboardAndLegacy);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--shortcuts-mappings-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Command Mappings native proposal", ShortcutsMappingsPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--shortcuts-main-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

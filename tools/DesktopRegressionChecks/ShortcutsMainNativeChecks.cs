@@ -46,9 +46,9 @@ internal static class ShortcutsMainNativeChecks
                 Require(!Field<TextBlock>(w,"PortalRegistrationText").IsVisible,"Reset left stale duplicate validation visible.");
                 var map=Field<Dictionary<ShortcutAction,uint>>(w,"_pendingCommandModeKeys");
                 map[ShortcutAction.Reset]=map[ShortcutAction.StartStop];
-                Click(save); Pump(); Require(Field<TabControl>(w,"CommandsTabControl").IsEffectivelyVisible && Field<TabControl>(w,"CommandsTabControl").SelectedIndex==0,"Save did not reveal invalid command mappings.");
+                Click(save); Pump(); Require(Visual<Control>(w,"TimerCommandPage").IsEffectivelyVisible,"Save did not reveal invalid command mappings.");
                 Click(Visual<Button>(w,"ShortcutsReset"));
-                Click(Visual<Button>(w,"ShortcutsMappingsTab")); Pump(); Require(Field<TabControl>(w,"CommandsTabControl").IsEffectivelyVisible,"Mappings inaccessible.");
+                Click(Visual<Button>(w,"ShortcutsMappingsTab")); Pump(); Require(Visual<Control>(w,"CommandMappingsPage").IsEffectivelyVisible,"Mappings inaccessible.");
                 Click(Visual<Button>(w,"ShortcutsMainTab")); Pump();
                 var tab=new KeyEventArgs {RoutedEvent=InputElement.KeyDownEvent,Key=Avalonia.Input.Key.Tab};leader.RaiseEvent(tab);
                 Require(w.ResultLeader==AppSettings.DefaultLeaderShortcut(),"Tab was captured as a shortcut.");

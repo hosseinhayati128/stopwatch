@@ -45,6 +45,7 @@ internal static class DesktopPageAppearance
             transform.LayoutTransform=new ScaleTransform(_scale,_scale);
             if(window is ControllerWindow controller)ResizeController(controller,_scale/previousScale,window.ClientSize);
             if(window is SettingsWindow inspector)inspector.RefreshPageScale();
+            if(window is ShortcutsWindow shortcuts)shortcuts.FitNavigatorContent();
         }
     }
     internal static double Scale(Window window)=>Pages.ContainsKey(window)?_scale:1;
@@ -68,6 +69,15 @@ internal static class DesktopPageAppearance
         }
         window.PropertyChanged+=ContentChanged;window.Closed+=Closed;
         if(window is SettingsWindow inspector)inspector.RefreshPageScale();
+        if(window is ShortcutsWindow shortcuts)
+        {
+            window.SizeChanged+=ShortcutsSizeChanged;
+            shortcuts.FitNavigatorContent();
+        }
+    }
+    private static void ShortcutsSizeChanged(object? sender,SizeChangedEventArgs e)
+    {
+        if(sender is ShortcutsWindow shortcuts)shortcuts.FitNavigatorContent();
     }
     private static void ControllerSizeChanged(object? sender,SizeChangedEventArgs e)
     {
@@ -102,14 +112,14 @@ internal static class DesktopPageAppearance
     {
         if(e.Property!=ContentControl.ContentProperty||sender is not Window window||!Pages.Remove(window,out var transform))return;
         // Settings replaces its shell on theme changes. Detach synchronously so it can reuse that root.
-        window.PropertyChanged-=ContentChanged;window.Closed-=Closed;window.SizeChanged-=ControllerSizeChanged;
+        window.PropertyChanged-=ContentChanged;window.Closed-=Closed;window.SizeChanged-=ControllerSizeChanged;window.SizeChanged-=ShortcutsSizeChanged;
         transform.Child=null;
         Dispatcher.UIThread.Post(()=>{if(window.IsVisible)Attach(window);});
     }
     private static void Closed(object? sender,EventArgs e)
     {
         if(sender is not Window window)return;
-        Pages.Remove(window);window.PropertyChanged-=ContentChanged;window.Closed-=Closed;window.SizeChanged-=ControllerSizeChanged;
+        Pages.Remove(window);window.PropertyChanged-=ContentChanged;window.Closed-=Closed;window.SizeChanged-=ControllerSizeChanged;window.SizeChanged-=ShortcutsSizeChanged;
     }
     internal static void RefreshTheme()
     {

@@ -311,6 +311,7 @@ public partial class ShortcutsWindow : Window
         if (NoteLeaderShortcutBox == null) return;
         var combo = _pendingNoteLeader != null ? _pendingNoteLeader.Format() : "";
         NoteLeaderShortcutBox.Text = combo.Length > 0 ? combo : "(none)";
+        UpdateCommandMappingText();
     }
 
     private void RenderShowActiveOverlayBox()
@@ -352,6 +353,7 @@ public partial class ShortcutsWindow : Window
                 box.Text = "(none)";
             }
         }
+        UpdateCommandMappingText();
     }
 
     private void ShortcutBox_GotFocus(object? sender, GotFocusEventArgs e)
@@ -430,6 +432,7 @@ public partial class ShortcutsWindow : Window
             UpdateShortcutExample();
         }
         ClearGlobalShortcutConflict();
+        UpdateCommandMappingText();
     }
 
     private void CommandKeyBox_GotFocus(object? sender, GotFocusEventArgs e)
@@ -462,6 +465,8 @@ public partial class ShortcutsWindow : Window
         if (sender is not TextBox box)
             return;
 
+        if (e.Key == Key.Tab && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Meta)) == 0)
+            return;
         e.Handled = true;
 
         var key = e.Key;
@@ -525,6 +530,7 @@ public partial class ShortcutsWindow : Window
             _pendingNoteCommandModeKeys[noteAction] = vk;
             box.Text = Shortcut.FormatKeyName(vk);
         }
+        UpdateCommandMappingText();
     }
 
     private void SetWarning(object? tag, string message)
@@ -539,6 +545,7 @@ public partial class ShortcutsWindow : Window
             WinF3ValidationWarning.Text = message;
             WinF3ValidationWarningBorder.IsVisible = true;
         }
+        if (_commandMappingPage != null) _shortcutScroll?.ScrollToHome();
     }
 
     private void ClearWarning(object? tag)
@@ -563,6 +570,7 @@ public partial class ShortcutsWindow : Window
                 box.Text = "(none)";
             }
             ClearWarning(action);
+            UpdateCommandMappingText();
         }
     }
 
@@ -576,6 +584,7 @@ public partial class ShortcutsWindow : Window
                 box.Text = "(none)";
             }
             ClearWarning(action);
+            UpdateCommandMappingText();
         }
     }
 
@@ -689,7 +698,7 @@ public partial class ShortcutsWindow : Window
         {
             WinF2ValidationWarning.Text = f2Error;
             WinF2ValidationWarningBorder.IsVisible = true;
-            CommandsTabControl.SelectedIndex = 0;
+            SelectCommandFamily(false);
             SelectShortcutPage(false);
             return;
         }
@@ -698,7 +707,7 @@ public partial class ShortcutsWindow : Window
         {
             WinF3ValidationWarning.Text = f3Error;
             WinF3ValidationWarningBorder.IsVisible = true;
-            CommandsTabControl.SelectedIndex = 1;
+            SelectCommandFamily(true);
             SelectShortcutPage(false);
             return;
         }

@@ -76,9 +76,9 @@ public partial class ShortcutsWindow
         title.PointerPressed+=(_,e)=>{if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)BeginMoveDrag(e);};
         var header=new StackPanel {Spacing=16,Margin=new(0,0,0,18),Children={title,new WrapPanel {Children={_mainShortcutTab,_mappingShortcutTab}}}};
         PortalRegistrationText.MaxWidth=double.PositiveInfinity;PortalRegistrationText.Foreground=Brush.Parse("#913F32");PortalRegistrationText.Margin=default;
-        CommandsTabControl.Margin=default;
+        var mappings=CreateCommandMappingsLayout();
         _shortcutScroll=new ScrollViewer {Name="MainShortcutsScroll",HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,
-            Content=new StackPanel {Spacing=12,Children={PortalRegistrationText,_mainShortcutCards,CommandsTabControl}}};
+            Content=new StackPanel {Spacing=12,Children={PortalRegistrationText,_mainShortcutCards,mappings}}};
         _shortcutScroll.SizeChanged+=(_,_)=>
         {
             bool stack=_shortcutScroll.Bounds.Width<800;
@@ -101,12 +101,25 @@ public partial class ShortcutsWindow
     private void SelectShortcutPage(bool main)
     {
         if(_mainShortcutCards==null)return;
-        _mainShortcutCards.IsVisible=main;CommandsTabControl.IsVisible=!main;
+        _mainShortcutCards.IsVisible=main;
+        if(_commandMappingPage!=null)_commandMappingPage.IsVisible=!main;
+        else CommandsTabControl.IsVisible=!main;
+        UpdateCommandMappingText();
         _mainShortcutTab!.Classes.Set("editorPrimary",main);_mappingShortcutTab!.Classes.Set("editorPrimary",!main);
         _shortcutScroll!.Offset=default;
     }
     private void UpdateShortcutExample()
     {
         if(_shortcutExample!=null)_shortcutExample.Text=_pendingLeader.VirtualKey==0?"Assign a timer leader to open command mode.":$"{_pendingLeader.Format()}  →  command key  →  next key";
+    }
+
+    internal void FitNavigatorContent()
+    {
+        if(DesktopPageAppearance.Content(this) is not StopwatchFrameSurface frame)return;
+        double scale=DesktopPageAppearance.Scale(this);
+        // Constrain the transformed frame before its content can retain a larger desired size.
+        frame.Width=(ClientSize.Width>0?ClientSize.Width:Width)/scale;
+        frame.Height=(ClientSize.Height>0?ClientSize.Height:Height)/scale;
+        if(Content is LayoutTransformControl transform)transform.InvalidateArrange();
     }
 }

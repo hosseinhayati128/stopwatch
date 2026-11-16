@@ -1,0 +1,156 @@
+{
+  "kind": "implemented-native-controls",
+  "utc": "2026-11-16T04:36:49.2192684Z",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "window": {
+    "width": 1120,
+    "height": 720
+  },
+  "minimumWindow": {
+    "width": 700,
+    "height": 500
+  },
+  "isolation": "Private WinSta0 desktop; no SwitchDesktop",
+  "desktopBuild": {
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "unitBuild": {
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "unitTests": {
+    "failed": 0,
+    "passed": 1117,
+    "skipped": 0
+  },
+  "nativeModes": [
+    "--shortcuts-mappings-native",
+    "--shortcuts-main-native",
+    "--shortcuts-only",
+    "--shortcuts-mappings-preview"
+  ],
+  "nativeChecksPassed": true,
+  "logDirectory": ".superpowers/sdd/2026-11-16-shortcuts-mappings",
+  "review": "Independent read-only review; no actionable production findings; focus coverage limitation resolved with passing Tab/Shift+Tab focus assertions",
+  "liveInstalled": false,
+  "gitPublished": false,
+  "installedBinarySha256": "393677B189B4BC9C13D82BACB65ECC4E6F338EC8A6AD5C220D20FC6F20792C0C",
+  "sources": [
+    {
+      "file": "StopwatchOverlay.Desktop/Views/ShortcutsWindow.CommandMappings.cs",
+      "sha256": "75AC0DD4C08F35535AA343F36698EFDA76FF68D803D1D7F07AE52A23BDE48DC1"
+    },
+    {
+      "file": "StopwatchOverlay.Desktop/Views/ShortcutsWindow.Navigator.cs",
+      "sha256": "56A887BCE1A33475200CA2938D873937291A1BB4D28541E6763B3861784CF300"
+    },
+    {
+      "file": "StopwatchOverlay.Desktop/Views/ShortcutsWindow.axaml.cs",
+      "sha256": "2EBA0E5468577AAC2EFCF0752D280828D8557BAE37A341F6334AB5BD7742D16C"
+    },
+    {
+      "file": "StopwatchOverlay.Desktop/DesktopPageAppearance.cs",
+      "sha256": "76BA0CB74EA92D85356DD563C1F9474F898E75DF5547B2A3BFC5C0FCAF8372E5"
+    },
+    {
+      "file": "tools/DesktopRegressionChecks/ShortcutsMappingsNativeChecks.cs",
+      "sha256": "AA27FF9650F1B2201990233A303245A68F431728D44C4BACC5AB0F1001BB976E"
+    },
+    {
+      "file": "tools/DesktopRegressionChecks/ShortcutsMainNativeChecks.cs",
+      "sha256": "4478F3E06ACF1CB7E05D023094C2AD17106B5B456757B19DD1AD10F81C3097FD"
+    },
+    {
+      "file": "tools/DesktopRegressionChecks/ShortcutsMappingsPreview.cs",
+      "sha256": "59321F24E11C3A390202F3C4DFC1E8A96202532FD9BE2CF58AE332D7B6CE316D"
+    },
+    {
+      "file": "tools/DesktopRegressionChecks/Program.cs",
+      "sha256": "6F7514C01A345BC9BEB9205BED43F094DC64300669D2A842935540A39CF7FF0F"
+    }
+  ],
+  "captures": [
+    {
+      "file": "duplicate.png",
+      "sha256": "F93BD403B40E6A2AA61C30C19DF93572CFCD735AB38518F023666ED7A62D0973",
+      "bytes": 108470
+    },
+    {
+      "file": "minimum-125.png",
+      "sha256": "C3B0A578B3CEA530B637D10EB11C9FC9D2620991DF692157F7D0A2015F78079C",
+      "bytes": 80782
+    },
+    {
+      "file": "minimum-70.png",
+      "sha256": "082D78EB4F660C8D3F700F19E0258E4ECB57AD8680382034E6F02152DB1B4515",
+      "bytes": 57101
+    },
+    {
+      "file": "minimum-90.png",
+      "sha256": "D6AC1CE4FEDB6D6DBACC6304FD6B2E0D50542E63C7EF215CF9682CF960E130F4",
+      "bytes": 69693
+    },
+    {
+      "file": "notes-125.png",
+      "sha256": "D7EE73FE377C5F58E208FE14583A54934EA927F5292BE92AAD47A9C65B03CCFE",
+      "bytes": 102497
+    },
+    {
+      "file": "notes-70.png",
+      "sha256": "3A7C6F87265BB70E8EF989A0AAD38E7332792C1DB4DB7C166800AE7065547F17",
+      "bytes": 76081
+    },
+    {
+      "file": "notes-90.png",
+      "sha256": "229FE95AD84FECE3388122F0EC62E86065630DA6D8B1C477CE185CCCDBBC0988",
+      "bytes": 102051
+    },
+    {
+      "file": "overlays-125.png",
+      "sha256": "393A105CDBB6F70E8118FFA0A48106F1C62520364BCB556200116612CF74A515",
+      "bytes": 101043
+    },
+    {
+      "file": "overlays-70.png",
+      "sha256": "34DB5908AF4D061F9516CAEF45AD5D832F30EEF3E6C23169012C5BA24FD80974",
+      "bytes": 92485
+    },
+    {
+      "file": "overlays-90.png",
+      "sha256": "266A8F353351AC6B2D6B39D4D67C94F28720BC38484D63AEC687F813EF96FA87",
+      "bytes": 84508
+    },
+    {
+      "file": "recording.png",
+      "sha256": "D4B87FA7ADF860B1D5F7FE32B5399F7B41CCDAFAD9C0A8670842F7D1BE0FA8B7",
+      "bytes": 103217
+    },
+    {
+      "file": "timers-125.png",
+      "sha256": "796A40714856873444BB0C13D536C42EBF431BBD2C20D5FEC6117AA4449EE8D3",
+      "bytes": 103403
+    },
+    {
+      "file": "timers-70.png",
+      "sha256": "34DB5908AF4D061F9516CAEF45AD5D832F30EEF3E6C23169012C5BA24FD80974",
+      "bytes": 92485
+    },
+    {
+      "file": "timers-90.png",
+      "sha256": "5A42E93F242E0C99A303D109905906D2F5D4B4ABB796C7B2C6166357DC7FAB4E",
+      "bytes": 100122
+    },
+    {
+      "file": "unassigned.png",
+      "sha256": "19028E74FFBC92E5B8EBDDE8221DB6B8D09D72441B9E369055D04D791CEBE596",
+      "bytes": 104029
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "kind": "native-design-preview",
+  "utc": "2026-11-16T04:08:51.7010878Z",
+  "scales": [
+    70,
+    90,
+    125
+  ],
+  "window": {
+    "width": 1120,
+    "height": 720
+  },
+  "isolation": "Private WinSta0 desktop via Run-HiddenDesktop.ps1, no SwitchDesktop",
+  "build": {
+    "errors": 0,
+    "warnings": 0,
+    "log": ".superpowers/sdd/2026-11-16-shortcuts-mappings-preview/build.log",
+    "exitCode": 0
+  },
+  "native": {
+    "checks": [
+      "21 timer and 5 note controls",
+      "No horizontal overflow at all scales",
+      "Fixed footer while scrolling at all scales",
+      "Key width at least 90 logical units",
+      "Mapping field focus at 90%",
+      "Duplicate key rejection preserves previous mapping at 90%",
+      "Clear removes draft mapping at 90%"
+    ],
+    "log": ".superpowers/sdd/2026-11-16-shortcuts-mappings-preview/native.log",
+    "exitCode": 0
+  },
+  "productionChanged": false,
+  "installedBinarySha256": "393677B189B4BC9C13D82BACB65ECC4E6F338EC8A6AD5C220D20FC6F20792C0C",
+  "captures": [
+    {
+      "file": "duplicate.png",
+      "sha256": "E8757EF4346E838188E10A8E60981F528BD7F965E419BE7C6A27BF249CF06D0A",
+      "bytes": 108314
+    },
+    {
+      "file": "notes-125.png",
+      "sha256": "D7EE73FE377C5F58E208FE14583A54934EA927F5292BE92AAD47A9C65B03CCFE",
+      "bytes": 102497
+    },
+    {
+      "file": "notes-70.png",
+      "sha256": "D3447B30B02A5245C181A168B3818FE8692FA30B414A30E8815B379DD8B92DC8",
+      "bytes": 76694
+    },
+    {
+      "file": "notes-90.png",
+      "sha256": "67EA04FA8A93C2A94E154CF76EAB47E5A206850E04E13E2ACCA754AEFF514850",
+      "bytes": 101916
+    },
+    {
+      "file": "overlays-125.png",
+      "sha256": "393A105CDBB6F70E8118FFA0A48106F1C62520364BCB556200116612CF74A515",
+      "bytes": 101043
+    },
+    {
+      "file": "overlays-70.png",
+      "sha256": "34DB5908AF4D061F9516CAEF45AD5D832F30EEF3E6C23169012C5BA24FD80974",
+      "bytes": 92485
+    },
+    {
+      "file": "overlays-90.png",
+      "sha256": "266A8F353351AC6B2D6B39D4D67C94F28720BC38484D63AEC687F813EF96FA87",
+      "bytes": 84508
+    },
+    {
+      "file": "recording.png",
+      "sha256": "647A6DA54DB11D5168346A413616B72595B04346F95B5AAA2737C17671C45F42",
+      "bytes": 103047
+    },
+    {
+      "file": "timers-125.png",
+      "sha256": "796A40714856873444BB0C13D536C42EBF431BBD2C20D5FEC6117AA4449EE8D3",
+      "bytes": 103403
+    },
+    {
+      "file": "timers-70.png",
+      "sha256": "34DB5908AF4D061F9516CAEF45AD5D832F30EEF3E6C23169012C5BA24FD80974",
+      "bytes": 92485
+    },
+    {
+      "file": "timers-90.png",
+      "sha256": "5A42E93F242E0C99A303D109905906D2F5D4B4ABB796C7B2C6166357DC7FAB4E",
+      "bytes": 100122
+    },
+    {
+      "file": "unassigned.png",
+      "sha256": "1BD7DA9BD98705C5389139989C766DC9104360C0AA7A91C58D4BFB33403DCC0F",
+      "bytes": 102539
+    }
+  ]
+}
