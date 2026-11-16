@@ -244,6 +244,15 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--note-commands-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Note Commands native proposal", NoteCommandsPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--timer-commands-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -734,6 +743,11 @@ if (args.Contains("--shortcuts-only"))
 if (args.Contains("--timer-commands-native"))
 {
     Check("actual compact and expanded timer command layouts", TimerCommandsNativeChecks.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+if (args.Contains("--note-commands-native"))
+{
+    Check("actual Note Commands layout and mappings", NoteCommandsNativeChecks.Run);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 if (args.Contains("--stopwatch-renderer-only"))

@@ -497,6 +497,22 @@ internal static class ShortcutChecks
     internal static void Notes()
     {
         using var fixture = new Fixture();
+        fixture.Key(KeyCode.VcF3, ModifierMask.LeftMeta); ClockOverlayChecks.Pump(35);
+        var hint = fixture.Window("NoteCommandHintWindow");
+        string[] Rows() => hint.GetVisualDescendants().OfType<Grid>().Where(r => r.Name?.StartsWith("NoteCommandRow") == true).Select(r => r.Name!).ToArray();
+        Require(Rows().SequenceEqual(new[] { "AddTodo", "AddNote", "AddReminder", "ViewNotes", "ToggleTodoOverlay", "Space" }.Select(n => "NoteCommandRow" + n)),
+            "Note popup must show six approved controls in reading order.");
+        fixture.Key(KeyCode.VcEscape); ClockOverlayChecks.Pump(35);
+        Require(!hint.IsVisible && !PlatformServices.HotKey.IsInCommandMode, "Escape did not dismiss the note popup.");
+        fixture.Settings.NoteCommandModeKeys[NoteCommandAction.AddNote] = 0x20;
+        fixture.Settings.NoteCommandModeKeys[NoteCommandAction.AddReminder] = 0;
+        fixture.Key(KeyCode.VcF3, ModifierMask.LeftMeta); ClockOverlayChecks.Pump(35);
+        hint = fixture.Window("NoteCommandHintWindow");
+        Require(Rows().Length == 4 && !Rows().Contains("NoteCommandRowSpace"), "Unassigned commands or mapped Space incorrectly retain fallback hints.");
+        fixture.Key(KeyCode.VcSpace); ClockOverlayChecks.Pump(35);
+        Require(!hint.IsVisible, "Executing a note command left the popup visible.");
+        fixture.Window("NoteEntryWindow").Close(); ClockOverlayChecks.Pump(35);
+        fixture.Settings.NoteCommandModeKeys = AppSettings.DefaultNoteCommandModeKeys();
         foreach (KeyCode key in new[] { KeyCode.VcT, KeyCode.VcN, KeyCode.VcR })
         {
             fixture.Command(key, notes: true);

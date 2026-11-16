@@ -354,7 +354,8 @@ commandKey.Invoke(controller, new object?[] { null, active.NoteLeaderShortcut.Vi
 Dispatcher.UIThread.RunJobs();
 if (!(bool)modeActive.GetValue(controller)!) throw new Exception("Leader repeat cancelled the note menu.");
 var hint = (Window)typeof(ControllerWindow).GetField("_commandHintWindow", flags)!.GetValue(controller)!;
-if (hint.FindControl<TextBlock>("NoteOptions")?.Text?.Contains("N Quick Note") != true)
+if (!hint.GetVisualDescendants().OfType<Grid>().Where(row => row.Name == "NoteCommandRowAddNote")
+    .SelectMany(row => row.GetVisualDescendants().OfType<TextBlock>()).Any(text => text.Text == "N"))
     throw new Exception("Note menu does not display the configured letters.");
 if (((DispatcherTimer)typeof(ControllerWindow).GetField("_commandModeTimer", flags)!.GetValue(controller)!).Interval < TimeSpan.FromSeconds(5))
     throw new Exception("Note menu times out sooner than the Windows version.");

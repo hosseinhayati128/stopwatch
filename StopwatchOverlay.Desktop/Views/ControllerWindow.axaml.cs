@@ -242,7 +242,7 @@ public partial class ControllerWindow : Window
 
         if (_commandHintWindow == null)
         {
-            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys)
+            _commandHintWindow = noteMode ? new NoteCommandHintWindow(_settings.NoteCommandModeKeys, _settings)
                 : new ShortcutCommandHintWindow(_settings.CommandModeKeys, _settings, _timerManager.Active?.DisplayName);
             var hint = _commandHintWindow;
             if (OperatingSystem.IsWindows()) hint.ShowActivated = false;

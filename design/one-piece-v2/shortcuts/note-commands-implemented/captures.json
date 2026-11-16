@@ -1,0 +1,38 @@
+[
+  {
+    "file": "note-commands-125.png",
+    "width": 775,
+    "height": 165,
+    "sha256": "4ABACBC5408B8BF6E5EAC285F2A5F046D46ACDCC99130496DB00C78789180F72"
+  },
+  {
+    "file": "note-commands-70.png",
+    "width": 434,
+    "height": 92,
+    "sha256": "58F34AB4255C1D9F8E1F7EB64C04BFD5B3BCB681E303B6B1754074D3EEF84D23"
+  },
+  {
+    "file": "note-commands-90.png",
+    "width": 558,
+    "height": 119,
+    "sha256": "7549889D864E23EFEA458C574D8C749653A4CB4D484B68BAB67FFA5512D70A38"
+  },
+  {
+    "file": "note-commands-custom.png",
+    "width": 558,
+    "height": 140,
+    "sha256": "3A7F00D380823149B4C3FA66D5C95AF630553840134A585EAFC01A1E2C4ABAA8"
+  },
+  {
+    "file": "note-commands-daylight.png",
+    "width": 558,
+    "height": 119,
+    "sha256": "B8C8C793D3B3F8312FA1F9E2B2702DC4C6117826A9149A45A01B320F55799FCD"
+  },
+  {
+    "file": "note-commands-midnight.png",
+    "width": 558,
+    "height": 119,
+    "sha256": "5F6E832E0AAA232166F987A352A38C1A93C8478FD1DC1CFCD7668E74295CC0AF"
+  }
+]
