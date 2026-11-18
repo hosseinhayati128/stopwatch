@@ -23,6 +23,8 @@ public partial class NotesViewerWindow : Window
     private List<NoteEntry> _allEntries = new();
     private TodoOrganization? _organization;
     private NoteType? _currentFilter = null;
+    private string? _loadMessage;
+    private string _loadTitle = "Could not load notes";
 
     public NotesViewerWindow() : this(new AppSettings())
     {
@@ -42,6 +44,7 @@ public partial class NotesViewerWindow : Window
         _autoCloseTimer.Tick += AutoCloseTimer_Tick;
 
         Opened += OnWindowOpened;
+        ApplyViewerAppearance();
     }
 
     private void OnWindowOpened(object? sender, EventArgs e)
@@ -61,21 +64,24 @@ public partial class NotesViewerWindow : Window
             return;
         }
 
-        CountdownText.Text = $"Auto-closing in {_countdownSeconds}s";
+        CountdownText.Text = _viewerSummary!=null?$"Auto-close · {_countdownSeconds}s":$"Auto-closing in {_countdownSeconds}s";
     }
 
     private void LoadNotes()
     {
+        _allEntries.Clear();_organization=null;_loadMessage=null;
         string vaultFolder = _settings.ObsidianVaultFolder;
         if (string.IsNullOrWhiteSpace(vaultFolder) || !Directory.Exists(vaultFolder))
         {
             VaultLocationText.Text = "Vault: Not configured";
-            EmptyMessageText.Text = "No Obsidian vault selected. Configure your vault in Settings.";
-            EmptyMessageText.IsVisible = true;
+            _loadTitle="Choose a notes folder";
+            _loadMessage="Select an Obsidian vault in Settings to view your notes, todos, and reminders.";
+            RenderEntries();
             return;
         }
 
-        VaultLocationText.Text = $"Vault: {Path.GetFileName(vaultFolder)}/Notes";
+        VaultLocationText.Text = $"Vault: {Path.GetFileName(Path.TrimEndingDirectorySeparator(vaultFolder))} / {_settings.NotesSubfolder}";
+        ToolTip.SetTip(VaultLocationText,Path.Combine(vaultFolder,_settings.NotesSubfolder));
 
         try
         {
@@ -86,8 +92,8 @@ public partial class NotesViewerWindow : Window
         catch (Exception ex)
         {
             CrashLogger.LogRecoverable(ex, "NotesViewerWindow.LoadNotes");
-            EmptyMessageText.Text = $"Error reading notes: {ex.Message}";
-            EmptyMessageText.IsVisible = true;
+            _loadTitle="Could not load notes";_loadMessage=$"Error reading notes: {ex.Message}";
+            RenderEntries();
         }
     }
 
@@ -98,9 +104,22 @@ public partial class NotesViewerWindow : Window
         var filtered = _currentFilter.HasValue
             ? _allEntries.Where(e => e.Type == _currentFilter.Value).ToList()
             : _allEntries;
+        UpdateViewerSummary(filtered.Count);
+        if(_loadMessage!=null)
+        {
+            if(_viewerSummary!=null)ShowViewerEmpty(_loadTitle,_loadMessage);
+            else {EmptyMessageText.Text=_loadMessage;EmptyMessageText.IsVisible=true;ItemsContainer.Children.Add(EmptyMessageText);}
+            return;
+        }
 
         if (filtered.Count == 0)
         {
+            if(_viewerSummary!=null)
+            {
+                string kind=_currentFilter switch{NoteType.Todo=>"todos",NoteType.Reminder=>"reminders",NoteType.Note=>"quick notes",_=>"notes, todos or reminders"};
+                ShowViewerEmpty(_currentFilter==null?"Nothing here yet":$"No {kind} yet",$"Your {kind} will appear here once you add one.");
+                return;
+            }
             EmptyMessageText.Text = _currentFilter switch
             {
                 NoteType.Todo => "No todos found.",
@@ -155,6 +174,12 @@ public partial class NotesViewerWindow : Window
                 dateHeaderText.Foreground = aBrush;
 
             dateHeaderBorder.Child = dateHeaderText;
+            if(_viewerSummary!=null)
+            {
+                dateHeaderText.Text=(group.Key==today?$"Today · {group.Key:dd MMM}":group.Key==yesterday?$"Yesterday · {group.Key:dd MMM}":group.Key.ToString("dd MMM yyyy")).ToUpperInvariant();
+                dateHeaderText.FontFamily=Controls.ClockPickerPresentation.Body;dateHeaderText.FontSize=11;dateHeaderText.Foreground=Controls.ClockPickerPresentation.Muted;
+                dateHeaderBorder.Background=Brushes.Transparent;dateHeaderBorder.BorderThickness=new(0);dateHeaderBorder.Padding=new(0);dateHeaderBorder.Margin=new(2,3,0,8);
+            }
             ItemsContainer.Children.Add(dateHeaderBorder);
 
             // Entries in this date
@@ -299,13 +324,14 @@ public partial class NotesViewerWindow : Window
         }
 
         border.Child = grid;
+        DateTime? reminderDue=null;
         if (entry.Type is NoteType.Todo or NoteType.Reminder)
         {
             var menu = new ContextMenu();
             var edit = new MenuItem { Header = entry.Type == NoteType.Reminder ? "Edit reminder…" : "Edit todo…" };
             edit.Click += async (_, _) =>
             {
-                menu.Close(); _autoCloseTimer.Stop();
+                menu.Close(); PauseAutoClose();
                 var editor = new NoteEntryWindow(entry.Type, _settings, entry);
                 await editor.ShowDialog(this);
                 LoadNotes();
@@ -316,19 +342,26 @@ public partial class NotesViewerWindow : Window
                 var delete = new MenuItem { Header = "Delete reminder…" };
                 delete.Click += async (_, _) => { menu.Close(); await DeleteReminderAsync(entry); };
                 menu.Items.Add(delete);
-                var due = HabiticaIntegration.Current.GetDetails(_settings, entry).DueAt;
-                if (due.HasValue) ToolTip.SetTip(border, "Due " + due.Value.ToString("g") + " · Right-click to edit or delete");
+                reminderDue = HabiticaIntegration.Current.GetDetails(_settings, entry).DueAt;
+                if (reminderDue.HasValue) ToolTip.SetTip(border, "Due " + reminderDue.Value.ToString("g") + " · Right-click to edit or delete");
                 else ToolTip.SetTip(border, "Right-click to edit or delete");
             }
-            menu.Opened += (_, _) => _autoCloseTimer.Stop();
+            menu.Opened += (_, _) => PauseAutoClose();
             border.ContextMenu = menu;
         }
+        if(_viewerSummary!=null)StyleViewerRow(border,entry,contentText,timeText,reminderDue);
         return border;
     }
 
     private void ShowMutationStatus(HabiticaMutationResult result)
     {
         string? message = !result.LocalResult.Success ? result.LocalResult.Message ?? "Could not change the task." : result.SyncWarning;
+        if(_viewerStatus!=null)
+        {
+            _viewerStatus.Text=message;_viewerStatusScroll!.IsVisible=message!=null;
+            if(message!=null)PauseAutoClose();
+            return;
+        }
         if (message == null) return;
         _autoCloseTimer.Stop();
         CountdownText.Text = message;
@@ -337,7 +370,7 @@ public partial class NotesViewerWindow : Window
 
     private async Task DeleteReminderAsync(NoteEntry entry)
     {
-        _autoCloseTimer.Stop();
+        PauseAutoClose();
         string vault = _settings.ObsidianVaultFolder, folder = _settings.NotesSubfolder;
         string account = _settings.HabiticaUserId, client = _settings.HabiticaClientId;
         bool enabled = _settings.HabiticaEnabled;

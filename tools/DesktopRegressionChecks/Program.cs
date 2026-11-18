@@ -269,6 +269,27 @@ if (args.Contains("--quick-note-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--notes-viewer-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    Check("Notes viewer native layouts",NotesViewerNativeChecks.Layout);
+    Check("Notes viewer actions and lifecycle",NotesViewerNativeChecks.Behavior);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--notes-viewer-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Notes viewer first-layer native proposal", NotesViewerPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--reminder-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
