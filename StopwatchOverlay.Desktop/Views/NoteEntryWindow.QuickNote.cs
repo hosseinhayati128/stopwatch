@@ -9,10 +9,11 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class NoteEntryWindow
 {
-    private void ApplyQuickNoteAppearance()
+    private void ApplyNoteEditorAppearance()
     {
         if(AppThemeCatalog.Normalize(_settings.ThemeMode)!=AppThemeCatalog.Nika)return;
-        Classes.Add("nikaQuickNote");
+        bool reminder=_noteType==NoteType.Reminder;
+        Classes.Add(reminder?"nikaReminder":"nikaQuickNote");
         FontFamily=ClockPickerPresentation.Body;
         var ink=ClockPickerPresentation.Navy;
         var gold=Brush.Parse("#B78329");
@@ -30,19 +31,20 @@ public partial class NoteEntryWindow
         HeadingText.FontFamily=StopwatchTypography.Resolve("navigator-bold").NameFont;
         HeadingText.FontSize=28;HeadingText.FontWeight=FontWeight.Bold;HeadingText.Foreground=ink;
         var heading=new StackPanel {Spacing=4,Children={HeadingText,new TextBlock {
-            Text="Capture a thought. Keep your flow.",FontSize=12,Foreground=ClockPickerPresentation.Muted}}};
+            Text=reminder?(_isEditing?"Update your reminder and its optional schedule.":"Add a reminder, with an optional date and time."):"Capture a thought. Keep your flow.",
+            FontSize=12,Foreground=ClockPickerPresentation.Muted}}};
         CloseButton.Width=32;CloseButton.Height=32;CloseButton.MinHeight=0;CloseButton.Padding=new(0);
         CloseButton.Background=Brushes.Transparent;CloseButton.BorderThickness=new(0);
         CloseButton.Content=new Avalonia.Controls.Shapes.Path {Width=16,Height=16,Stretch=Stretch.Uniform,
             Data=Geometry.Parse("M1,1 L15,15 M15,1 L1,15"),Stroke=ink,StrokeThickness=1.7};
-        AutomationProperties.SetName(CloseButton,"Close Quick Note");
+        AutomationProperties.SetName(CloseButton,reminder?"Close Reminder":"Close Quick Note");
         var header=new Grid {ColumnDefinitions=new("*,32"),Margin=new(0,0,0,16),Background=Brushes.Transparent,Children={heading,CloseButton}};
         Grid.SetColumn(CloseButton,1);header.PointerPressed+=OnHeaderPointerPressed;
 
         NoteInputBox.Foreground=NoteInputBox.CaretBrush=ink;NoteInputBox.FontFamily=ClockPickerPresentation.Body;
         NoteInputBox.FontSize=14;NoteInputBox.Padding=new(14,12);NoteInputBox.VerticalContentAlignment=VerticalAlignment.Top;
-        NoteInputBox.Watermark="Write a quick note…";
-        AutomationProperties.SetName(NoteInputBox,"Note text");
+        NoteInputBox.Watermark=reminder?"What should I remind you about?":"Write a quick note…";
+        AutomationProperties.SetName(NoteInputBox,reminder?"Reminder text":"Note text");
         var editor=new Border {Background=Brush.Parse("#F8EACA"),BorderBrush=Brush.Parse("#CDB784"),BorderThickness=new(1),CornerRadius=new(5),Child=NoteInputBox};
         foreach(var button in new[]{CancelButton,SaveButton})
         {
@@ -53,7 +55,7 @@ public partial class NoteEntryWindow
             button.Background=button==SaveButton?ink:Brushes.Transparent;
         }
         DesktopTypography.SetPreserveColor(SaveButton,true);
-        SaveButton.Content="Save note";
+        SaveButton.Content=reminder?(_isEditing?"Save changes":"Save reminder"):"Save note";
         var actions=new StackPanel {Orientation=Orientation.Horizontal,Spacing=8,Children={CancelButton,SaveButton}};
         Grid.SetColumn(CancelButton,0);Grid.SetColumn(SaveButton,0);
         EditorShortcutHint.Text="Ctrl+Enter save  ·  Esc cancel";EditorShortcutHint.FontSize=11;
@@ -64,14 +66,20 @@ public partial class NoteEntryWindow
         var bottom=new StackPanel {Margin=new(0,16,0,0),Children={SaveError,footer}};
         var layout=new Grid {RowDefinitions=new("Auto,*,Auto"),Children={header,editor,bottom}};
         Grid.SetRow(editor,1);Grid.SetRow(bottom,2);
+        if(reminder)
+        {
+            layout.RowDefinitions=new("Auto,*,Auto,Auto");
+            var schedule=CreateReminderSchedule();Grid.SetRow(schedule,2);layout.Children.Add(schedule);Grid.SetRow(bottom,3);
+        }
         Content=new StopwatchFrameSurface {ArtworkScale=.16,Padding=new(10),Background=Brush.Parse("#EBD3A5"),Child=layout};
         double scale=AppUiScale.Normalize(_settings.UiScalePercent)/100;
         MinWidth=520*scale;MinHeight=330*scale;Width=620*scale;Height=360*scale;
-        Opened+=(_,_)=>FitQuickNoteContent();
-        SizeChanged+=(_,_)=>FitQuickNoteContent();
+        if(reminder){MinWidth=600*scale;MinHeight=(DueFields.IsVisible?490:400)*scale;Height=(DueFields.IsVisible?510:420)*scale;}
+        Opened+=(_,_)=>FitNoteEditorContent();
+        SizeChanged+=(_,_)=>FitNoteEditorContent();
     }
 
-    internal void FitQuickNoteContent()
+    internal void FitNoteEditorContent()
     {
         if(DesktopPageAppearance.Content(this) is not StopwatchFrameSurface frame)return;
         double scale=DesktopPageAppearance.Scale(this);

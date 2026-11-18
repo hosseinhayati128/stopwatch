@@ -122,7 +122,7 @@ internal static class QuickNoteNativeChecks
             finally{w.Close();}
             foreach(var type in new[]{NoteType.Todo,NoteType.Reminder})
             {
-                w=Open(settings,type);try{Require(!w.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(),"Quick Note shell leaked into "+type);}finally{w.Close();}
+                w=Open(settings,type);try{Require(!w.Classes.Contains("nikaQuickNote"),"Quick Note shell leaked into "+type);}finally{w.Close();}
             }
             w=NoteEntryWindow.ForTodoDetail(settings,"Edit detail","Existing detail",_=>new(true,""));
             try{Require(w.Classes.Contains("nikaTodoDialog"),"Todo detail editor lost its appearance.");}finally{w.Close();}

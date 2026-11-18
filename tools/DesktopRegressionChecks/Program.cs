@@ -244,6 +244,19 @@ if(args.Contains("--time-record-native"))
     Environment.Exit(failures==0?0:1);
 }
 
+if (args.Contains("--reminder-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    Check("Reminder native layout and captures",ReminderNativeChecks.Layout);
+    Check("Reminder scheduling and save behavior",ReminderNativeChecks.Behavior);
+    Check("Quick Note and shared editors regression",QuickNoteNativeChecks.Behavior);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--quick-note-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -253,6 +266,15 @@ if (args.Contains("--quick-note-native"))
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
     Check("Quick Note approved native layout",QuickNoteNativeChecks.Layout);
     Check("Quick Note behavior and shared editor isolation",QuickNoteNativeChecks.Behavior);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--reminder-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Reminder first-layer native proposal", ReminderPreview.Run);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 

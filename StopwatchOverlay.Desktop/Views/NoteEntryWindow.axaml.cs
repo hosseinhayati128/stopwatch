@@ -41,7 +41,7 @@ public partial class NoteEntryWindow : Window
     {
     }
 
-    private NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry, bool quickNoteAppearance)
+    private NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry, bool noteEditorAppearance)
     {
         InitializeComponent();
         AutoTextDirection.Attach(NoteInputBox);
@@ -76,6 +76,7 @@ public partial class NoteEntryWindow : Window
         DueEnabledToggle.IsCheckedChanged += (_, _) =>
         {
             DueFields.IsVisible = DueEnabledToggle.IsChecked == true;
+            if (_reminderSchedule != null) { UpdateReminderSchedule(); return; }
             Height = noteType == NoteType.Todo ? (DueFields.IsVisible ? 650 : 480) : (DueFields.IsVisible ? 480 : 330);
             MinHeight = noteType == NoteType.Todo ? 440 : 300;
         };
@@ -103,7 +104,7 @@ public partial class NoteEntryWindow : Window
         AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => NoteInputBox.Focus();
         if (noteType == NoteType.Todo) ApplyTodoEditorAppearance();
-        else if (noteType == NoteType.Note && quickNoteAppearance) ApplyQuickNoteAppearance();
+        else if (noteEditorAppearance) ApplyNoteEditorAppearance();
     }
 
     public static NoteEntryWindow ForTodoDetail(AppSettings settings, string title, string text, Func<string, NoteSyncResult> save)

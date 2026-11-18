@@ -72,9 +72,10 @@ public partial class NoteEntryWindow
         _savedWithWarning=true;
         NoteInputBox.IsEnabled=TodoDetailsPanel.IsEnabled=false;
         SaveButton.Content="Close";
-        if(Classes.Contains("nikaTodoDialog"))
+        if(Classes.Contains("nikaTodoDialog")||Classes.Contains("nikaReminder"))
         {
-            CancelButton.IsVisible=false;Grid.SetColumn(SaveButton,0);Grid.SetColumnSpan(SaveButton,3);
+            CancelButton.IsVisible=false;
+            if(Classes.Contains("nikaTodoDialog")){Grid.SetColumn(SaveButton,0);Grid.SetColumnSpan(SaveButton,3);}
             EditorShortcutHint.Text="Esc to Close";ToolTip.SetTip(SaveButton,"Close (Esc)");
         }
         ShowSaveError(message);
