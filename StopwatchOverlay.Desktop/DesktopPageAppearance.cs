@@ -46,6 +46,7 @@ internal static class DesktopPageAppearance
             if(window is ControllerWindow controller)ResizeController(controller,_scale/previousScale,window.ClientSize);
             if(window is SettingsWindow inspector)inspector.RefreshPageScale();
             if(window is ShortcutsWindow shortcuts)shortcuts.FitNavigatorContent();
+            if(window is NoteEntryWindow note)note.FitQuickNoteContent();
         }
     }
     internal static double Scale(Window window)=>Pages.ContainsKey(window)?_scale:1;

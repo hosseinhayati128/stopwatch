@@ -37,6 +37,11 @@ public partial class NoteEntryWindow : Window
     }
 
     public NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry = null)
+        : this(noteType, settings, editingEntry, true)
+    {
+    }
+
+    private NoteEntryWindow(NoteType noteType, AppSettings settings, NoteEntry? editingEntry, bool quickNoteAppearance)
     {
         InitializeComponent();
         AutoTextDirection.Attach(NoteInputBox);
@@ -98,11 +103,12 @@ public partial class NoteEntryWindow : Window
         AddHandler(KeyDownEvent, OnEditorKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => NoteInputBox.Focus();
         if (noteType == NoteType.Todo) ApplyTodoEditorAppearance();
+        else if (noteType == NoteType.Note && quickNoteAppearance) ApplyQuickNoteAppearance();
     }
 
     public static NoteEntryWindow ForTodoDetail(AppSettings settings, string title, string text, Func<string, NoteSyncResult> save)
     {
-        var editor = new NoteEntryWindow(NoteType.Note, settings);
+        var editor = new NoteEntryWindow(NoteType.Note, settings, null, false);
         editor._saveDetail = save;
         editor.Title = editor.HeadingText.Text = title;
         editor.NoteInputBox.Text = text;
