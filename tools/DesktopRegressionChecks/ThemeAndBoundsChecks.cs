@@ -76,7 +76,7 @@ internal static class ThemeAndBoundsChecks
     {
         typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!
             .GetMethod("ApplyApplication", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[] { AppThemeCatalog.Pirate });
-        var dialog = new CloseActionDialogWindow { ShowActivated = false };
+        var dialog = new CloseActionDialogWindow(AppThemeCatalog.Pirate) { ShowActivated = false };
         dialog.Classes.Add("pirate");
         try
         {

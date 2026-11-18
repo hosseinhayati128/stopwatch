@@ -53,6 +53,7 @@ public partial class ControllerWindow : Window
 
     private bool _updatingUi;
     private bool _isExiting;
+    private bool _closePromptShowing;
     private readonly bool _previewMode;
     private bool _settingsInteractionActive,_pendingPageScale;
 
@@ -1307,14 +1308,19 @@ public partial class ControllerWindow : Window
         if (action == CloseActionChoice.Ask)
         {
             e.Cancel = true;
-            var (choice, remember) = await CloseActionDialogWindow.ShowAsync(this, _settings.ThemeMode);
-            if (choice == CloseDialogResult.Cancel)
+            if (_closePromptShowing) return;
+            _closePromptShowing = true;
+            (CloseDialogResult choice, bool remember) result;
+            try { result = await CloseActionDialogWindow.ShowAsync(this, _settings.ThemeMode, _settings); }
+            finally { _closePromptShowing = false; }
+            var (choice, remember) = result;
+            if (_isExiting || choice == CloseDialogResult.Cancel)
                 return;
 
             if (remember)
             {
                 _settings.CloseAction = choice == CloseDialogResult.MinimizeToTray ? CloseActionChoice.Minimize : CloseActionChoice.Exit;
-                SettingsStore.Save(_settings);
+                if (!_previewMode) SettingsStore.Save(_settings);
             }
 
             if (choice == CloseDialogResult.MinimizeToTray)

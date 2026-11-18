@@ -7,20 +7,28 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class CloseActionDialogWindow : Window
 {
+    private bool _completed;
     public CloseDialogResult SelectedAction { get; private set; } = CloseDialogResult.Cancel;
-    public bool RememberChoice => RememberCheck.IsChecked == true;
+    public bool RememberChoice => SelectedAction != CloseDialogResult.Cancel && RememberCheck.IsChecked == true;
 
-    public CloseActionDialogWindow() : this(SettingsStore.Load().ThemeMode) { }
+    public CloseActionDialogWindow() : this(null, SettingsStore.Load()) { }
 
-    public CloseActionDialogWindow(string? themeMode)
+    public CloseActionDialogWindow(string? themeMode, AppSettings? settings = null)
     {
         InitializeComponent();
-        Classes.Set("pirate", AppThemeCatalog.Normalize(themeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika);
+        settings ??= new AppSettings { ThemeMode = AppThemeCatalog.Normalize(themeMode) };
+        var theme = AppThemeCatalog.Normalize(themeMode ?? settings.ThemeMode);
+        Classes.Set("pirate", theme == AppThemeCatalog.Pirate);
+        if (theme == AppThemeCatalog.Nika) ApplyCloseAppearance(settings);
+        AddHandler(KeyDownEvent, HandleCloseKey, RoutingStrategies.Tunnel);
+        Closed += (_, _) => _completed = true;
     }
 
-    public static async Task<(CloseDialogResult Action, bool RememberChoice)> ShowAsync(Window? owner, string? themeMode = null)
+    public static async Task<(CloseDialogResult Action, bool RememberChoice)> ShowAsync(Window? owner, string? themeMode = null, AppSettings? settings = null)
     {
-        var dialog = new CloseActionDialogWindow(themeMode ?? SettingsStore.Load().ThemeMode);
+        var dialog = settings == null && themeMode == null
+            ? new CloseActionDialogWindow()
+            : new CloseActionDialogWindow(themeMode, settings);
         if (owner != null)
         {
             var res = await dialog.ShowDialog<CloseDialogResult>(owner);
@@ -33,31 +41,24 @@ public partial class CloseActionDialogWindow : Window
         return await tcs.Task;
     }
 
-    public void ChooseCancel()
+    public void ChooseCancel() => Choose(CloseDialogResult.Cancel);
+    public void ChooseMinimize() => Choose(CloseDialogResult.MinimizeToTray);
+    public void ChooseExit() => Choose(CloseDialogResult.CloseCompletely);
+    private void Choose(CloseDialogResult action)
     {
-        SelectedAction = CloseDialogResult.Cancel;
-        Close(CloseDialogResult.Cancel);
-    }
-
-    public void ChooseMinimize()
-    {
-        SelectedAction = CloseDialogResult.MinimizeToTray;
-        Close(CloseDialogResult.MinimizeToTray);
-    }
-
-    public void ChooseExit()
-    {
-        SelectedAction = CloseDialogResult.CloseCompletely;
-        Close(CloseDialogResult.CloseCompletely);
+        if (_completed) return;
+        _completed = true;
+        SelectedAction = action;
+        Close(action);
     }
 
     private void OnCancelClicked(object? sender, RoutedEventArgs e) => ChooseCancel();
     private void OnMinimizeClicked(object? sender, RoutedEventArgs e) => ChooseMinimize();
     private void OnExitClicked(object? sender, RoutedEventArgs e) => ChooseExit();
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    private void HandleCloseKey(object? sender, KeyEventArgs e)
     {
-        base.OnKeyDown(e);
+        // Handle the advertised default before a focused Exit button consumes Enter.
         if (e.Key == Key.Escape)
         {
             ChooseCancel();

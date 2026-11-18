@@ -64,7 +64,7 @@
                             HorizontalAlignment="Stretch"
                             Classes="danger topAction"
                             Click="OnExitClicked" />
-                    <Button Content="Cancel"
+                    <Button x:Name="CancelButton" Content="Cancel"
                             MinWidth="80"
                             HorizontalAlignment="Stretch"
                             Classes="modern topAction"

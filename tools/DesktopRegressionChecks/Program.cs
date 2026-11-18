@@ -295,6 +295,30 @@ if (args.Contains("--focus-check-in-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--close-stopwatch-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("Close Stopwatch native layout and scaling", CloseStopwatchNativeChecks.Layout);
+    Check("Close Stopwatch keys, actions and legacy themes", CloseStopwatchNativeChecks.Actions);
+    Check("Close Stopwatch modal and ownerless completion", CloseStopwatchNativeChecks.ModalResults);
+    Check("Close Stopwatch controller lifecycle", CloseStopwatchNativeChecks.Controller);
+    Check("Close Stopwatch legacy Pirate template", ThemeAndBoundsChecks.CloseDialogTheme);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--close-stopwatch-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Close Stopwatch first-layer native proposal", CloseStopwatchPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--focus-check-in-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
