@@ -34,7 +34,8 @@ public partial class FocusInterruptionDialogWindow : Window
         Action<FocusPauseReason>? onResult,
         bool isTaskSwitch = false,
         string? otherProjectName = null,
-        TimeSpan? otherProjectDuration = null)
+        TimeSpan? otherProjectDuration = null,
+        AppSettings? settings = null)
     {
         InitializeComponent();
 
@@ -76,6 +77,8 @@ public partial class FocusInterruptionDialogWindow : Window
         _timer.Tick += Timer_Tick;
 
         Opened += OnWindowOpened;
+        AddHandler(KeyDownEvent, OnFocusKeyDown, RoutingStrategies.Tunnel);
+        ApplyFocusAppearance(displayProj, settings ?? new AppSettings());
     }
 
     public static async Task<FocusPauseReason> ShowAsync(
@@ -86,7 +89,8 @@ public partial class FocusInterruptionDialogWindow : Window
         int timeoutSeconds,
         bool isTaskSwitch = false,
         string? otherProjectName = null,
-        TimeSpan? otherProjectDuration = null)
+        TimeSpan? otherProjectDuration = null,
+        AppSettings? settings = null)
     {
         var tcs = new TaskCompletionSource<FocusPauseReason>();
         var dialog = new FocusInterruptionDialogWindow(
@@ -97,7 +101,8 @@ public partial class FocusInterruptionDialogWindow : Window
             reason => tcs.TrySetResult(reason),
             isTaskSwitch,
             otherProjectName,
-            otherProjectDuration);
+            otherProjectDuration,
+            settings);
 
         if (owner != null)
             dialog.Show(owner);
@@ -136,8 +141,11 @@ public partial class FocusInterruptionDialogWindow : Window
             return;
         }
 
-        CountdownText.Text = $"Closing in {_remainingSeconds}s";
+        UpdateFocusCountdown();
     }
+
+    private FocusPauseReason DefaultReason => _isTaskSwitch ? FocusPauseReason.TaskSwitch
+        : _pauseDuration < TimeSpan.FromMinutes(_thresholdMinutes) ? FocusPauseReason.Distraction : FocusPauseReason.ValidBreak;
 
     private void ApplyDefaultAndClose()
     {
@@ -145,18 +153,7 @@ public partial class FocusInterruptionDialogWindow : Window
         _handled = true;
         _timer.Stop();
 
-        FocusPauseReason defaultReason;
-        if (_isTaskSwitch)
-        {
-            defaultReason = FocusPauseReason.TaskSwitch;
-        }
-        else
-        {
-            defaultReason = _pauseDuration < TimeSpan.FromMinutes(_thresholdMinutes)
-                ? FocusPauseReason.Distraction
-                : FocusPauseReason.ValidBreak;
-        }
-
+        var defaultReason = DefaultReason;
         SelectedReason = defaultReason;
         _onResult?.Invoke(defaultReason);
         Close();
@@ -184,9 +181,8 @@ public partial class FocusInterruptionDialogWindow : Window
     private void OnTaskSwitchClicked(object? sender, RoutedEventArgs e)
         => SelectReason(FocusPauseReason.TaskSwitch);
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    private void OnFocusKeyDown(object? sender, KeyEventArgs e)
     {
-        base.OnKeyDown(e);
         switch (e.Key)
         {
             case Key.D1:

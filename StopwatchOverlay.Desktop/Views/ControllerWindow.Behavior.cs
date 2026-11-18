@@ -110,7 +110,7 @@ public partial class ControllerWindow
                 if (_isExiting || !_settings.FocusTrackingEnabled || reason == FocusPauseReason.Unspecified || !_timerManager.Sessions.Contains(timer)) return;
                 _projectHistory.RecordFocusPause(timer.Id, project, pausedAt, resumedAt, reason, maxTrackedPauseMinutes: _settings.MaxTrackedPauseMinutes);
                 if (!_previewMode) _projectTimeStore.Save(_projectHistory);
-            });
+            }, settings: _settings);
         _behaviorFocusPrompt = prompt;
         prompt.Closed += (_, _) =>
         {

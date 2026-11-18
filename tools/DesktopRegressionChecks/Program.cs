@@ -281,6 +281,29 @@ if (args.Contains("--notes-viewer-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--focus-check-in-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    Check("Focus Check-in native layouts",FocusCheckInNativeChecks.Layout);
+    Check("Focus Check-in small-screen bounds",FocusCheckInNativeChecks.SmallScreen);
+    Check("Focus Check-in actions and lifecycle",FocusCheckInNativeChecks.Behavior);
+    Check("Focus Check-in queued controller prompts and history",SettingsBehaviorNativeChecks.CountdownAndFocus);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--focus-check-in-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Focus Check-in first-layer native proposal", FocusCheckInPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--notes-viewer-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

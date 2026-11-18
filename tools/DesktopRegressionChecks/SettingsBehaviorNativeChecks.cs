@@ -199,6 +199,7 @@ internal static class SettingsBehaviorNativeChecks
         ClockOverlayChecks.Pump(50);
         Require(prompt is { IsVisible: true }, "Resuming after an eligible pause did not open the focus prompt.");
         var firstPrompt = prompt!;
+        Require(firstPrompt.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(), "Controller focus prompt did not receive the Nika settings.");
         Call(window, "ToggleSessionStartPause", second);
         Require(prompt == firstPrompt, "A second prompt displaced the open prompt.");
         firstPrompt.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape });
