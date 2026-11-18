@@ -310,6 +310,29 @@ if (args.Contains("--close-stopwatch-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--close-timer-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("Close Timer layout, scale and text", CloseTimerNativeChecks.Layout);
+    Check("Close Timer mode summaries", CloseTimerNativeChecks.Modes);
+    Check("Close Timer keyboard and result behavior", CloseTimerNativeChecks.Actions);
+    Check("Close Timer controller lifecycle", CloseTimerNativeChecks.Controller);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--close-timer-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Close Timer first-layer native proposal", CloseTimerPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--close-stopwatch-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

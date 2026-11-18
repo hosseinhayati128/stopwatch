@@ -50,6 +50,7 @@ internal static class DesktopPageAppearance
             if(window is NotesViewerWindow viewer)viewer.FitViewerContent();
             if(window is FocusInterruptionDialogWindow focus)focus.FitFocusContent();
             if(window is CloseActionDialogWindow close)close.FitCloseDialogContent(_scale!=previousScale);
+            if(window is ConfirmationDialogWindow confirmation)confirmation.FitCloseTimerContent(_scale!=previousScale);
         }
     }
     internal static double Scale(Window window)=>Pages.ContainsKey(window)?_scale:1;

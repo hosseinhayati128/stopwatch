@@ -53,21 +53,21 @@ public partial class ConfirmationDialogWindow : Window
         return await tcs.Task;
     }
 
-    private void OnConfirmClicked(object? sender, RoutedEventArgs e)
+    private void OnConfirmClicked(object? sender, RoutedEventArgs e) => Complete(true);
+    private void OnCancelClicked(object? sender, RoutedEventArgs e) => Complete(false);
+    private void Complete(bool confirmed)
     {
-        Result = true;
-        Close(true);
-    }
-
-    private void OnCancelClicked(object? sender, RoutedEventArgs e)
-    {
-        Result = false;
-        Close(false);
+        if (_closeTimerConfigured && _closeTimerCompleted) return;
+        if (_closeTimerConfigured) _closeTimerCompleted = true;
+        Result = confirmed;
+        Close(confirmed);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+        // Close Timer relies on the focused button; generic confirmations retain their shortcut.
+        if (_closeTimerConfigured) return;
         if (e.Key == Key.Enter)
         {
             OnConfirmClicked(this, e);

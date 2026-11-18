@@ -936,6 +936,7 @@ public partial class ControllerWindow : Window
             $"Are you sure you want to close '{targetName}'?",
             "Close",
             destructive: true);
+        dialog.ConfigureCloseTimer(session, FormatDisplayTime(session), _settings);
         await ShowTimerCommandDialog(dialog);
 
         if (!dialog.Result || _isExiting || !_timerManager.Close(session)) return;
