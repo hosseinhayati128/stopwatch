@@ -104,6 +104,21 @@ if(args.Contains("--settings-typography-regressions")||args.Contains("--settings
     Environment.Exit(failures==0?0:1);
 }
 
+if(args.Contains("--overlay-position-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/"))
+        { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("switching timers retains the shared overlay position",SettingsShellNativeChecks.TimerSwitchPosition);
+    Check("monitor work-area, DPI and custom placement",SettingsShellNativeChecks.Placement);
+    Check("display mirrors, retention and cleanup",SettingsShellNativeChecks.Mirrors);
+    Check("clock and stopwatch mode selection",ControllerModeChecks.Run);
+    Environment.Exit(failures==0?0:1);
+}
+
 if(args.Contains("--settings-shell-native")||args.Contains("--settings-shell-regressions")||args.Contains("--settings-without-light-ring"))
 {
     if(args.Contains("--settings-without-light-ring"))SettingsShellNativeChecks.OutputOverride="design/one-piece-v2/settings/light-ring-removed";

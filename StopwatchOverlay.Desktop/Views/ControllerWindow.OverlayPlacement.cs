@@ -97,6 +97,13 @@ public partial class ControllerWindow
                 if(source.IsVisible&&!window.IsVisible)window.Show();else if(!source.IsVisible&&window.IsVisible)window.Hide();
             }
             if(display.Size==window.Bounds.Size&&display.Session==session.Id)continue;
+            // A shared overlay changes its timer, not its user-chosen location.
+            if(source==_herdOverlay&&display.Session!=Guid.Empty&&display.Session!=session.Id)
+            {
+                session.HasCustomPosition=true;session.LastPresetPosition=_settings.Position;
+                session.CustomLeft=window.Position.X;session.CustomTop=window.Position.Y;
+                session.CustomPositionsByScreen[ScreenPositionKey(display.Screen)]=(window.Position.X,window.Position.Y);
+            }
             display.Size=window.Bounds.Size;display.Session=session.Id;
             bool custom=_settings.Position=="Custom"||(session.HasCustomPosition&&session.LastPresetPosition==_settings.Position);
             var point=session.CustomPositionsByScreen.TryGetValue(ScreenPositionKey(display.Screen),out var saved)?new PixelPoint((int)saved.Left,(int)saved.Top):session.HasCustomPosition?new((int)session.CustomLeft,(int)session.CustomTop):window.Position;

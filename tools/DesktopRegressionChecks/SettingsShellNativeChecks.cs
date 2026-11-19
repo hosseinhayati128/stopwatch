@@ -173,6 +173,60 @@ internal static class SettingsShellNativeChecks
         finally{controller.Close();}
     }
 
+    internal static void TimerSwitchPosition()
+    {
+        foreach(string preset in new[]{"Top Center","Custom"})
+        foreach(bool dragReported in new[]{true,false})
+        {
+            var settings=new AppSettings{ThemeMode=AppThemeCatalog.Nika,ScreenIndex=1,Position=preset};
+            var controller=(ControllerWindow)typeof(ControllerWindow).GetConstructor(Hidden,null,[typeof(AppSettings)],null)!.Invoke([settings]);
+            void Call(string method,params object[] args)=>typeof(ControllerWindow).GetMethod(method,Hidden)!.Invoke(controller,args);
+            void Update(){Call("UpdateOverlayStates");ClockOverlayChecks.Pump(40);Call("UpdateOverlayStates");}
+            try
+            {
+                var manager=(TimerSessionManager)typeof(ControllerWindow).GetField("_timerManager",Hidden)!.GetValue(controller)!;
+                var original=manager.Active!;Update();
+                var overlay=(OverlayWindow)typeof(ControllerWindow).GetField("_herdOverlay",Hidden)!.GetValue(controller)!;
+                var area=overlay.Screens.ScreenFromWindow(overlay)!.WorkingArea;
+                var moved=new PixelPoint(area.X+130,area.Y+170);
+                void Drag(PixelPoint position,bool notify=true)
+                {
+                    overlay.Position=position;
+                    if(notify)((Action)typeof(OverlayWindow).GetField("PositionChangedByUser",Hidden)!.GetValue(overlay)!)();
+                    Update();Require(overlay.Position==position,"Drag did not retain a valid position before switching.");
+                }
+                void Select(TimerSession timer,PixelPoint expected)
+                {
+                    manager.Activate(timer);Update();
+                    Require(ReferenceEquals(overlay,typeof(ControllerWindow).GetField("_herdOverlay",Hidden)!.GetValue(controller)),"Switch recreated the shared overlay.");
+                    Require(overlay.Position==expected,$"{preset}: switching to mode {timer.Mode} moved overlay from {expected} to {overlay.Position}.");
+                    Require(timer.HasCustomPosition&&timer.CustomLeft==expected.X&&timer.CustomTop==expected.Y,"Selected timer did not retain placement for workspace restore.");
+                }
+                // Native drags may finish after BeginMoveDrag returns, before the session records the position.
+                Drag(moved,dragReported);
+                var second=manager.Sessions.First(s=>s!=original);second.Mode=1;
+                Select(second,moved);
+                // The last drag wins even when returning to a timer with an older saved position.
+                var movedAgain=new PixelPoint(area.X+240,area.Y+260);Drag(movedAgain);Select(original,movedAgain);
+                var added=manager.Create();added.Name="A newly created timer with a longer project name";Select(added,movedAgain);
+                foreach(int mode in new[]{1,2,3,0}){added.Mode=mode;Update();Require(overlay.Position==movedAgain,"Changing timer mode moved the dragged overlay.");}
+                Call("ToggleActiveTimerOverlay");Call("ShowActiveTimerOverlay");Update();Require(overlay.Position==movedAgain,"Hide/show lost the selected timer position.");
+                manager.Close(added);Update();Require(overlay.Position==movedAgain,"Closing the selected timer moved the next shared timer.");
+                // A separate window retains its own position and does not drag the shared one along.
+                manager.Separate(second);Update();
+                var separate=((Dictionary<Guid,OverlayWindow>)typeof(ControllerWindow).GetField("_overlays",Hidden)!.GetValue(controller)!)[second.Id];
+                var separatePoint=new PixelPoint(area.X+330,area.Y+100);separate.Position=separatePoint;
+                ((Action)typeof(OverlayWindow).GetField("PositionChangedByUser",Hidden)!.GetValue(separate)!)();
+                manager.Activate(second);Update();Require(separate.Position==separatePoint&&overlay.Position==movedAgain,"Separated and shared positions became coupled.");
+                Select(original,movedAgain);Require(separate.Position==separatePoint,"Shared selection moved a separate timer.");
+                // An intentional position preset still overrides the retained location.
+                settings.Position="Bottom Right";Call("InvalidateOverlayPlacement",true);Update();
+                Require(overlay.Position!=movedAgain&&!original.HasCustomPosition,"Choosing a preset no longer resets custom placement.");
+            }
+            finally{controller.Close();}
+        }
+    }
+
     private static void Save(Window window,string name)
     {
         string folder=OutputOverride??"design/one-piece-v2/settings/implemented";Directory.CreateDirectory(folder);
