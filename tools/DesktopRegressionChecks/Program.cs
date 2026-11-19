@@ -324,6 +324,30 @@ if (args.Contains("--close-timer-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--delete-time-record-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("Delete Time Record layout, scaling and text", DeleteTimeRecordNativeChecks.Layout);
+    Check("Delete Time Record full dates and UTC duration", DeleteTimeRecordNativeChecks.Dates);
+    Check("Delete Time Record focus, keyboard and results", DeleteTimeRecordNativeChecks.Actions);
+    Check("Delete Time Record modal and legacy lifecycle", DeleteTimeRecordNativeChecks.Lifecycle);
+    Check("Delete Time Record dashboard integration", DashboardTimelineNativeChecks.Actions);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--delete-time-record-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Delete Time Record native design proposal", DeleteTimeRecordPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--close-timer-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

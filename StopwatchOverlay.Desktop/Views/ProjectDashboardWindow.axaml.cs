@@ -1291,7 +1291,7 @@ public partial class ProjectDashboardWindow : Window
         _recordDialogOpen = true;
         try
         {
-            var dialog = new ProjectRecordDeleteWindow(record);
+            var dialog = new ProjectRecordDeleteWindow(record, _settings);
             bool confirmed = await dialog.ShowDialog<bool>(this);
             if (confirmed)
             {

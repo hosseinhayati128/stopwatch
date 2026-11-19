@@ -4,11 +4,13 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace StopwatchOverlay.Desktop.Views;
 
 public partial class ProjectRecordDeleteWindow : Window
 {
+    private bool _completed;
     public bool WasDeleted { get; private set; }
 
     public ProjectRecordDeleteWindow()
@@ -18,7 +20,7 @@ public partial class ProjectRecordDeleteWindow : Window
     {
     }
 
-    public ProjectRecordDeleteWindow(ProjectWorkIntervalView record)
+    public ProjectRecordDeleteWindow(ProjectWorkIntervalView record, AppSettings? settings = null)
     {
         ArgumentNullException.ThrowIfNull(record);
         if (record.IsOpen)
@@ -26,19 +28,30 @@ public partial class ProjectRecordDeleteWindow : Window
 
         InitializeComponent();
 
-        DateTime startLocal = EnsureUtc(record.StartUtc).ToLocalTime();
-        DateTime endLocal = EnsureUtc(record.EndUtc!.Value).ToLocalTime();
+        DateTime startUtc = EnsureUtc(record.StartUtc);
+        DateTime endUtc = EnsureUtc(record.EndUtc!.Value);
+        TimeSpan duration = endUtc > startUtc ? endUtc - startUtc : TimeSpan.Zero;
+        DateTime startLocal = startUtc.ToLocalTime();
+        DateTime endLocal = endUtc.ToLocalTime();
         ProjectText.Text = record.ProjectName;
         DateText.Text = startLocal.ToString("dddd, MMMM d, yyyy", CultureInfo.CurrentCulture);
         TimeText.Text = endLocal.Date == startLocal.Date
             ? $"{startLocal:HH:mm} – {endLocal:HH:mm}"
             : $"{startLocal:MMM d, HH:mm} – {endLocal:MMM d, HH:mm}";
-        DurationText.Text = FormatDuration(record.Duration(record.EndUtc.Value));
+        DurationText.Text = FormatDuration(duration);
+        if (AppThemeCatalog.Normalize(settings?.ThemeMode) == AppThemeCatalog.Nika)
+            ApplyDeleteAppearance(settings!, startLocal, endLocal, duration);
+        Opened += (_, _) => Dispatcher.UIThread.Post(() => { if (IsVisible) CancelButton.Focus(); });
+        Closed += (_, _) => _completed = true;
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Escape) { e.Handled = true; Complete(false); }
+        }, RoutingStrategies.Tunnel);
     }
 
-    public static async Task<bool> ShowAsync(Window? owner, ProjectWorkIntervalView record)
+    public static async Task<bool> ShowAsync(Window? owner, ProjectWorkIntervalView record, AppSettings? settings = null)
     {
-        var dialog = new ProjectRecordDeleteWindow(record);
+        var dialog = new ProjectRecordDeleteWindow(record, settings);
         if (owner != null)
         {
             return await dialog.ShowDialog<bool>(owner);
@@ -50,26 +63,14 @@ public partial class ProjectRecordDeleteWindow : Window
         return await tcs.Task;
     }
 
-    private void Cancel_Click(object? sender, RoutedEventArgs e)
+    private void Cancel_Click(object? sender, RoutedEventArgs e) => Complete(false);
+    private void Delete_Click(object? sender, RoutedEventArgs e) => Complete(true);
+    private void Complete(bool deleted)
     {
-        WasDeleted = false;
-        Close(false);
-    }
-
-    private void Delete_Click(object? sender, RoutedEventArgs e)
-    {
-        WasDeleted = true;
-        Close(true);
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-        if (e.Key == Key.Escape)
-        {
-            e.Handled = true;
-            Cancel_Click(this, e);
-        }
+        if (_completed) return;
+        _completed = true;
+        WasDeleted = deleted;
+        Close(deleted);
     }
 
     private static DateTime EnsureUtc(DateTime value) => value.Kind switch

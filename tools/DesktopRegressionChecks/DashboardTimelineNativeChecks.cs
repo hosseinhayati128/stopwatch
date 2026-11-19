@@ -92,9 +92,14 @@ internal static class DashboardTimelineNativeChecks
         Click(Fixture.Button(f.Card(saved.Id),"Edit"));dialog!.FindControl<TextBox>("EndTimeBox")!.Text="00:45:00";Click(dialog!.FindControl<Button>("SaveButton")!);
         Require(f.Writes==1&&f.LastWrite==saved.Id&&!dialog!.IsVisible&&Fixture.Text(f.Card(saved.Id),"DashboardRecordDuration").Text=="45m","Save did not update the intended full source and refresh its row.");
         Click(Fixture.Button(f.Card(saved.Id),"Delete"));Require(dialog is ProjectRecordDeleteWindow&&f.Deletes==0,"Delete bypassed confirmation.");
-        Click(dialog!.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"Cancel")));Require(f.Deletes==0,"Canceled deletion wrote data.");
-        Click(Fixture.Button(f.Card(saved.Id),"Delete"));Click(dialog!.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"Delete record")));
+        var confirmation=(ProjectRecordDeleteWindow)dialog!;
+        Require(confirmation.GetVisualDescendants().OfType<StopwatchOverlay.Desktop.Controls.StopwatchFrameSurface>().Any(),"Dashboard did not pass its theme to the delete dialog.");
+        Require(confirmation.FindControl<TextBlock>("TimeText")!.Text=="23:30"&&confirmation.FindControl<TextBlock>("DurationText")!.Text=="1 h 15 min","Delete summary uses the clipped day instead of the full saved record.");
+        var otherIds=f.Rows.Where(r=>r.Id!=saved.Id).Select(r=>r.Id).Order().ToArray();
+        Click(confirmation.FindControl<Button>("CancelButton")!);Require(f.Deletes==0&&f.Rows.Any(r=>r.Id==saved.Id),"Canceled deletion wrote data.");
+        Click(Fixture.Button(f.Card(saved.Id),"Delete"));Click(dialog!.FindControl<Button>("DeleteButton")!);
         Require(f.Deletes==1&&f.LastDelete==saved.Id&&!f.Cards().Any(c=>Equals(c.Tag,saved.Id)),"Confirmed deletion did not remove the intended source.");
+        Require(f.Rows.Select(r=>r.Id).Order().SequenceEqual(otherIds),"Deleting one record changed adjacent records.");
     }
 
     internal static void RefreshAndPaging()

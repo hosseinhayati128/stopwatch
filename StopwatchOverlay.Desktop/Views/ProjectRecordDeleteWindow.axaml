@@ -16,7 +16,7 @@
                 CornerRadius="{DynamicResource ThemePanelCornerRadius}"
                 BoxShadow="0 6 20 0 #40000000">
             <StackPanel Margin="24">
-                <TextBlock Text="Delete this saved record?"
+                <TextBlock x:Name="HeadingText" Text="Delete this saved record?"
                            Classes="heading"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"/>
@@ -69,11 +69,11 @@
                            Margin="2,14,0,0"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0" Spacing="8">
-                    <Button Content="Cancel"
+                    <Button x:Name="CancelButton" Content="Cancel"
                             Classes="modern"
                             MinWidth="86"
                             Click="Cancel_Click"/>
-                    <Button Content="Delete record"
+                    <Button x:Name="DeleteButton" Content="Delete record"
                             Classes="danger"
                             MinWidth="118"
                             Click="Delete_Click"/>
