@@ -55,6 +55,7 @@ internal static class DesktopPageAppearance
             {
                 confirmation.FitCloseTimerContent(_scale!=previousScale);
                 confirmation.FitDeleteProjectContent(_scale!=previousScale);
+                confirmation.FitDeleteReminderContent(_scale!=previousScale);
             }
             if(window is ProjectRecordDeleteWindow deletion)deletion.FitDeleteRecordContent(_scale!=previousScale);
         }

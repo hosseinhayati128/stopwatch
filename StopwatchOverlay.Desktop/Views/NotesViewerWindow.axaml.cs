@@ -25,6 +25,8 @@ public partial class NotesViewerWindow : Window
     private NoteType? _currentFilter = null;
     private string? _loadMessage;
     private string _loadTitle = "Could not load notes";
+    private ConfirmationDialogWindow? _deleteReminderDialog;
+    private (string Vault, string Folder, string Account, string Client, bool Enabled)? _loadedNotesContext;
 
     public NotesViewerWindow() : this(new AppSettings())
     {
@@ -70,6 +72,7 @@ public partial class NotesViewerWindow : Window
     private void LoadNotes()
     {
         _allEntries.Clear();_organization=null;_loadMessage=null;
+        _loadedNotesContext = (_settings.ObsidianVaultFolder, _settings.NotesSubfolder, _settings.HabiticaUserId, _settings.HabiticaClientId, _settings.HabiticaEnabled);
         string vaultFolder = _settings.ObsidianVaultFolder;
         if (string.IsNullOrWhiteSpace(vaultFolder) || !Directory.Exists(vaultFolder))
         {
@@ -370,19 +373,32 @@ public partial class NotesViewerWindow : Window
 
     private async Task DeleteReminderAsync(NoteEntry entry)
     {
+        if (!IsVisible || _deleteReminderDialog != null) return;
         PauseAutoClose();
         string vault = _settings.ObsidianVaultFolder, folder = _settings.NotesSubfolder;
         string account = _settings.HabiticaUserId, client = _settings.HabiticaClientId;
         bool enabled = _settings.HabiticaEnabled;
+        if (_loadedNotesContext != (vault, folder, account, client, enabled))
+        {
+            LoadNotes();
+            ShowMutationStatus(new(new(false, "", "The notes folder or Habitica settings changed. Select the reminder again.")));
+            return;
+        }
         var dialog = new ConfirmationDialogWindow("Delete reminder", "Delete this reminder?",
             entry.Text + "\n\nRemoves the local reminder and its linked Habitica task. Existing Telegram reminders remain unchanged.", "Delete", destructive: true);
-        if (!await dialog.ShowDialog<bool>(this)) return;
-        if (vault != _settings.ObsidianVaultFolder || folder != _settings.NotesSubfolder || account != _settings.HabiticaUserId || client != _settings.HabiticaClientId || enabled != _settings.HabiticaEnabled)
-        { ShowMutationStatus(new(new(false, "", "The notes folder or Habitica settings changed. Refresh and try again."))); return; }
-        var details = HabiticaIntegration.Current.GetDetails(_settings, entry);
-        var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry, details.DueAt, null, true,
-            () => ObsidianNotesSync.DeleteEntry(vault, entry, folder));
-        LoadNotes(); ShowMutationStatus(mutation);
+        dialog.ConfigureDeleteReminder(entry.Text, HabiticaIntegration.Current.GetDetails(_settings, entry).DueAt, _settings);
+        _deleteReminderDialog = dialog;
+        try
+        {
+            if (!await dialog.ShowDialog<bool>(this) || !IsVisible) return;
+            if (vault != _settings.ObsidianVaultFolder || folder != _settings.NotesSubfolder || account != _settings.HabiticaUserId || client != _settings.HabiticaClientId || enabled != _settings.HabiticaEnabled)
+            { ShowMutationStatus(new(new(false, "", "The notes folder or Habitica settings changed. Refresh and try again."))); return; }
+            var details = HabiticaIntegration.Current.GetDetails(_settings, entry);
+            var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry, details.DueAt, null, true,
+                () => ObsidianNotesSync.DeleteEntry(vault, entry, folder));
+            LoadNotes(); ShowMutationStatus(mutation);
+        }
+        finally { if (ReferenceEquals(_deleteReminderDialog, dialog)) _deleteReminderDialog = null; }
     }
 
     private void OnFilterChanged(object? sender, RoutedEventArgs e)
@@ -430,6 +446,7 @@ public partial class NotesViewerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _autoCloseTimer.Stop();
+        _deleteReminderDialog?.Close(false);
         base.OnClosed(e);
     }
 }
