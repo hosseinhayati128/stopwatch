@@ -387,6 +387,30 @@ if (args.Contains("--delete-time-record-preview"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--timer-editor-close-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("Editor closes target with exactly one confirmation", TimerEditorCloseNativeChecks.SingleConfirmation);
+    Check("Editor cancellation preserves drafts and blocks duplicate prompts", TimerEditorCloseNativeChecks.CancellationAndDuplicates);
+    Check("Editor owner shutdown and stale targets", TimerEditorCloseNativeChecks.ShutdownAndStaleTargets);
+    Check("Editor close mode summaries and legacy themes", TimerEditorCloseNativeChecks.ModesAndThemes);
+    Check("Editor close production layouts and captures", TimerEditorCloseNativeChecks.Layout);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--timer-editor-close-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Timer Editor single-confirmation native proposal", TimerEditorClosePreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--close-timer-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()

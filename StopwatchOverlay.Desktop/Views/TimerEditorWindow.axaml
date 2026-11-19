@@ -253,11 +253,11 @@
                                 ToolTip.Tip="Removes this session's time from project records (does not log it)"/>
                         <Button Grid.Column="2"
                                 x:Name="DeleteTimerButton"
-                                Content="Delete Timer"
+                                Content="Close Timer…"
                                 MinWidth="100" Height="34"
                                 Classes="modern"
                                 Click="DeleteTimerButton_Click"
-                                ToolTip.Tip="Close and remove this timer completely"/>
+                                ToolTip.Tip="Close this timer; saved project records are kept"/>
                     </Grid>
                 </Border>
 

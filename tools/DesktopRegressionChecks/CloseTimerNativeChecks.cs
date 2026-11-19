@@ -40,7 +40,7 @@ internal static class CloseTimerNativeChecks
         internal ConfirmationDialogWindow Create(string time = "00:44:27")
         {
             var w = new ConfirmationDialogWindow("Close Timer", "Close Timer", $"Are you sure you want to close '{Timer.DisplayName}'?", "Close", true) { ShowActivated = false, ShowInTaskbar = false };
-            typeof(ConfirmationDialogWindow).GetMethod("ConfigureCloseTimer", Private)!.Invoke(w, [Timer, time, Settings]);
+            typeof(ConfirmationDialogWindow).GetMethod("ConfigureCloseTimer", Private)!.Invoke(w, [Timer, time, Settings, false]);
             return w;
         }
         internal ConfirmationDialogWindow Open(string time = "00:44:27") { var w = Create(time); w.Show(); ClockOverlayChecks.Pump(70); return w; }

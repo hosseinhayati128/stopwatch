@@ -939,7 +939,12 @@ public partial class ControllerWindow : Window
         dialog.ConfigureCloseTimer(session, FormatDisplayTime(session), _settings);
         await ShowTimerCommandDialog(dialog);
 
-        if (!dialog.Result || _isExiting || !_timerManager.Close(session)) return;
+        if (dialog.Result) CompleteCloseSession(session);
+    }
+
+    private void CompleteCloseSession(TimerSession session)
+    {
+        if (_isExiting || !_timerManager.Close(session)) return;
         _behaviorRunStarts.Remove(session.Id);
         ClearCountdownError(session);
         _overlayVisibilityOverrides.Remove(session.Id);
@@ -970,7 +975,7 @@ public partial class ControllerWindow : Window
         }
         else if (editor.DeleteTimerRequested)
         {
-            CloseSession(session);
+            CompleteCloseSession(session);
         }
         else if (editor.WasSaved)
         {

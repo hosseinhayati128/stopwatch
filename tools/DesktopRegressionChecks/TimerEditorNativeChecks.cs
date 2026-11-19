@@ -176,7 +176,7 @@ internal static class TimerEditorNativeChecks
             Require(confirmation?.IsVisible==true&&!f.Window.DeleteTimerRequested,"Delete bypassed confirmation.");
             confirmation!.Close();ClockOverlayChecks.Pump(20);Require(f.Window.IsVisible&&!f.Window.DeleteTimerRequested,"Canceling confirmation deleted the timer.");
             Click(f.Window.FindControl<Button>("DeleteTimerButton")!);ClockOverlayChecks.Pump(30);
-            Click(confirmation!.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"Delete")));ClockOverlayChecks.Pump(20);
+            Click(confirmation!.FindControl<Button>("ConfirmButton")!);ClockOverlayChecks.Pump(20);
             Require(f.Window.DeleteTimerRequested&&f.Window.WasSaved&&!f.Window.IsVisible,"Confirmed deletion did not return the existing delete request.");
         }
     }

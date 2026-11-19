@@ -92,7 +92,8 @@ public partial class TimerEditorWindow
         RecordsStatusText.Margin=new(0,0,0,10);
         var recordButtons=new WrapPanel{Orientation=Orientation.Horizontal,Children={DiscardRecordsButton,DeleteTimerButton}};
         DiscardRecordsButton.Width=170;DiscardRecordsButton.Margin=new(0,0,8,8);DeleteTimerButton.Margin=new(0,0,0,8);
-        RecordsCard.Child=new StackPanel{Children={RecordsStatusText,recordButtons}};
+        RecordsCard.Child=new StackPanel{Children={RecordsStatusText,recordButtons,
+            EditorLabel("Closing the timer keeps saved project records.",11)}};
         RecordsCard.Margin=new(0,6,0,0);RecordsCard.Background=Brush.Parse("#30FFFFFF");RecordsCard.BorderBrush=EditorRule;
         _recordsSummary=EditorLabel("",10);
         var recordsHeader=new StackPanel{Spacing=2,Children={EditorLabel("Project records",13),_recordsSummary}};

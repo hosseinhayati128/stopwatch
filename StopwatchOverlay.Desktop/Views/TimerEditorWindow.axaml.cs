@@ -19,6 +19,7 @@ public partial class TimerEditorWindow : Window
     private readonly ProjectWorkIntervalView? _latestInterval;
     private readonly DispatcherTimer _liveRefreshTimer;
     private readonly AppSettings? _settings;
+    private ConfirmationDialogWindow? _closeTimerDialog;
 
     private readonly TimeSpan _originalTotalElapsed;
     private readonly DateTime? _latestStartLocal;
@@ -225,6 +226,7 @@ public partial class TimerEditorWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _liveRefreshTimer.Stop();
+        _closeTimerDialog?.Close();
         base.OnClosed(e);
     }
 
@@ -470,19 +472,23 @@ public partial class TimerEditorWindow : Window
 
     private async void DeleteTimerButton_Click(object? sender, RoutedEventArgs e)
     {
-        bool confirmed = await ConfirmationDialogWindow.ShowAsync(
-            this,
-            "Delete Timer",
-            $"Delete {_timer.DisplayName}?",
-            "Are you sure you want to delete and close this timer?",
-            "Delete",
-            destructive: true);
-
-        if (confirmed)
+        if (_closeTimerDialog != null || !IsVisible) return;
+        var dialog = new ConfirmationDialogWindow("Close Timer", "Close Timer", "", "Close Timer", destructive: true);
+        var snapshot = Controls.ClockPickerItem.Create(_timer, 0, null, DateTime.Now);
+        dialog.ConfigureCloseTimer(_timer, snapshot.Time, _settings ?? new AppSettings(), fromEditor: true);
+        _closeTimerDialog = dialog;
+        try
         {
+            await dialog.ShowDialog<bool>(this);
+            if (!dialog.Result || !IsVisible) return;
             DeleteTimerRequested = true;
             WasSaved = true;
             Close(true);
+        }
+        finally
+        {
+            _closeTimerDialog = null;
+            if (IsVisible) DeleteTimerButton.Focus();
         }
     }
 
