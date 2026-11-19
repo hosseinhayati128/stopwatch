@@ -58,7 +58,9 @@ public partial class ConfirmationDialogWindow : Window
     private void Complete(bool confirmed)
     {
         if (_closeTimerConfigured && _closeTimerCompleted) return;
+        if (_deleteProjectConfigured && _deleteProjectCompleted) return;
         if (_closeTimerConfigured) _closeTimerCompleted = true;
+        if (_deleteProjectConfigured) { _deleteProjectCompleted = true; confirmed &= !_deleteProjectBlocked; }
         Result = confirmed;
         Close(confirmed);
     }
@@ -66,8 +68,8 @@ public partial class ConfirmationDialogWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        // Close Timer relies on the focused button; generic confirmations retain their shortcut.
-        if (_closeTimerConfigured) return;
+        // These confirmations rely on the focused button; generic dialogs retain their shortcut.
+        if (_closeTimerConfigured || _deleteProjectConfigured) return;
         if (e.Key == Key.Enter)
         {
             OnConfirmClicked(this, e);

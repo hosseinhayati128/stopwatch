@@ -78,7 +78,7 @@ public partial class ControllerWindow
                     if (result == PeriodicReviewPromptResult.Accepted) _ = OpenPeriodicReviewAsync(start, end);
                     else if (result == PeriodicReviewPromptResult.Skipped) service.OnPromptSkipped();
                     else service.OnPromptIgnored();
-                });
+                }, settings: _settings);
             _periodicReviewPrompt = prompt;
             prompt.Show();
         }

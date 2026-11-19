@@ -49,8 +49,13 @@ internal static class DesktopPageAppearance
             if(window is NoteEntryWindow note)note.FitNoteEditorContent();
             if(window is NotesViewerWindow viewer)viewer.FitViewerContent();
             if(window is FocusInterruptionDialogWindow focus)focus.FitFocusContent();
+            if(window is PeriodicReviewPromptWindow review)review.FitReviewPromptContent(_scale!=previousScale);
             if(window is CloseActionDialogWindow close)close.FitCloseDialogContent(_scale!=previousScale);
-            if(window is ConfirmationDialogWindow confirmation)confirmation.FitCloseTimerContent(_scale!=previousScale);
+            if(window is ConfirmationDialogWindow confirmation)
+            {
+                confirmation.FitCloseTimerContent(_scale!=previousScale);
+                confirmation.FitDeleteProjectContent(_scale!=previousScale);
+            }
             if(window is ProjectRecordDeleteWindow deletion)deletion.FitDeleteRecordContent(_scale!=previousScale);
         }
     }

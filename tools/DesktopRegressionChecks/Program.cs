@@ -295,6 +295,21 @@ if (args.Contains("--focus-check-in-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--periodic-review-prompt-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    foreach (var source in new[] { "avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml", "avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" })
+        Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri(source) });
+    Check("Activity Review popup native layout and screen fit", PeriodicReviewPromptNativeChecks.Layout);
+    Check("Activity Review popup local dates and UTC duration", PeriodicReviewPromptNativeChecks.Periods);
+    Check("Activity Review popup actions, countdown and lifecycle", PeriodicReviewPromptNativeChecks.Behavior);
+    Check("Activity Review popup controller and scheduler integration", SettingsActivityWatchReviewNativeChecks.ControllerLifecycle);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--close-stopwatch-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -339,6 +354,30 @@ if (args.Contains("--delete-time-record-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
+if (args.Contains("--delete-project-native"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+    Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
+    Check("Delete Project layout, scaling and text", DeleteProjectNativeChecks.Layout);
+    Check("Delete Project safe focus, results and legacy themes", DeleteProjectNativeChecks.Actions);
+    Check("Delete Project dashboard identity, deletion and active protection", DeleteProjectNativeChecks.Dashboard);
+    Check("Delete Project narrow high-DPI confirmation actions", DeleteProjectNativeChecks.NarrowScreen);
+    Check("Delete Project small status text contrast", DeleteProjectNativeChecks.StatusContrast);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--delete-project-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Delete Project native design proposal", DeleteProjectPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
 if (args.Contains("--delete-time-record-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
@@ -363,6 +402,15 @@ if (args.Contains("--close-stopwatch-preview"))
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Check("Close Stopwatch first-layer native proposal", CloseStopwatchPreview.Run);
+    Environment.Exit(failures == 0 ? 0 : 1);
+}
+
+if (args.Contains("--periodic-review-prompt-preview"))
+{
+    AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
+        .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
+        .WithInterFont().SetupWithoutStarting();
+    Check("Periodic Activity Review first-layer native proposal", PeriodicReviewPromptPreview.Run);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 

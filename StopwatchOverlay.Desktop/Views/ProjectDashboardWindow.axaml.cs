@@ -1318,34 +1318,30 @@ public partial class ProjectDashboardWindow : Window
 
     private async void DeleteProjectButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_selectedProjectKey) || _deleteProject == null) return;
+        if (_recordDialogOpen || string.IsNullOrWhiteSpace(_selectedProjectKey) || _deleteProject == null) return;
         var selectedOption = ProjectFilterSelector.SelectedItem as ProjectFilterOption;
         if (selectedOption == null) return;
-
-        bool confirmed = await ConfirmationDialogWindow.ShowAsync(
-            this,
-            "Delete Project",
-            $"Delete \"{selectedOption.Name}\"?",
-            "Permanently delete this project and all its recorded sessions? This action cannot be undone.",
-            "Delete Project",
-            destructive: true);
-
-        if (confirmed)
+        string projectKey = _selectedProjectKey;
+        string projectName = selectedOption.Name;
+        _recordDialogOpen = true;
+        try
         {
-            var result = _deleteProject(_selectedProjectKey);
+            var dialog = new ConfirmationDialogWindow("Delete Project", "Delete Project", "", "Delete project", destructive: true);
+            dialog.ConfigureDeleteProject(projectName, false, _settings);
+            bool confirmed = await dialog.ShowDialog<bool>(this);
+            if (!confirmed || !IsVisible) return;
+
+            var result = _deleteProject(projectKey);
             if (result.Status == ProjectDeletionStatus.Success)
             {
-                _selectedProjectKey = null;
+                if (_selectedProjectKey == projectKey) _selectedProjectKey = null;
                 RefreshData();
             }
             else if (result.Status == ProjectDeletionStatus.ActiveTimerRunning)
             {
-                await ConfirmationDialogWindow.ShowAsync(
-                    this,
-                    "Delete Project",
-                    "Cannot Delete Project",
-                    $"Cannot delete '{selectedOption.Name}' because a timer is currently tracking this project. Pause or stop the timer first.",
-                    "OK");
+                var warning = new ConfirmationDialogWindow();
+                warning.ConfigureDeleteProject(projectName, true, _settings);
+                await warning.ShowDialog<bool>(this);
             }
             else
             {
@@ -1353,11 +1349,12 @@ public partial class ProjectDashboardWindow : Window
                     this,
                     "Delete Project",
                     "Cannot Delete Project",
-                    $"Project '{selectedOption.Name}' was not found. The dashboard has been refreshed.",
+                    $"Project '{projectName}' was not found. The dashboard has been refreshed.",
                     "OK");
                 RefreshData();
             }
         }
+        finally { _recordDialogOpen = false; }
     }
 
     private async void ExportButton_Click(object? sender, RoutedEventArgs e)

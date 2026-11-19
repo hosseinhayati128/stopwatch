@@ -30,7 +30,8 @@ public partial class PeriodicReviewPromptWindow : Window
         int timeoutSeconds,
         int snoozeMinutes,
         int intervalMinutes,
-        Action<PeriodicReviewPromptResult>? onResult)
+        Action<PeriodicReviewPromptResult>? onResult,
+        AppSettings? settings = null)
     {
         InitializeComponent();
 
@@ -41,7 +42,7 @@ public partial class PeriodicReviewPromptWindow : Window
 
         DateTime startLocal = startUtc.ToLocalTime();
         DateTime endLocal = endUtc.ToLocalTime();
-        int totalMin = Math.Max(1, (int)Math.Round((endLocal - startLocal).TotalMinutes));
+        int totalMin = Math.Max(1, (int)Math.Round((endUtc - startUtc).TotalMinutes));
 
         PeriodSummaryText.Text = $"Review what you were doing ({startLocal:HH:mm} – {endLocal:HH:mm}, {totalMin}m)";
         SkipSubText.Text = $"Skip this term and remind again in {_intervalMinutes}m";
@@ -54,6 +55,7 @@ public partial class PeriodicReviewPromptWindow : Window
         _timer.Tick += Timer_Tick;
 
         Opened += OnWindowOpened;
+        ApplyReviewAppearance(startUtc, endUtc, totalMin, settings ?? new AppSettings());
     }
 
     public static async Task<PeriodicReviewPromptResult> ShowAsync(
@@ -62,7 +64,8 @@ public partial class PeriodicReviewPromptWindow : Window
         DateTime endUtc,
         int timeoutSeconds,
         int snoozeMinutes,
-        int intervalMinutes)
+        int intervalMinutes,
+        AppSettings? settings = null)
     {
         var tcs = new TaskCompletionSource<PeriodicReviewPromptResult>();
         var dialog = new PeriodicReviewPromptWindow(
@@ -71,7 +74,8 @@ public partial class PeriodicReviewPromptWindow : Window
             timeoutSeconds,
             snoozeMinutes,
             intervalMinutes,
-            res => tcs.TrySetResult(res));
+            res => tcs.TrySetResult(res),
+            settings);
 
         if (owner != null)
             dialog.Show(owner);
@@ -98,7 +102,7 @@ public partial class PeriodicReviewPromptWindow : Window
             return;
         }
 
-        CountdownText.Text = $"Closing in {_remainingSeconds}s (snoozes for {_snoozeMinutes}m)";
+        UpdateReviewCountdown();
     }
 
     private void Finish(PeriodicReviewPromptResult result)

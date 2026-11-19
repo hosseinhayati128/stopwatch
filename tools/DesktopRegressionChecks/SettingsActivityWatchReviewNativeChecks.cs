@@ -47,6 +47,7 @@ internal static class SettingsActivityWatchReviewNativeChecks
             Due(); Require(Prompt() == null && service.NextPromptUtc == clock.GetUtcNow().UtcDateTime.AddMinutes(10), "An open dialog did not defer automatic prompts.");
             typeof(ControllerWindow).GetField("_timerCommandDialog", Hidden)!.SetValue(controller, null);
             Due(); var prompt = Prompt(); Require(prompt?.IsVisible == true, "Scheduled prompt did not open with ActivityWatch off.");
+            Require(prompt!.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(), "Controller review prompt did not receive Nika settings.");
             clock.Fire(); Pump(); Require(ReferenceEquals(prompt, Prompt()), "Duplicate scheduled prompt.");
             Call(prompt!, "Finish", PeriodicReviewPromptResult.Skipped); Pump();
             Require(Prompt() == null && service.NextPromptUtc == clock.GetUtcNow().UtcDateTime.AddMinutes(45), "Skip did not use normal interval.");
