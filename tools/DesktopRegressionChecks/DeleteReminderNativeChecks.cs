@@ -103,7 +103,7 @@ internal static class DeleteReminderNativeChecks
             var reading=Named<ScrollViewer>(w,"DeleteReminderTextScroll");Require(reading.Extent.Height>reading.Viewport.Height,"Long reminder is not bounded.");
             reading.Offset=new(0,100000);ClockOverlayChecks.Pump(25);Require(reading.Offset.Y>0,"Long reminder cannot scroll.");
             // Windows clamps a native window off a nonexistent negative-origin monitor back to the real display.
-            Call(w,"FitDeleteReminderToScreen",new Screen(2,new PixelRect(0,0,720,1280),new PixelRect(0,30,720,1200),true));ClockOverlayChecks.Pump(50);Capture(w,125,"narrow-large-rtl");Bounds(w);
+            Call(w,"FitNoteDeletionToScreen",new Screen(2,new PixelRect(0,0,720,1280),new PixelRect(0,30,720,1200),true));ClockOverlayChecks.Pump(50);Capture(w,125,"narrow-large-rtl");Bounds(w);
             Require(w.Position.X>=0&&w.Position.Y>=30&&w.Position.X+w.ClientSize.Width*2<=721&&w.Position.Y+w.ClientSize.Height*2<=1231,$"Dialog exceeds monitor work area: position {w.Position}, client {w.ClientSize}.");
             var cancel=Named<Button>(w,"CancelButton");var delete=Named<Button>(w,"ConfirmButton");
             Require(delete.TranslatePoint(default,w)!.Value.Y>=cancel.TranslatePoint(new Point(0,cancel.Bounds.Height),w)!.Value.Y,"Narrow actions do not stack.");

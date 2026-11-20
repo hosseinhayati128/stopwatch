@@ -12,7 +12,11 @@ namespace StopwatchOverlay;
 public static partial class TelegramNotesSync
 {
     /// <summary>Call only after user confirmation. Stop on remote refusal; never silently delete just one side.</summary>
-    public static async Task<TelegramSyncResult> DeleteTodoEverywhereAsync(AppSettings settings, NoteEntry entry, HttpClient? httpClient = null)
+    public static Task<TelegramSyncResult> DeleteTodoEverywhereAsync(AppSettings settings, NoteEntry entry, HttpClient? httpClient = null)
+        => DeleteTodoEverywhereAsync(settings, entry, httpClient, null);
+
+    internal static async Task<TelegramSyncResult> DeleteTodoEverywhereAsync(AppSettings settings, NoteEntry entry,
+        HttpClient? httpClient, (string? ChatId, int? MessageId)? reviewedTarget)
     {
         var habiticaSettings = settings;
         settings = SnapshotTelegramSettings(settings);
@@ -54,6 +58,10 @@ public static partial class TelegramNotesSync
                     if (!TelegramOutboxStore.MarkSent(NoteType.Todo, entry.Text, entry.Timestamp, link.MessageId, link.ChatId, bot, vault))
                         return new(false, "Could not save the Telegram message receipt. The todo was kept; try again.");
                 }
+                // Keep a recovered receipt for the next prompt, before cancelling or deleting anything.
+                var activeLink = link?.MessageDeleted == false ? link : null;
+                if (reviewedTarget is { } expected && expected != (activeLink?.ChatId, activeLink?.MessageId))
+                    return new(false, "The linked Telegram message changed. Review the todo and choose Delete again.");
                 if (link != null && !link.MessageDeleted && (!settings.TelegramEnabled || string.IsNullOrWhiteSpace(settings.TelegramBotToken)))
                     return new(false, "Enable Telegram in Settings to delete the linked message. The todo was kept.");
                 if (!TelegramOutboxStore.CancelPendingTodo(entry, bot, vault))

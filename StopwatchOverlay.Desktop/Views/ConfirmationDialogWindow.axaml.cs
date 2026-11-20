@@ -59,10 +59,10 @@ public partial class ConfirmationDialogWindow : Window
     {
         if (_closeTimerConfigured && _closeTimerCompleted) return;
         if (_deleteProjectConfigured && _deleteProjectCompleted) return;
-        if (_deleteReminderConfigured && _deleteReminderCompleted) return;
+        if (_noteDeletionConfigured && _noteDeletionCompleted) return;
         if (_closeTimerConfigured) _closeTimerCompleted = true;
         if (_deleteProjectConfigured) { _deleteProjectCompleted = true; confirmed &= !_deleteProjectBlocked; }
-        if (_deleteReminderConfigured) _deleteReminderCompleted = true;
+        if (_noteDeletionConfigured) _noteDeletionCompleted = true;
         Result = confirmed;
         Close(confirmed);
     }
@@ -71,7 +71,7 @@ public partial class ConfirmationDialogWindow : Window
     {
         base.OnKeyDown(e);
         // These confirmations rely on the focused button; generic dialogs retain their shortcut.
-        if (_closeTimerConfigured || _deleteProjectConfigured || _deleteReminderConfigured) return;
+        if (_closeTimerConfigured || _deleteProjectConfigured || _noteDeletionConfigured) return;
         if (e.Key == Key.Enter)
         {
             OnConfirmClicked(this, e);

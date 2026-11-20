@@ -492,13 +492,9 @@ public partial class TodoOverlayWindow : Window
                 ObsidianVaultFolder = _settings.ObsidianVaultFolder, NotesSubfolder = _settings.NotesSubfolder,
                 HabiticaEnabled = _settings.HabiticaEnabled, HabiticaUserId = _settings.HabiticaUserId, HabiticaClientId = _settings.HabiticaClientId
             };
-            bool linked = TelegramNotesSync.HasTodoMessageLink(settings, entry);
-            string effects = linked
-                ? "This removes the task from your Obsidian todo file and deletes its linked Telegram message."
-                : "This removes the task from your Obsidian todo file and cancels its unsent Telegram copy. There is no linked Telegram message to delete.";
-            _deleteDialog = new ConfirmationDialogWindow("Delete todo", "Delete this todo?",
-                entry.Text + "\n\n" + effects + "\n\nThis cannot be undone.", "Delete", destructive: true) { Topmost = Topmost };
-            _deleteDialog.ApplyTodoAppearance(_settings);
+            var reviewedLink = TelegramNotesSync.GetTodoMessageLink(settings, entry);
+            _deleteDialog = new ConfirmationDialogWindow { Topmost = Topmost };
+            _deleteDialog.ConfigureDeleteTodo(entry.Text, reviewedLink != null, _settings);
             bool confirmed = await _deleteDialog.ShowDialog<bool>(this);
             _deleteDialog = null;
             if (!confirmed || _closed) return;
@@ -512,7 +508,8 @@ public partial class TodoOverlayWindow : Window
             }
             _snapshot = null;
             ReloadTodos();
-            var result = await Task.Run(() => TelegramNotesSync.DeleteTodoEverywhereAsync(settings, entry));
+            var result = await Task.Run(() => TelegramNotesSync.DeleteTodoEverywhereAsync(settings, entry,
+                httpClient: null, reviewedTarget: (reviewedLink?.ChatId, reviewedLink?.MessageId)));
             if (_closed) return;
             ErrorMessage.IsVisible = !result.Success || result.ErrorMessage != null;
             if (!result.Success) ShowError(result.ErrorMessage ?? "Could not finish deleting the todo. Try again.");

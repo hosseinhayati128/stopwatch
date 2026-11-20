@@ -48,6 +48,43 @@ public class TelegramNotesSyncTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteTodo_UsesOnlyTheTelegramTargetReviewedByTheUser()
+    {
+        var vault = Directory.CreateTempSubdirectory("delete-todo-");
+        try
+        {
+            var settings = new AppSettings { ObsidianVaultFolder = vault.FullName, TelegramEnabled = true,
+                TelegramBotToken = "123:fixture", HabiticaEnabled = false };
+            Assert.True(ObsidianNotesSync.AppendEntry(vault.FullName, NoteType.Todo, "Task").Success);
+            var task = Assert.Single(ObsidianNotesSync.LoadAllNotes(vault.FullName));
+            string key = TelegramNotesSync.GetTodoVaultKey(settings);
+            TelegramOutboxStore.MarkSent(NoteType.Todo, task.Text, task.Timestamp, 42, "old-chat", "123", key);
+            var original = TelegramNotesSync.GetTodoMessageLink(settings, task)!;
+            TelegramOutboxStore.MarkSent(NoteType.Todo, task.Text, task.Timestamp, 42, "new-chat", "123", key);
+            int requests = 0;
+            using var client = new HttpClient(new MockHttpMessageHandler(request =>
+            {
+                requests++;
+                Assert.EndsWith("/deleteMessage", request.RequestUri!.AbsolutePath);
+                using var body = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+                Assert.Equal("new-chat", body.RootElement.GetProperty("chat_id").GetString());
+                Assert.Equal(42, body.RootElement.GetProperty("message_id").GetInt32());
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"ok\":true,\"result\":true}") };
+            }));
+            var stale = await TelegramNotesSync.DeleteTodoEverywhereAsync(settings, task, client, (original.ChatId, original.MessageId));
+            Assert.False(stale.Success);
+            Assert.Equal(0, requests);
+            Assert.Single(ObsidianNotesSync.LoadAllNotes(vault.FullName));
+            var current = TelegramNotesSync.GetTodoMessageLink(settings, task)!;
+            var confirmed = await TelegramNotesSync.DeleteTodoEverywhereAsync(settings, task, client, (current.ChatId, current.MessageId));
+            Assert.True(confirmed.Success, confirmed.ErrorMessage);
+            Assert.Equal(1, requests);
+            Assert.Empty(ObsidianNotesSync.LoadAllNotes(vault.FullName));
+        }
+        finally { vault.Delete(true); }
+    }
+
+    [Fact]
     public void ResolveDestination_EmptyTopic_ReturnsBaseChatIdAndNullThread()
     {
         var (chatId, threadId) = TelegramNotesSync.ResolveDestination("-1001234567890", "");

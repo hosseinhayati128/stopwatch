@@ -48,7 +48,15 @@ public static partial class TelegramNotesSync
 
 
     public static bool HasTodoMessageLink(AppSettings settings, NoteEntry entry) =>
-        TelegramOutboxStore.GetTrackedTodos(GetBotIdentity(settings), GetTodoVaultKey(settings)).Count(record => MatchesTodo(record, entry)) == 1;
+        GetTodoMessageLink(settings, entry) != null;
+
+    internal static TelegramSentNoteRecord? GetTodoMessageLink(AppSettings settings, NoteEntry entry)
+    {
+        var matches = TelegramOutboxStore.GetTrackedTodos(GetBotIdentity(settings), GetTodoVaultKey(settings))
+            .Where(record => MatchesTodo(record, entry))
+            .DistinctBy(record => (record.ChatId, record.MessageId)).Take(2).ToArray();
+        return matches.Length == 1 ? matches[0] : null;
+    }
 
     public static TelegramSyncResult LinkTodoMessage(AppSettings settings, NoteEntry entry, string reference)
     {

@@ -16,20 +16,15 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class ConfirmationDialogWindow
 {
-    private bool _deleteReminderConfigured, _deleteReminderCompleted;
-    private double _deleteReminderHeight = 450;
     internal void ConfigureDeleteReminder(string reminder, DateTime? dueAt, AppSettings settings)
     {
-        _deleteReminderConfigured = true;
+        ConfigureNoteDeletionActions();
         var localDue = dueAt?.Kind == DateTimeKind.Utc ? dueAt.Value.ToLocalTime() : dueAt;
         string schedule = localDue?.ToString("dd MMM yyyy · HH:mm", CultureInfo.InvariantCulture) ?? "No date or time set";
         Title = "Delete Reminder"; HeadingText.Text = "Delete this reminder?";
         MessageText.Text = reminder + "\n\n" + schedule + (localDue.HasValue ? " · Local time" : "")
             + "\n\nDeletes this reminder from your local notes. If linked, its Habitica task is deleted when sync runs. Existing Telegram reminders are kept. This cannot be undone.";
         ConfirmButton.Content = "Delete reminder"; CancelButton.Content = "Cancel";
-        Closed += (_, _) => _deleteReminderCompleted = true;
-        Opened += (_, _) => Dispatcher.UIThread.Post(() => { if (IsVisible) CancelButton.Focus(); });
-        AddHandler(KeyDownEvent, (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; Complete(false); } }, RoutingStrategies.Tunnel);
         if (AppThemeCatalog.Normalize(settings.ThemeMode) != AppThemeCatalog.Nika) return;
 
         FontFamily = ClockPickerPresentation.Body; Resources["AppFontFamily"] = ClockPickerPresentation.Body;
@@ -56,7 +51,6 @@ public partial class ConfirmationDialogWindow
         var header = new StackPanel { Spacing = 3, Children = { titleRow, Text("Review the reminder before deleting.", 12, muted) } };
         var name = Text(reminder, 17); name.Name = "DeleteReminderText"; name.FontWeight = FontWeight.SemiBold; AutoTextDirection.Apply(name, reminder);
         name.Measure(new Size(424, double.PositiveInfinity));
-        _deleteReminderHeight = name.DesiredSize.Height > 42 ? 520 : 450;
         var reading = new ScrollViewer
         {
             Name = "DeleteReminderTextScroll", Content = name, MaxHeight = 116, Margin = new(0, 5, 0, 0),
@@ -120,36 +114,6 @@ public partial class ConfirmationDialogWindow
         // Keep the decorative heading from consuming the reading area on narrow screens.
         layout.SizeChanged += (_, _) => HeadingText.FontSize = layout.Bounds.Width < 300 ? 22 : 28;
         Content = new StopwatchFrameSurface { ArtworkScale = .16, Padding = new(10), Background = Brush.Parse("#EBD3A5"), Child = layout };
-        SystemDecorations = SystemDecorations.None; Background = Brushes.Transparent; TransparencyLevelHint = [WindowTransparencyLevel.Transparent]; CanResize = false;
-        MinWidth = MinHeight = 0; MaxHeight = double.PositiveInfinity; SizeToContent = SizeToContent.Manual;
-        double scale = AppUiScale.Normalize(settings.UiScalePercent) / 100; Width = 540 * scale; Height = _deleteReminderHeight * scale;
-        Opened += (_, _) => { if (Screens.ScreenFromWindow(this) is { } screen) FitDeleteReminderToScreen(screen); else FitDeleteReminderContent(); };
-        SizeChanged += (_, _) => FitDeleteReminderContent();
-    }
-    internal void FitDeleteReminderToScreen(Screen screen)
-    {
-        MaxWidth = Math.Floor(screen.WorkingArea.Width / screen.Scaling); MaxHeight = Math.Floor(screen.WorkingArea.Height / screen.Scaling);
-        Width = Math.Min(Width, MaxWidth); Height = Math.Min(Height, MaxHeight);
-        var area = screen.WorkingArea; double width = Math.Ceiling(Width * screen.Scaling), height = Math.Ceiling(Height * screen.Scaling);
-        double centerX = area.X + area.Width / 2d, centerY = area.Y + area.Height / 2d;
-        if (Owner is Window owner)
-        {
-            var size = owner.FrameSize ?? owner.ClientSize;
-            centerX = owner.Position.X + size.Width * owner.RenderScaling / 2; centerY = owner.Position.Y + size.Height * owner.RenderScaling / 2;
-        }
-        Position = new PixelPoint((int)Math.Clamp(centerX - width / 2, area.X, area.Right - width), (int)Math.Clamp(centerY - height / 2, area.Y, area.Bottom - height));
-        FitDeleteReminderContent();
-    }
-    internal void FitDeleteReminderContent(bool resizeWindow = false)
-    {
-        if (!_deleteReminderConfigured || DesktopPageAppearance.Content(this) is not StopwatchFrameSurface frame) return;
-        double scale = DesktopPageAppearance.Scale(this);
-        if (resizeWindow)
-        {
-            Width = 540 * scale; Height = _deleteReminderHeight * scale;
-            if (Screens.ScreenFromWindow(this) is { } screen) { FitDeleteReminderToScreen(screen); return; }
-        }
-        frame.Width = (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale; frame.Height = (ClientSize.Height > 0 ? ClientSize.Height : Height) / scale;
-        if (Content is LayoutTransformControl transform) transform.InvalidateArrange();
+        SizeNoteDeletion(settings, name.DesiredSize.Height > 42 ? 520 : 450);
     }
 }
