@@ -44,8 +44,8 @@
             </Grid>
 
             <!-- Note Input Body -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <ScrollViewer x:Name="EditorScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="EditorBody">
             <Border
                     Background="{DynamicResource DialogSurfaceBrush}"
                     BorderBrush="{DynamicResource BorderSoftBrush}"
@@ -93,9 +93,9 @@
             </ScrollViewer>
 
             <!-- Footer: Buttons & Shortcut Hint -->
-            <StackPanel Grid.Row="2" Margin="0,12,0,0" Spacing="8">
+            <StackPanel x:Name="EditorFooter" Grid.Row="2" Margin="0,12,0,0" Spacing="8">
                 <TextBlock x:Name="SaveError" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource DangerTextBrush}" FontSize="12"/>
-                <Grid ColumnDefinitions="*,14,*">
+                <Grid x:Name="EditorActions" ColumnDefinitions="*,14,*">
                     <Button Grid.Column="0"
                             x:Name="CancelButton"
                             Content="Cancel"

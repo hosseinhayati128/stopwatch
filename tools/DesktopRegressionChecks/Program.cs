@@ -400,14 +400,19 @@ if (args.Contains("--delete-reminder-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--delete-todo-native") || args.Contains("--delete-todo-detail-native"))
+if (args.Contains("--delete-todo-native") || args.Contains("--delete-todo-detail-native") ||
+    args.Contains("--todo-detail-editor-preview") || args.Contains("--todo-detail-editor-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    if (args.Contains("--delete-todo-detail-native"))
+    if (args.Contains("--todo-detail-editor-native"))
+        Check("Todo detail editor through the overlay menus", TodoDetailEditorNativeChecks.Run);
+    else if (args.Contains("--todo-detail-editor-preview"))
+        Check("Todo subtask and attached note editor previews", TodoDetailEditorPreview.Run);
+    else if (args.Contains("--delete-todo-detail-native"))
         Check("Delete Todo detail menus and confirmations", DeleteTodoNativeChecks.RunDetails);
     else
         Check("Delete Todo production dialog", DeleteTodoNativeChecks.Run);

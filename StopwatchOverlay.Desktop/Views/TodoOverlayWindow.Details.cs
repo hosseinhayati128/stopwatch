@@ -209,8 +209,8 @@ public partial class TodoOverlayWindow
         if (_taskEditor?.IsVisible == true) { _taskEditor.Activate(); return; }
         CancelInteractions();
         Guid newChildId = Guid.NewGuid(); // A retry must address the same child, including after pending recovery.
-        string title = (detail == null ? "Add " : "Edit ") + (kind == TodoDetailKind.Note ? "note" : "subtask");
-        _taskEditor = NoteEntryWindow.ForTodoDetail(_settings, title, detail?.Text ?? "", content =>
+        string parent = string.Concat(FormattedTodoText.Parse(TodoDetails.Parse(entry.Text).Body).Select(part => part.Text));
+        _taskEditor = NoteEntryWindow.ForTodoDetail(_settings, kind, parent, detail?.Text, content =>
         {
             if (detail != null) return ChangeDetail(entry, detail, content);
             if (!DetailParentCurrent(entry)) return DetailConflict();

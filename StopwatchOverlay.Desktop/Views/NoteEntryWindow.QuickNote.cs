@@ -79,8 +79,9 @@ public partial class NoteEntryWindow
         SizeChanged+=(_,_)=>FitNoteEditorContent();
     }
 
-    internal void FitNoteEditorContent()
+    internal void FitNoteEditorContent(bool scaleChanged = false)
     {
+        if (_detailEditorRoot != null) { FitTodoDetailEditor(scaleChanged); return; }
         if(DesktopPageAppearance.Content(this) is not StopwatchFrameSurface frame)return;
         double scale=DesktopPageAppearance.Scale(this);
         // Keep the transformed editor inside the native client area after shrinking or zooming.

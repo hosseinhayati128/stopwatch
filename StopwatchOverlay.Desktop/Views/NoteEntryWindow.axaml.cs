@@ -281,7 +281,11 @@ public partial class NoteEntryWindow : Window
             CrashLogger.LogRecoverable(ex, "NoteEntryWindow.Save");
             ShowSaveError("Could not save your changes. Check the notes folder and try again.");
         }
-        finally { _saving = false; SaveButton.IsEnabled = true; }
+        finally
+        {
+            _saving = false;
+            SaveButton.IsEnabled = _detailEditorRoot == null || !string.IsNullOrWhiteSpace(NoteInputBox.Text);
+        }
     }
 
     private void ShowSaveError(string message)

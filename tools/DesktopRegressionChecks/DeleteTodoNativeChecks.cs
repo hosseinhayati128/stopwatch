@@ -23,7 +23,7 @@ internal static partial class DeleteTodoNativeChecks
         if (!ok) throw new Exception(message);
     }
 
-    static void Desktop(string type, string method, params object[] args) =>
+    internal static void Desktop(string type, string method, params object[] args) =>
         typeof(ConfirmationDialogWindow).Assembly.GetType("StopwatchOverlay.Desktop." + type)!
             .GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args);
 
@@ -121,7 +121,7 @@ internal static partial class DeleteTodoNativeChecks
         }
     }
 
-    static void Capture(Window window, int scale, string path)
+    internal static void Capture(Window window, int scale, string path)
     {
         var root = (Control)((LayoutTransformControl)window.Content!).Child!;
         using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(window.ClientSize.Width), (int)Math.Ceiling(window.ClientSize.Height)), new Vector(96, 96));
