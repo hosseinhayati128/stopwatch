@@ -34,8 +34,11 @@ public sealed class HabiticaSubtaskEditor : StackPanel
         }
     }
     private readonly StackPanel rows = new() { Spacing = 6 };
+    public int Count => rows.Children.Count;
+    public event EventHandler? CountChanged;
     public HabiticaSubtaskEditor()
     {
+        rows.Children.CollectionChanged += (_, _) => CountChanged?.Invoke(this, EventArgs.Empty);
         Spacing = 6;
         Children.Add(new TextBlock { Text = "Checklist", FontWeight = Avalonia.Media.FontWeight.SemiBold });
         Children.Add(rows);

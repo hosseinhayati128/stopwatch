@@ -77,6 +77,7 @@ public partial class NoteEntryWindow : Window
         {
             DueFields.IsVisible = DueEnabledToggle.IsChecked == true;
             if (_reminderSchedule != null) { UpdateReminderSchedule(); return; }
+            if (_todoEditorRoot != null) return;
             Height = noteType == NoteType.Todo ? (DueFields.IsVisible ? 650 : 480) : (DueFields.IsVisible ? 480 : 330);
             MinHeight = noteType == NoteType.Todo ? 440 : 300;
         };
@@ -196,7 +197,11 @@ public partial class NoteEntryWindow : Window
         if (_noteType == NoteType.Reminder) text = text.Replace('\n', ' ');
         var children = _noteType == NoteType.Todo ? _subtaskEditor.GetSubtasks() : null;
         if (children?.Any(child => string.IsNullOrWhiteSpace(child.Text)) == true)
-        { ShowSaveError("Enter text for each subtask or remove empty subtasks."); return; }
+        {
+            if (_todoChecklistToggle != null) _todoChecklistToggle.IsChecked = true;
+            ShowSaveError("Enter text for each subtask or remove empty subtasks.");
+            return;
+        }
         DateTime? dueAt = null;
         if (_noteType is NoteType.Todo or NoteType.Reminder && DueEnabledToggle.IsChecked == true)
         {
@@ -284,7 +289,7 @@ public partial class NoteEntryWindow : Window
         finally
         {
             _saving = false;
-            SaveButton.IsEnabled = _detailEditorRoot == null || !string.IsNullOrWhiteSpace(NoteInputBox.Text);
+            SaveButton.IsEnabled = _savedWithWarning || _todoEditorRoot == null || !string.IsNullOrWhiteSpace(NoteInputBox.Text);
         }
     }
 

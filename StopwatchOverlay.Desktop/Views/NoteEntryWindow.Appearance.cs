@@ -63,7 +63,7 @@ public partial class NoteEntryWindow
         TodoVisuals.AddShellTrim(grid,pixel);
         var frame=new TodoFrame {Child=grid,Pixel=pixel,Margin=new Thickness(8),Background=TodoVisuals.Paper(p),BorderBrush=TodoVisuals.Gold,BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(9),ClipToBounds=true};
         Content=frame;
-        if(_noteType==NoteType.Todo) {Height=DueFields.IsVisible?650:550;MinHeight=440;}
+        if(_noteType==NoteType.Todo) ConfigureParentTodoEditor(p, pixel);
         else {Height=330;MinHeight=270;}
     }
 
@@ -75,7 +75,8 @@ public partial class NoteEntryWindow
         if(Classes.Contains("nikaTodoDialog")||Classes.Contains("nikaReminder"))
         {
             CancelButton.IsVisible=false;
-            if(Classes.Contains("nikaTodoDialog")){Grid.SetColumn(SaveButton,0);Grid.SetColumnSpan(SaveButton,3);}
+            if(Classes.Contains("nikaTodoDialog") && _todoEditorRoot == null){Grid.SetColumn(SaveButton,0);Grid.SetColumnSpan(SaveButton,3);}
+            Avalonia.Automation.AutomationProperties.SetName(SaveButton, "Close");
             EditorShortcutHint.Text="Esc to Close";ToolTip.SetTip(SaveButton,"Close (Esc)");
         }
         ShowSaveError(message);

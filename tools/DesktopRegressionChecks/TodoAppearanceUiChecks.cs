@@ -166,7 +166,7 @@ internal static class TodoAppearanceUiChecks
             var editor=new NoteEntryWindow(NoteType.Todo,settings){ShowActivated=false,Topmost=false,ShowInTaskbar=false};
             try
             {
-                Require(editor.FindControl<TextBox>("NoteInputBox")!.Parent is TodoFrame{Pixel:true},"Main text field lacks stepped frame.");
+                Require(editor.FindControl<TextBox>("NoteInputBox")!.GetLogicalAncestors().OfType<TodoFrame>().First().Pixel,"Main text field lacks stepped frame.");
                 Require(editor.FindControl<ComboBox>("TodoPriorityCombo")!.Parent is TodoFrame{Pixel:true},"Priority input lacks stepped frame.");
                 var checklist=(HabiticaSubtaskEditor)typeof(NoteEntryWindow).GetField("_subtaskEditor",Private)!.GetValue(editor)!;
                 checklist.SetSubtasks(new[]{new StopwatchOverlay.Habitica.HabiticaSubtask(Guid.NewGuid(),"Sample",false)});

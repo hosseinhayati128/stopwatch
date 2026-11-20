@@ -12,8 +12,8 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class NoteEntryWindow
 {
-    private const double DetailEditorWidth = 520;
-    private Grid? _detailEditorRoot;
+    private Grid? _todoEditorRoot;
+    private double TodoEditorWidth => _noteType == NoteType.Todo ? 530 : 520;
 
     internal static NoteEntryWindow ForTodoDetail(AppSettings settings, TodoDetailKind kind, string parent,
         string? existingText, Func<string, NoteSyncResult> save)
@@ -27,8 +27,6 @@ public partial class NoteEntryWindow
 
     private void ConfigureTodoDetailEditor(bool note, string parent, string action)
     {
-        bool nika = Classes.Contains("nikaTodoDialog");
-        var frame = (Decorator)NoteInputBox.Parent!;
         var parentName = new TextBlock
         {
             Text = parent, FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap
@@ -49,6 +47,21 @@ public partial class NoteEntryWindow
         EditorBody.Children.Insert(0, strip);
         EditorBody.Children.Insert(1, label);
         string prompt = note ? "Write a note for this task…" : "What needs to be done?";
+        if (Classes.Contains("nikaTodoDialog"))
+        {
+            var profile = _settings.TodoAppearance.Current;
+            bool dark = profile.Background == "midnight-chart";
+            strip.Background = dark ? TodoVisuals.Card(profile) : Brush.Parse("#F0F8E8C7");
+            strip.BorderBrush = Brush.Parse(dark ? "#688391" : "#B99C67");
+            contextLabel.Foreground = dark ? TodoVisuals.Muted(profile) : Brush.Parse("#495953");
+            parentName.Foreground = label.Foreground = TodoVisuals.Ink(profile);
+        }
+        ConfigureTodoWritingArea(field, prompt, action, note ? 138 : 83);
+    }
+
+    private void ConfigureTodoWritingArea(string field, string prompt, string action, double height)
+    {
+        var frame = (Decorator)NoteInputBox.Parent!;
         AutomationProperties.SetName(NoteInputBox, field);
         AutomationProperties.SetHelpText(NoteInputBox, prompt);
         AutomationProperties.SetName(SaveButton, action);
@@ -57,10 +70,10 @@ public partial class NoteEntryWindow
         NoteInputBox.VerticalContentAlignment = VerticalAlignment.Top;
         ScrollViewer.SetHorizontalScrollBarVisibility(NoteInputBox, ScrollBarVisibility.Disabled);
         ScrollViewer.SetVerticalScrollBarVisibility(NoteInputBox, ScrollBarVisibility.Auto);
-        frame.Height = note ? 138 : 83;
+        frame.Height = height;
         SaveButton.Content = action;
 
-        if (nika)
+        if (Classes.Contains("nikaTodoDialog"))
         {
             var profile = _settings.TodoAppearance.Current;
             bool dark = profile.Background == "midnight-chart";
@@ -68,10 +81,7 @@ public partial class NoteEntryWindow
             var muted = dark ? TodoVisuals.Muted(profile) : Brush.Parse("#495953");
             var rule = Brush.Parse(dark ? "#688391" : "#B99C67");
             RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
-            strip.Background = dark ? TodoVisuals.Card(profile) : Brush.Parse("#F0F8E8C7");
-            strip.BorderBrush = rule;
-            contextLabel.Foreground = muted;
-            parentName.Foreground = label.Foreground = NoteInputBox.Foreground = NoteInputBox.CaretBrush = ink;
+            NoteInputBox.Foreground = NoteInputBox.CaretBrush = ink;
             var placeholder = new TextBlock { Text = prompt, FontSize = 16, Foreground = muted, Margin = new(8, 5, 8, 0),
                 VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false, TextWrapping = TextWrapping.Wrap };
             NoteInputBox.Watermark = null;
@@ -134,18 +144,18 @@ public partial class NoteEntryWindow
 
         var shell = (Control)Content!;
         Content = null;
-        _detailEditorRoot = new Grid { Children = { shell } };
-        Content = _detailEditorRoot;
+        _todoEditorRoot = new Grid { VerticalAlignment = VerticalAlignment.Top, Children = { shell } };
+        Content = _todoEditorRoot;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Width = DetailEditorWidth * AppUiScale.Normalize(_settings.UiScalePercent) / 100;
+        Width = TodoEditorWidth * AppUiScale.Normalize(_settings.UiScalePercent) / 100;
         MinWidth = MinHeight = 0;
         Height = double.NaN;
         SizeToContent = SizeToContent.Height;
-        Opened += (_, _) => FitTodoDetailEditor(false);
-        SizeChanged += (_, _) => FitTodoDetailEditor(false);
+        Opened += (_, _) => FitTodoEditor(false);
+        SizeChanged += (_, _) => FitTodoEditor(false);
     }
 
-    private void FitTodoDetailEditor(bool scaleChanged)
+    private void FitTodoEditor(bool scaleChanged)
     {
         double scale = DesktopPageAppearance.Scale(this);
         if (Screens.ScreenFromWindow(this) is { } screen)
@@ -153,9 +163,16 @@ public partial class NoteEntryWindow
             MaxWidth = Math.Floor(screen.WorkingArea.Width / screen.Scaling);
             MaxHeight = Math.Floor(screen.WorkingArea.Height / screen.Scaling);
         }
-        MinWidth = Math.Min(320 * scale, MaxWidth);
-        if (scaleChanged) Width = DetailEditorWidth * scale;
+        MinWidth = Math.Min((_noteType == NoteType.Todo ? 475 : 320) * scale, MaxWidth);
+        if (_noteType == NoteType.Todo)
+        {
+            MinHeight = Math.Min(250 * scale, MaxHeight);
+            if (Content is LayoutTransformControl transform) transform.VerticalAlignment = VerticalAlignment.Top;
+            _todoEditorRoot!.MaxHeight = MaxHeight / scale;
+            _todoEditorRoot.Height = SizeToContent.HasFlag(SizeToContent.Height) ? double.NaN : ClientSize.Height / scale;
+        }
+        if (scaleChanged) Width = TodoEditorWidth * scale;
         Width = Math.Min(Width, MaxWidth);
-        _detailEditorRoot!.Width = (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale;
+        _todoEditorRoot!.Width = (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale;
     }
 }
