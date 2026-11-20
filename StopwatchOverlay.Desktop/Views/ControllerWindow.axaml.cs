@@ -49,6 +49,7 @@ public partial class ControllerWindow : Window
     private bool _isNoteCommandModeActive;
     private DispatcherTimer? _commandModeTimer;
     private bool _isCommandModeActive;
+    private string? _windowsShortcutError;
     private bool _overlaysVisible = true;
 
     private bool _updatingUi;
@@ -98,7 +99,7 @@ public partial class ControllerWindow : Window
             return;
         }
         if (PlatformServices.HotKey is PortalHotKeyService portal)
-            portal.RegistrationStatusChanged += OnPortalRegistrationStatusChanged;
+            portal.RegistrationStatusChanged += OnShortcutRegistrationStatusChanged;
         if (_projectTimeStore.TryLoad(out var loadedHistory) && loadedHistory != null)
         {
             _projectHistory = loadedHistory;
@@ -164,7 +165,7 @@ public partial class ControllerWindow : Window
         return overlay;
     }
 
-    private void OnPortalRegistrationStatusChanged(object? sender, string status)
+    private void OnShortcutRegistrationStatusChanged(object? sender, string status)
     {
         Dispatcher.UIThread.Post(() =>
         {
@@ -197,10 +198,20 @@ public partial class ControllerWindow : Window
             {
                 PlatformServices.HotKey.RegisterHotKey(ShortcutAction.OpenController, ctrlSc.Modifiers, ctrlSc.VirtualKey);
             }
+            if (_windowsShortcutError != null)
+            {
+                _windowsShortcutError = null;
+                OnShortcutRegistrationStatusChanged(this, "Windows shortcuts are available.");
+            }
         }
         catch (Exception ex)
         {
             CrashLogger.LogRecoverable(ex, "ControllerWindow.InitializePlatformServices");
+            if (OperatingSystem.IsWindows())
+            {
+                _windowsShortcutError = "ERROR Windows could not start the global shortcuts. " + ex.GetBaseException().Message;
+                OnShortcutRegistrationStatusChanged(this, _windowsShortcutError);
+            }
         }
     }
 
@@ -1275,6 +1286,8 @@ public partial class ControllerWindow : Window
             _shortcutsWindow.ApplyNavigatorLayout(_settings.ThemeMode);
             if (PlatformServices.HotKey is PortalHotKeyService portal)
                 _shortcutsWindow.SetRegistrationStatus(portal.RegistrationStatus);
+            else if (_windowsShortcutError != null)
+                _shortcutsWindow.SetRegistrationStatus(_windowsShortcutError);
             ExitShortcutCommandMode();
             bool temporarilyUnregistered = PlatformServices.HotKey is SharpHookHotKeyService;
             if (temporarilyUnregistered) PlatformServices.HotKey.UnregisterAll();
@@ -1392,7 +1405,7 @@ public partial class ControllerWindow : Window
         PlatformServices.HotKey.CommandKeyPressed -= OnCommandKeyPressed;
         ExitShortcutCommandMode();
         if (PlatformServices.HotKey is PortalHotKeyService portal)
-            portal.RegistrationStatusChanged -= OnPortalRegistrationStatusChanged;
+            portal.RegistrationStatusChanged -= OnShortcutRegistrationStatusChanged;
         PlatformServices.HotKey.Dispose();
         base.OnClosed(e);
     }

@@ -10,9 +10,10 @@ namespace StopwatchOverlay.Desktop.Platform;
 
 public sealed class SharpHookHotKeyService : IHotKeyService
 {
-    private readonly IGlobalHook _hook;
+    private readonly IGlobalHook? _hook;
+    private readonly WindowsShortcutHook? _windowsHook;
     private readonly ConcurrentDictionary<ShortcutAction, (uint Modifiers, uint VirtualKey)> _registered = new();
-    private readonly ConcurrentDictionary<KeyCode, bool> _pressedKeys = new();
+    private readonly ConcurrentDictionary<uint, bool> _pressedKeys = new();
     private int _disposed;
 
     public event EventHandler<ShortcutAction>? HotKeyPressed;
@@ -24,12 +25,16 @@ public sealed class SharpHookHotKeyService : IHotKeyService
 
     internal SharpHookHotKeyService(bool startHook)
     {
-        // Windows command keys must be consumed synchronously so they do not type
-        // into another app. Keep the existing asynchronous X11 hook on Linux.
-        _hook = OperatingSystem.IsWindows() ? new SimpleGlobalHook() : new TaskPoolGlobalHook();
+        if (!startHook) return;
+        if (OperatingSystem.IsWindows())
+        {
+            _windowsHook = new WindowsShortcutHook(OnWindowsKey,
+                ex => CrashLogger.LogRecoverable(ex, "WindowsShortcutHook.Run"));
+            return;
+        }
+        _hook = new TaskPoolGlobalHook();
         _hook.KeyPressed += OnKeyPressed;
         _hook.KeyReleased += OnKeyReleased;
-        if (!startHook) return;
         _ = Task.Run(async () =>
         {
             try
@@ -45,9 +50,10 @@ public sealed class SharpHookHotKeyService : IHotKeyService
 
     public bool RegisterHotKey(ShortcutAction action, uint modifiers, uint virtualKey)
     {
-        if (virtualKey == 0)
+        if (virtualKey == 0 || Volatile.Read(ref _disposed) != 0)
             return false;
 
+        _windowsHook?.EnsureStarted();
         _registered[action] = (modifiers, virtualKey);
         return true;
     }
@@ -67,12 +73,6 @@ public sealed class SharpHookHotKeyService : IHotKeyService
     {
         uint vk = MapKeyCodeToVirtualKey(e.Data.KeyCode);
         if (vk == 0) return;
-        if (!_pressedKeys.TryAdd(e.Data.KeyCode, false))
-        {
-            e.SuppressEvent = OperatingSystem.IsWindows() && _pressedKeys.TryGetValue(e.Data.KeyCode, out bool captured) && captured;
-            return;
-        }
-
         uint mods = 0;
         var mask = e.RawEvent.Mask;
         // These masks contain BOTH left and right bits. HasFlag would require
@@ -82,33 +82,44 @@ public sealed class SharpHookHotKeyService : IHotKeyService
         if ((mask & ModifierMask.Shift) != 0) mods |= Shortcut.MOD_SHIFT;
         if ((mask & ModifierMask.Meta) != 0) mods |= Shortcut.MOD_WIN;
 
-        bool matchedHotKey = false;
-        foreach (var (action, (regMods, regVk)) in _registered)
-        {
-            if (regVk == vk && regMods == mods)
-            {
-                // Arm capture before dispatching to the UI; otherwise a fast
-                // follow-up key can arrive while the leader is still queued.
-                if (action is ShortcutAction.CommandLeader or ShortcutAction.NoteCommandLeader)
-                    IsInCommandMode = true;
-                HotKeyPressed?.Invoke(this, action);
-                matchedHotKey = true;
-                break;
-            }
-        }
-
-        if (!matchedHotKey && IsInCommandMode)
-        {
-            _pressedKeys[e.Data.KeyCode] = true;
-            e.SuppressEvent = OperatingSystem.IsWindows();
-            CommandKeyPressed?.Invoke(this, vk);
-        }
+        e.SuppressEvent = Press((uint)e.Data.KeyCode, vk, mods);
     }
 
-    private void OnKeyReleased(object? sender, KeyboardHookEventArgs e)
+    private bool Press(uint key, uint vk, uint mods)
     {
-        if (_pressedKeys.TryRemove(e.Data.KeyCode, out bool captured))
-            e.SuppressEvent = OperatingSystem.IsWindows() && captured;
+        if (!_pressedKeys.TryAdd(key, false))
+            return OperatingSystem.IsWindows() && _pressedKeys.TryGetValue(key, out bool captured) && captured;
+
+        foreach (var (action, binding) in _registered)
+        {
+            if (binding != (mods, vk)) continue;
+            if (action is ShortcutAction.CommandLeader or ShortcutAction.NoteCommandLeader)
+                IsInCommandMode = true;
+            HotKeyPressed?.Invoke(this, action);
+            return false;
+        }
+
+        if (!IsInCommandMode) return false;
+        _pressedKeys[key] = true;
+        CommandKeyPressed?.Invoke(this, vk);
+        return OperatingSystem.IsWindows();
+    }
+
+    private bool Release(uint key) =>
+        _pressedKeys.TryRemove(key, out bool captured) && captured && OperatingSystem.IsWindows();
+
+    private void OnKeyReleased(object? sender, KeyboardHookEventArgs e) =>
+        e.SuppressEvent = Release((uint)e.Data.KeyCode);
+
+    private bool OnWindowsKey(uint key, bool down, uint mods)
+    {
+        // Leave modifier transitions and unrelated keys with the foreground application.
+        if (key is not (0x08 or 0x09 or 0x0D or 0x1B or >= 0x20 and <= 0x28 or 0x2D or 0x2E
+            or >= 0x30 and <= 0x39 or >= 0x41 and <= 0x5A or >= 0x60 and <= 0x69 or >= 0x70 and <= 0x87))
+            return false;
+        if (!down) return Release(key);
+        uint vk = key is >= 0x60 and <= 0x69 ? key - 0x30 : key;
+        return Press(key, vk, mods);
     }
 
     private static uint MapKeyCodeToVirtualKey(KeyCode code) => code switch
@@ -207,6 +218,7 @@ public sealed class SharpHookHotKeyService : IHotKeyService
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         _registered.Clear();
         _pressedKeys.Clear();
-        _hook.Dispose();
+        _windowsHook?.Dispose();
+        _hook?.Dispose();
     }
 }

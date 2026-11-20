@@ -828,6 +828,7 @@ if (args.Contains("--settings-shell-preview") || args.Contains("--dashboard-time
 
 // Tests feed hook events directly. They never generate OS keyboard input.
 PlatformServices.HotKey.Dispose();
+PlatformServices.HotKey = Service();
 Check("left and right modifiers each register shortcuts", () => {
     foreach (var (mask, mods) in new[] { (ModifierMask.LeftMeta, Shortcut.MOD_WIN), (ModifierMask.RightMeta, Shortcut.MOD_WIN),
         (ModifierMask.LeftCtrl, Shortcut.MOD_CONTROL), (ModifierMask.RightAlt, Shortcut.MOD_ALT), (ModifierMask.LeftShift, Shortcut.MOD_SHIFT) })
@@ -1022,6 +1023,7 @@ if(args.Contains("--stopwatch-redraw-regression")||args.Contains("--navigator-pi
 }
 if (args.Contains("--shortcuts-only"))
 {
+    Check("Windows registration, fast timer picker and note leader", ShortcutChecks.WindowsRegistrationAndRouting);
     Check("full timer commands require four deliberate presses", ShortcutChecks.TimerCommandsFourthPress);
     Check("timer command popup dismisses on selection", ShortcutChecks.TimerCommandsDismissal);
     Check("local portal command releases popup and capture", ShortcutChecks.TimerCommandsPortalDismissal);

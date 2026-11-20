@@ -57,6 +57,9 @@ internal static class ShortcutChecks
                 .Invoke(_hook, new object?[] { null, args });
         }
 
+        internal bool WindowsKey(uint vk, bool down, uint mods = 0) =>
+            (bool)typeof(SharpHookHotKeyService).GetMethod("OnWindowsKey", Private)!.Invoke(_hook, [vk, down, mods])!;
+
         internal void Command(KeyCode key, bool notes = false)
         {
             Call("ExitShortcutCommandMode");
@@ -86,6 +89,41 @@ internal static class ShortcutChecks
     private static void Require(bool value, string message)
     {
         if (!value) throw new Exception(message);
+    }
+
+    internal static void WindowsRegistrationAndRouting()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var previous = PlatformServices.HotKey;
+        using var windows = new SharpHookHotKeyService();
+        PlatformServices.HotKey = windows;
+        try { CheckWindowsChords(); }
+        finally { PlatformServices.HotKey = previous; }
+    }
+
+    private static void CheckWindowsChords()
+    {
+        using var fixture = new Fixture();
+        // This returns only after Windows has installed the hook on its message thread.
+        Require(PlatformServices.HotKey.RegisterHotKey(ShortcutAction.CommandLeader, Shortcut.MOD_WIN, 0x71), "Windows registration failed.");
+        Require(!fixture.WindowsKey(0x4B, true), "Normal K was swallowed.");
+        fixture.WindowsKey(0x4B, false);
+        fixture.WindowsKey(0x71, true, Shortcut.MOD_WIN);
+        fixture.WindowsKey(0x71, false);
+        Require(fixture.WindowsKey(0x4B, true) && fixture.WindowsKey(0x4B, true) && fixture.WindowsKey(0x4B, false),
+            "Fast K, its repeat or its release leaked into the foreground application.");
+        ClockOverlayChecks.Pump(50);
+        fixture.Window("TimerPickerWindow").Close();
+        fixture.WindowsKey(0x72, true, Shortcut.MOD_WIN);
+        fixture.WindowsKey(0x72, false);
+        ClockOverlayChecks.Pump(35);
+        var notes = fixture.Window("NoteCommandHintWindow");
+        Require(fixture.WindowsKey(0x1B, true), "Note Escape escaped to the foreground application.");
+        fixture.WindowsKey(0x1B, false);
+        ClockOverlayChecks.Pump(35);
+        Require(!notes.IsVisible && !PlatformServices.HotKey.IsInCommandMode, "Note capture persisted after Escape.");
+        Require(!fixture.WindowsKey(0x4B, true), "Ordinary typing remained captured.");
+        fixture.WindowsKey(0x4B, false);
     }
 
     internal static void Timers()
