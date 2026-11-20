@@ -13,7 +13,7 @@ public partial class ConfirmationDialogWindow
 {
     private bool _noteDeletionConfigured, _noteDeletionCompleted;
     private Control? _noteDeletionRoot;
-    private double _noteDeletionHeight;
+    private double _noteDeletionWidth, _noteDeletionHeight;
 
     private void ConfigureNoteDeletionActions()
     {
@@ -23,21 +23,26 @@ public partial class ConfirmationDialogWindow
         AddHandler(KeyDownEvent, (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; Complete(false); } }, RoutingStrategies.Tunnel);
     }
 
-    private void SizeNoteDeletion(AppSettings settings, double height)
+    private void SizeNoteDeletion(AppSettings settings, double? height, double width = 540)
     {
         _noteDeletionRoot = (Control)Content!;
-        _noteDeletionHeight = height;
+        _noteDeletionWidth = width;
+        _noteDeletionHeight = height ?? double.NaN;
         SystemDecorations = SystemDecorations.None; Background = Brushes.Transparent; TransparencyLevelHint = [WindowTransparencyLevel.Transparent]; CanResize = false;
-        MinWidth = MinHeight = 0; MaxHeight = double.PositiveInfinity; SizeToContent = SizeToContent.Manual;
-        double scale = AppUiScale.Normalize(settings.UiScalePercent) / 100; Width = 540 * scale; Height = _noteDeletionHeight * scale;
+        MinWidth = MinHeight = 0; MaxHeight = double.PositiveInfinity;
+        SizeToContent = height.HasValue ? SizeToContent.Manual : SizeToContent.Height;
+        double scale = AppUiScale.Normalize(settings.UiScalePercent) / 100; Width = width * scale; Height = _noteDeletionHeight * scale;
         Opened += (_, _) => { if (Screens.ScreenFromWindow(this) is { } screen) FitNoteDeletionToScreen(screen); else FitNoteDeletionContent(); };
         SizeChanged += (_, _) => FitNoteDeletionContent();
     }
     internal void FitNoteDeletionToScreen(Screen screen)
     {
         MaxWidth = Math.Floor(screen.WorkingArea.Width / screen.Scaling); MaxHeight = Math.Floor(screen.WorkingArea.Height / screen.Scaling);
-        Width = Math.Min(Width, MaxWidth); Height = Math.Min(Height, MaxHeight);
-        var area = screen.WorkingArea; double width = Math.Ceiling(Width * screen.Scaling), height = Math.Ceiling(Height * screen.Scaling);
+        Width = Math.Min(Width, MaxWidth);
+        if (double.IsFinite(_noteDeletionHeight)) Height = Math.Min(Height, MaxHeight);
+        var area = screen.WorkingArea;
+        double width = Math.Min(area.Width, Math.Ceiling(Width * screen.Scaling));
+        double height = Math.Min(area.Height, Math.Ceiling((double.IsFinite(_noteDeletionHeight) ? Height : ClientSize.Height) * screen.Scaling));
         double centerX = area.X + area.Width / 2d, centerY = area.Y + area.Height / 2d;
         if (Owner is Window owner)
         {
@@ -53,10 +58,11 @@ public partial class ConfirmationDialogWindow
         double scale = DesktopPageAppearance.Scale(this);
         if (resizeWindow)
         {
-            Width = 540 * scale; Height = _noteDeletionHeight * scale;
+            Width = _noteDeletionWidth * scale; Height = _noteDeletionHeight * scale;
             if (Screens.ScreenFromWindow(this) is { } screen) { FitNoteDeletionToScreen(screen); return; }
         }
-        frame.Width = (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale; frame.Height = (ClientSize.Height > 0 ? ClientSize.Height : Height) / scale;
+        frame.Width = (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale;
+        if (double.IsFinite(_noteDeletionHeight)) frame.Height = (ClientSize.Height > 0 ? ClientSize.Height : Height) / scale;
         if (Content is LayoutTransformControl transform) transform.InvalidateArrange();
     }
 }

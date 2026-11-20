@@ -11,7 +11,7 @@ using StopwatchOverlay;
 using StopwatchOverlay.Desktop.Controls;
 using StopwatchOverlay.Desktop.Views;
 
-internal static class DeleteTodoNativeChecks
+internal static partial class DeleteTodoNativeChecks
 {
     const string Output = "design/one-piece-v2/delete-todo/implemented";
     const string Short = "Review the dashboard sketches.";
@@ -76,15 +76,7 @@ internal static class DeleteTodoNativeChecks
                         Require(Math.Abs(window.ClientSize.Width - 540 * scale / 100d) < 1.1 &&
                             Math.Abs(window.ClientSize.Height - (task == Long ? 500 : 430) * scale / 100d) < 1.1, "Incorrect size");
                         string state = (task == Long ? "long-" : "") + (linked ? "linked" : "unlinked");
-                        var root = (Control)((LayoutTransformControl)window.Content!).Child!;
-                        using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(window.ClientSize.Width), (int)Math.Ceiling(window.ClientSize.Height)), new Vector(96, 96));
-                        if (scale >= 100) bitmap.Render(window);
-                        else
-                        {
-                            using var dc = bitmap.CreateDrawingContext();
-                            dc.DrawRectangle(new VisualBrush(root) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(root.Bounds, RelativeUnit.Absolute) }, null, new Rect(root.Bounds.Size));
-                        }
-                        bitmap.Save(Path.Combine(Output, $"delete-todo-{state}-{scale}.png"));
+                        Capture(window, scale, Path.Combine(Output, $"delete-todo-{state}-{scale}.png"));
                         if (task == Short) Press(cancel, Avalonia.Input.Key.Enter);
                         else { delete.Focus(); Press(delete, linked ? Avalonia.Input.Key.Escape : Avalonia.Input.Key.Enter); }
                         bool expected = task == Long && !linked;
@@ -127,6 +119,19 @@ internal static class DeleteTodoNativeChecks
             Desktop("DesktopTypography", "Shutdown");
             Desktop("DesktopPageAppearance", "Shutdown");
         }
+    }
+
+    static void Capture(Window window, int scale, string path)
+    {
+        var root = (Control)((LayoutTransformControl)window.Content!).Child!;
+        using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(window.ClientSize.Width), (int)Math.Ceiling(window.ClientSize.Height)), new Vector(96, 96));
+        if (scale >= 100) bitmap.Render(window);
+        else
+        {
+            using var dc = bitmap.CreateDrawingContext();
+            dc.DrawRectangle(new VisualBrush(root) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(root.Bounds, RelativeUnit.Absolute) }, null, new Rect(root.Bounds.Size));
+        }
+        bitmap.Save(path);
     }
 
     static void OverlayDeletion(AppSettings settings)

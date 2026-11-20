@@ -71,8 +71,9 @@ public partial class TodoOverlayWindow
                 _deleteInProgress = true;
                 try
                 {
-                    _deleteDialog = new ConfirmationDialogWindow("Delete detail", "Delete this " + (detail.Kind == TodoDetailKind.Note ? "note?" : "subtask?"), detail.Text, "Delete", destructive: true) { Topmost = Topmost };
-                    _deleteDialog.ApplyTodoAppearance(_settings);
+                    string parent = string.Concat(FormattedTodoText.Parse(document.Body).Select(part => part.Text));
+                    _deleteDialog = new ConfirmationDialogWindow { Topmost = Topmost };
+                    _deleteDialog.ConfigureDeleteTodoDetail(parent, detail, _settings);
                     bool confirmed = await _deleteDialog.ShowDialog<bool>(this);
                     if (confirmed && !_closed)
                     {
