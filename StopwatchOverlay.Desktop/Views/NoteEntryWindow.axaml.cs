@@ -31,6 +31,7 @@ public partial class NoteEntryWindow : Window
     private readonly HabiticaSubtaskEditor _subtaskEditor = new();
     private bool _savedWithWarning;
     private Func<string, NoteSyncResult>? _saveDetail;
+    internal event Action<string?>? TodoSavedLocally;
 
     public NoteEntryWindow() : this(NoteType.Note, new AppSettings())
     {
@@ -279,6 +280,7 @@ public partial class NoteEntryWindow : Window
             }
             if (_settings.TelegramEnabled && !wasEditing)
                 TelegramNotesSync.DispatchNoteInBackground(_settings, _noteType, text, entryTimestamp);
+            if (hasVault && _noteType == NoteType.Todo) TodoSavedLocally?.Invoke(syncWarning);
             if (syncWarning != null)
             {
                 ShowSavedSyncWarning(syncWarning);

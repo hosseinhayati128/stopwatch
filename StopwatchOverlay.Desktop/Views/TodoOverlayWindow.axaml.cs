@@ -156,6 +156,12 @@ public partial class TodoOverlayWindow : Window
     public void ApplySettings()
     {
         CancelDrag();
+        if (NoticeContext() != _noticeContext)
+        {
+            _noticeContext = NoticeContext();
+            _syncError = _telegramHint = null;
+            _localNotice = _telegramNotice = null;
+        }
         if (_linkEntry != null && (!_settings.TelegramEnabled || IsNikaTodo != LinkForm.IsVisible || LinkContext() != _linkContext))
             CloseLinkEditor();
         bool pirate = AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika;
@@ -224,13 +230,10 @@ public partial class TodoOverlayWindow : Window
             _loadingOrganization = true;
             try { TodoSortCombo.IsEnabled = configured && !_deleteInProgress; TodoSortCombo.SelectedItem = _organization?.SortMode ?? "Priority"; }
             finally { _loadingOrganization = false; }
-            var tracked = _settings.TelegramEnabled
-                ? TelegramOutboxStore.GetTrackedTodos(TelegramNotesSync.GetBotIdentity(_settings), TelegramNotesSync.GetTodoVaultKey(_settings))
-                : Array.Empty<TelegramSentNoteRecord>();
-            bool Linked(NoteEntry entry) => tracked.Count(record => TelegramNotesSync.MatchesTodo(record, entry)) == 1;
-            TelegramSyncStatus.IsVisible = _settings.TelegramEnabled && _linkEntry == null;
-            TelegramSyncStatus.Text = _syncError ?? (_syncRunning ? "Updating Telegram…" :
-                entries.Any(entry => !Linked(entry)) ? "Right-click a task → Link to connect older Telegram messages." : "Completion sync is up to date.");
+            var (links, pending) = ReadTelegramState(entries, configured);
+            bool Linked(NoteEntry entry) => links.Contains(entry);
+            UpdateTelegramNotice(configured && !string.IsNullOrWhiteSpace(_settings.TelegramBotToken) &&
+                !string.IsNullOrWhiteSpace(_settings.TelegramChatId), pending, entries.Any(entry => !Linked(entry)));
             var visible = entries.Where(entry => _settings.TodoOverlayShowCompleted || !entry.IsCompleted).ToArray();
             var taskDetails = new Dictionary<NoteEntry, HabiticaTaskDetails>();
             foreach (var entry in entries) taskDetails[entry] = HabiticaIntegration.Current.GetDetails(_settings, entry);
@@ -263,9 +266,10 @@ public partial class TodoOverlayWindow : Window
                     var mutation = HabiticaIntegration.Current.Apply(_settings, entry, entry with { IsCompleted = completed },
                         _organization?.GetDueAt(entry), null, false,
                         () => ObsidianNotesSync.SetTodoCompleted(_settings.ObsidianVaultFolder, entry, completed, _settings.NotesSubfolder));
-                    ErrorMessage.IsVisible = !mutation.LocalResult.Success || mutation.SyncWarning != null;
-                    if (!mutation.LocalResult.Success) ShowError(mutation.LocalResult.Message ?? "Could not save this todo. Try again.");
-                    else if (mutation.SyncWarning != null) ShowError(mutation.SyncWarning);
+                    if (!mutation.LocalResult.Success)
+                        ShowError(mutation.LocalResult.Message ?? "Could not save this todo. Try again.",
+                            completed ? "Couldn’t mark task complete" : "Couldn’t reopen task");
+                    else ShowSaveResult(mutation.SyncWarning);
                     _snapshot = null;
                     Dispatcher.UIThread.Post(() => { ReloadTodos(); _nextSyncUtc = DateTime.MinValue; _ = SynchronizeTelegramAsync(); });
                 };
@@ -423,7 +427,7 @@ public partial class TodoOverlayWindow : Window
     private void SaveOrganization(NoteSyncResult result)
     {
         if (!result.Success) { ShowError(result.Message ?? "Could not save todo organization."); return; }
-        ErrorMessage.IsVisible = false;
+        ShowSaveResult();
         _snapshot = null;
         ReloadTodos();
     }
@@ -527,6 +531,7 @@ public partial class TodoOverlayWindow : Window
         if (_taskEditor?.IsVisible == true) { _taskEditor.Activate(); return; }
         CancelInteractions();
         _taskEditor = new NoteEntryWindow(NoteType.Todo, _settings, entry);
+        _taskEditor.TodoSavedLocally += ShowSaveResult;
         try { await _taskEditor.ShowDialog(this); }
         finally
         {
@@ -571,9 +576,8 @@ public partial class TodoOverlayWindow : Window
             var result = await Task.Run(() => TelegramNotesSync.DeleteTodoEverywhereAsync(settings, entry,
                 httpClient: null, reviewedTarget: (reviewedLink?.ChatId, reviewedLink?.MessageId)));
             if (_closed) return;
-            ErrorMessage.IsVisible = !result.Success || result.ErrorMessage != null;
             if (!result.Success) ShowError(result.ErrorMessage ?? "Could not finish deleting the todo. Try again.");
-            else if (result.ErrorMessage != null) ShowError(result.ErrorMessage);
+            else ShowSaveResult(result.ErrorMessage);
             _nextSyncUtc = DateTime.MinValue;
         }
         catch (Exception)
@@ -596,6 +600,7 @@ public partial class TodoOverlayWindow : Window
     {
         if (_closed || _syncRunning || _deleteInProgress || !_settings.TelegramEnabled || DateTime.UtcNow < _nextSyncUtc) return;
         _syncRunning = true;
+        var context = NoticeContext();
         // Keep one coherent account/destination while an HTTP request is in flight.
         var settings = new AppSettings {
             TelegramEnabled = _settings.TelegramEnabled, TelegramBotToken = _settings.TelegramBotToken,
@@ -606,16 +611,15 @@ public partial class TodoOverlayWindow : Window
         try
         {
             var result = await Task.Run(() => TelegramNotesSync.SyncTodoCompletionsAsync(settings));
-            if (_closed) return;
+            if (_closed || NoticeContext() != context) return;
             _syncError = result.Success ? null : result.ErrorMessage;
             _nextSyncUtc = DateTime.UtcNow.AddSeconds(result.Success ? 2 : 15);
-            ReloadTodos();
         }
         catch (Exception)
         {
+            if (_closed || NoticeContext() != context) return;
             _syncError = "Telegram sync will retry automatically.";
             _nextSyncUtc = DateTime.UtcNow.AddSeconds(15);
-            if (!_closed) ReloadTodos();
         }
         finally { _syncRunning = false; if (!_closed) ReloadTodos(); }
     }
@@ -624,7 +628,7 @@ public partial class TodoOverlayWindow : Window
     {
         _linkEntry = entry;
         _linkContext = LinkContext();
-        ErrorMessage.IsVisible = false;
+        ShowSaveResult();
         TodoContentGrid.RowDefinitions = new RowDefinitions("Auto,0,*,Auto,Auto,Auto");
         TodoScrollViewer.IsVisible = TodoOptionsRow.IsVisible = AddTodoButton.IsVisible = ShortcutHint.IsVisible = false;
         TelegramSyncStatus.IsVisible = false;
@@ -685,7 +689,7 @@ public partial class TodoOverlayWindow : Window
             else ShowError(error);
             return;
         }
-        ErrorMessage.IsVisible = false;
+        ShowSaveResult();
         CloseLinkEditor();
         _nextSyncUtc = DateTime.MinValue;
         _snapshot = null;
@@ -708,12 +712,11 @@ public partial class TodoOverlayWindow : Window
         TodoContentGrid.RowDefinitions = new RowDefinitions("Auto,*,Auto,Auto,Auto,Auto");
         TodoScrollViewer.IsVisible = TodoOptionsRow.IsVisible = AddTodoButton.IsVisible = ShortcutHint.IsVisible = true;
         ShortcutHint.IsVisible = !IsNikaTodo;
-        TelegramSyncStatus.IsVisible = _settings.TelegramEnabled;
+        RefreshNotice();
         if (IsExpanded) Focus();
     }
     private void CancelLinkClicked(object? sender, RoutedEventArgs e) => CloseLinkEditor();
 
-    private void ShowError(string message) { ErrorMessage.Text = message; ErrorMessage.IsVisible = true; }
     private void ToggleClicked(object? sender, RoutedEventArgs e) { if (!_dragMoved) ToggleExpanded(); }
     private void AddClicked(object? sender, RoutedEventArgs e) => AddTodoRequested?.Invoke();
     private void HeaderPointerPressed(object? sender, PointerPressedEventArgs e)

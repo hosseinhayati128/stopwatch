@@ -208,13 +208,15 @@ internal static class TodoTaskMenuPreview
         capture.Save(path);
     }
 
-    internal static void Comparison(string directory, int scale, string[] states, string[] labels, string fileStem = "menus")
+    internal static void Comparison(string directory, int scale, string[] states, string[] labels, string fileStem = "menus",
+        IReadOnlyDictionary<string, int>? footerHeights = null)
     {
         const int gutter = 24, top = 52, labelHeight = 28;
         string Sample(string profile, string state) => Path.Combine(directory, $"{profile}-{state}-{scale}.png");
         var sizes = states.Select(state => Profiles.Select(profile => {
-            using var image = new Bitmap(Sample(profile, state));
-            return image.PixelSize;
+            string path = Sample(profile, state);
+            using var image = new Bitmap(path);
+            return new PixelSize(image.PixelSize.Width, footerHeights?[path] ?? image.PixelSize.Height);
         }).ToArray()).ToArray();
         int column = sizes.SelectMany(row => row).Max(size => size.Width) + gutter;
         int height = top + sizes.Sum(row => row.Max(s => s.Height) + labelHeight + gutter);
@@ -233,8 +235,12 @@ internal static class TodoTaskMenuPreview
                 {
                     Label(labels[i], x + 6, y + 2, 15, Brush.Parse("#CAD6D6"));
                     using var image = new Bitmap(Sample(Profiles[p], states[i]));
-                    dc.DrawImage(image, new Rect(new Point(x, y + labelHeight), image.Size));
-                    y += sizes[i].Max(s => s.Height) + labelHeight + gutter;
+                    double visibleHeight = sizes[i][p].Height * image.Size.Height / image.PixelSize.Height;
+                    var source = new Rect(0, image.Size.Height - visibleHeight, image.Size.Width, visibleHeight);
+                    int rowHeight = sizes[i].Max(s => s.Height);
+                    int offset = footerHeights == null ? 0 : rowHeight - sizes[i][p].Height;
+                    dc.DrawImage(image, source, new Rect(new Point(x, y + labelHeight + offset), source.Size));
+                    y += rowHeight + labelHeight + gutter;
                 }
             }
         }

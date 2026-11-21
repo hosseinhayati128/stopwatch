@@ -406,14 +406,17 @@ if (args.Contains("--todo-checklist-native") || args.Contains("--todo-checklist-
     args.Contains("--todo-detail-menu-native") || args.Contains("--todo-detail-menu-preview") ||
     args.Contains("--todo-priority-picker-native") || args.Contains("--todo-priority-picker-preview") ||
     args.Contains("--todo-telegram-link-native") || args.Contains("--todo-telegram-link-preview") ||
-    args.Contains("--todo-sort-dropdown-native") || args.Contains("--todo-sort-dropdown-preview") || args.Contains("--todo-reorder-preview") || args.Contains("--todo-reorder-native"))
+    args.Contains("--todo-sort-dropdown-native") || args.Contains("--todo-sort-dropdown-preview") || args.Contains("--todo-reorder-preview") || args.Contains("--todo-reorder-native") ||
+    args.Contains("--todo-save-sync-preview") || args.Contains("--todo-save-sync-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    if (args.Contains("--todo-reorder-preview") || args.Contains("--todo-reorder-native"))
+    if (args.Contains("--todo-save-sync-preview") || args.Contains("--todo-save-sync-native"))
+        Check("Todo overlay live local save and Telegram receipt states", TodoSaveSyncPreview.Run);
+    else if (args.Contains("--todo-reorder-preview") || args.Contains("--todo-reorder-native"))
         Check("Manual Todo drag feedback, destination and saved order", TodoReorderPreview.Run);
     else if (args.Contains("--todo-sort-dropdown-native") || args.Contains("--todo-sort-dropdown-preview"))
         Check("Todo sort dropdown layout, selection and persistence", TodoSortDropdownPreview.Run);

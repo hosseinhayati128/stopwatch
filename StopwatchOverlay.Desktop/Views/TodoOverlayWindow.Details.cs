@@ -154,7 +154,7 @@ public partial class TodoOverlayWindow
     {
         var mutation = HabiticaIntegration.Current.SetChildren(_settings, entry, children);
         if (!mutation.LocalResult.Success) ShowError(mutation.LocalResult.Message ?? "Could not save the subtask.");
-        else if (mutation.SyncWarning != null) ShowError(mutation.SyncWarning);
+        else ShowSaveResult(mutation.SyncWarning);
         _snapshot = null;
         Dispatcher.UIThread.Post(() => { if (!_closed) ReloadTodos(); });
         if (mutation.LocalResult.Success)
@@ -195,9 +195,9 @@ public partial class TodoOverlayWindow
             null, false, () => TodoOrganizationStore.SaveTodo(_settings.ObsidianVaultFolder, entry, text,
                 organization.GetPriority(entry), organization.GetDueAt(entry), _settings.NotesSubfolder));
         var result = mutation.LocalResult;
-        if (mutation.SyncWarning != null) ShowError(mutation.SyncWarning);
         if (result.Success)
         {
+            ShowSaveResult(mutation.SyncWarning);
             if (DetailsExpanded(entry)) _expandedDetails.Add(TodoOrganizationStore.GetKey(entry with { Text = text }));
             _nextSyncUtc = DateTime.MinValue;
         }

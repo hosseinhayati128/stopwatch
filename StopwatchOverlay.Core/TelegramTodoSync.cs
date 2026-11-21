@@ -29,11 +29,14 @@ public static partial class TelegramNotesSync
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     public static bool MatchesTodo(TelegramSentNoteRecord record, NoteEntry entry)
+        => MatchesTodo(record, entry, null);
+
+    internal static bool MatchesTodo(TelegramSentNoteRecord record, NoteEntry entry, TodoOrganization? organization)
     {
         if (record.NoteType != NoteType.Todo || entry.Type != NoteType.Todo || record.TimestampMinute != entry.Timestamp.ToString("yyyy-MM-dd HH:mm")) return false;
         if (NormalizeTodoText(record.Text) == NormalizeTodoText(entry.Text)) return true;
         if (string.IsNullOrWhiteSpace(record.VaultKey) || !DateTime.TryParseExact(record.TimestampMinute, "yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time)) return false;
-        var organization = TodoOrganizationStore.LoadFromFolder(record.VaultKey);
+        organization ??= TodoOrganizationStore.LoadFromFolder(record.VaultKey);
         // Receipts historically flattened line endings. Compare aliases for both the original text and its normalized form.
         string receipt = organization.ResolveKey(TodoOrganizationStore.GetKey(new(NoteType.Todo, time, record.Text)));
         string actual = organization.ResolveKey(TodoOrganizationStore.GetKey(entry));

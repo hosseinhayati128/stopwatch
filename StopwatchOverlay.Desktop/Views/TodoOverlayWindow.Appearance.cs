@@ -217,6 +217,7 @@ public partial class TodoOverlayWindow
         DragLeftCap.BorderThickness = DragRightCap.BorderThickness = new Thickness(1.4 * zoom);
         Resources["TaskMenuOffset"] = (_settings.TodoAppearance.IsPixel ? 9 : 8) * zoom;
         if (LinkForm.IsVisible) SizeLinkEditor();
+        RefreshNotice();
     }
 
     private void UpdateTaskMenuAppearance()

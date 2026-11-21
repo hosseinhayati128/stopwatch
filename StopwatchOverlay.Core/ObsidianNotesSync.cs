@@ -180,7 +180,15 @@ public static class ObsidianNotesSync
                 updated = original.Remove(target.LineStart, target.LineLength).Insert(target.LineStart, replacement);
             }
             else if (completed.HasValue)
+            {
+                if (entry.Type == NoteType.Todo && File.GetAttributes(path).HasFlag(FileAttributes.ReadOnly))
+                {
+                    string title = string.Concat(FormattedTodoText.Parse(TodoDetails.Parse(entry.Text).Body).Select(part => part.Text));
+                    string retry = completed.Value ? $"mark “{title}” complete" : $"reopen “{title}”";
+                    return new(false, path, $"The task file in your notes folder is read-only. Allow editing of the file, then {retry} again.");
+                }
                 updated = original.Remove(target.Index, 1).Insert(target.Index, completed.Value ? "x" : " ");
+            }
             else
             {
                 int end = target.LineStart + target.LineLength;

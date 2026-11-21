@@ -157,6 +157,7 @@ public partial class ControllerWindow : Window
         overlay.AddTodoRequested += () =>
         {
             var entry = new NoteEntryWindow(NoteType.Todo, _settings);
+            entry.TodoSavedLocally += overlay.ShowSaveResult;
             entry.Closed += (_, _) => overlay.ReloadTodos();
             entry.Show();
             entry.Activate();
