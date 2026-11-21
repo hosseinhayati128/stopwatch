@@ -1,0 +1,72 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:todo="using:StopwatchOverlay.Desktop.Controls">
+  <StreamGeometry x:Key="TaskMenuEditIcon">M3,12 L12,3 L15,6 L6,15 L2,16 Z M10,5 L13,8</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuAddIcon">M9,3 V15 M3,9 H15</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuNoteIcon">M4,2 H11 L15,6 V16 H4 Z M11,2 V6 H15 M7,9 H12 M7,12 H11</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuSubtaskIcon">M2,4 L4,6 L7,2 M9,4 H16 M2,10 H6 V14 H2 Z M9,12 H16</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuLinkIcon">M7,11 L11,7 M7,7 L9,5 C14,-1 20,5 14,10 L12,12 M11,11 L9,13 C4,19 -2,13 4,8 L6,6</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuRelinkIcon">M7,10 L10,7 M6,7 L4,9 C0,13 5,18 9,14 L11,12 M8,6 L10,4 Q13,1 16,5 M16,2 V6 H12</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuDeleteIcon">M2,5 H16 M6,5 V2 H12 V5 M4,5 L5,16 H13 L14,5 M7,8 V13 M11,8 V13</StreamGeometry>
+  <StreamGeometry x:Key="TaskMenuOpenIcon">M9,3 H16 V10 M16,3 L8,11 M6,5 H3 V15 H13 V12</StreamGeometry>
+  <ControlTheme x:Key="TodoTaskMenu" TargetType="ContextMenu">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <LayoutTransformControl LayoutTransform="{DynamicResource TaskMenuZoom}">
+          <todo:TodoFrame MinWidth="182" MaxWidth="350" Padding="5" Pixel="{DynamicResource TaskMenuPixel}"
+                          CornerRadius="9" Background="{DynamicResource TaskMenuPaper}"
+                          BorderThickness="{DynamicResource TaskMenuRule}" BorderBrush="{DynamicResource TaskMenuEdge}"
+                          InnerBorderBrush="{DynamicResource TaskMenuInnerEdge}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+            </ScrollViewer>
+          </todo:TodoFrame>
+        </LayoutTransformControl>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+  <ControlTheme x:Key="TodoTaskMenuItem" TargetType="MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    <Setter Property="FontFamily" Value="{x:Static todo:TodoVisuals.BodyFont}"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource TaskMenuRowRadius}" Padding="10,0">
+            <Grid ColumnDefinitions="18,10,*,12" Height="34">
+              <Canvas Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Path Data="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}" Stroke="{TemplateBinding Foreground}"
+                      StrokeThickness="{DynamicResource TaskMenuStroke}" StrokeLineCap="{DynamicResource TaskMenuCap}" StrokeJoin="{DynamicResource TaskMenuJoin}"/>
+              </Canvas>
+              <TextBlock Grid.Column="2" Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                FontSize="15" FontFamily="{TemplateBinding FontFamily}" FontWeight="{TemplateBinding FontWeight}"
+                                Foreground="{TemplateBinding Foreground}"/>
+              <Path Grid.Column="3" Data="M 2,1 L 7,6 L 2,11" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.8"
+                    IsVisible="{Binding HasSubMenu, RelativeSource={RelativeSource TemplatedParent}}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+          <Popup Name="PART_Popup" IsOpen="{Binding IsSubMenuOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                 Placement="RightEdgeAlignedTop" PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                 HorizontalOffset="{DynamicResource TaskMenuOffset}" InheritsTransform="False" IsLightDismissEnabled="False">
+            <LayoutTransformControl LayoutTransform="{DynamicResource TaskMenuZoom}">
+              <todo:TodoFrame Width="137" Padding="5" Pixel="{DynamicResource TaskMenuPixel}" CornerRadius="9"
+                              Background="{DynamicResource TaskMenuPaper}" BorderBrush="{DynamicResource TaskMenuEdge}"
+                              BorderThickness="{DynamicResource TaskMenuRule}" InnerBorderBrush="{DynamicResource TaskMenuInnerEdge}">
+                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+              </todo:TodoFrame>
+            </LayoutTransformControl>
+          </Popup>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^.destructive"><Setter Property="Foreground" Value="{DynamicResource TaskMenuDanger}"/></Style>
+    <Style Selector="^:selected, ^:pointerover"><Setter Property="Background" Value="{DynamicResource TaskMenuHover}"/></Style>
+    <Style Selector="^:open">
+      <Setter Property="Background" Value="{DynamicResource TaskMenuOpen}"/>
+      <Setter Property="Foreground" Value="#FFF0D3"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

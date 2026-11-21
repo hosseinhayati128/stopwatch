@@ -1225,6 +1225,7 @@ public partial class ControllerWindow : Window
             }
         }
         if(!pageOnly)_todoOverlayWindow?.ApplySettings();
+        else if ((change & SettingsChangeKind.ApplicationScale) != 0) _todoOverlayWindow?.ApplyTaskMenuScale();
         if ((change & SettingsChangeKind.Theme) != 0)
         {
             ThemeResources.ApplyApplication(_settings.ThemeMode);

@@ -436,17 +436,19 @@ public partial class TodoOverlayWindow : Window
             menu.Items.Add(link);
         }
         var delete = new MenuItem { Header = "Delete" };
-        if (Application.Current?.TryFindResource("DangerTextBrush", out var danger) == true && danger is IBrush brush) delete.Foreground = brush;
+        if (IsNikaTodo) menu.Items.Add(new Separator());
+        else if (Application.Current?.TryFindResource("DangerTextBrush", out var danger) == true && danger is IBrush brush) delete.Foreground = brush;
         AutomationProperties.SetName(delete, "Delete todo " + entry.Text);
         delete.Click += async (_, e) => { e.Handled = true; menu.Close(); await DeleteTodoAsync(entry); };
         menu.Items.Add(delete);
-        TrackTaskMenu(menu);
+        TrackTaskMenu(menu, taskActions: true);
         return menu;
     }
 
-    private void TrackTaskMenu(ContextMenu menu)
+    private void TrackTaskMenu(ContextMenu menu, bool taskActions = false)
     {
-        StyleTodoMenu(menu);
+        if (taskActions && IsNikaTodo) StyleTaskActions(menu);
+        else StyleTodoMenu(menu);
         menu.Opening += (_, e) =>
         {
             if (_closed || _deleteInProgress) { e.Cancel = true; return; }

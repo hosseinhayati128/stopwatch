@@ -27,6 +27,7 @@ public partial class TodoOverlayWindow
         Classes.Set("nikaTodo", active);
         Classes.Set("pixelTodo", active && _settings.TodoAppearance.IsPixel);
         TodoVisuals.Palette(this, active ? TodoLook : null);
+        if (active) UpdateTaskMenuAppearance();
         TodoMap.IsVisible = TodoEmblem.IsVisible = active;
         TodoMural.Apply(TodoLook);
         TodoMural.IsVisible = active && TodoLook.SidebarArtwork != "none";
@@ -197,6 +198,64 @@ public partial class TodoOverlayWindow
             BorderBrush = TodoVisuals.Brass, BorderThickness = foldout ? new Thickness(1) : new Thickness(1.5,0,0,0),
             Background = foldout ? TodoVisuals.Card(p) : Brushes.Transparent, CornerRadius = new CornerRadius(4) };
         Grid.SetColumn(frame,2); Grid.SetRow(frame,4); Grid.SetColumnSpan(frame,2); container.Children.Add(frame);
+    }
+
+    internal void ApplyTaskMenuScale()
+    {
+        double zoom = AppUiScale.Normalize(_settings.UiScalePercent) / 100;
+        Resources["TaskMenuZoom"] = new ScaleTransform(zoom, zoom);
+        Resources["TaskMenuOffset"] = (_settings.TodoAppearance.IsPixel ? 9 : 8) * zoom;
+    }
+
+    private void UpdateTaskMenuAppearance()
+    {
+        bool pixel = _settings.TodoAppearance.IsPixel;
+        bool dark = TodoLook.Background == "midnight-chart";
+        ApplyTaskMenuScale();
+        Resources["TaskMenuPixel"] = pixel;
+        Resources["TaskMenuRule"] = new Thickness(pixel ? 2 : 1);
+        Resources["TaskMenuRowRadius"] = new CornerRadius(pixel ? 0 : 4);
+        Resources["TaskMenuStroke"] = pixel ? 1.9 : 1.6;
+        Resources["TaskMenuCap"] = pixel ? PenLineCap.Square : PenLineCap.Round;
+        Resources["TaskMenuJoin"] = pixel ? PenLineJoin.Miter : PenLineJoin.Round;
+        Resources["TaskMenuPaper"] = dark ? TodoVisuals.Paper(TodoLook) : Brush.Parse(pixel ? "#F5D99D" : "#FBEBCB");
+        Resources["TaskMenuEdge"] = pixel && !dark ? TodoVisuals.Navy : TodoVisuals.Brass;
+        Resources["TaskMenuInnerEdge"] = pixel ? TodoVisuals.Gold : Brush.Parse(dark ? "#51616A" : "#EDD6A6");
+        Resources["TaskMenuDanger"] = Brush.Parse(dark ? "#FFAAA0" : "#942E2C");
+        Resources["TaskMenuHover"] = Brush.Parse(dark ? "#23536B" : "#E5BF7C");
+        Resources["TaskMenuOpen"] = Brush.Parse(dark ? "#255B73" : "#143A4C");
+        Resources["TaskMenuDivider"] = Brush.Parse(dark ? "#62767A" : "#BCA374");
+    }
+
+    private void StyleTaskActions(ContextMenu menu)
+    {
+        menu.Theme = (ControlTheme)this.FindResource("TodoTaskMenu")!;
+        var itemTheme = (ControlTheme)this.FindResource("TodoTaskMenuItem")!;
+        foreach (var separator in menu.Items.OfType<Separator>())
+        {
+            separator.Height = 1;
+            separator.MinHeight = 0;
+            separator.Margin = new Thickness(9, 4);
+            separator.Background = (IBrush)Resources["TaskMenuDivider"]!;
+        }
+        foreach (var item in menu.Items.OfType<MenuItem>())
+        {
+            ApplyItem(item);
+            foreach (var child in item.Items.OfType<MenuItem>()) ApplyItem(child);
+        }
+
+        void ApplyItem(MenuItem item)
+        {
+            item.Theme = itemTheme;
+            string icon = item.Header switch {
+                "Edit task" => "TaskMenuEditIcon", "Add" => "TaskMenuAddIcon", "Note" => "TaskMenuNoteIcon",
+                "Subtask" => "TaskMenuSubtaskIcon", "Delete" => "TaskMenuDeleteIcon", "Link" => "TaskMenuLinkIcon",
+                "Relink" => "TaskMenuRelinkIcon", _ => "TaskMenuOpenIcon"
+            };
+            item.Icon = this.FindResource(icon);
+            item.Classes.Set("destructive", Equals(item.Header, "Delete"));
+            if (icon == "TaskMenuOpenIcon") ToolTip.SetTip(item, item.Header);
+        }
     }
 
     private void StyleTodoMenu(ContextMenu menu)
