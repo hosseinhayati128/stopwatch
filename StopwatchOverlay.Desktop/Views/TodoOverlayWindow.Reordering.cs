@@ -71,8 +71,8 @@ public partial class TodoOverlayWindow
             {
                 _reordering = true;
                 container.Opacity = .45;
-                TodoDraggedTitle.Text = string.Concat(FormattedTodoText.Parse(TodoDetails.Parse(entry.Text).Body).Select(part => part.Text));
-                TodoDragPreview.IsVisible = true;
+                (ThemedDragCard.IsVisible ? TodoDraggedTitle : LegacyDraggedTitle).Text =
+                    string.Concat(FormattedTodoText.Parse(TodoDetails.Parse(entry.Text).Body).Select(part => part.Text));
                 _lastDragTick = Stopwatch.GetTimestamp();
                 _reorderScrollTimer.Start();
             }
@@ -153,30 +153,80 @@ public partial class TodoOverlayWindow
 
     private void UpdateCardDropTarget()
     {
-        _dropEntry = null;
-        TodoDropLine.IsVisible = false;
         if (_draggedEntry == null || _draggedRow == null) return;
         var viewportPoint = this.TranslatePoint(_dragPosition, TodoScrollViewer);
         var rowPoint = this.TranslatePoint(_dragPosition, TodoRows);
         if (!viewportPoint.HasValue || !rowPoint.HasValue) return;
         var size = TodoScrollViewer.Bounds.Size;
-        TodoDragPreview.IsVisible = new Rect(-24, -48, size.Width + 48, size.Height + 96).Contains(viewportPoint.Value);
-        Canvas.SetLeft(TodoDragPreview, Math.Clamp(viewportPoint.Value.X + 12, 0, Math.Max(0, size.Width - 240)));
-        Canvas.SetTop(TodoDragPreview, Math.Clamp(viewportPoint.Value.Y + 14, 0, Math.Max(0, size.Height - 44)));
-        if (viewportPoint.Value.X < 0 || viewportPoint.Value.X > size.Width || viewportPoint.Value.Y < -48 || viewportPoint.Value.Y > size.Height + 48) return;
-        var candidates = TodoRows.Children.OfType<Grid>().Where(row => row != _draggedRow &&
-            row.Tag is NoteEntry target && target.IsCompleted == _draggedEntry.IsCompleted).ToArray();
-        if (candidates.Length == 0) return;
-        var targetRow = candidates.FirstOrDefault(row => rowPoint.Value.Y < row.Bounds.Center.Y);
-        _dropAfter = targetRow == null;
-        targetRow ??= candidates[^1];
-        _dropEntry = (NoteEntry)targetRow.Tag!;
-        var position = targetRow.TranslatePoint(new Point(0, _dropAfter ? targetRow.Bounds.Height : 0), TodoDragLayer);
-        if (!position.HasValue || position.Value.Y < -3 || position.Value.Y > size.Height + 3) return;
-        TodoDropLine.Width = Math.Max(0, size.Width - 6);
-        Canvas.SetLeft(TodoDropLine, 2);
-        Canvas.SetTop(TodoDropLine, Math.Clamp(position.Value.Y - 1.5, 0, Math.Max(0, size.Height - 3)));
-        TodoDropLine.IsVisible = true;
+        Point point = viewportPoint.Value;
+        Grid? targetRow = null;
+        _dropAfter = false;
+        if (point.X >= 0 && point.X <= size.Width && point.Y >= -48 && point.Y <= size.Height + 48)
+        {
+            foreach (var child in TodoRows.Children)
+            {
+                if (child is not Grid row || row == _draggedRow || row.Tag is not NoteEntry entry ||
+                    entry.IsCompleted != _draggedEntry.IsCompleted) continue;
+                targetRow = row;
+                _dropAfter = rowPoint.Value.Y >= row.Bounds.Center.Y;
+                if (!_dropAfter) break;
+            }
+        }
+        _dropEntry = targetRow?.Tag as NoteEntry;
+        double? edge = targetRow?.TranslatePoint(new Point(0, _dropAfter ? targetRow.Bounds.Height : 0), TodoDragLayer)?.Y;
+        TodoDropLine.IsVisible = edge >= -3 && edge <= size.Height + 3;
+        bool themed = ThemedDragCard.IsVisible;
+        double markerHeight = themed ? DragMarker.Height : 3;
+        if (TodoDropLine.IsVisible)
+        {
+            double inset = themed ? 4 : 2;
+            TodoDropLine.Width = Math.Max(0, size.Width - (themed ? 8 : 6));
+            Canvas.SetLeft(TodoDropLine, inset);
+            Canvas.SetTop(TodoDropLine, Math.Clamp(edge!.Value - markerHeight / 2, 0, Math.Max(0, size.Height - markerHeight)));
+        }
+        TodoDragPreview.IsVisible = new Rect(-24, -48, size.Width + 48, size.Height + 96).Contains(point);
+        if (!TodoDragPreview.IsVisible) return;
+        if (themed)
+            PlaceDragCard(point, size, TodoDropLine.IsVisible ? targetRow : null);
+        else
+        {
+            Canvas.SetLeft(TodoDragPreview, Math.Clamp(point.X + 12, 0, Math.Max(0, size.Width - 240)));
+            Canvas.SetTop(TodoDragPreview, Math.Clamp(point.Y + 14, 0, Math.Max(0, size.Height - 44)));
+        }
+    }
+
+    private void PlaceDragCard(Point point, Size viewport, Grid? target)
+    {
+        double zoom = AppUiScale.Normalize(_settings.UiScalePercent) / 100;
+        DragFrame.MaxWidth = Math.Clamp((viewport.Width - 8) / zoom, 0, 272);
+        TodoDragPreview.Measure(Size.Infinity);
+        var card = TodoDragPreview.DesiredSize;
+        double x = Math.Clamp(point.X + 10 * zoom, 4, Math.Max(4, viewport.Width - card.Width - 4));
+        double maxY = Math.Max(0, viewport.Height - card.Height);
+        double y = point.Y + 14 * zoom;
+        if (target != null)
+        {
+            double markerTop = Canvas.GetTop(TodoDropLine);
+            double above = markerTop - 5 * zoom - card.Height;
+            double below = markerTop + DragMarker.Height + 5 * zoom;
+            var header = target.Children.OfType<HoldToCompleteCheckBox>().FirstOrDefault()?.Content as Grid;
+            var title = header?.Children.OfType<TextBlock>().FirstOrDefault();
+            if (title?.TranslatePoint(default, TodoDragLayer) is Point origin)
+            {
+                var text = new Rect(origin, title.Bounds.Size);
+                if (new Rect(new Point(x, above), card).Intersects(text)) above = text.Top - card.Height - 4;
+                if (new Rect(new Point(x, below), card).Intersects(text)) below = text.Bottom + 4;
+            }
+            y = _dropAfter || below > maxY ? above : below;
+            if (y < 0 || y > maxY)
+            {
+                if (below <= maxY) y = below;
+                else if (above >= 0) y = above;
+                else y = markerTop >= card.Height + 5 * zoom ? markerTop - card.Height - 5 * zoom : markerTop + DragMarker.Height + 5 * zoom;
+            }
+        }
+        Canvas.SetLeft(TodoDragPreview, x);
+        Canvas.SetTop(TodoDragPreview, Math.Clamp(y, 0, maxY));
     }
 
     private void CancelDrag()

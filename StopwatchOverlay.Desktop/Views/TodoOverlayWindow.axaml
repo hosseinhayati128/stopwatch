@@ -17,6 +17,13 @@
         </ResourceDictionary>
     </Window.Resources>
     <Window.Styles>
+        <Style Selector="Grid#DragGrip > Border">
+            <Setter Property="Background" Value="{x:Static art:TodoVisuals.FineGold}"/>
+            <Setter Property="CornerRadius" Value="1.5"/>
+        </Style>
+        <Style Selector="Window.pixelTodo Grid#DragGrip > Border">
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
         <Style Selector="Button.todoLauncher">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -106,11 +113,39 @@
                     </StackPanel>
                 </ScrollViewer>
                 <Canvas x:Name="TodoDragLayer" Grid.Row="1" IsHitTestVisible="False" ClipToBounds="True" ZIndex="30">
-                    <Border x:Name="TodoDropLine" IsVisible="False" Height="3" CornerRadius="1.5" Background="#2E9EB7"/>
-                    <Border x:Name="TodoDragPreview" IsVisible="False" Width="240" Padding="10,8" CornerRadius="5"
-                            Background="#F003283E" BorderBrush="#E6BA50" BorderThickness="1" Opacity="0.94">
-                        <TextBlock x:Name="TodoDraggedTitle" Foreground="#FFF0D3" FontSize="13" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                    <Border x:Name="TodoDropLine" IsVisible="False">
+                        <Grid>
+                            <Border x:Name="LegacyDropLine" Height="3" CornerRadius="1.5" Background="#2E9EB7"/>
+                            <Grid x:Name="DragMarker">
+                                <Border x:Name="DragRule" VerticalAlignment="Center" Background="{x:Static art:TodoVisuals.Gold}" BorderBrush="#654215"/>
+                                <Border x:Name="DragLeftCap" HorizontalAlignment="Left" Background="{x:Static art:TodoVisuals.FineGold}" BorderBrush="#654215"/>
+                                <Border x:Name="DragRightCap" HorizontalAlignment="Right" Background="{x:Static art:TodoVisuals.FineGold}" BorderBrush="#654215"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border x:Name="TodoDragPreview" IsVisible="False">
+                        <Grid>
+                            <Border x:Name="LegacyDragCard" Width="240" Padding="10,8" CornerRadius="5"
+                                    Background="#F003283E" BorderBrush="#E6BA50" BorderThickness="1" Opacity="0.94">
+                                <TextBlock x:Name="LegacyDraggedTitle" Foreground="#FFF0D3" FontSize="13" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            </Border>
+                            <LayoutTransformControl x:Name="ThemedDragCard" LayoutTransform="{DynamicResource TaskMenuZoom}">
+                                <art:TodoFrame x:Name="DragFrame" Pixel="{DynamicResource TaskMenuPixel}" CornerRadius="7" Padding="11,7"
+                                               Background="{x:Static art:TodoVisuals.Navy}" BorderBrush="{x:Static art:TodoVisuals.Gold}" InnerBorderBrush="#49606A">
+                                    <Grid ColumnDefinitions="Auto,9,*">
+                                        <Grid x:Name="DragGrip" ColumnDefinitions="3,3,3" RowDefinitions="3,3,3,3,3" VerticalAlignment="Center">
+                                            <Border/><Border Grid.Column="2"/>
+                                            <Border Grid.Row="2"/><Border Grid.Row="2" Grid.Column="2"/>
+                                            <Border Grid.Row="4"/><Border Grid.Row="4" Grid.Column="2"/>
+                                        </Grid>
+                                        <TextBlock x:Name="TodoDraggedTitle" Grid.Column="2" VerticalAlignment="Center" Foreground="{x:Static art:TodoVisuals.Ivory}"
+                                                   FontFamily="{x:Static art:TodoVisuals.BodyFont}" FontSize="15" FontWeight="SemiBold"
+                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"/>
+                                    </Grid>
+                                </art:TodoFrame>
+                            </LayoutTransformControl>
+                        </Grid>
                     </Border>
                 </Canvas>
                 <ContentControl x:Name="TodoEmptyStateHost" Grid.Row="1" IsVisible="False" IsHitTestVisible="False"

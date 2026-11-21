@@ -208,7 +208,7 @@ internal static class TodoTaskMenuPreview
         capture.Save(path);
     }
 
-    internal static void Comparison(string directory, int scale, string[] states, string[] labels)
+    internal static void Comparison(string directory, int scale, string[] states, string[] labels, string fileStem = "menus")
     {
         const int gutter = 24, top = 52, labelHeight = 28;
         string Sample(string profile, string state) => Path.Combine(directory, $"{profile}-{state}-{scale}.png");
@@ -238,7 +238,7 @@ internal static class TodoTaskMenuPreview
                 }
             }
         }
-        board.Save(Path.Combine(directory, $"menus-{scale}.png"));
+        board.Save(Path.Combine(directory, $"{fileStem}-{scale}.png"));
     }
 
     static string FileName(string profile, string state, int scale) => Path.Combine(Output, $"{profile}-{state}-{scale}.png");

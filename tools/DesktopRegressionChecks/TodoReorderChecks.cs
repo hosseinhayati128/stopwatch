@@ -147,7 +147,7 @@ internal static class TodoReorderChecks
         Console.WriteLine("PASS neutral/outside positions, keyboard reordering, mode and settings changes");
     }
 
-    static TextBlock Title(Grid row)
+    internal static TextBlock Title(Grid row)
     {
         var check=row.Children.OfType<HoldToCompleteCheckBox>().Single();
         return check.Content is Grid content?content.Children.OfType<TextBlock>().Single():(TextBlock)check.Content!;
@@ -213,14 +213,14 @@ internal static class TodoReorderChecks
         Console.WriteLine("PASS expanded cards and stale completion changes during dragging");
     }
 
-    static void Capture(Window window)
+    internal static void Capture(Window window, string path = ".superpowers/sdd/2026-10-30-todo-card-reordering/card-drag.png")
     {
         window.UpdateLayout();foreach(var visual in window.GetVisualDescendants())visual.InvalidateVisual();
         window.InvalidateVisual();ClockOverlayChecks.Pump(30);
         var root=(Avalonia.Rendering.IRenderRoot)window;
         typeof(Avalonia.Rendering.IRenderer).GetMethod("Paint",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)!.Invoke(root.Renderer,new object[]{new Rect(root.ClientSize)});
         using var image=new RenderTargetBitmap(new PixelSize((int)window.ClientSize.Width,(int)window.ClientSize.Height),new Vector(96,96));
-        image.Render(window);image.Save(Path.GetFullPath(".superpowers/sdd/2026-10-30-todo-card-reordering/card-drag.png"));
+        image.Render(window);image.Save(Path.GetFullPath(path));
     }
 
     static Grid VisibleRow(TodoOverlayWindow window)
@@ -229,13 +229,13 @@ internal static class TodoReorderChecks
         return window.FindControl<StackPanel>("TodoRows")!.Children.OfType<Grid>().First(row=>
         {var point=row.TranslatePoint(default,scroll)!.Value;return point.Y>30&&point.Y+row.Bounds.Height<scroll.Bounds.Height-30;});
     }
-    static void Press(Control source,Pointer pointer,Window window,int clicks=1)
+    internal static void Press(Control source,Pointer pointer,Window window,int clicks=1)
     {
         var point=source.TranslatePoint(new Point(source.Bounds.Width/2,source.Bounds.Height/2),window)!.Value;
         source.RaiseEvent(new PointerPressedEventArgs(source,pointer,window,point,0,Down,KeyModifiers.None,clicks));
     }
-    static void Move(Control source,Pointer pointer,Window window,Point point)
+    internal static void Move(Control source,Pointer pointer,Window window,Point point)
         => (pointer.Captured as Control??source).RaiseEvent(new PointerEventArgs(InputElement.PointerMovedEvent,pointer.Captured??source,pointer,window,point,0,Down,KeyModifiers.None));
-    static void Release(Control source,Pointer pointer,Window window,Point point)
+    internal static void Release(Control source,Pointer pointer,Window window,Point point)
         => (pointer.Captured as Control??source).RaiseEvent(new PointerReleasedEventArgs(pointer.Captured??source,pointer,window,point,0,Up,KeyModifiers.None,MouseButton.Left));
 }

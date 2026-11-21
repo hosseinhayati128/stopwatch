@@ -26,6 +26,8 @@ public partial class TodoOverlayWindow
         bool active = IsNikaTodo;
         Classes.Set("nikaTodo", active);
         Classes.Set("pixelTodo", active && _settings.TodoAppearance.IsPixel);
+        DragMarker.IsVisible = ThemedDragCard.IsVisible = active;
+        LegacyDropLine.IsVisible = LegacyDragCard.IsVisible = !active;
         TodoVisuals.Palette(this, active ? TodoLook : null);
         if (active) UpdateTaskMenuAppearance();
         TodoMap.IsVisible = TodoEmblem.IsVisible = active;
@@ -205,6 +207,14 @@ public partial class TodoOverlayWindow
     {
         double zoom = AppUiScale.Normalize(_settings.UiScalePercent) / 100;
         Resources["TaskMenuZoom"] = new ScaleTransform(zoom, zoom);
+        bool pixel = _settings.TodoAppearance.IsPixel;
+        DragFrame.BorderThickness = new Thickness(pixel ? 2 : 1.5);
+        DragMarker.Height = Math.Max(7, 8 * zoom);
+        DragRule.Height = Math.Max(3, 3 * zoom);
+        DragRule.BorderThickness = new Thickness(0, Math.Max(1, zoom));
+        DragLeftCap.Width = DragRightCap.Width = DragMarker.Height;
+        DragLeftCap.CornerRadius = DragRightCap.CornerRadius = new CornerRadius(pixel ? 0 : DragMarker.Height / 2);
+        DragLeftCap.BorderThickness = DragRightCap.BorderThickness = new Thickness(1.4 * zoom);
         Resources["TaskMenuOffset"] = (_settings.TodoAppearance.IsPixel ? 9 : 8) * zoom;
         if (LinkForm.IsVisible) SizeLinkEditor();
     }
