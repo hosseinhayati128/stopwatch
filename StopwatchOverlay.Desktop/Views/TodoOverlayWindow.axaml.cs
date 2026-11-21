@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using ShapePath = Avalonia.Controls.Shapes.Path;
 using StopwatchOverlay.Desktop.Controls;
 using Avalonia.Threading;
@@ -331,17 +332,38 @@ public partial class TodoOverlayWindow : Window
         var label = new TextBlock { Text = PriorityTitles[priority - 1], FontSize = 11, FontWeight = FontWeight.SemiBold, Foreground = color, HorizontalAlignment = HorizontalAlignment.Center };
         var badge = new Button { IsEnabled = !_deleteInProgress, Content = label, Width = 30, Height = 26, MinHeight = 26, Padding = new Thickness(3, 1), Margin = new Thickness(0, 3, 7, 0), VerticalAlignment = VerticalAlignment.Top };
         badge.Classes.Add("modern"); badge.Classes.Add("priorityBadge");
-        AutomationProperties.SetName(badge, "Priority " + priority + ": " + PriorityTitles[priority - 1] + ". Change priority for " + entry.Text);
+        AutomationProperties.SetName(badge, $"Priority {priority}. Change priority for {entry.Text}");
         ToolTip.SetTip(badge, "Priority " + priority + " · 1 is highest · Click to change");
         var menu = new ContextMenu();
+        ControlTheme? optionTheme = null;
+        if (IsNikaTodo)
+        {
+            menu.Theme = (ControlTheme)this.FindResource("TodoPriorityPicker")!;
+            optionTheme = (ControlTheme)this.FindResource("TodoPriorityOption")!;
+            menu.Placement = PlacementMode.BottomEdgeAlignedLeft;
+            menu.PlacementTarget = badge;
+            menu.VerticalOffset = 4;
+            menu.Opened += (_, _) =>
+            {
+                menu.SelectedIndex = priority - 1;
+                ((MenuItem)menu.SelectedItem!).Focus();
+            };
+            menu.AddHandler(KeyDownEvent, NavigatePriorityPicker, RoutingStrategies.Tunnel);
+        }
         for (int level = 1; level <= 10; level++)
         {
             int selected = level;
             var item = new MenuItem { Header = PriorityTitles[level - 1], Foreground = PriorityBrush(level) };
-            if(IsNikaTodo)
+            if (optionTheme != null)
             {
-                var icon=new Button {IsHitTestVisible=false};TodoVisuals.PriorityBadge(icon,level,TodoLook);item.Icon=icon;
-                item.Foreground=TodoVisuals.Ink(TodoLook);item.Header=level==priority?$"{level}     ✓":level.ToString();
+                var marker = new Button { IsHitTestVisible = false, Focusable = false };
+                TodoVisuals.PriorityBadge(marker, level, TodoLook);
+                marker.Margin = default;
+                item.Icon = marker;
+                item.Theme = optionTheme;
+                item.ToggleType = MenuItemToggleType.Radio;
+                item.IsChecked = level == priority;
+                AutomationProperties.SetName(item, $"Priority {level}");
             }
             item.Click += (_, _) => { menu.Close(); SaveOrganization(TodoOrganizationStore.SetPriority(_settings.ObsidianVaultFolder, entry, selected, _settings.NotesSubfolder)); };
             menu.Items.Add(item);
@@ -350,6 +372,25 @@ public partial class TodoOverlayWindow : Window
         badge.ContextMenu = menu;
         badge.Click += (_, _) => menu.Open(badge);
         return badge;
+    }
+
+    private static void NavigatePriorityPicker(object? sender, KeyEventArgs e)
+    {
+        if (sender is not ContextMenu menu || e.KeyModifiers != KeyModifiers.None) return;
+        int index = e.Source is MenuItem item ? menu.Items.IndexOf(item) : menu.SelectedIndex;
+        if (index < 0) return;
+        int next = e.Key switch
+        {
+            Key.Left => index % 5 == 0 ? index : index - 1,
+            Key.Right => index % 5 == 4 ? index : index + 1,
+            Key.Up => index < 5 ? index : index - 5,
+            Key.Down => index < 5 ? index + 5 : index,
+            _ => -1
+        };
+        if (next < 0) return;
+        menu.SelectedIndex = next;
+        ((MenuItem)menu.SelectedItem!).Focus(NavigationMethod.Directional);
+        e.Handled = true;
     }
 
     private void ToggleProgress(NoteEntry entry)
@@ -448,7 +489,6 @@ public partial class TodoOverlayWindow : Window
     private void TrackTaskMenu(ContextMenu menu, bool taskActions = false)
     {
         if (taskActions && IsNikaTodo) StyleTaskActions(menu);
-        else StyleTodoMenu(menu);
         menu.Opening += (_, e) =>
         {
             if (_closed || _deleteInProgress) { e.Cancel = true; return; }

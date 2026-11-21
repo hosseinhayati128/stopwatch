@@ -1,0 +1,47 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:todo="using:StopwatchOverlay.Desktop.Controls">
+  <ControlTheme x:Key="TodoPriorityPicker" TargetType="ContextMenu">
+    <Setter Property="ItemsPanel">
+      <ItemsPanelTemplate><UniformGrid Columns="5" Rows="2"/></ItemsPanelTemplate>
+    </Setter>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <LayoutTransformControl LayoutTransform="{DynamicResource TaskMenuZoom}">
+          <todo:TodoFrame Name="PickerFrame" Width="252" Padding="8,8,8,7" Pixel="{DynamicResource TaskMenuPixel}"
+                          CornerRadius="9" Background="{DynamicResource TaskMenuPaper}" BorderBrush="{DynamicResource TaskMenuEdge}"
+                          InnerBorderBrush="{DynamicResource TaskMenuInnerEdge}" BorderThickness="{DynamicResource TaskMenuRule}">
+            <Grid RowDefinitions="Auto,7,1,4,Auto">
+              <Grid ColumnDefinitions="*,Auto" Margin="4,1">
+                <TextBlock Text="Priority" FontFamily="{x:Static todo:TodoVisuals.BodyFont}" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBlock Grid.Column="1" Text="1 is highest" VerticalAlignment="Center" FontFamily="{x:Static todo:TodoVisuals.BodyFont}" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
+              </Grid>
+              <Border Grid.Row="2" Margin="4,0" Background="{DynamicResource TaskMenuDivider}"/>
+              <ItemsPresenter Grid.Row="4" Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+            </Grid>
+          </todo:TodoFrame>
+        </LayoutTransformControl>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+  <ControlTheme x:Key="TodoPriorityOption" TargetType="MenuItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="ChoiceTile" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource TaskMenuRowRadius}" Margin="1" Height="38">
+          <Grid>
+            <ContentPresenter Content="{TemplateBinding Icon}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+            <Border Name="SelectionCheck" IsVisible="False" Background="{DynamicResource TaskMenuOpen}"
+                    Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1,1" CornerRadius="{DynamicResource TaskMenuRowRadius}">
+              <Path Data="M1,5 L3.6,7.6 L9.2,1.7" Stroke="{x:Static todo:TodoVisuals.Ivory}" StrokeThickness="1.7"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" StrokeLineCap="Round" StrokeJoin="Round"/>
+            </Border>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:selected, ^:pointerover"><Setter Property="Background" Value="{DynamicResource TaskMenuHover}"/></Style>
+    <Style Selector="^:checked"><Setter Property="Background" Value="{DynamicResource TaskMenuOpen}"/></Style>
+    <Style Selector="^:checked /template/ Border#SelectionCheck"><Setter Property="IsVisible" Value="True"/></Style>
+  </ControlTheme>
+</ResourceDictionary>

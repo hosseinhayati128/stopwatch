@@ -127,17 +127,17 @@ internal static class TodoDetailMenuPreview
         }
     }
 
-    static Rect BoundsOnDesktop(Control control)
+    internal static Rect BoundsOnDesktop(Control control)
     {
         double dpi = TopLevel.GetTopLevel(control)!.RenderScaling;
         return new Rect(control.PointToScreen(default).ToPoint(dpi),
             control.PointToScreen(new Point(control.Bounds.Width, control.Bounds.Height)).ToPoint(dpi));
     }
 
-    static void Capture(Window overlay, Control detail, TodoFrame menu, string path)
+    internal static void Capture(Window overlay, Control rowContext, TodoFrame menu, string path)
     {
         var window = BoundsOnDesktop(overlay);
-        var row = BoundsOnDesktop(detail).Inflate(2);
+        var row = BoundsOnDesktop(rowContext).Inflate(2);
         var popup = BoundsOnDesktop(menu);
         var area = row.Union(popup).Inflate(6);
         var shift = new Vector(-area.X, -area.Y);

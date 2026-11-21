@@ -258,32 +258,6 @@ public partial class TodoOverlayWindow
         }
     }
 
-    private void StyleTodoMenu(ContextMenu menu)
-    {
-        if (!IsNikaTodo) return;
-        TodoVisuals.Palette(menu,TodoLook);
-        menu.Background=TodoVisuals.Paper(TodoLook); menu.Foreground=TodoVisuals.Ink(TodoLook);
-        menu.BorderBrush=TodoVisuals.Brass; menu.BorderThickness=new Thickness(1);
-        menu.FontFamily=TodoVisuals.BodyFont; menu.FontSize=13;
-        menu.CornerRadius=new CornerRadius(_settings.TodoAppearance.IsPixel?0:5);
-        menu.Resources["MenuBackgroundBrush"]=TodoVisuals.Paper(TodoLook);
-        menu.Resources["MenuForegroundBrush"]=TodoVisuals.Ink(TodoLook);
-        foreach(var item in menu.Items.OfType<MenuItem>()) StyleItem(item);
-        void StyleItem(MenuItem item)
-        {
-            string title=item.Header?.ToString()??"";
-            if(title=="Delete")item.Foreground=Brush.Parse(TodoLook.Background=="midnight-chart"?"#FFAAA0":"#9D292D");
-            else item.Foreground=TodoVisuals.Ink(TodoLook);
-            item.FontFamily=TodoVisuals.BodyFont;item.FontSize=14;
-            if(item.Icon==null)
-            {
-                string symbol=title switch {"Edit task" or "Edit note" or "Edit subtask"=>"✎","Add"=>"＋","Note"=>"▤","Subtask"=>"☷","Link" or "Relink"=>"↗","Delete"=>"×",_=>""};
-                if(symbol.Length>0)item.Icon=new TextBlock {Text=symbol,FontSize=22,Foreground=item.Foreground,Width=24,TextAlignment=TextAlignment.Center};
-            }
-            foreach(var child in item.Items.OfType<MenuItem>())StyleItem(child);
-        }
-    }
-
     private void UpdateTodoEmptyState(bool configured,int total,int visible)
     {
         TodoEmptyStateHost.IsVisible=IsNikaTodo&&visible==0;
