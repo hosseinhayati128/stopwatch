@@ -61,6 +61,7 @@ public partial class TodoOverlayWindow
         TodoSortFrame.BorderThickness = active ? new Thickness(1) : new Thickness(0);
         TodoSortFrame.BorderBrush = TodoVisuals.Ink(TodoLook);
         TodoSortFrame.Background = active ? TodoVisuals.Card(TodoLook) : Brushes.Transparent;
+        TodoSortCombo.Theme = active ? (ControlTheme)this.FindResource("TodoSortDropdown")! : null;
         TodoSortCombo.ItemTemplate = active ? new FuncDataTemplate<string>((value,_) => new TextBlock { Text="Sort: "+value, FontFamily=TodoVisuals.BodyFont, FontSize=14, FontWeight=FontWeight.SemiBold }) : null;
         TodoSortCombo.SelectionBoxItemTemplate=TodoSortCombo.ItemTemplate;
         ShowCompletedToggle.FontSize=active?14:12;
@@ -213,19 +214,25 @@ public partial class TodoOverlayWindow
         bool pixel = _settings.TodoAppearance.IsPixel;
         bool dark = TodoLook.Background == "midnight-chart";
         ApplyTaskMenuScale();
-        Resources["TaskMenuPixel"] = pixel;
-        Resources["TaskMenuRule"] = new Thickness(pixel ? 2 : 1);
-        Resources["TaskMenuRowRadius"] = new CornerRadius(pixel ? 0 : 4);
+        SetMenuFrameResources(Resources, pixel, dark);
+        SetMenuFrameResources(TodoSortCombo.Resources, TodoLook.Toolbar == "pixel-controls", dark);
         Resources["TaskMenuStroke"] = pixel ? 1.9 : 1.6;
-        Resources["TaskMenuCap"] = pixel ? PenLineCap.Square : PenLineCap.Round;
-        Resources["TaskMenuJoin"] = pixel ? PenLineJoin.Miter : PenLineJoin.Round;
-        Resources["TaskMenuPaper"] = dark ? TodoVisuals.Paper(TodoLook) : Brush.Parse(pixel ? "#F5D99D" : "#FBEBCB");
-        Resources["TaskMenuEdge"] = pixel && !dark ? TodoVisuals.Navy : TodoVisuals.Brass;
-        Resources["TaskMenuInnerEdge"] = pixel ? TodoVisuals.Gold : Brush.Parse(dark ? "#51616A" : "#EDD6A6");
         Resources["TaskMenuDanger"] = Brush.Parse(dark ? "#FFAAA0" : "#942E2C");
         Resources["TaskMenuHover"] = Brush.Parse(dark ? "#23536B" : "#E5BF7C");
         Resources["TaskMenuOpen"] = Brush.Parse(dark ? "#255B73" : "#143A4C");
         Resources["TaskMenuDivider"] = Brush.Parse(dark ? "#62767A" : "#BCA374");
+    }
+
+    private void SetMenuFrameResources(IResourceDictionary resources, bool pixel, bool dark)
+    {
+        resources["TaskMenuPixel"] = pixel;
+        resources["TaskMenuRule"] = new Thickness(pixel ? 2 : 1);
+        resources["TaskMenuRowRadius"] = new CornerRadius(pixel ? 0 : 4);
+        resources["TaskMenuCap"] = pixel ? PenLineCap.Square : PenLineCap.Round;
+        resources["TaskMenuJoin"] = pixel ? PenLineJoin.Miter : PenLineJoin.Round;
+        resources["TaskMenuPaper"] = dark ? TodoVisuals.Paper(TodoLook) : Brush.Parse(pixel ? "#F5D99D" : "#FBEBCB");
+        resources["TaskMenuEdge"] = pixel && !dark ? TodoVisuals.Navy : TodoVisuals.Brass;
+        resources["TaskMenuInnerEdge"] = pixel ? TodoVisuals.Gold : Brush.Parse(dark ? "#51616A" : "#EDD6A6");
     }
 
     private void StyleTaskActions(ContextMenu menu)

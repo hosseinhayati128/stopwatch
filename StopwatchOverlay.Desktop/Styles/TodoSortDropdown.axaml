@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:todo="using:StopwatchOverlay.Desktop.Controls">
+  <ControlTheme x:Key="TodoSortChoice" TargetType="ComboBoxItem">
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="SortChoice" CornerRadius="{DynamicResource TaskMenuRowRadius}" Background="{TemplateBinding Background}" Padding="10,6">
+          <Grid ColumnDefinitions="*,10,16">
+            <StackPanel Spacing="1">
+              <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                FontFamily="{x:Static todo:TodoVisuals.BodyFont}" FontWeight="SemiBold" FontSize="15"
+                                Foreground="{TemplateBinding Foreground}"/>
+              <TextBlock Name="SortHint" FontFamily="{x:Static todo:TodoVisuals.BodyFont}" FontSize="13"
+                         Text="Highest priority first" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+            <Path Name="ActiveCheck" Grid.Column="2" IsVisible="False" Data="M1,7 L5,11 L13,2" StrokeThickness="2"
+                  Stroke="{x:Static todo:TodoVisuals.Ivory}" StrokeLineCap="{DynamicResource TaskMenuCap}"
+                  StrokeJoin="{DynamicResource TaskMenuJoin}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^[Content=Manual] /template/ TextBlock#SortHint"><Setter Property="Text" Value="Drag tasks to reorder"/></Style>
+    <Style Selector="^:pointerover, ^:focus-visible"><Setter Property="Background" Value="{DynamicResource TaskMenuHover}"/></Style>
+    <Style Selector="^:selected">
+      <Setter Property="Background" Value="{DynamicResource TaskMenuOpen}"/>
+      <Setter Property="Foreground" Value="{x:Static todo:TodoVisuals.Ivory}"/>
+    </Style>
+    <Style Selector="^:selected /template/ TextBlock#SortHint"><Setter Property="Foreground" Value="#F2DDB5"/></Style>
+    <Style Selector="^:selected /template/ Path#ActiveCheck"><Setter Property="IsVisible" Value="True"/></Style>
+  </ControlTheme>
+  <ControlTheme x:Key="TodoSortDropdown" TargetType="ComboBox">
+    <Setter Property="ItemContainerTheme" Value="{StaticResource TodoSortChoice}"/>
+    <Setter Property="ItemsPanel"><ItemsPanelTemplate><StackPanel Spacing="2"/></ItemsPanelTemplate></Setter>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid Background="Transparent" ColumnDefinitions="*,Auto">
+          <ContentPresenter Name="PART_ContentPresenter" Margin="10,2,6,2" VerticalAlignment="Center"
+                            Content="{TemplateBinding SelectedItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
+          <Path Name="SortChevron" Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center"
+                Data="M1,2 L6,7 L11,2" Stroke="{DynamicResource PrimaryTextBrush}" StrokeThickness="1.6"
+                StrokeLineCap="{DynamicResource TaskMenuCap}" StrokeJoin="{DynamicResource TaskMenuJoin}"/>
+          <Popup Name="PART_Popup" Grid.ColumnSpan="2" Placement="BottomEdgeAlignedLeft" VerticalOffset="4"
+                 IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                 PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" IsLightDismissEnabled="True">
+            <LayoutTransformControl LayoutTransform="{DynamicResource TaskMenuZoom}">
+              <todo:TodoFrame Name="SortMenuFrame" Width="206" Padding="5" CornerRadius="8" Pixel="{DynamicResource TaskMenuPixel}"
+                              Background="{DynamicResource TaskMenuPaper}" BorderThickness="{DynamicResource TaskMenuRule}"
+                              BorderBrush="{DynamicResource TaskMenuEdge}" InnerBorderBrush="{DynamicResource TaskMenuInnerEdge}">
+                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+              </todo:TodoFrame>
+            </LayoutTransformControl>
+          </Popup>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:dropdownopen /template/ Path#SortChevron"><Setter Property="Data" Value="M1,7 L6,2 L11,7"/></Style>
+    <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.55"/></Style>
+  </ControlTheme>
+</ResourceDictionary>

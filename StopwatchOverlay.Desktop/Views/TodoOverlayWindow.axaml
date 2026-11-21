@@ -12,6 +12,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://StopwatchOverlay.Desktop/Styles/TodoTaskMenu.axaml"/>
                 <ResourceInclude Source="avares://StopwatchOverlay.Desktop/Styles/TodoPriorityPicker.axaml"/>
+                <ResourceInclude Source="avares://StopwatchOverlay.Desktop/Styles/TodoSortDropdown.axaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>

@@ -122,7 +122,7 @@ public partial class TodoOverlayWindow : Window
                 e.Handled = true;
                 if (LinkForm.SaveAction.IsEnabled) ConfirmLinkClicked(this, e);
             }
-            else if (e.Key == Key.Escape && IsExpanded) { e.Handled = true; ToggleExpanded(); }
+            else if (e.Key == Key.Escape && IsExpanded && !TodoSortCombo.IsDropDownOpen) { e.Handled = true; ToggleExpanded(); }
         }, RoutingStrategies.Tunnel);
         // Observe the press before Button consumes it, without stealing a normal click.
         var header = this.FindControl<Grid>("OverlayHeader")!;
