@@ -198,8 +198,13 @@ public partial class NoteEntryWindow : Window
         var children = _noteType == NoteType.Todo ? _subtaskEditor.GetSubtasks() : null;
         if (children?.Any(child => string.IsNullOrWhiteSpace(child.Text)) == true)
         {
-            if (_todoChecklistToggle != null) _todoChecklistToggle.IsChecked = true;
-            ShowSaveError("Enter text for each subtask or remove empty subtasks.");
+            if (_todoChecklistToggle != null)
+            {
+                SaveError.IsVisible = false;
+                _todoChecklistToggle.IsChecked = true;
+                _subtaskEditor.ShowBlankRowErrors();
+            }
+            else ShowSaveError("Enter text for each subtask or remove empty subtasks.");
             return;
         }
         DateTime? dueAt = null;

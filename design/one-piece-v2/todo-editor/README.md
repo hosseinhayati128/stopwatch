@@ -12,3 +12,17 @@ Checklist opens the existing checklist editor and shows the number of subtasks. 
 | Pixel implementation | [70%, 90%, 125%](implemented/pixel-add-comparison.png) | [70%, 90%, 125%](implemented/pixel-edit-comparison.png) |
 
 Build DesktopRegressionChecks and run its hidden desktop launcher with `--todo-editor-native` to capture the production editor. Each case uses a temporary vault and checks saved priority, local deadline, manual order, checklist contents, or cancellation.
+
+## Expanded checklist
+
+The expanded header shows completed and total subtasks beside **Add subtask**. Rows wrap long text and keep completion, move and remove controls available. Save opens a collapsed checklist, marks blank rows and focuses the first one. Fixing a row clears its own message.
+
+[Implemented checklist at 90%](checklist-implemented/checklist-overview.png) · [Approved design](checklist-native-preview/checklist-overview.png)
+
+| Full editor at 70%, 90%, and 125% | Classic | Pixel |
+| --- | --- | --- |
+| Empty checklist | [View sizes](checklist-implemented/classic-empty-comparison.png) | [View sizes](checklist-implemented/pixel-empty-comparison.png) |
+| Completed and open subtasks | [View sizes](checklist-implemented/classic-mixed-comparison.png) | [View sizes](checklist-implemented/pixel-mixed-comparison.png) |
+| Blank subtask after Save | [View sizes](checklist-implemented/classic-validation-comparison.png) | [View sizes](checklist-implemented/pixel-validation-comparison.png) |
+
+Use `--todo-checklist-native` with the hidden desktop launcher to reproduce these captures and check add, edit, completion, reorder, remove, cancel, and persistence after reopening.

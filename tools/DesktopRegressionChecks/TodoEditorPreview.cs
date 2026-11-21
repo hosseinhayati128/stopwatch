@@ -117,11 +117,12 @@ internal static class TodoEditorPreview
             }
             else
             {
-                var add = checklist.Children.OfType<Button>().Single();
+                var add = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "AddSubtask");
                 add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); toggle.IsChecked = false;
                 save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); ClockOverlayChecks.Pump(25);
-                Require(window.IsVisible && host.IsVisible && Get<TextBlock>("SaveError").IsVisible &&
-                    toggle.Content!.ToString()!.Contains(edit ? "(3)" : "(1)"), "Hidden blank checklist row did not reopen for correction");
+                Require(window.IsVisible && host.IsVisible &&
+                    checklist.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Name == "SubtaskError" && t.IsVisible) &&
+                    checklist.Count == (edit ? 3 : 1), "Hidden blank checklist row did not reopen for correction");
                 checklist.GetVisualDescendants().OfType<TextBox>().Last().Text = "Send proof";
                 toggle.IsChecked = false;
                 if (percent == 90) input.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Enter, KeyModifiers = KeyModifiers.Control });

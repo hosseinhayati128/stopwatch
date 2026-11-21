@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -62,18 +63,43 @@ public partial class NoteEntryWindow
         var toggle = new ToggleButton { Name = "TodoChecklistToggle", HorizontalAlignment = HorizontalAlignment.Left, FontSize = 14, Padding = new(9, 3) };
         _todoChecklistToggle = toggle;
         TodoVisuals.StyleButton(toggle, profile, pixel: pixel);
+        toggle.TemplateApplied += (_, e) =>
+        {
+            if (e.NameScope.Find<ContentPresenter>("PART_ContentPresenter") is { } presenter) presenter.Background = Brushes.Transparent;
+        };
+        var add = _subtaskEditor.AddButton;
+        _subtaskEditor.Children.Remove(add);
+        var title = Label("▾  Checklist", 16);
+        var progress = new TextBlock { Name = "ChecklistProgress", FontSize = 12, Foreground = TodoVisuals.Muted(profile), VerticalAlignment = VerticalAlignment.Center };
+        var header = new Grid { ColumnDefinitions = new("Auto,10,*,Auto"), Children = { toggle, progress, add } };
+        Grid.SetColumn(progress, 2); Grid.SetColumn(add, 3);
+        var separator = new Border { Height = 1, Background = rule };
+        var section = new StackPanel { Spacing = 8, Children = { header, separator, SubtaskEditorHost } };
+        var card = new TodoFrame { Name = "TodoChecklistCard", Pixel = pixel, CornerRadius = new(5), Child = section };
+        var fill = dark ? TodoVisuals.Card(profile) : Brush.Parse("#FBEDCE");
         void UpdateChecklist()
         {
             bool open = toggle.IsChecked == true;
             SubtaskEditorHost.IsVisible = open;
-            string caption = _subtaskEditor.Count == 0 ? "Checklist" : $"Checklist  ({_subtaskEditor.Count})";
-            toggle.Content = (open ? "▾  " : "▸  ") + caption;
+            int count = _subtaskEditor.Count;
+            string caption = count == 0 ? "Checklist" : $"Checklist  ({count})";
+            toggle.Content = open ? title : "▸  " + caption;
             AutomationProperties.SetName(toggle, caption);
+            progress.IsVisible = open && count > 0;
+            progress.Text = progress.IsVisible ? $"{_subtaskEditor.CompletedCount} of {count} done" : "";
+            add.IsVisible = separator.IsVisible = open;
+            toggle.Background = open ? Brushes.Transparent : TodoVisuals.Card(profile);
+            toggle.BorderThickness = new(open ? 0 : 1);
+            toggle.Padding = open ? new(3, 0) : new(9, 3);
+            card.Padding = open ? new(11, 9) : new(0);
+            card.Background = open ? fill : null; card.BorderBrush = open ? rule : null;
+            card.BorderThickness = new(open ? 1 : 0);
         }
         toggle.IsCheckedChanged += (_, _) => UpdateChecklist();
         _subtaskEditor.CountChanged += (_, _) => UpdateChecklist();
+        _subtaskEditor.CompletionChanged += (_, _) => UpdateChecklist();
         UpdateChecklist();
-        TodoDetailsPanel.Children.Add(toggle); TodoDetailsPanel.Children.Add(SubtaskEditorHost);
+        TodoDetailsPanel.Children.Add(card);
         ConfigureTodoWritingArea("Task", "What needs to be done?", _isEditing ? "Save changes" : "Save", 94);
     }
 }
