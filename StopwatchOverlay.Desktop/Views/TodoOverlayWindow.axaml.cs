@@ -257,9 +257,9 @@ public partial class TodoOverlayWindow : Window
                 text.Margin = new Thickness(7, 0, 0, 0);
                 var row = new HoldToCompleteCheckBox { Content = text, IsChecked = entry.IsCompleted, IsEnabled = !_deleteInProgress };
                 row.Classes.Add("todoRow");
-                AutomationProperties.SetName(row, (_organization?.IsInProgress(entry) == true ? "In progress: " : "") + entry.Text);
+                bool inProgress = _organization?.IsInProgress(entry) == true;
+                AutomationProperties.SetName(row, (inProgress ? "In progress: " : "") + entry.Text);
                 row.ProgressToggleRequested += (_, _) => ToggleProgress(entry);
-                ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") + (entry.IsCompleted ? " · " : " · Double-click to toggle In progress · ") + entry.Timestamp.ToString("g"));
                 row.IsCheckedChanged += (_, _) =>
                 {
                     bool completed = row.IsChecked == true;
@@ -287,15 +287,20 @@ public partial class TodoOverlayWindow : Window
                     Grid.SetRowSpan(deadlineSurface, 5); Grid.SetColumnSpan(deadlineSurface, 4);
                     container.Children.Add(deadlineSurface);
                 }
-                if (dueAt.HasValue && (!IsNikaTodo || !entry.IsCompleted))
+                string? deadline = dueAt.HasValue && (!IsNikaTodo || !entry.IsCompleted) ? TodoDeadlines.Label(dueAt.Value, dueState) : null;
+                if (deadline != null)
                 {
-                    var dueLabel = new TextBlock { Name = "TodoDueLabel", Text = TodoDeadlines.Label(dueAt.Value, dueState), FontSize = 11,
+                    var dueLabel = new TextBlock { Name = "TodoDueLabel", Text = deadline, FontSize = 11,
                         TextWrapping = TextWrapping.Wrap, Margin = new Thickness(7, 0, 0, 7) };
                     if (Application.Current?.TryFindResource(dueState == TodoDueState.Overdue ? "DangerTextBrush" : "SecondaryTextBrush", out var dueBrush) == true && dueBrush is IBrush brush) dueLabel.Foreground = brush;
                     Grid.SetRow(dueLabel, 2); Grid.SetColumn(dueLabel, 2); container.Children.Add(dueLabel);
-                    ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") + (entry.IsCompleted ? " · " : " · Double-click to toggle In progress · ") + dueLabel.Text);
                 }
-                if (_organization?.IsInProgress(entry) == true)
+                if (IsNikaTodo)
+                    TodoTaskHoverHint.Attach(container, row, _settings, entry.IsCompleted, inProgress, _organization?.SortMode == "Manual", deadline);
+                else
+                    ToolTip.SetTip(row, "Hold for 1 second to " + (entry.IsCompleted ? "mark incomplete" : "complete") +
+                        (entry.IsCompleted ? " · " : " · Double-click to toggle In progress · ") + (deadline ?? entry.Timestamp.ToString("g")));
+                if (inProgress)
                 {
                     var statusBadge = TodoProgressBadge.Create(() => ToggleProgress(entry));
                     statusBadge.Margin = new Thickness(0, 9, 0, 0);
