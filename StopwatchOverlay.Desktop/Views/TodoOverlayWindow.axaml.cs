@@ -38,6 +38,7 @@ public partial class TodoOverlayWindow : Window
     private bool _closed;
     private DateTime _nextSyncUtc;
     private NoteEntry? _linkEntry;
+    private (string Bot, string Vault, string Chat) _linkContext;
     private string? _syncError;
     private Point _pressPoint;
     private PointerPressedEventArgs? _dragPress;
@@ -57,6 +58,14 @@ public partial class TodoOverlayWindow : Window
         WindowsTopmostGuard.Attach(this);
         OverlayScreenConstraint.Attach(this);
         _settings = settings;
+        LinkForm.SaveAction.Click += ConfirmLinkClicked;
+        LinkForm.CancelAction.Click += CancelLinkClicked;
+        LinkForm.Reference.TextChanged += (_, _) =>
+        {
+            if (_linkEntry == null || !LinkForm.IsVisible) return;
+            LinkForm.UpdateFeedback(_settings);
+            SizeLinkEditor();
+        };
         _reorderScrollTimer.Tick += (_, _) => AutoScrollCardDrag();
         TodoSortCombo.ItemsSource = new[] { "Priority", "Manual" };
         TodoSortCombo.SelectionChanged += (_, _) =>
@@ -107,6 +116,12 @@ public partial class TodoOverlayWindow : Window
         AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key == Key.Escape && _draggedEntry != null) { e.Handled = true; CancelDrag(); }
+            else if (LinkForm.IsVisible && e.Key == Key.Escape) { e.Handled = true; CloseLinkEditor(); }
+            else if (LinkForm.Reference.IsFocused && e.Key == Key.Enter && LinkForm.IsVisible)
+            {
+                e.Handled = true;
+                if (LinkForm.SaveAction.IsEnabled) ConfirmLinkClicked(this, e);
+            }
             else if (e.Key == Key.Escape && IsExpanded) { e.Handled = true; ToggleExpanded(); }
         }, RoutingStrategies.Tunnel);
         // Observe the press before Button consumes it, without stealing a normal click.
@@ -141,6 +156,8 @@ public partial class TodoOverlayWindow : Window
     public void ApplySettings()
     {
         CancelDrag();
+        if (_linkEntry != null && (!_settings.TelegramEnabled || IsNikaTodo != LinkForm.IsVisible || LinkContext() != _linkContext))
+            CloseLinkEditor();
         bool pirate = AppThemeCatalog.Normalize(_settings.ThemeMode) is AppThemeCatalog.Pirate or AppThemeCatalog.Nika;
         Classes.Set("pirate", pirate);
         SkullArtwork.IsVisible = pirate;
@@ -151,6 +168,7 @@ public partial class TodoOverlayWindow : Window
         ShowCompletedToggle.IsChecked = _settings.TodoOverlayShowCompleted;
         _nextSyncUtc = DateTime.MinValue;
         ReloadTodos();
+        if (LinkForm.IsVisible && _linkEntry != null) ConfigureLinkForm(_linkEntry);
     }
 
     public void ToggleExpanded()
@@ -605,20 +623,69 @@ public partial class TodoOverlayWindow : Window
     private void OpenLinkEditor(NoteEntry entry)
     {
         _linkEntry = entry;
-        LinkTaskText.Text = "Link Telegram message for: " + entry.Text;
-        TelegramMessageLink.Text = "";
+        _linkContext = LinkContext();
+        ErrorMessage.IsVisible = false;
         TodoContentGrid.RowDefinitions = new RowDefinitions("Auto,0,*,Auto,Auto,Auto");
         TodoScrollViewer.IsVisible = TodoOptionsRow.IsVisible = AddTodoButton.IsVisible = ShortcutHint.IsVisible = false;
         TelegramSyncStatus.IsVisible = false;
         TelegramLinkPanel.IsVisible = true;
-        TelegramMessageLink.Focus();
+        LegacyLinkForm.IsVisible = !IsNikaTodo;
+        LinkForm.IsVisible = IsNikaTodo;
+        if (IsNikaTodo)
+        {
+            LinkForm.Reference.Text = "";
+            ConfigureLinkForm(entry);
+            LinkForm.Reference.Focus();
+        }
+        else
+        {
+            LinkTaskText.Text = "Link Telegram message for: " + entry.Text;
+            TelegramMessageLink.Text = "";
+            TelegramMessageLink.Focus();
+        }
     }
+
+    private (string Bot, string Vault, string Chat) LinkContext() =>
+        (TelegramNotesSync.GetBotIdentity(_settings), TelegramNotesSync.GetTodoVaultKey(_settings),
+            TelegramNotesSync.ResolveDestination(_settings, NoteType.Todo).targetChatId);
+
+    private void ConfigureLinkForm(NoteEntry entry)
+    {
+        LinkForm.Configure(_settings, entry, _organization?.GetPriority(entry) ?? 3, TelegramNotesSync.GetTodoMessageLink(_settings, entry));
+        LinkForm.UpdateFeedback(_settings);
+        SizeLinkEditor();
+    }
+
+    private void SizeLinkEditor()
+    {
+        double zoom = AppUiScale.Normalize(_settings.UiScalePercent) / 100;
+        TodoRoot.Width = 382;
+        if ((TodoLayout.LayoutTransform as ScaleTransform)?.ScaleX != zoom)
+            TodoLayout.LayoutTransform = zoom == 1 ? null : new ScaleTransform(zoom, zoom);
+        TodoOutline.Margin = new Thickness(8 * zoom);
+        LinkForm.Measure(new Size(354, double.PositiveInfinity));
+        double height = Math.Ceiling((109 + LinkForm.DesiredSize.Height) * zoom);
+        if (Width != 400 * zoom || Height != height)
+        {
+            Width = 400 * zoom;
+            Height = height;
+            KeepOnScreen();
+        }
+    }
+
     private void ConfirmLinkClicked(object? sender, RoutedEventArgs e)
     {
         if (_linkEntry == null) return;
-        var result = TelegramNotesSync.LinkTodoMessage(_settings, _linkEntry, TelegramMessageLink.Text ?? "");
-        ErrorMessage.IsVisible = !result.Success;
-        if (!result.Success) { ShowError(result.ErrorMessage ?? "Could not save this message link."); return; }
+        var input = LinkForm.IsVisible ? LinkForm.Reference : TelegramMessageLink;
+        var result = TelegramNotesSync.LinkTodoMessage(_settings, _linkEntry, input.Text ?? "");
+        if (!result.Success)
+        {
+            string error = result.ErrorMessage ?? "Could not save this message link.";
+            if (LinkForm.IsVisible) { LinkForm.UpdateFeedback(_settings, error); SizeLinkEditor(); }
+            else ShowError(error);
+            return;
+        }
+        ErrorMessage.IsVisible = false;
         CloseLinkEditor();
         _nextSyncUtc = DateTime.MinValue;
         _snapshot = null;
@@ -629,6 +696,15 @@ public partial class TodoOverlayWindow : Window
     {
         TelegramLinkPanel.IsVisible = false;
         _linkEntry = null;
+        if (LinkForm.IsVisible)
+        {
+            LinkForm.IsVisible = false;
+            TodoLayout.LayoutTransform = null;
+            TodoRoot.Width = double.NaN;
+            TodoOutline.Margin = new Thickness(8);
+            if (IsExpanded) { Width = 400; Height = IsNikaTodo ? 560 : 500; }
+            KeepOnScreen();
+        }
         TodoContentGrid.RowDefinitions = new RowDefinitions("Auto,*,Auto,Auto,Auto,Auto");
         TodoScrollViewer.IsVisible = TodoOptionsRow.IsVisible = AddTodoButton.IsVisible = ShortcutHint.IsVisible = true;
         ShortcutHint.IsVisible = !IsNikaTodo;

@@ -404,14 +404,17 @@ if (args.Contains("--todo-checklist-native") || args.Contains("--todo-checklist-
     args.Contains("--todo-detail-editor-preview") || args.Contains("--todo-detail-editor-native") ||
     args.Contains("--todo-task-menu-native") || args.Contains("--todo-task-menu-preview") ||
     args.Contains("--todo-detail-menu-native") || args.Contains("--todo-detail-menu-preview") ||
-    args.Contains("--todo-priority-picker-native") || args.Contains("--todo-priority-picker-preview"))
+    args.Contains("--todo-priority-picker-native") || args.Contains("--todo-priority-picker-preview") ||
+    args.Contains("--todo-telegram-link-native") || args.Contains("--todo-telegram-link-preview"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    if (args.Contains("--todo-priority-picker-native") || args.Contains("--todo-priority-picker-preview"))
+    if (args.Contains("--todo-telegram-link-native") || args.Contains("--todo-telegram-link-preview"))
+        Check("Todo Telegram editor layout, validation and saved bindings", TodoTelegramLinkPreview.Run);
+    else if (args.Contains("--todo-priority-picker-native") || args.Contains("--todo-priority-picker-preview"))
         Check("Todo priority picker layout, keyboard and saved selection", TodoPriorityPickerPreview.Run);
     else if (args.Contains("--todo-detail-menu-native") || args.Contains("--todo-detail-menu-preview"))
         Check("Subtask and attached note menu layout and actions", TodoDetailMenuPreview.Run);

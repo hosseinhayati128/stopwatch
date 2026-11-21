@@ -140,7 +140,7 @@ public partial class TodoOverlayWindow
         TodoRoot.RowDefinitions = new RowDefinitions(compactHeader ? "64,*" : "72,*");
         OverlayHeader.ColumnDefinitions = new ColumnDefinitions(compactHeader ? "64,*" : "72,*");
         LauncherButton.Width = LauncherButton.Height = LauncherArtworkHost.Width = LauncherArtworkHost.Height = compactHeader ? 64 : 72;
-        TodoOutline.BorderThickness = expanded && IsNikaTodo ? new Thickness(1) : new Thickness(0);
+        TodoOutline.BorderThickness = expanded && IsNikaTodo ? new Thickness(LinkForm.IsVisible ? AppUiScale.Normalize(_settings.UiScalePercent) / 100 : 1) : default;
         TodoOutline.BorderBrush = TodoVisuals.Gold;
         TodoOutline.Background = expanded && IsNikaTodo ? TodoVisuals.Navy : Brushes.Transparent;
         TodoEmblem.Choice = IsNikaTodo && expanded ? TodoLook.HeaderEmblem : TodoLook.EffectiveLauncherEmblem;
@@ -205,6 +205,7 @@ public partial class TodoOverlayWindow
         double zoom = AppUiScale.Normalize(_settings.UiScalePercent) / 100;
         Resources["TaskMenuZoom"] = new ScaleTransform(zoom, zoom);
         Resources["TaskMenuOffset"] = (_settings.TodoAppearance.IsPixel ? 9 : 8) * zoom;
+        if (LinkForm.IsVisible) SizeLinkEditor();
     }
 
     private void UpdateTaskMenuAppearance()

@@ -97,9 +97,11 @@ internal static class TodoTaskMenuPreview
                             {
                                 commands[2].RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                                 var panel = overlay.FindControl<Border>("TelegramLinkPanel")!;
-                                Require(!menu.IsOpen && panel.IsVisible && overlay.FindControl<TextBlock>("LinkTaskText")!.Text!.Contains(((NoteEntry)row.Tag!).Text),
+                                var taskName = string.Concat(FormattedTodoText.Parse(((NoteEntry)row.Tag!).Text).Select(p => p.Text));
+                                Require(!menu.IsOpen && panel.IsVisible && panel.GetVisualDescendants().OfType<TextBlock>()
+                                    .Any(t => t.Name == "TaskName" && t.IsEffectivelyVisible && t.Text == taskName),
                                     "Telegram action failed to open the correct task");
-                                panel.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                panel.GetVisualDescendants().OfType<Button>().Single(b => b.IsEffectivelyVisible && Equals(b.Content, "Cancel")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             }
                         }
                     }

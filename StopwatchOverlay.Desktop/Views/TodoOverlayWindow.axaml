@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:art="using:StopwatchOverlay.Desktop.Controls"
+        xmlns:views="using:StopwatchOverlay.Desktop.Views"
         x:Class="StopwatchOverlay.Desktop.Views.TodoOverlayWindow"
         Title="Floating Todos" Width="88" Height="88"
         SystemDecorations="None" Background="Transparent"
@@ -36,7 +37,7 @@
             <Setter Property="BorderBrush" Value="#AD7834"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
-        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement, TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Style Selector="TextBox.legacyLink:focus /template/ Border#PART_BorderElement, TextBox.legacyLink:pointerover /template/ Border#PART_BorderElement">
             <Setter Property="Background" Value="{DynamicResource DialogSurfaceBrush}"/>
         </Style>
         <Style Selector="CheckBox.todoRow">
@@ -46,6 +47,7 @@
         </Style>
     </Window.Styles>
     <Border x:Name="TodoOutline" Margin="8" CornerRadius="10" ClipToBounds="True">
+    <LayoutTransformControl x:Name="TodoLayout">
     <Grid x:Name="TodoRoot" RowDefinitions="72,*">
         <Grid x:Name="OverlayHeader" ColumnDefinitions="72,*" Background="Transparent">
             <Button x:Name="LauncherButton" Classes="todoLauncher" Width="72" Height="72"
@@ -115,11 +117,12 @@
                 <StackPanel Grid.Row="2" Spacing="5">
                     <TextBlock x:Name="TelegramSyncStatus" TextWrapping="Wrap" FontSize="11" IsVisible="False" Margin="0,6,0,0"
                                Foreground="{DynamicResource SecondaryTextBrush}"/>
-                    <Border x:Name="TelegramLinkPanel" IsVisible="False" Padding="0,8,0,0">
-                        <StackPanel Spacing="6">
+                    <Border x:Name="TelegramLinkPanel" IsVisible="False">
+                        <Grid>
+                        <StackPanel x:Name="LegacyLinkForm" Spacing="6" Margin="0,8,0,0">
                             <TextBlock x:Name="LinkTaskText" TextWrapping="Wrap" MaxHeight="40" FontSize="12"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBox x:Name="TelegramMessageLink" Watermark="Telegram message link or ID" FontSize="12"
+                            <TextBox x:Name="TelegramMessageLink" Classes="legacyLink" Watermark="Telegram message link or ID" FontSize="12"
                                      Background="{DynamicResource DialogSurfaceBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
                                      CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                             <Grid ColumnDefinitions="*,8,*">
@@ -129,6 +132,8 @@
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="CancelLinkClicked"/>
                             </Grid>
                         </StackPanel>
+                        <views:TodoTelegramLinkEditor x:Name="LinkForm" IsVisible="False"/>
+                        </Grid>
                     </Border>
                 </StackPanel>
                 <TextBlock x:Name="ErrorMessage" Grid.Row="3" TextWrapping="Wrap" IsVisible="False"
@@ -148,5 +153,6 @@
         <art:TodoFrame x:Name="TodoShellTrim" Grid.RowSpan="2" IsVisible="False" IsHitTestVisible="False"
                        ZIndex="20" CornerRadius="9" BorderThickness="1" BorderBrush="#E6BA50" InnerBorderBrush="#F6D77A"/>
     </Grid>
+    </LayoutTransformControl>
     </Border>
 </Window>

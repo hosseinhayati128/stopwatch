@@ -65,6 +65,14 @@ public static partial class TelegramNotesSync
         var actual = ObsidianNotesSync.LoadAllNotes(settings.ObsidianVaultFolder, settings.NotesSubfolder).Where(item =>
             item.Type == NoteType.Todo && item.Text.Trim() == entry.Text.Trim() && item.Timestamp == entry.Timestamp).ToArray();
         if (actual.Length != 1) return new(false, "This todo changed or is duplicated. Refresh and try again.");
+        var target = ParseTodoMessageReference(settings, reference);
+        if (!target.Success) return target;
+        bool saved = TelegramOutboxStore.BindTodoMessage(actual[0], GetBotIdentity(settings), GetTodoVaultKey(settings), target.ChatId!, target.MessageId!.Value);
+        return saved ? new(true) : new(false, "This message is already linked to another task, or its link could not be saved.");
+    }
+
+    internal static TelegramSyncResult ParseTodoMessageReference(AppSettings settings, string reference)
+    {
         string chatId = ResolveDestination(settings, NoteType.Todo).targetChatId;
         string input = reference.Trim();
         int messageId;
@@ -82,8 +90,7 @@ public static partial class TelegramNotesSync
             if (!int.TryParse(parts[^1], out messageId)) return new(false, "The link must end with its message ID.");
         }
         if (messageId <= 0 || string.IsNullOrWhiteSpace(chatId)) return new(false, "Choose a Telegram destination in Settings, then enter a positive message ID.");
-        bool saved = TelegramOutboxStore.BindTodoMessage(actual[0], GetBotIdentity(settings), GetTodoVaultKey(settings), chatId, messageId);
-        return saved ? new(true) : new(false, "This message is already linked to another task, or its link could not be saved.");
+        return new(true, MessageId: messageId, ChatId: chatId);
     }
 
     /// <summary>Use Markdown as the completion source; edit linked bot messages without sending replacement messages.</summary>

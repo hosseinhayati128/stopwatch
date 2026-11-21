@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Views.TodoTelegramLinkEditor"
+             xmlns:todo="using:StopwatchOverlay.Desktop.Controls"
+             FontFamily="{x:Static todo:TodoVisuals.BodyFont}" Foreground="{DynamicResource PrimaryTextBrush}">
+  <StackPanel>
+    <TextBlock x:Name="Title" FontFamily="{x:Static todo:TodoVisuals.HeadingFont}" FontSize="25"
+               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,12"/>
+    <todo:TodoFrame x:Name="TaskFrame" BorderBrush="{x:Static todo:TodoVisuals.Brass}"
+                    BorderThickness="1" CornerRadius="6" Padding="11,9">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,10,*">
+          <Button x:Name="Rank" Focusable="False" IsHitTestVisible="False"/>
+          <StackPanel Grid.Column="2" Spacing="2">
+            <TextBlock Text="Task" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <TextBlock x:Name="TaskName" FontWeight="Bold" FontSize="16" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+        </Grid>
+        <Grid x:Name="BindingRow" RowDefinitions="1,Auto" ColumnDefinitions="Auto,*" Margin="0,8,0,0">
+          <Border Grid.ColumnSpan="2" Background="#D4BB8A"/>
+          <TextBlock Grid.Row="1" Text="Current link" FontSize="13" Margin="0,7,8,0" Foreground="{DynamicResource SecondaryTextBrush}"/>
+          <TextBlock Grid.Row="1" Grid.Column="1" x:Name="CurrentLink" FontSize="13" FontWeight="SemiBold"
+                     HorizontalAlignment="Right" Margin="0,7,0,0" TextTrimming="CharacterEllipsis"/>
+        </Grid>
+      </StackPanel>
+    </todo:TodoFrame>
+    <TextBlock x:Name="FieldLabel" FontWeight="SemiBold" FontSize="15" Margin="0,16,0,6"/>
+    <todo:TodoFrame x:Name="InputFrame" CornerRadius="5" BorderThickness="1.5">
+      <TextBox x:Name="Reference" FontSize="15" MinHeight="39" Padding="10,5" VerticalContentAlignment="Center"
+               AutomationProperties.LabeledBy="{Binding #FieldLabel}" AutomationProperties.HelpText="{Binding #Hint.Text}" FocusAdorner="{x:Null}"
+               Watermark="Paste a link or enter an ID" BorderThickness="0" Background="Transparent"
+               Foreground="{DynamicResource PrimaryTextBrush}" CaretBrush="{DynamicResource PrimaryTextBrush}"/>
+    </todo:TodoFrame>
+    <TextBlock x:Name="Hint" FontSize="13" Margin="1,6,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+    <Grid ColumnDefinitions="*,10,1.55*" Margin="0,17,0,0">
+      <Button x:Name="CancelAction" Content="Cancel" MinHeight="38" HorizontalAlignment="Stretch" FontSize="15"/>
+      <Button x:Name="SaveAction" Grid.Column="2" MinHeight="38" HorizontalAlignment="Stretch" FontSize="17">
+        <Button.Styles>
+          <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource LinkDisabledInk}"/>
+          </Style>
+        </Button.Styles>
+      </Button>
+    </Grid>
+  </StackPanel>
+</UserControl>
