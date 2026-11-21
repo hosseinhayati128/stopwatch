@@ -248,7 +248,7 @@ public partial class TodoOverlayWindow
         {
             item.Theme = itemTheme;
             string icon = item.Header switch {
-                "Edit task" => "TaskMenuEditIcon", "Add" => "TaskMenuAddIcon", "Note" => "TaskMenuNoteIcon",
+                "Edit task" or "Edit note" or "Edit subtask" => "TaskMenuEditIcon", "Add" => "TaskMenuAddIcon", "Note" => "TaskMenuNoteIcon",
                 "Subtask" => "TaskMenuSubtaskIcon", "Delete" => "TaskMenuDeleteIcon", "Link" => "TaskMenuLinkIcon",
                 "Relink" => "TaskMenuRelinkIcon", _ => "TaskMenuOpenIcon"
             };

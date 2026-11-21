@@ -24,6 +24,9 @@
         </LayoutTransformControl>
       </ControlTemplate>
     </Setter>
+    <Style Selector="^.todoDetailMenu /template/ todo|TodoFrame">
+      <Setter Property="MaxWidth" Value="292"/>
+    </Style>
   </ControlTheme>
   <ControlTheme x:Key="TodoTaskMenuItem" TargetType="MenuItem">
     <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
@@ -34,7 +37,7 @@
       <ControlTemplate>
         <Grid>
           <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource TaskMenuRowRadius}" Padding="10,0">
-            <Grid ColumnDefinitions="18,10,*,12" Height="34">
+            <Grid Name="ActionRow" ColumnDefinitions="18,10,*,12" Height="34">
               <Canvas Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Path Data="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}" Stroke="{TemplateBinding Foreground}"
                       StrokeThickness="{DynamicResource TaskMenuStroke}" StrokeLineCap="{DynamicResource TaskMenuCap}" StrokeJoin="{DynamicResource TaskMenuJoin}"/>
@@ -61,6 +64,15 @@
         </Grid>
       </ControlTemplate>
     </Setter>
+    <Style Selector="^.detailLink /template/ Grid#ActionRow">
+      <Setter Property="Height" Value="NaN"/>
+      <Setter Property="MinHeight" Value="34"/>
+    </Style>
+    <Style Selector="^.detailLink /template/ TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="TextTrimming" Value="None"/>
+      <Setter Property="Margin" Value="0,6"/>
+    </Style>
     <Style Selector="^.destructive"><Setter Property="Foreground" Value="{DynamicResource TaskMenuDanger}"/></Style>
     <Style Selector="^:selected, ^:pointerover"><Setter Property="Background" Value="{DynamicResource TaskMenuHover}"/></Style>
     <Style Selector="^:open">

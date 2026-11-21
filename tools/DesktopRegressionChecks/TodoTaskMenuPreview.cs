@@ -105,7 +105,7 @@ internal static class TodoTaskMenuPreview
                     }
                     finally { menu.Close(); }
                 }
-                Comparison(scale);
+                Comparison(Output, scale, States, ["Telegram off", "Telegram on · Unlinked task", "Telegram on · Linked task"]);
             }
             VerifyMenuActions(overlay, settings, unlinked);
         }
@@ -206,11 +206,12 @@ internal static class TodoTaskMenuPreview
         capture.Save(path);
     }
 
-    static void Comparison(int scale)
+    internal static void Comparison(string directory, int scale, string[] states, string[] labels)
     {
         const int gutter = 24, top = 52, labelHeight = 28;
-        var sizes = States.Select(state => Profiles.Select(profile => {
-            using var image = new Bitmap(FileName(profile, state, scale));
+        string Sample(string profile, string state) => Path.Combine(directory, $"{profile}-{state}-{scale}.png");
+        var sizes = states.Select(state => Profiles.Select(profile => {
+            using var image = new Bitmap(Sample(profile, state));
             return image.PixelSize;
         }).ToArray()).ToArray();
         int column = sizes.SelectMany(row => row).Max(size => size.Width) + gutter;
@@ -226,17 +227,16 @@ internal static class TodoTaskMenuPreview
                 int x = gutter + p * column;
                 Label((p == 0 ? "Classic" : "Pixel") + $"  ·  {scale}%", x + 6, 15, 21, TodoVisuals.Ivory);
                 int y = top;
-                for (int i = 0; i < States.Length; i++)
+                for (int i = 0; i < states.Length; i++)
                 {
-                    string state = new[] { "Telegram off", "Telegram on · Unlinked task", "Telegram on · Linked task" }[i];
-                    Label(state, x + 6, y + 2, 15, Brush.Parse("#CAD6D6"));
-                    using var image = new Bitmap(FileName(Profiles[p], States[i], scale));
+                    Label(labels[i], x + 6, y + 2, 15, Brush.Parse("#CAD6D6"));
+                    using var image = new Bitmap(Sample(Profiles[p], states[i]));
                     dc.DrawImage(image, new Rect(new Point(x, y + labelHeight), image.Size));
                     y += sizes[i].Max(s => s.Height) + labelHeight + gutter;
                 }
             }
         }
-        board.Save(Path.Combine(Output, $"menus-{scale}.png"));
+        board.Save(Path.Combine(directory, $"menus-{scale}.png"));
     }
 
     static string FileName(string profile, string state, int scale) => Path.Combine(Output, $"{profile}-{state}-{scale}.png");

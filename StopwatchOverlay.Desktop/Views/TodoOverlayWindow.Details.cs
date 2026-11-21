@@ -56,7 +56,7 @@ public partial class TodoOverlayWindow
         {
             var text = TodoRichText.Create(detail.Text, entry.IsCompleted || detail.IsCompleted);
             text.MaxWidth = 205;
-            var menu = new ContextMenu();
+            var menu = text.ContextMenu ?? new ContextMenu();
             var edit = new MenuItem { Header = detail.Kind == TodoDetailKind.Note ? "Edit note" : "Edit subtask" };
             edit.Click += async (_, e) => { e.Handled = true; menu.Close(); if (ContextCurrent()) await EditDetailAsync(entry, detail.Kind, detail); else DetailConflict(); };
             var delete = new MenuItem { Header = "Delete" };
@@ -85,7 +85,16 @@ public partial class TodoOverlayWindow
                 catch (Exception ex) { CrashLogger.LogRecoverable(ex, "TodoOverlayWindow.DeleteDetail"); if (!_closed) ShowError("Could not delete this detail. Refresh and try again."); }
                 finally { _deleteDialog = null; _deleteInProgress = false; if (!_closed) { _snapshot = null; ReloadTodos(); } }
             };
-            menu.Items.Add(edit); menu.Items.Add(delete); TrackTaskMenu(menu);
+            if (IsNikaTodo)
+            {
+                menu.Classes.Add("todoDetailMenu");
+                foreach (var link in menu.Items.OfType<MenuItem>()) link.Classes.Add("detailLink");
+                menu.Items.Add(new Separator());
+                menu.Items.Add(delete);
+            }
+            else menu.Items.Insert(0, delete);
+            menu.Items.Insert(0, edit);
+            TrackTaskMenu(menu, taskActions: true);
             Control control;
             if (detail.Kind == TodoDetailKind.Subtask)
             {
@@ -121,11 +130,6 @@ public partial class TodoOverlayWindow
             else
             {
                 control = new Border { Child = text, Padding = new Thickness(8, 3), BorderThickness = new Thickness(2, 0, 0, 0), BorderBrush = PriorityBrush(4) };
-            }
-            // Preserve the rich text's link actions alongside detail actions.
-            if (text.ContextMenu != null)
-            {
-                foreach (var item in text.ContextMenu.Items.Cast<object>().ToArray()) { text.ContextMenu.Items.Remove(item); menu.Items.Add(item); }
             }
             text.ContextMenu = menu; control.ContextMenu = menu;
             details.Children.Add(control);
