@@ -15,9 +15,12 @@ internal static class TodoDetailMenuPreview
     const string LinkLabel = "Print studio checklist for fold marks, bleed and final trim sizes";
     static readonly string[] States = ["open-subtask", "completed-subtask", "linked-note"];
 
-    internal static void Run()
+    internal static void Run() => RunSamples(Output, "menus", Render);
+
+    internal static void RunSamples(string output, string fileStem, Action<TodoOverlayWindow, TodoFrame, Control, string, string, int> render,
+        Action<TodoOverlayWindow, AppSettings>? afterSamples = null)
     {
-        Directory.CreateDirectory(Output);
+        Directory.CreateDirectory(output);
         var vault = Directory.CreateTempSubdirectory("stopwatch-detail-menu-");
         var settings = new AppSettings {
             ThemeMode = AppThemeCatalog.Nika, TelegramEnabled = false, HabiticaEnabled = false,
@@ -61,10 +64,11 @@ internal static class TodoDetailMenuPreview
                     var child = ((StackPanel)detail.Child!).Children.Single();
                     if (state != "linked-note")
                         Require(child.GetVisualDescendants().OfType<HoldToCompleteCheckBox>().Single().IsChecked == (state == "completed-subtask"), "Wrong checkbox state");
-                    Render(overlay, detail, child, profile, state, scale);
+                    render(overlay, detail, child, profile, state, scale);
                 }
-                TodoTaskMenuPreview.Comparison(Output, scale, States, ["Open subtask", "Completed subtask", "Attached note · long link"]);
+                TodoTaskMenuPreview.Comparison(output, scale, States, ["Open subtask", "Completed subtask", "Attached note · long link"], fileStem);
             }
+            afterSamples?.Invoke(overlay, settings);
         }
         finally { overlay?.Close(); vault.Delete(true); }
     }

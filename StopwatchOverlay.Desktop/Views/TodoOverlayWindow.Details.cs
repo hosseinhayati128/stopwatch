@@ -56,7 +56,8 @@ public partial class TodoOverlayWindow
         {
             var text = TodoRichText.Create(detail.Text, entry.IsCompleted || detail.IsCompleted);
             text.MaxWidth = 205;
-            var menu = text.ContextMenu ?? new ContextMenu();
+            var linkMenu = text.ContextMenu;
+            var menu = linkMenu ?? new ContextMenu();
             var edit = new MenuItem { Header = detail.Kind == TodoDetailKind.Note ? "Edit note" : "Edit subtask" };
             edit.Click += async (_, e) => { e.Handled = true; menu.Close(); if (ContextCurrent()) await EditDetailAsync(entry, detail.Kind, detail); else DetailConflict(); };
             var delete = new MenuItem { Header = "Delete" };
@@ -101,7 +102,8 @@ public partial class TodoOverlayWindow
                 text.Margin = new Thickness(7, 0, 0, 0);
                 var checkbox = new HoldToCompleteCheckBox { Name = "SubtaskCheckBox", Content = text, IsChecked = detail.IsCompleted, IsEnabled = !_deleteInProgress };
                 checkbox.Classes.Add("todoRow");
-                ToolTip.SetTip(checkbox, "Hold for 1 second to " + (detail.IsCompleted ? "mark incomplete" : "complete"));
+                if (IsNikaTodo) TodoTaskHoverHint.AttachSubtask(checkbox, _settings);
+                else ToolTip.SetTip(checkbox, "Hold for 1 second to " + (detail.IsCompleted ? "mark incomplete" : "complete"));
                 checkbox.IsCheckedChanged += (_, _) =>
                 {
                     if (ContextCurrent()) ChangeDetail(entry, detail, detail.Text, checkbox.IsChecked == true);
@@ -129,6 +131,7 @@ public partial class TodoOverlayWindow
             }
             else
             {
+                if (IsNikaTodo) TodoTaskHoverHint.AttachNote(text, _settings, hasLinks: linkMenu != null);
                 control = new Border { Child = text, Padding = new Thickness(8, 3), BorderThickness = new Thickness(2, 0, 0, 0), BorderBrush = PriorityBrush(4) };
             }
             text.ContextMenu = menu; control.ContextMenu = menu;

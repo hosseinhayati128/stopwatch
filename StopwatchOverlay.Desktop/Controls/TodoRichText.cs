@@ -46,7 +46,9 @@ public static class TodoRichText
             text.PointerPressed += (_, e) =>
             {
                 if (!e.GetCurrentPoint(text).Properties.IsLeftButtonPressed) return;
-                int position = text.TextLayout.HitTestPoint(e.GetPosition(text)).TextPosition;
+                var hit = text.TextLayout.HitTestPoint(e.GetPosition(text));
+                if (!hit.IsInside) return;
+                int position = hit.CharacterHit.FirstCharacterIndex;
                 foreach (var link in links)
                     if (position >= link.Start && position < link.End)
                     {
