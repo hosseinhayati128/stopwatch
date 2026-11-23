@@ -1,0 +1,90 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="Border#CountdownPanel">
+        <Setter Property="Margin" Value="0,0,0,16"/><Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="16,12"/>
+    </Style>
+    <Style Selector="Grid.countdownHeader"><Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,0,10"/></Style>
+    <Style Selector="StackPanel.countdownModes"><Setter Property="Spacing" Value="16"/></Style>
+    <Style Selector="StackPanel.countdownEntry, WrapPanel#CountdownPresets"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+    <Style Selector="controls|TodoFrame.countdownField"><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+    <Style Selector="controls|TodoFrame.countdownField NumericUpDown"><Setter Property="Width" Value="84"/></Style>
+    <Style Selector="controls|TodoFrame.countdownField TextBox#SmartCountdownInputBox"><Setter Property="Width" Value="200"/></Style>
+    <Style Selector="Button.countdownPreset"><Setter Property="Padding" Value="8,4"/><Setter Property="Margin" Value="0,0,6,0"/></Style>
+    <Style Selector="TextBlock#CountdownInputError"><Setter Property="Foreground" Value="{DynamicResource DangerTextBrush}"/></Style>
+
+    <Style Selector="Window.nika Border#CountdownPanel">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Window.nika controls|TodoFrame#CountdownCard">
+        <Setter Property="Pixel" Value="{DynamicResource ControllerPixel}"/><Setter Property="Background" Value="#092A3B"/>
+        <Setter Property="BorderBrush" Value="#496572"/><Setter Property="BorderThickness" Value="1.5"/><Setter Property="CornerRadius" Value="9"/>
+    </Style>
+    <Style Selector="Window.nika ThemeVariantScope.countdownTheme">
+        <Setter Property="RequestedThemeVariant" Value="Dark"/><Setter Property="TextElement.FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/>
+    </Style>
+    <Style Selector="Window.nika Grid.countdownHeader"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Margin" Value="18,9"/></Style>
+    <Style Selector="Window.nika StackPanel.countdownModes"><Setter Property="Spacing" Value="4"/></Style>
+    <Style Selector="Window.nika StackPanel.countdownBody"><Setter Property="Margin" Value="19,11,19,14"/></Style>
+    <Style Selector="Window.nika StackPanel.countdownEntry, Window.nika WrapPanel#CountdownPresets"><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+    <Style Selector="Window.nika TextBlock.countdownTitle">
+        <Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="31"/><Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="#FFF0D3"/><Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Window.pixelController TextBlock.countdownTitle"><Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontSize" Value="27"/></Style>
+    <Style Selector="Window.nika TextBlock.countdownLabel"><Setter Property="Foreground" Value="#B7CED4"/><Setter Property="FontSize" Value="20"/></Style>
+    <Style Selector="Window.nika TextBlock#CountdownInputError"><Setter Property="Foreground" Value="#FFADA3"/><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="Medium"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame.countdownField">
+        <Setter Property="Pixel" Value="{DynamicResource ControllerPixel}"/><Setter Property="Background" Value="#071F2C"/>
+        <Setter Property="BorderBrush" Value="#658896"/><Setter Property="BorderThickness" Value="1.5"/><Setter Property="CornerRadius" Value="5"/>
+    </Style>
+    <Style Selector="Window.nika controls|TodoFrame.countdownField:focus-within"><Setter Property="BorderBrush" Value="#EBC783"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame.countdownField.invalid, Window.nika StackPanel.invalid controls|TodoFrame.countdownField"><Setter Property="BorderBrush" Value="#FFADA3"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame.countdownField NumericUpDown">
+        <Setter Property="Width" Value="98"/><Setter Property="ShowButtonSpinner" Value="False"/>
+        <Setter Property="Height" Value="43"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="#FFF0D3"/><Setter Property="Padding" Value="12,1"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Cascadia Mono"/>
+    </Style>
+    <Style Selector="Window.nika controls|TodoFrame.countdownField TextBox#SmartCountdownInputBox">
+        <Setter Property="Width" Value="NaN"/><Setter Property="MinWidth" Value="174"/><Setter Property="MaxWidth" Value="300"/>
+        <Setter Property="Height" Value="43"/><Setter Property="Padding" Value="12,1"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Foreground" Value="#FFF0D3"/>
+        <Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Cascadia Mono"/>
+    </Style>
+    <Style Selector="TextBlock.countdownTime"><Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Cascadia Mono"/></Style>
+    <Style Selector="controls|ControllerPixelDigits.countdownDigits, Window.pixelController TextBlock.countdownTime"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.pixelController controls|ControllerPixelDigits.countdownDigits"><Setter Property="IsVisible" Value="True"/></Style>
+    <Style Selector="Window.nika :is(Button).countdownChoice">
+        <Setter Property="Foreground" Value="#B7CED4"/><Setter Property="Background" Value="#0C2838"/><Setter Property="BorderBrush" Value="#42606D"/>
+        <Setter Property="Height" Value="40"/><Setter Property="Padding" Value="14,0"/>
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontSize" Value="21"/><Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="ChoiceFrame" Pixel="{DynamicResource ControllerPixel}" CornerRadius="6" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1.5" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontWeight="{TemplateBinding FontWeight}"
+                                      FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika Button.countdownPreset">
+        <Setter Property="MinWidth" Value="66"/><Setter Property="Height" Value="38"/><Setter Property="Padding" Value="9,0"/><Setter Property="FontSize" Value="20"/><Setter Property="Background" Value="#113342"/>
+    </Style>
+    <Style Selector="Window.nika RadioButton.countdownChoice:checked">
+        <Setter Property="Foreground" Value="#FFF0D3"/><Setter Property="Background" Value="#254B55"/><Setter Property="BorderBrush" Value="#78B5AB"/><Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Window.nika Button.countdownPreset.selected">
+        <Setter Property="Background" Value="#EBC783"/><Setter Property="BorderBrush" Value="#EBC783"/><Setter Property="Foreground" Value="#122C38"/><Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Window.nika :is(Button).countdownChoice:pointerover /template/ controls|TodoFrame#ChoiceFrame"><Setter Property="BorderBrush" Value="#A5E1CB"/></Style>
+    <Style Selector="Window.nika :is(Button).countdownChoice:focus-visible /template/ controls|TodoFrame#ChoiceFrame"><Setter Property="InnerBorderBrush" Value="#F9D690"/></Style>
+    <Style Selector="Window.nika Button.countdownPreset.selected:focus-visible /template/ controls|TodoFrame#ChoiceFrame"><Setter Property="InnerBorderBrush" Value="#4D3C21"/></Style>
+    <Style Selector="Window.nika :is(Button).countdownChoice:pressed /template/ controls|TodoFrame#ChoiceFrame"><Setter Property="Opacity" Value="0.8"/></Style>
+    <Style Selector="Window.nika :is(Button).countdownChoice:disabled /template/ controls|TodoFrame#ChoiceFrame"><Setter Property="Opacity" Value="0.55"/></Style>
+</Styles>

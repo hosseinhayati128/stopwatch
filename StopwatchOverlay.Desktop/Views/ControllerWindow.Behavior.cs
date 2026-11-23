@@ -128,6 +128,7 @@ public partial class ControllerWindow
         CountdownDurationRadio.IsChecked = !timer.UseClockTarget;
         CountdownUntilRadio.IsChecked = timer.UseClockTarget;
         SmartCountdownInputBox.IsVisible = textInput;
+        CountdownTextLabel.Text = timer.UseClockTarget ? "Clock time (24h)" : "Duration";
         SmartCountdownInputBox.Watermark = timer.UseClockTarget ? "e.g. 14:30" : "e.g. 5m 30s";
         SmartCountdownInputBox.IsEnabled = CountdownDurationPanel.IsEnabled = !timer.IsRunning;
         CountdownDurationRadio.IsEnabled = CountdownUntilRadio.IsEnabled = !timer.IsRunning;
@@ -135,7 +136,12 @@ public partial class ControllerWindow
         if (SmartCountdownInputBox.Text != input) SmartCountdownInputBox.Text = input;
         if (int.TryParse(timer.CountdownMinutesText, out int minutes)) CountdownMinutesBox.Value = Math.Clamp(minutes, 0, 999);
         if (int.TryParse(timer.CountdownSecondsText, out int seconds)) CountdownSecondsBox.Value = Math.Clamp(seconds, 0, 59);
-        CountdownInputError.IsVisible = !timer.IsRunning && _countdownErrorTimer == timer.Id;
+        if (!Classes.Contains("nika"))
+        {
+            CountdownInputError.IsVisible = !timer.IsRunning && _countdownErrorTimer == timer.Id;
+            CountdownPresets.IsVisible = true;
+            CountdownPresets.IsEnabled = !timer.IsRunning;
+        }
     }
 
     private void SmartCountdownInput_TextChanging(object? sender, TextChangingEventArgs e)
@@ -144,9 +150,15 @@ public partial class ControllerWindow
         string value = SmartCountdownInputBox.Text ?? "";
         if (value == timer.SmartInputText) return;
         timer.SmartInputText = value;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            if (timer.UseClockTarget) timer.ClockTargetHoursText = "";
+            else timer.CountdownDuration = TimeSpan.Zero;
+        }
         timer.CountdownInitialized = false;
         timer.CountdownRemaining = TimeSpan.Zero;
         ClearCountdownError(timer);
+        UpdateActiveTimerDisplay();
     }
 
     private void CountdownDuration_ValueChanged(object? sender, NumericUpDownValueChangedEventArgs e)
@@ -159,6 +171,7 @@ public partial class ControllerWindow
         timer.CountdownRemaining = timer.CountdownDuration;
         timer.CountdownInitialized = false;
         ClearCountdownError(timer);
+        UpdateActiveTimerDisplay();
     }
 
     private static string CountdownInput(TimerSession timer)
@@ -171,46 +184,49 @@ public partial class ControllerWindow
         return timer.SmartInputText;
     }
 
-    private bool PrepareCountdown(TimerSession timer, DateTime nowUtc)
+    private static ParseResult ParseCountdownInput(string input, bool until, DateTime now)
+    {
+        try
+        {
+            var result = CountdownParser.Parse(input, now);
+            return until && !result.Target.HasValue ? CountdownParser.Parse("until " + input, now) : result;
+        }
+        catch (Exception error) when (error is ArgumentOutOfRangeException or OverflowException or FormatException)
+        {
+            return ParseResult.Fail("Enter a valid duration or time.");
+        }
+    }
+
+    private ParseResult ResolveCountdown(TimerSession timer, DateTime now)
     {
         // Older desktop saves may have remaining time without the initialization flag.
         if (timer.CountdownRemaining > TimeSpan.Zero)
         {
-            if (timer.UseClockTarget)
-            {
-                DateTime now = nowUtc.ToLocalTime();
-                if (timer.CountdownRemaining > DateTime.MaxValue - now)
-                    return ShowCountdownError(timer, "Enter a valid target clock time.");
-                timer.ClockTarget = now + timer.CountdownRemaining;
-            }
-            timer.CountdownInitialized = true;
-            ClearCountdownError(timer);
-            return true;
+            if (timer.CountdownRemaining > DateTime.MaxValue - now) return ParseResult.Fail("Enter a shorter duration.");
+            if (!timer.UseClockTarget) return ParseResult.FromDuration(timer.CountdownRemaining);
+            return ParseResult.FromTarget(timer.IsRunning && timer.ClockTarget != default ? timer.ClockTarget : now + timer.CountdownRemaining);
         }
-        TimeSpan duration = timer.CountdownDuration;
-        DateTime? clockTarget = null;
-        try
-        {
-            string input = CountdownInput(timer).Trim();
-            if ((_settings.UseSmartCountdownInput || timer.UseClockTarget) && input.Length > 0)
-            {
-                DateTime now = nowUtc.ToLocalTime();
-                var result = CountdownParser.Parse(input, now);
-                if (timer.UseClockTarget && result.Target == null) result = CountdownParser.Parse("until " + input, now);
-                if (!result.Success) return ShowCountdownError(timer, result.Error ?? "Enter a duration or time.");
-                clockTarget = result.Target;
-                duration = clockTarget is { } target ? target - now : result.Duration!.Value;
-            }
-            else if (timer.UseClockTarget) return ShowCountdownError(timer, "Enter the target clock time.");
-        }
-        catch (Exception error) when (error is ArgumentOutOfRangeException or OverflowException or FormatException)
-        {
-            return ShowCountdownError(timer, "Enter a valid duration or time.");
-        }
-        if (duration <= TimeSpan.Zero) return ShowCountdownError(timer, "Enter a positive duration or a future time.");
-        timer.CountdownDuration = timer.CountdownRemaining = duration;
-        timer.UseClockTarget = clockTarget.HasValue;
-        timer.ClockTarget = clockTarget.GetValueOrDefault();
+        string input = CountdownInput(timer).Trim();
+        var result = ParseResult.FromDuration(timer.CountdownDuration);
+        if ((_settings.UseSmartCountdownInput || timer.UseClockTarget) && input.Length > 0)
+            result = ParseCountdownInput(input, timer.UseClockTarget, now);
+        else if (timer.UseClockTarget) return ParseResult.Fail("Enter the target clock time.");
+        if (!result.Success) return result;
+        var duration = result.Duration ?? result.Target!.Value - now;
+        if (duration <= TimeSpan.Zero) return ParseResult.Fail("Enter a positive duration or a future time.");
+        return duration > DateTime.MaxValue - now ? ParseResult.Fail("Enter a shorter duration.") : result;
+    }
+
+    private bool PrepareCountdown(TimerSession timer, DateTime nowUtc)
+    {
+        var now = nowUtc.ToLocalTime();
+        var result = ResolveCountdown(timer, now);
+        if (!result.Success) return ShowCountdownError(timer, result.Error!);
+        var remaining = result.Duration ?? result.Target!.Value - now;
+        if (timer.CountdownRemaining <= TimeSpan.Zero) timer.CountdownDuration = remaining;
+        timer.CountdownRemaining = remaining;
+        timer.UseClockTarget = result.Target.HasValue;
+        timer.ClockTarget = result.Target.GetValueOrDefault();
         timer.CountdownInitialized = true;
         ClearCountdownError(timer);
         return true;

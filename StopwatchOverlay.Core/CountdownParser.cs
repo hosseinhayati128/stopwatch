@@ -172,8 +172,9 @@ namespace StopwatchOverlay
                 }
             }
 
-            if (hour > 23 || minute > 59 || second > 59)
-                return ParseResult.Fail("Invalid time.");
+            if (hour > 23) return ParseResult.Fail("Hours must be 00–23.");
+            if (minute > 59) return ParseResult.Fail("Minutes must be 00–59.");
+            if (second > 59) return ParseResult.Fail("Seconds must be 00–59.");
 
             s = Regex.Replace(s, @"\s+", " ").Trim();
 

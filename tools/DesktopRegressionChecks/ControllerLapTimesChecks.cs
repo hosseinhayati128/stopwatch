@@ -2,8 +2,8 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media;
-using Avalonia.Media.Imaging;
+using static ControllerSizingChecks;
+
 using Avalonia.VisualTree;
 using StopwatchOverlay;
 using StopwatchOverlay.Desktop.Controls;
@@ -81,8 +81,8 @@ internal static class ControllerLapTimesChecks
                 string name = $"{(pixel ? "pixel" : "classic")}-{state}-{scale}";
                 var area = Bounds(card,window);
                 Need(new Rect(window.ClientSize).Inflate(1).Contains(area),"Lap card outside controller.");
-                Capture(window,area.Inflate(5),name);
-                if(count == 3) Capture(window,new Rect(window.ClientSize),name+"-controller");
+                Capture(window,area.Inflate(5),name,Output);
+                if(count == 3) Capture(window,new Rect(window.ClientSize),name+"-controller",Output);
             }
             var rail = window.FindControl<ListBox>("TimerRailList")!;
             rail.SelectedIndex = 0; ClockOverlayChecks.Pump(45);
@@ -98,23 +98,6 @@ internal static class ControllerLapTimesChecks
             Console.WriteLine($"PASS {(pixel ? "Pixel" : "Classic")} {scale}%: Add lap, empty, fractional splits, 24-lap scrolling, switch, legacy text, reset.");
         }
         finally { window.Close(); DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
-    }
-
-    private static Rect Bounds(Control control, Window window) => new(control.TranslatePoint(default,window)!.Value,
-        control.TranslatePoint(new Point(control.Bounds.Width,control.Bounds.Height),window)!.Value);
-
-    private static void Capture(ControllerWindow window, Rect region, string name)
-    {
-        var frame = window.FindControl<Grid>("ControllerFrame")!;
-        double zoom = window.RenderScaling;
-        using var image = new RenderTargetBitmap(PixelSize.FromSize(region.Size,zoom), new Vector(96*zoom,96*zoom));
-        using(var dc = image.CreateDrawingContext())
-        {
-            dc.DrawRectangle(window.Background,null,new Rect(region.Size));
-            dc.DrawRectangle(new VisualBrush(frame){ Stretch=Stretch.Fill, SourceRect=new RelativeRect(frame.Bounds,RelativeUnit.Absolute) },
-                null,Bounds(frame,window).Translate(new Vector(-region.X,-region.Y)));
-        }
-        image.Save(Path.Combine(Output,name+".png"));
     }
 
     private static void Need(bool ok, string message) { if(!ok) throw new InvalidOperationException(message); }

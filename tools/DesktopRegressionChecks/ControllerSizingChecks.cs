@@ -80,6 +80,23 @@ internal static class ControllerSizingChecks
         if(failures.Count!=0)throw new Exception(string.Join(Environment.NewLine,failures));
         Console.WriteLine($"Controller panel fills native window in {evidence.Count} launch/resize/maximize/restore/scale states at 70/90/125%; captures: {Output}.");
     }
+    internal static Rect Bounds(Control control, Window window) => new(control.TranslatePoint(default,window)!.Value,
+        control.TranslatePoint(new Point(control.Bounds.Width,control.Bounds.Height),window)!.Value);
+
+    internal static void Capture(ControllerWindow window, Rect region, string name, string output)
+    {
+        var frame = window.FindControl<Grid>("ControllerFrame")!;
+        double zoom = window.RenderScaling;
+        using var image = new RenderTargetBitmap(PixelSize.FromSize(region.Size,zoom), new Vector(96*zoom,96*zoom));
+        using(var dc = image.CreateDrawingContext())
+        {
+            dc.DrawRectangle(window.Background,null,new Rect(region.Size));
+            dc.DrawRectangle(new VisualBrush(frame){ Stretch=Stretch.Fill, SourceRect=new RelativeRect(frame.Bounds,RelativeUnit.Absolute) },
+                null,Bounds(frame,window).Translate(new Vector(-region.X,-region.Y)));
+        }
+        image.Save(Path.Combine(output,name+".png"));
+    }
+
     internal static void Capture(ControllerWindow window,string name,string output=Output)
     {
         var frame=window.FindControl<Grid>("ControllerFrame")!;

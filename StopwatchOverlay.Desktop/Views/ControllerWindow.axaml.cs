@@ -681,16 +681,24 @@ public partial class ControllerWindow : Window
         }
 
         UpdateOverlayStates();
-        UpdateActiveTimerDisplay();
+        UpdateActiveTimerDisplayAt(now);
         UpdateLiveRail(now);
         UpdateInternetTimerState();
     }
 
-    private void UpdateActiveTimerDisplay()
+    private void UpdateActiveTimerDisplay() => UpdateActiveTimerDisplayAt(DateTime.UtcNow);
+
+    private void UpdateActiveTimerDisplayAt(DateTime nowUtc)
     {
         var session = CurrentTimer;
         if (_openTimerActions != null) DismissStaleTimerActions(session);
-        TimeDisplay.Text = FormatDisplayTime(session);
+        bool nika = Classes.Contains("nika");
+        bool navyCountdown = nika && session.Mode == 2;
+        if (navyCountdown) UpdateCountdownSetup(session, nowUtc.ToLocalTime());
+        else _lastCountdownView = null;
+        TimeDisplay.Text = navyCountdown && !session.IsRunning && !session.CountdownInitialized && _setupRemaining is { } pending
+            ? FormatTime(pending, false, _settings.TimeFormat)
+            : FormatDisplayTime(session, nowUtc);
         ActiveWorkspaceTitle.Text = _timerManager.Active == null ? "No timers" : session.DisplayName;
 
         bool hasProject = !string.IsNullOrWhiteSpace(session.Name);
@@ -698,17 +706,17 @@ public partial class ControllerWindow : Window
         ProjectSubtitle.IsVisible = !Classes.Contains("nika") && (hasProject || !string.IsNullOrWhiteSpace(session.Category));
         ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}{catBadge}" : $"[{session.Category}]";
 
-        bool nika = Classes.Contains("nika");
         bool clock = session.Mode == 1;
         string state = TimerRailItemViewModel.StateOf(session);
         if (TimerRailList.SelectedItem is TimerRailItemViewModel row && row.Session == session)
             row.UpdateDisplay(TimeDisplay.Text!, state);
         StartStopButton.Content = session.IsRunning ? "Pause" : nika && state == "Paused" ? "Resume" : "Start";
-        StartStopButton.IsEnabled = LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && session.Mode != 1;
+        LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && !clock;
+        StartStopButton.IsEnabled = ResetButton.IsEnabled && (!navyCountdown || session.IsRunning || _setupRemaining.HasValue);
         RecIndicator.IsVisible = ShowTimerRec(session) && !Classes.Contains("nika");
 
         StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;
-        bool hasShortcutFeedback = DateTime.UtcNow < _shortcutFeedbackUntil;
+        bool hasShortcutFeedback = nowUtc < _shortcutFeedbackUntil;
         StatusText.Text = hasShortcutFeedback ? _shortcutFeedback : session.IsRunning ? "Running" : "Paused";
         if (nika)
         {
@@ -778,11 +786,17 @@ public partial class ControllerWindow : Window
             _ => session.Elapsed
         };
 
+        string text = FormatTime(time, session.Mode == 1, format);
+        return session.Mode == 1 && _settings.BlinkColon && nowUtc.Millisecond >= 500 ? text.Replace(':', ' ') : text;
+    }
+
+    private static string FormatTime(TimeSpan time, bool clock, int format)
+    {
         string sign = time < TimeSpan.Zero ? "-" : "";
         time = time.Duration();
         long hours = (long)time.TotalHours;
-        long minutes = session.Mode == 1 ? time.Minutes : (long)time.TotalMinutes;
-        string text = format switch
+        long minutes = clock ? time.Minutes : (long)time.TotalMinutes;
+        return format switch
         {
             1 => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}",
             2 => $"{sign}{minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}",
@@ -790,7 +804,6 @@ public partial class ControllerWindow : Window
             4 => $"{sign}{hours:00}:{time.Minutes:00}",
             _ => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}"
         };
-        return session.Mode == 1 && _settings.BlinkColon && nowUtc.Millisecond >= 500 ? text.Replace(':', ' ') : text;
     }
 
     private List<TimerRailItemViewModel> _railItems = [];
@@ -1084,7 +1097,18 @@ public partial class ControllerWindow : Window
         if (_updatingUi || sender is not RadioButton { IsChecked: true } selected || SmartCountdownInputBox == null) return;
         if (_timerManager.Active is not { Mode: 2, IsRunning: false } session) return;
         if (session.UseClockTarget && selected == CountdownDurationRadio)
+        {
+            var resolved = ParseCountdownInput(CountdownInput(session), true, DateTime.Now);
+            if (resolved.Target is { } target)
+            {
+                session.ClockTargetHoursText = target.ToString("HH");
+                session.ClockTargetMinutesText = target.ToString("mm");
+                session.ClockTargetSecondsText = target.ToString("ss");
+            }
             session.SmartInputText = $"{session.CountdownMinutesText}m {session.CountdownSecondsText}s";
+        }
+        else if (selected == CountdownUntilRadio)
+            session.SmartInputText = "";
         session.UseClockTarget = selected == CountdownUntilRadio;
         session.CountdownInitialized = false;
         session.CountdownRemaining = session.UseClockTarget ? TimeSpan.Zero : session.CountdownDuration;
