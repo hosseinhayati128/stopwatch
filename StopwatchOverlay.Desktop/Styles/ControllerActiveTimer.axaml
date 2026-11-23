@@ -12,7 +12,7 @@
     <Style Selector="Window.pixelController controls|TodoFrame#ActiveTimerCard">
         <Setter Property="InnerBorderBrush" Value="#304D5A"/>
     </Style>
-    <Style Selector="Window.nika Border.hero, Window.pixelController TextBlock#NikaTimeDisplay, Window.nika.controllerClock Button.transport, Window.nika.controllerClock Button#LapButton, Window.nika.controllerClock Button#ResetButton, Window.nika.controllerClock Border#ControllerLaps, Window.nika.controllerClock StackPanel#ControllerTransportHints">
+    <Style Selector="Window.nika Border.hero, Window.pixelController TextBlock#NikaTimeDisplay, Window.nika.controllerClock Button.transport, Window.nika.controllerClock Button#LapButton, Window.nika.controllerClock Button#ResetButton, Window.nika.controllerClock Border#ControllerLaps">
         <Setter Property="IsVisible" Value="False"/>
     </Style>
     <Style Selector="controls|ControllerPixelDigits#PixelTimeDisplay"><Setter Property="IsVisible" Value="False"/></Style>

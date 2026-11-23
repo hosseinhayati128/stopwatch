@@ -57,7 +57,6 @@
     <Style Selector="Window.nika.compact TextBlock.nikaBrandCaption"><Setter Property="FontSize" Value="7"/></Style>
     <Style Selector="Window.nika.compact Border.status"><Setter Property="Margin" Value="-14,14,-14,0"/></Style>
     <Style Selector="Window.nika.compact Border.status TextBlock"><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="MaxWidth" Value="180"/></Style>
-    <Style Selector="Window.nika.compact Border.nikaFooter TextBlock"><Setter Property="FontSize" Value="10"/><Setter Property="MaxWidth" Value="200"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
     <Style Selector="Window.nika.short Grid.workspace"><Setter Property="Margin" Value="24,10,24,0"/></Style>
 
     <!-- The enhanced palette and layout are deliberately limited to this controller. -->
@@ -77,7 +76,6 @@
     <Style Selector="Window.nika.compact StackPanel.nikaHeaderNav"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika.compact Menu.controllerMenu"><Setter Property="Margin" Value="0,0,10,0"/></Style>
     <Style Selector="Window.nika.compact Grid.workspace"><Setter Property="Margin" Value="12,12,12,0"/></Style>
-    <Style Selector="Window.nika.compact Border.nikaFooter StackPanel"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika Button.topAction"><Setter Property="FontSize" Value="17"/><Setter Property="FontWeight" Value="Medium"/></Style>
     <Style Selector="Window.nika Grid.railHeadingRow"><Setter Property="Margin" Value="10,0,10,8"/></Style>
     <Style Selector="Window.nika Button.nikaWindowControl"><Setter Property="Width" Value="40"/><Setter Property="Height" Value="42"/><Setter Property="Padding" Value="0"/><Setter Property="FontSize" Value="23"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>

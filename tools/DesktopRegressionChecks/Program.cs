@@ -54,13 +54,18 @@ if(args.Contains("--panel-frame-baseline")||args.Contains("--panel-frame-checks"
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer")||args.Contains("--controller-timer-list")||args.Contains("--controller-timer-actions")||args.Contains("--controller-lap-times")||args.Contains("--controller-countdown")||args.Contains("--controller-mode-selector")||args.Contains("--controller-active-header"))
+if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer")||args.Contains("--controller-timer-list")||args.Contains("--controller-timer-actions")||args.Contains("--controller-lap-times")||args.Contains("--controller-countdown")||args.Contains("--controller-mode-selector")||args.Contains("--controller-active-header")||args.Contains("--controller-footer"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    if(args.Contains("--controller-footer"))
+    {
+        Check("Navy footer states, shortcut mappings and native captures", ControllerFooterChecks.Run);
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--controller-active-header"))
     {
         Check("Controller active header, commands and native captures", ControllerActiveHeaderChecks.Run);

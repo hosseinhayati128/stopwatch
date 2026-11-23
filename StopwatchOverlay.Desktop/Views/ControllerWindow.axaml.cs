@@ -737,6 +737,7 @@ public partial class ControllerWindow : Window
             ActiveTimerState.Classes.Set("live", clock || session.IsRunning);
             ActiveTimerStatus.Text = hasShortcutFeedback ? _shortcutFeedback
                 : _timerManager.Active == null ? "No timer" : clock ? "Live" : state;
+            UpdateControllerFooter(_timerManager.Active, state);
         }
 
         LapListBox.ItemsSource = nika ? null : session.LapTimes;
