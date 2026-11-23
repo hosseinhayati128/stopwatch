@@ -1,0 +1,78 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="Window.nika controls|TodoFrame#ActiveTimerCard">
+        <Setter Property="Margin" Value="0,13,0,17"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Pixel" Value="{DynamicResource ControllerPixel}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="BorderBrush" Value="#A78D56"/>
+        <Setter Property="Background" Value="#092A3B"/>
+    </Style>
+    <Style Selector="Window.pixelController controls|TodoFrame#ActiveTimerCard">
+        <Setter Property="InnerBorderBrush" Value="#304D5A"/>
+    </Style>
+    <Style Selector="Window.nika Border.hero, Window.pixelController TextBlock#NikaTimeDisplay, Window.nika.controllerClock Button.transport, Window.nika.controllerClock Button#LapButton, Window.nika.controllerClock Button#ResetButton, Window.nika.controllerClock Border#ControllerLaps, Window.nika.controllerClock StackPanel#ControllerTransportHints">
+        <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="controls|ControllerPixelDigits#PixelTimeDisplay"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.pixelController controls|ControllerPixelDigits#PixelTimeDisplay"><Setter Property="IsVisible" Value="True"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame#ActiveTimerState"><Setter Property="Background" Value="#433C2E"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame#ActiveTimerState.live"><Setter Property="Background" Value="#193F40"/></Style>
+    <Style Selector="Window.nika TextBlock#ActiveTimerStatus"><Setter Property="Foreground" Value="#FFE2A0"/></Style>
+    <Style Selector="Window.nika controls|TodoFrame.live TextBlock#ActiveTimerStatus"><Setter Property="Foreground" Value="#A3E3CC"/></Style>
+    <Style Selector="Window.nika Border#ActiveTimerSignal"><Setter Property="CornerRadius" Value="5"/></Style>
+    <Style Selector="Window.pixelController Border#ActiveTimerSignal"><Setter Property="CornerRadius" Value="0"/></Style>
+    <Style Selector="Window.nika controls|PirateActionPanel#ControllerActions">
+        <Setter Property="Margin" Value="19,13,19,12"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Window.nika controls|PirateActionPanel#ControllerActions Button">
+        <Setter Property="Height" Value="54"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Padding" Value="19,5"/>
+        <Setter Property="BorderThickness" Value="1.4"/>
+        <Setter Property="Background" Value="#17394A"/>
+        <Setter Property="BorderBrush" Value="#78909A"/>
+        <Setter Property="Foreground" Value="#FFF0D3"/>
+        <Setter Property="ContentTemplate">
+            <DataTemplate x:CompileBindings="False">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <controls:NikaActionIcon Label="{Binding}" Ink="{Binding $parent[Button].Foreground}" Pixel="{DynamicResource ControllerPixel}" Width="23" Height="23" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding}" Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DataTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="CommandPlate" Pixel="{DynamicResource ControllerPixel}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika Button.transport">
+        <Setter Property="MinWidth" Value="185"/>
+        <Setter Property="Background" Value="#F2CB77"/>
+        <Setter Property="BorderBrush" Value="#DAAB52"/>
+        <Setter Property="Foreground" Value="#03283E"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Window.nika Button.utility">
+        <Setter Property="Padding" Value="13,5"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Window.nika Button:pointerover /template/ controls|TodoFrame#CommandPlate"><Setter Property="Background" Value="#23556A"/></Style>
+    <Style Selector="Window.nika Button.transport:pointerover /template/ controls|TodoFrame#CommandPlate"><Setter Property="Background" Value="#FFDE9A"/></Style>
+    <Style Selector="Window.nika Button:focus-visible /template/ controls|TodoFrame#CommandPlate"><Setter Property="InnerBorderBrush" Value="#EFE0AD"/></Style>
+    <Style Selector="Window.nika Button.transport:focus-visible /template/ controls|TodoFrame#CommandPlate"><Setter Property="InnerBorderBrush" Value="#594116"/></Style>
+    <Style Selector="Window.nika Button:pressed /template/ controls|TodoFrame#CommandPlate"><Setter Property="Opacity" Value="0.8"/></Style>
+    <Style Selector="Window.nika Button:disabled /template/ controls|TodoFrame#CommandPlate"><Setter Property="Opacity" Value="0.45"/></Style>
+</Styles>

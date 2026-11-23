@@ -167,6 +167,7 @@ namespace StopwatchOverlay
         public string ThemeMode { get; set; } = AppThemeCatalog.Midnight;
         public string NikaBackground { get; set; } = NikaThemeCatalog.DefaultBackground;
         public string NikaTypography { get; set; } = "original-classic";
+        public bool NikaControllerPixel { get; set; }
         public string NikaSidebarArtwork { get; set; } = "sun-warrior";
         public double UiScalePercent { get; set; } = 90;
         public TypographySettings Typography { get; set; } = new();

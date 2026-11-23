@@ -27,6 +27,13 @@ public partial class ControllerWindow
     }
 
     private ResourceInclude? _nikaControllerResources;
+    private void ApplyActiveTimerStyle()
+    {
+        bool pixel = Classes.Contains("nika") && _settings.NikaControllerPixel;
+        Classes.Set("pixelController", pixel);
+        Resources["ControllerPixel"] = pixel;
+    }
+
     private void ApplyNikaControllerResources(bool enabled)
     {
         SystemDecorations = enabled ? SystemDecorations.None : SystemDecorations.Full;
@@ -126,7 +133,7 @@ public partial class ControllerWindow
         Resources["ControllerProjectAction"] = nika ? "Set project" : "Set Project";
         Resources["ControllerMenuRow"] = nika ? 0 : 1;
         Resources["ControllerModeSpacing"] = nika ? 0d : 12d;
-        Resources["ControllerModeMargin"] = nika ? new Avalonia.Thickness(0,0,84,0) : new Avalonia.Thickness(0,0,0,16);
+        Resources["ControllerModeMargin"] = nika ? new Avalonia.Thickness(0,0,0,4) : new Avalonia.Thickness(0,0,0,16);
         Resources["ControllerRailHeadingMargin"] = nika ? new Avalonia.Thickness(10,0,10,8) : new Avalonia.Thickness(0,0,0,10);
         Resources["ControllerLapHeadingFontSize"] = nika ? 30d : 13d;
         if (this.FindControl<NikaArtwork>("NikaMap") is { } map)

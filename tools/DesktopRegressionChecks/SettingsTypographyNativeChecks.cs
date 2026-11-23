@@ -229,12 +229,12 @@ internal static class SettingsTypographyNativeChecks
             var nav=window.FindControl<ListBox>("NavigationList")!;nav.SelectedItem=nav.Items.OfType<ListBoxItem>().Single(i=>Equals(i.Tag,"Appearance"));window.Show();ClockOverlayChecks.Pump(40);
             var controller=(ControllerWindow)typeof(SettingsWindow).GetField("_appearanceController",Hidden)!.GetValue(window)!;
             var timerText=controller.FindControl<TextBlock>("NikaTimeDisplay")!;
-            Require(timerText.FontSize==270,$"Synthetic preview font {timerText.FontSize}; root {timerText.GetVisualRoot()?.GetType().Name??"none"}; scope {Call("ResolveScope",timerText)}.");
+            Require(timerText.FontSize==166*1.25,$"Synthetic preview font {timerText.FontSize}; root {timerText.GetVisualRoot()?.GetType().Name??"none"}; scope {Call("ResolveScope",timerText)}.");
             var before=typeof(SettingsWindow).GetField("_appearanceSnapshot",Hidden)!.GetValue(window);
             settings.Typography.Sections["Controller"].SizePercent=150;Call("Apply",settings.Typography);
             typeof(SettingsWindow).GetMethod("RefreshAppearancePreview",Hidden)!.Invoke(window,null);
             Require(!ReferenceEquals(before,typeof(SettingsWindow).GetField("_appearanceSnapshot",Hidden)!.GetValue(window)),"Application snapshot cache ignored typography changes.");
-            Require(controller.FindControl<TextBlock>("NikaTimeDisplay")!.FontSize==324,"Refreshed application preview kept the old font size.");
+            Require(controller.FindControl<TextBlock>("NikaTimeDisplay")!.FontSize==166*1.5,"Refreshed application preview kept the old font size.");
             var anchors=(System.Collections.IDictionary)Service.GetField("Anchors",BindingFlags.Static|BindingFlags.NonPublic)!.GetValue(null)!;
             Require(!anchors.Keys.Cast<Control>().Any(c=>ReferenceEquals(c.GetVisualRoot(),controller)),"Synthetic snapshot retained typography anchors.");
         }

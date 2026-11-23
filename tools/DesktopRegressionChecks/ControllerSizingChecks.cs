@@ -80,7 +80,7 @@ internal static class ControllerSizingChecks
         if(failures.Count!=0)throw new Exception(string.Join(Environment.NewLine,failures));
         Console.WriteLine($"Controller panel fills native window in {evidence.Count} launch/resize/maximize/restore/scale states at 70/90/125%; captures: {Output}.");
     }
-    static void Capture(ControllerWindow window,string name)
+    internal static void Capture(ControllerWindow window,string name,string output=Output)
     {
         var frame=window.FindControl<Grid>("ControllerFrame")!;
         var start=frame.TranslatePoint(default,window)!.Value;
@@ -92,6 +92,6 @@ internal static class ControllerSizingChecks
             // Capture the arranged frame at its native bounds, avoiding Avalonia's nested Viewbox capture culling.
             context.DrawRectangle(new VisualBrush(frame){Stretch=Stretch.Fill,SourceRect=new RelativeRect(frame.Bounds,RelativeUnit.Absolute)},null,new Rect(start,end));
         }
-        bitmap.Save(Path.Combine(Output,name+".png"));
+        bitmap.Save(Path.Combine(output,name+".png"));
     }
 }

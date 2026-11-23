@@ -13,6 +13,7 @@ public partial class ControllerWindow
         Classes.Set("nika", nika);
         ApplyNikaControllerResources(nika);
         ApplyNikaChoices();
+        ApplyActiveTimerStyle();
         if (this.FindControl<PirateActionPanel>("ControllerActions") is { } actions)
             actions.Pirate = pirate;
         UpdateControllerLayout();
@@ -25,11 +26,9 @@ public partial class ControllerWindow
         double width = _appearancePreviewSize?.Width ?? (ClientSize.Width > 0 ? ClientSize.Width : Width) / pageScale;
         double height = _appearancePreviewSize?.Height ?? (ClientSize.Height > 0 ? ClientSize.Height : Height) / pageScale;
         bool compact = !nika && width < 900;
-        if (nika) Resources["ControllerModeMargin"] = new Avalonia.Thickness(0,0,84,0);
         Classes.Set("compact", compact);
         Classes.Set("short", !nika && height < 780);
         double scale = nika ? Math.Max(.01, Math.Min(width / 1496d, height / 984d)) : 1;
-        if (nika) Resources["NikaTimerWidth"] = Math.Max(1, (width / scale - 360) * .64);
         if (this.FindControl<Viewbox>("ControllerLayoutHost") is { } host)
         {
             // Scale the controls uniformly, but let the canvas follow the actual

@@ -13,7 +13,7 @@
             </StackPanel>
         </DataTemplate>
     </Styles.Resources>
-    <Style Selector="Window.nika Button.mainAction, Window.nika Button.editAction, Window.nika Button.topAction, Window.nika Button.renameProject">
+    <Style Selector="Window.nika Button.topAction, Window.nika Button.renameProject">
         <Setter Property="ContentTemplate" Value="{StaticResource NikaActionContent}"/>
     </Style>
     <Style Selector=":is(Control).nikaOnly"><Setter Property="IsVisible" Value="False"/></Style>
@@ -45,9 +45,7 @@
     <Style Selector="Window.nika Grid.workspaceTitleRow"><Setter Property="MinHeight" Value="104"/></Style>
     <Style Selector="Window.nika TextBlock.nikaEyebrow"><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="LetterSpacing" Value="3"/><Setter Property="Foreground" Value="#896331"/></Style>
     <Style Selector="Window.nika TextBlock.workspaceTitle"><Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="64"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="MaxWidth" Value="430"/></Style>
-    <Style Selector="Window.nika Border.hero"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="12,12,12,20"/><Setter Property="Margin" Value="0,10,0,20"/></Style>
     <Style Selector="Window.nika TextBlock.timeDisplay"><Setter Property="IsVisible" Value="False"/></Style>
-    <Style Selector="Window.nika Viewbox.nikaTimer"><Setter Property="MaxHeight" Value="165"/></Style>
     <Style Selector="Window.nika TextBlock#ProjectSubtitle"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika StackPanel.modeSelector"><Setter Property="Spacing" Value="0"/></Style>
     <Style Selector="Window.nika RadioButton"><Setter Property="FontSize" Value="14"/></Style>
@@ -60,14 +58,10 @@
     <Style Selector="Window.nika Button"><Setter Property="Background" Value="#032B40"/><Setter Property="Foreground" Value="#FFF1D9"/><Setter Property="BorderBrush" Value="#C7A465"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="5"/>
         <Setter Property="Template"><ControlTemplate><Border Name="NikaButtonPlate" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"><ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RecognizesAccessKey="True"/></Border></ControlTemplate></Setter>
     </Style>
-    <Style Selector="Window.nika Button.mainAction"><Setter Property="Height" Value="48"/><Setter Property="FontSize" Value="16"/><Setter Property="Padding" Value="14,8"/><Setter Property="MinWidth" Value="100"/></Style>
-    <Style Selector="Window.nika Button#StartStopButton"><Setter Property="Background" Value="#CD392C"/><Setter Property="BorderBrush" Value="#E96A40"/><Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="24"/><Setter Property="MinWidth" Value="138"/><Setter Property="Height" Value="48"/></Style>
     <Style Selector="Window.nika Button.topAction"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="10,8"/></Style>
     <Style Selector="Window.nika Button.renameProject"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#032437"/><Setter Property="BorderThickness" Value="0"/></Style>
     <Style Selector="Window.nika Button.railNew"><Setter Property="Background" Value="Transparent"/><Setter Property="Height" Value="44"/><Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="23"/></Style>
-    <Style Selector="Window.nika Button.editAction"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#032437"/><Setter Property="BorderThickness" Value="0"/></Style>
     <Style Selector="Window.nika Button:pointerover /template/ Border#NikaButtonPlate"><Setter Property="Background" Value="#23556A"/><Setter Property="BorderBrush" Value="#FFD68B"/></Style>
-    <Style Selector="Window.nika Button#StartStopButton:pointerover /template/ Border#NikaButtonPlate"><Setter Property="Background" Value="#E14C36"/></Style>
     <Style Selector="Window.nika Button:pressed /template/ Border#NikaButtonPlate"><Setter Property="Opacity" Value="0.7"/></Style>
     <Style Selector="Window.nika Button.modern:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#FFF1D9"/></Style>
     <Style Selector="Window.nika Button.modern:pressed /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#FFF1D9"/></Style>
@@ -94,8 +88,6 @@
     <Style Selector="Window.nika.compact Button#WorkspaceNewTimerButton"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika.short Grid.workspaceTitleRow"><Setter Property="MinHeight" Value="66"/></Style>
     <Style Selector="Window.nika.short Grid.workspace"><Setter Property="Margin" Value="24,10,24,0"/></Style>
-    <Style Selector="Window.nika.short Viewbox.nikaTimer"><Setter Property="MaxHeight" Value="120"/></Style>
-    <Style Selector="Window.nika.short Border.hero"><Setter Property="Padding" Value="8,4,8,10"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
     <Style Selector="Window.nika.short Border.laps"><Setter Property="MinHeight" Value="100"/><Setter Property="MaxHeight" Value="160"/></Style>
 
     <!-- The enhanced palette and layout are deliberately limited to this controller. -->
@@ -122,25 +114,7 @@
     <Style Selector="Window.nika StackPanel.modeSelector RadioButton:checked /template/ Border#NikaMode"><Setter Property="CornerRadius" Value="24"/></Style>
     <Style Selector="Window.nika RadioButton#StopwatchModeRadio /template/ Border#NikaMode"><Setter Property="CornerRadius" Value="24"/></Style>
     <Style Selector="Window.nika RadioButton#TimecodeModeRadio /template/ Border#NikaMode"><Setter Property="CornerRadius" Value="0,24,24,0"/></Style>
-    <Style Selector="Window.nika Border.hero"><Setter Property="Height" Value="316"/><Setter Property="Padding" Value="12,0,12,0"/><Setter Property="Margin" Value="0,8,84,4"/></Style>
-    <Style Selector="Window.nika Viewbox.nikaTimer"><Setter Property="MaxHeight" Value="240"/></Style>
-    <Style Selector="Window.nika controls|PirateActionPanel#ControllerActions"><Setter Property="Margin" Value="65,0,131,14"/></Style>
-    <Style Selector="Window.nika Button.mainAction"><Setter Property="MinWidth" Value="0"/><Setter Property="Height" Value="60"/><Setter Property="FontSize" Value="22"/><Setter Property="Padding" Value="8,4"/><Setter Property="FontWeight" Value="Medium"/><Setter Property="BorderThickness" Value="1.5"/><Setter Property="CornerRadius" Value="7"/></Style>
-    <Style Selector="Window.nika Button.mainAction.modern">
-        <Setter Property="Background" Value="{StaticResource NikaNavyPlate}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource NikaBrassRule}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Template"><ControlTemplate>
-            <Border Name="NikaButtonPlate" Background="{TemplateBinding Background}" BorderBrush="#001A29" BorderThickness="1" CornerRadius="7" Padding="2">
-                <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5" Padding="{TemplateBinding Padding}">
-                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RecognizesAccessKey="True"/>
-                </Border>
-            </Border>
-        </ControlTemplate></Setter>
-    </Style>
     <Style Selector="Window.nika Button.railNew"><Setter Property="BorderBrush" Value="{StaticResource NikaBrassRule}"/><Setter Property="Background" Value="{StaticResource NikaNavyPlate}"/><Setter Property="BorderThickness" Value="1"/></Style>
-    <Style Selector="Window.nika Button#StartStopButton"><Setter Property="MinWidth" Value="0"/><Setter Property="Height" Value="60"/><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="CornerRadius" Value="10"/></Style>
-    <Style Selector="Window.nika Button.editAction"><Setter Property="Height" Value="60"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="Medium"/><Setter Property="Padding" Value="0"/><Setter Property="MinWidth" Value="0"/></Style>
     <Style Selector="Window.nika Border.laps"><Setter Property="Margin" Value="0,0,232,0"/><Setter Property="Padding" Value="0,0"/><Setter Property="BorderThickness" Value="0"/><Setter Property="MaxHeight" Value="250"/><Setter Property="MinHeight" Value="210"/></Style>
     <Style Selector="Window.nika TextBlock.lapHeading"><Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="30"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Margin" Value="0,2,0,12"/></Style>
     <Style Selector="Window.nika ListBox.originalLaps"><Setter Property="IsVisible" Value="False"/></Style>
@@ -153,19 +127,12 @@
     <Style Selector="Window.nika.compact Grid.workspaceTitleRow"><Setter Property="MinHeight" Value="85"/></Style>
     <Style Selector="Window.nika.compact TextBlock.workspaceTitle"><Setter Property="FontSize" Value="34"/><Setter Property="MaxWidth" Value="190"/></Style>
     <Style Selector="Window.nika.compact StackPanel.modeSelector RadioButton"><Setter Property="Width" Value="74"/><Setter Property="FontSize" Value="12"/></Style>
-    <Style Selector="Window.nika.compact controls|PirateActionPanel#ControllerActions"><Setter Property="Margin" Value="0,0,0,20"/></Style>
     <Style Selector="Window.nika.compact Border.laps"><Setter Property="Margin" Value="0"/></Style>
     <Style Selector="Window.nika.compact Border.nikaFooter StackPanel"><Setter Property="IsVisible" Value="False"/></Style>
-    <Style Selector="Window.nika.short Border.hero"><Setter Property="Height" Value="200"/><Setter Property="Margin" Value="0,12,0,20"/></Style>
-    <Style Selector="Window.nika.short Viewbox.nikaTimer"><Setter Property="MaxHeight" Value="134"/></Style>
     <Style Selector="Window.nika RadioButton#StopwatchModeRadio:checked /template/ Border#NikaMode"><Setter Property="CornerRadius" Value="24"/></Style>
     <Style Selector="Window.nika Button.topAction"><Setter Property="FontSize" Value="17"/><Setter Property="FontWeight" Value="Medium"/></Style>
     <Style Selector="Window.nika ListBox#TimerRailList ListBoxItem:selected Border.railCard"><Setter Property="BorderBrush" Value="Transparent"/><Setter Property="Background" Value="Transparent"/></Style>
     <Style Selector="Window.nika Grid.railHeadingRow"><Setter Property="Margin" Value="10,0,10,8"/></Style>
-    <Style Selector="Window.nika Button.editAction"><Setter Property="BorderBrush" Value="#B88A45"/><Setter Property="BorderThickness" Value="1,0,0,0"/></Style>
-    <Style Selector="Window.nika.compact Border.hero"><Setter Property="Margin" Value="0,16,0,16"/></Style>
-    <Style Selector="Window.nika controls|PirateActionPanel#ControllerActions"><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
-    <Style Selector="Window.nika controls|PirateActionPanel#ControllerActions Button"><Setter Property="Margin" Value="0"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
     <Style Selector="Window.nika Button.nikaRailMenuButton"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Foreground" Value="#E5D5AF"/><Setter Property="FontSize" Value="22"/><Setter Property="Margin" Value="8,0,0,0"/><Setter Property="Padding" Value="0"/><Setter Property="Width" Value="26"/><Setter Property="Height" Value="38"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
     <Style Selector="ContextMenu.nikaRailMenu MenuItem /template/ Border"><Setter Property="Background" Value="#032437"/></Style>
     <Style Selector="ContextMenu.nikaRailMenu MenuItem:pointerover /template/ Border"><Setter Property="Background" Value="#23556A"/></Style>

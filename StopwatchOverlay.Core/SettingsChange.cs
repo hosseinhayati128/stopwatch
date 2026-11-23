@@ -26,7 +26,8 @@ public enum SettingsChangeKind
     IdleStop = 1 << 19,
     FocusTracking = 1 << 20,
     PeriodicReview = 1 << 21,
-    TodoAppearance = 1 << 22
+    TodoAppearance = 1 << 22,
+    ControllerStyle = 1 << 23
 }
 
 public static class SettingsChangePolicy

@@ -23,6 +23,7 @@ public sealed class TodoFrame : Decorator
     {
         AffectsRender<TodoFrame>(PixelProperty,BackgroundProperty,BorderBrushProperty,BorderThicknessProperty,CornerRadiusProperty,InnerBorderBrushProperty);
         AffectsMeasure<TodoFrame>(BorderThicknessProperty);
+        AffectsArrange<TodoFrame>(PixelProperty,CornerRadiusProperty);
     }
     private Thickness Insets => new(Padding.Left+BorderThickness.Left,Padding.Top+BorderThickness.Top,
         Padding.Right+BorderThickness.Right,Padding.Bottom+BorderThickness.Bottom);

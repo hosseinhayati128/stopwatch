@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
@@ -83,16 +82,16 @@ internal static class NikaThemeChecks
             var digits = controller.FindControl<TextBlock>("NikaTimeDisplay")!;
             if (!digits.IsEffectivelyVisible) throw new Exception("Nika live timer display is hidden.");
             var start = controller.FindControl<Button>("StartStopButton")!;
-            if (start.Background is not ISolidColorBrush brush || brush.Color.R < 150 || brush.Color.B > 100)
-                throw new Exception("Primary action lost its crimson palette.");
+            if (start.Background is not ISolidColorBrush brush || brush.Color != Color.Parse("#F2CB77"))
+                throw new Exception("Primary action lost its gold plate.");
             var lap = controller.FindControl<Button>("LapButton")!;
             lap.ApplyTemplate();
-            var presenter = lap.GetVisualDescendants().OfType<ContentPresenter>().First();
+            var actionLabel = lap.GetVisualDescendants().OfType<TextBlock>().Single();
             foreach (string state in new[] { ":pointerover", ":pressed", ":focus-visible" })
             {
                 ((IPseudoClasses)lap.Classes).Set(state, true);
-                if (presenter.Foreground is not ISolidColorBrush actionText || actionText.Color != Color.Parse("#FFF1D9"))
-                    throw new Exception("Nika secondary action loses cream text in " + state + ": " + presenter.Foreground);
+                if (actionLabel.Foreground is not ISolidColorBrush actionText || actionText.Color != Color.Parse("#FFF0D3"))
+                    throw new Exception("Nika secondary action loses cream text in " + state + ": " + actionLabel.Foreground);
                 ((IPseudoClasses)lap.Classes).Set(state, false);
             }
             var timerMenu = controller.GetLogicalDescendants().OfType<MenuItem>().First(item => item.Header?.ToString() == "_Timers");
@@ -284,8 +283,10 @@ internal static class NikaThemeChecks
             throw new Exception("The approved heavy display heading resolves to an ordinary or fallback font.");
         if (!digitsFace.FamilyName.StartsWith("Roboto Condensed", StringComparison.Ordinal) || digitsFace.Weight < FontWeight.Black)
             throw new Exception("The approved timer does not resolve its embedded Black face.");
-        if ((timerEnd.X - timerStart.X) / workspaceWidth < .59)
-            throw new Exception("The timer is too small to carry the approved typographic hierarchy.");
+        var card = controller.FindControl<TodoFrame>("ActiveTimerCard")!;
+        var center = card.TranslatePoint(new Point(card.Bounds.Width / 2, 0), body)!.Value;
+        if (Math.Abs((timerStart.X + timerEnd.X) / 2 - center.X) > 2 || digits.FontSize != 166)
+            throw new Exception("The Classic digits lost their centered position or approved size.");
     }
 
     private static void CaptureActual(ControllerWindow controller, string name)

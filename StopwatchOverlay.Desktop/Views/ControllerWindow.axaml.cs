@@ -707,12 +707,28 @@ public partial class ControllerWindow : Window
         ProjectSubtitle.IsVisible = !Classes.Contains("nika") && (hasProject || !string.IsNullOrWhiteSpace(session.Category));
         ProjectSubtitle.Text = hasProject ? $"Project: {session.Name}{catBadge}" : $"[{session.Category}]";
 
-        StartStopButton.Content = session.IsRunning ? "Pause" : "Start";
+        bool nika = Classes.Contains("nika");
+        bool clock = session.Mode == 1;
+        bool finished = session.Mode == 2 && session.CountdownInitialized && session.CountdownRemaining == TimeSpan.Zero;
+        bool started = session.Mode == 2
+            ? session.CountdownRemaining > TimeSpan.Zero && (session.CountdownInitialized || session.CountdownRemaining < session.CountdownDuration)
+            : session.HasAccumulatedTime;
+        StartStopButton.Content = session.IsRunning ? "Pause" : nika && started ? "Resume" : "Start";
         StartStopButton.IsEnabled = LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && session.Mode != 1;
         RecIndicator.IsVisible = ShowTimerRec(session) && !Classes.Contains("nika");
 
         StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;
-        StatusText.Text = DateTime.UtcNow < _shortcutFeedbackUntil ? _shortcutFeedback : session.IsRunning ? "Running" : "Paused";
+        bool hasShortcutFeedback = DateTime.UtcNow < _shortcutFeedbackUntil;
+        StatusText.Text = hasShortcutFeedback ? _shortcutFeedback : session.IsRunning ? "Running" : "Paused";
+        if (nika)
+        {
+            Classes.Set("controllerClock", clock);
+            ActiveTimerCaption.Text = session.Mode switch { 1 => "Local time", 2 => "Time remaining", 3 => "Timecode", _ => "Elapsed time" };
+            ActiveTimerState.Classes.Set("live", clock || session.IsRunning);
+            ActiveTimerStatus.Text = hasShortcutFeedback ? _shortcutFeedback
+                : _timerManager.Active == null ? "No timer" : clock ? "Live" : session.IsRunning ? "Running"
+                : finished ? "Finished" : started ? "Paused" : "Ready";
+        }
 
         LapListBox.ItemsSource = session.LapTimes;
         LapPlaceholder.IsVisible = session.LapTimes.Count == 0;
@@ -1212,7 +1228,8 @@ public partial class ControllerWindow : Window
         if ((change & SettingsChangeKind.InternetMonitor) != 0) RestartInternetMonitor();
         if ((change & (SettingsChangeKind.ActivityWatch | SettingsChangeKind.ObsidianExport)) != 0)
             _activityWatchSyncService?.RestartTimer();
-        bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography))==0;
+        bool pageOnly=(change & ~(SettingsChangeKind.ApplicationScale|SettingsChangeKind.BackgroundSelection|SettingsChangeKind.BackgroundStrength|SettingsChangeKind.Typography|SettingsChangeKind.ControllerStyle))==0;
+        if ((change & SettingsChangeKind.ControllerStyle) != 0) ApplyActiveTimerStyle();
         if((change & (SettingsChangeKind.OverlayScreen|SettingsChangeKind.OverlayPosition))!=0)
             InvalidateOverlayPlacement((change & SettingsChangeKind.OverlayPosition)!=0);
         if ((change & SettingsChangeKind.Startup) != 0 && PlatformServices.Startup.IsSupported)

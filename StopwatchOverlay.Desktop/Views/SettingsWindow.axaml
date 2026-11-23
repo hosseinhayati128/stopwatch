@@ -239,6 +239,11 @@
                                     <ComboBox x:Name="NikaBackgroundCombo" HorizontalAlignment="Stretch"/>
                                     <TextBlock Text="Typography" Classes="subheading"/>
                                     <ComboBox x:Name="NikaTypographyCombo" HorizontalAlignment="Stretch"/>
+                                    <TextBlock Text="Active timer style" Classes="subheading"/>
+                                    <ComboBox x:Name="ControllerStyleCombo" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="Classic Navy"/>
+                                        <ComboBoxItem Content="Pixel Navy"/>
+                                    </ComboBox>
                                     <TextBlock Text="Sidebar artwork" Classes="subheading"/>
                                     <ComboBox x:Name="NikaArtworkCombo" HorizontalAlignment="Stretch"/>
                                 </StackPanel>

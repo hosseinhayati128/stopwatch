@@ -19,6 +19,7 @@ public partial class ControllerWindow
         _settings.ThemeMode=settings.ThemeMode;
         _settings.NikaBackground=settings.NikaBackground;
         _settings.NikaTypography=settings.NikaTypography;
+        _settings.NikaControllerPixel=settings.NikaControllerPixel;
         _settings.NikaSidebarArtwork=settings.NikaSidebarArtwork;
         _appearancePreviewSize=new Size(1120,736);
         Width=1120;Height=736;

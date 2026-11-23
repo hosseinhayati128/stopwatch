@@ -10,7 +10,6 @@
 
     <Window.Resources>
         <controls:NikaTimePartsConverter x:Key="NikaTimeParts"/>
-        <x:Double x:Key="NikaTimerWidth">840</x:Double>
         <x:String x:Key="ControllerProjectAction">Set Project</x:String>
         <x:Int32 x:Key="ControllerMenuRow">1</x:Int32>
         <x:Double x:Key="ControllerModeSpacing">12</x:Double>
@@ -21,6 +20,7 @@
     <Window.Styles>
         <StyleInclude Source="/Styles/PirateControllerStyles.axaml"/>
         <StyleInclude Source="/Styles/NikaControllerStyles.axaml"/>
+        <StyleInclude Source="/Styles/ControllerActiveTimer.axaml"/>
     </Window.Styles>
     <Viewbox x:Name="ControllerLayoutHost" Stretch="Uniform">
     <Grid x:Name="ControllerFrame" RowDefinitions="Auto,Auto,*">
@@ -226,62 +226,58 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Hero Time Display -->
-                    <Border Classes="hero" Grid.Row="3"
-
-                            BorderBrush="{DynamicResource BorderBrush}"
-
-                            CornerRadius="12"
-
-
-                            HorizontalAlignment="Stretch">
-                        <Grid>
-                        <controls:NikaArtwork Classes="nikaOnly" Part="Dial"/>
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Classes="nikaOnly nikaStateBadge" HorizontalAlignment="Center" BorderBrush="#B78337" BorderThickness="1" CornerRadius="18" Width="160" Height="36" Margin="0,0,0,12">
-                                <StackPanel Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Ellipse Width="13" Height="13" Fill="{Binding Fill, ElementName=StatusDot}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Text, ElementName=StatusText}" FontSize="18"/>
+                    <controls:TodoFrame x:Name="ActiveTimerCard" Grid.Row="3" Grid.RowSpan="2">
+                        <Grid RowDefinitions="Auto,Auto">
+                            <Border Classes="hero" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="12">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                                        <Ellipse x:Name="RecIndicator" Width="18" Height="18" Fill="#EF4444" IsVisible="False" VerticalAlignment="Center"/>
+                                        <TextBlock Classes="timeDisplay" x:Name="TimeDisplay"
+                                                   Text="00:00:00.0"
+                                                   FontFamily="Consolas, monospace"
+                                                   FontSize="64"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <Viewbox Classes="pirateOnly" MaxHeight="112" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,4">
+                                        <controls:PirateTimerText Text="{Binding Text, ElementName=TimeDisplay}"/>
+                                    </Viewbox>
+                                    <TextBlock x:Name="ProjectSubtitle" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0" IsVisible="False"/>
                                 </StackPanel>
                             </Border>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                                <Ellipse x:Name="RecIndicator" Width="18" Height="18" Fill="#EF4444" IsVisible="False" VerticalAlignment="Center"/>
-                                <TextBlock Classes="timeDisplay" x:Name="TimeDisplay"
-                                           Text="00:00:00.0"
-                                           FontFamily="Consolas, monospace"
-                                           FontSize="64"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource PrimaryTextBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Viewbox Classes="pirateOnly" MaxHeight="112" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,4">
-                                <controls:PirateTimerText Text="{Binding Text, ElementName=TimeDisplay}"/>
-                            </Viewbox>
-                            <Viewbox Classes="nikaOnly nikaTimer" Width="{DynamicResource NikaTimerWidth}" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,0,0,6">
-                                <TextBlock x:Name="NikaTimeDisplay" FontFamily="{DynamicResource NikaDigitsFont}" FontSize="216" FontWeight="{DynamicResource NikaTimerWeight}" Foreground="#032437"><Run Text="{Binding Text, ElementName=TimeDisplay, Converter={StaticResource NikaTimeParts}}"/><Run FontSize="118" Text="{Binding Text, ElementName=TimeDisplay, Converter={StaticResource NikaTimeParts}, ConverterParameter=fraction}"/></TextBlock>
-                            </Viewbox>
-                            <Grid Classes="nikaOnly" ColumnDefinitions="*,*,*" Width="730" Margin="0,0,110,0" HorizontalAlignment="Center">
-                                <TextBlock Text="HOURS" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
-                                <TextBlock Text="MINUTES" Grid.Column="1" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
-                                <TextBlock Text="SECONDS" Grid.Column="2" FontSize="13" FontWeight="Medium" LetterSpacing="4" HorizontalAlignment="Center"/>
+                            <Grid Classes="nikaOnly" RowDefinitions="Auto,Auto">
+                                <controls:NikaArtwork Part="Navy" Grid.RowSpan="2" Opacity="0.24"/>
+                                <Grid ColumnDefinitions="*,Auto" Margin="25,14,25,2">
+                                    <TextBlock x:Name="ActiveTimerCaption" FontSize="22" FontWeight="SemiBold" Foreground="#D0DBD7" VerticalAlignment="Center"/>
+                                    <controls:TodoFrame x:Name="ActiveTimerState" Grid.Column="1" CornerRadius="14" Padding="13,3" Pixel="{DynamicResource ControllerPixel}">
+                                        <StackPanel Orientation="Horizontal" Spacing="9">
+                                            <Border x:Name="ActiveTimerSignal" Width="10" Height="10" Background="{Binding #ActiveTimerStatus.Foreground}" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="ActiveTimerStatus" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </controls:TodoFrame>
+                                </Grid>
+                                <Viewbox Grid.Row="1" Height="173" Margin="23,0,23,11" Stretch="Uniform" HorizontalAlignment="Center">
+                                    <Grid>
+                                        <TextBlock x:Name="NikaTimeDisplay" FontFamily="{DynamicResource NikaDigitsFont}" FontSize="166" LineHeight="181" FontWeight="{DynamicResource NikaTimerWeight}" Foreground="#FFF0D3"><Run Text="{Binding #TimeDisplay.Text, Converter={StaticResource NikaTimeParts}}"/><Run FontSize="95" Text="{Binding #TimeDisplay.Text, Converter={StaticResource NikaTimeParts}, ConverterParameter=fraction}"/></TextBlock>
+                                        <controls:ControllerPixelDigits x:Name="PixelTimeDisplay" Text="{Binding #TimeDisplay.Text}" AutomationProperties.Name="{Binding #TimeDisplay.Text}" FontSize="{Binding #NikaTimeDisplay.FontSize}" Foreground="{Binding #NikaTimeDisplay.Foreground}"/>
+                                    </Grid>
+                                </Viewbox>
                             </Grid>
-                            <TextBlock x:Name="ProjectSubtitle" Text="" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0" IsVisible="False"/>
-                        </StackPanel>
+                            <Border Classes="nikaOnly" Grid.Row="1" Background="#102F40" BorderBrush="#46606A" BorderThickness="0,1,0,0"/>
+                            <controls:PirateActionPanel x:Name="ControllerActions" Grid.Row="1">
+                                <Button x:Name="StartStopButton" controls:PirateArtwork.Icon="Lion" Classes="primary mainAction transport" Content="Start" Click="StartStopButton_Click"/>
+                                <Button x:Name="LapButton" controls:PirateArtwork.Icon="Telescope" Classes="modern mainAction" Content="Add lap" Click="LapButton_Click"/>
+                                <Button x:Name="ResetButton" controls:PirateArtwork.Icon="Ram" Classes="modern mainAction" Content="Reset" Click="ResetButton_Click"/>
+                                <Button x:Name="ToggleOverlayButton" controls:PirateArtwork.Icon="Paint" Classes="modern mainAction utility" Content="Hide overlay" Click="ToggleOverlayButton_Click"/>
+                                <Button x:Name="EditButton" Classes="modern editAction utility" Content="Edit" Click="EditTimerMenuItem_Click"/>
+                            </controls:PirateActionPanel>
                         </Grid>
-                    </Border>
-
-                    <!-- Control Buttons -->
-                    <controls:PirateActionPanel x:Name="ControllerActions" Grid.Row="4">
-                        <Button x:Name="StartStopButton" controls:PirateArtwork.Icon="Lion" Classes="primary mainAction" Content="Start" Click="StartStopButton_Click"/>
-                        <Button x:Name="LapButton" controls:PirateArtwork.Icon="Telescope" Classes="modern mainAction" Content="Add lap" Click="LapButton_Click"/>
-                        <Button x:Name="ResetButton" controls:PirateArtwork.Icon="Ram" Classes="modern mainAction" Content="Reset" Click="ResetButton_Click"/>
-                        <Button x:Name="ToggleOverlayButton" controls:PirateArtwork.Icon="Paint" Classes="modern mainAction" Content="Hide overlay" Click="ToggleOverlayButton_Click"/>
-                        <Button x:Name="EditButton" Classes="modern editAction" Content="Edit" Click="EditTimerMenuItem_Click"/>
-                    </controls:PirateActionPanel>
+                    </controls:TodoFrame>
 
                     <!-- Lap Times List -->
-                    <Border Classes="laps" Grid.Row="5"
+                    <Border x:Name="ControllerLaps" Classes="laps" Grid.Row="5"
 
                             BorderBrush="{DynamicResource SubtleDividerBrush}"
 
@@ -346,7 +342,7 @@
                         <Ellipse Width="13" Height="13" Fill="#12B768" VerticalAlignment="Center"/>
                         <TextBlock Text="Ready" Foreground="#FFF1D9" FontSize="14"/>
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel x:Name="ControllerTransportHints" Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <Border BorderBrush="#65808B" BorderThickness="1" CornerRadius="4" Padding="10,4"><TextBlock Text="Win+F2 → Space" Foreground="#FFF1D9" FontSize="14"/></Border>
                         <TextBlock Text="Start / Pause" Foreground="#D5E0E5" VerticalAlignment="Center" FontSize="14"/>
                         <Border BorderBrush="#65808B" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="12,0,0,0"><TextBlock Text="Win+F2 → R" Foreground="#FFF1D9" FontSize="14"/></Border>

@@ -56,7 +56,7 @@ public partial class SettingsWindow
     }
     private void BuildAppearancePage(Grid host)
     {
-        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,NikaArtworkCombo,UiScaleSlider,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundCombo,AddBackgroundButton,RemoveBackgroundButton,BackgroundStrengthSlider})
+        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,ControllerStyleCombo,NikaArtworkCombo,UiScaleSlider,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundCombo,AddBackgroundButton,RemoveBackgroundButton,BackgroundStrengthSlider})
         {
             var parent=(Panel)control.Parent!;
             _appearanceMoved.Add((control,parent,parent.Children.IndexOf(control),control.Margin,Grid.GetColumn(control),Grid.GetRow(control)));
@@ -71,7 +71,7 @@ public partial class SettingsWindow
         _appearanceBackgroundWarning=SettingsLabel("",11,Brush.Parse("#AD3434"));
         _appearanceAppFields=new StackPanel{Spacing=12,Children={
             AppearanceCard("APPLICATION",AppearanceField("Theme",ThemeCombo),SettingsLabel("Sets the look of the controller and app pages.",11)),
-            AppearanceCard("NIKA’S CHRONICLE",AppearanceField("Background",NikaBackgroundCombo),AppearanceField("Typography",NikaTypographyCombo),AppearanceField("Sidebar artwork",NikaArtworkCombo)),
+            AppearanceCard("NIKA’S CHRONICLE",AppearanceField("Active timer style",ControllerStyleCombo),AppearanceField("Background",NikaBackgroundCombo),AppearanceField("Typography",NikaTypographyCombo),AppearanceField("Sidebar artwork",NikaArtworkCombo)),
             AppearanceCard("SIZE & BACKGROUND",AppearanceSlider("Page scale",UiScaleSlider,"%"),SettingsLabel("Applied when you finish adjusting. Floating clock text has its own size.",11),AppearanceField("Application background",BackgroundCombo),importRow,AppearanceSlider("Background strength",BackgroundStrengthSlider,"%"),_appearanceBackgroundWarning)}};
         var open=SettingsAction("Open Stopwatch appearance","AppearanceOpenStopwatch");open.HorizontalAlignment=HorizontalAlignment.Stretch;
         open.Click+=(_,_)=>NavigationList.SelectedItem=NavigationList.Items.OfType<ListBoxItem>().First(i=>Equals(i.Tag,"StopwatchAppearance"));
@@ -153,7 +153,7 @@ public partial class SettingsWindow
             return;
         }
         var controllerText=_settings.Typography.Resolve("Controller");
-        string key=$"{_settings.ThemeMode}|{_settings.NikaBackground}|{_settings.NikaTypography}|{_settings.NikaSidebarArtwork}|{_settings.PanelBackgroundId}|{_settings.PanelBackgroundStrength}|{controllerText.SizePercent}|{controllerText.Color}";
+        string key=$"{_settings.ThemeMode}|{_settings.NikaBackground}|{_settings.NikaTypography}|{_settings.NikaControllerPixel}|{_settings.NikaSidebarArtwork}|{_settings.PanelBackgroundId}|{_settings.PanelBackgroundStrength}|{controllerText.SizePercent}|{controllerText.Color}";
         if(key==_appearanceSnapshotKey)return;
         _appearanceController??=new ControllerWindow(new AppSettings{ThemeMode=AppThemeCatalog.Nika});
         var snapshot=_appearanceController.RenderAppearancePreview(_settings);

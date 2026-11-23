@@ -84,9 +84,8 @@ public sealed class PirateActionPanel : WrapPanel
         if (Nika)
         {
             double usable = double.IsFinite(availableSize.Width) ? availableSize.Width : 880;
-            int nikaColumns = usable < 600 ? 2 : 5;
-            foreach (var child in Children) child.Measure(new Size(usable / nikaColumns, 60));
-            return new Size(usable, nikaColumns == 5 ? 60 : 204);
+            foreach (var child in Children) child.Measure(new Size(usable, double.PositiveInfinity));
+            return new Size(usable, LayoutNika(usable, false));
         }
         if (!Pirate) return base.MeasureOverride(availableSize);
         double width = double.IsFinite(availableSize.Width) ? availableSize.Width : 680;
@@ -100,15 +99,7 @@ public sealed class PirateActionPanel : WrapPanel
     {
         if (Nika)
         {
-            double[] widths = [.227, .199, .182, .254, .138];
-            bool narrow = finalSize.Width < 600;
-            double x = 0;
-            for (int index = 0; index < Children.Count; index++)
-            {
-                double nikaWidth = narrow ? (finalSize.Width - 12) / 2 : (finalSize.Width - 48) * widths[index];
-                Children[index].Arrange(new Rect(narrow ? index % 2 * (nikaWidth + 12) : x, narrow ? index / 2 * 72 : 0, nikaWidth, 60));
-                x += nikaWidth + 12;
-            }
+            LayoutNika(finalSize.Width, true);
             return finalSize;
         }
         if (!Pirate) return base.ArrangeOverride(finalSize);
@@ -124,6 +115,34 @@ public sealed class PirateActionPanel : WrapPanel
             i++;
         }
         return finalSize;
+    }
+
+    private double LayoutNika(double width, bool arrange)
+    {
+        const double gap = 10;
+        var visible = Children.Where(c => c.IsVisible).ToArray();
+        double totalWidth = visible.Sum(c => c.DesiredSize.Width) + gap * (visible.Length - 1);
+        double x = 0, y = 0, rowHeight = 0;
+        bool atUtilities = false;
+        foreach (var control in visible)
+        {
+            var size = control.DesiredSize;
+            if (x > 0 && x + size.Width > width + .01)
+            {
+                x = 0;
+                y += rowHeight + gap;
+                rowHeight = 0;
+            }
+            if (!atUtilities && control.Classes.Contains("utility"))
+            {
+                atUtilities = true;
+                if (x > 0 && totalWidth < width) x += width - totalWidth;
+            }
+            if (arrange) control.Arrange(new Rect(x, y, size.Width, size.Height));
+            x += size.Width + gap;
+            rowHeight = Math.Max(rowHeight, size.Height);
+        }
+        return y + rowHeight;
     }
 }
 
