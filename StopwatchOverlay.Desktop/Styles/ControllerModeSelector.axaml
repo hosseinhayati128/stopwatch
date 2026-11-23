@@ -1,0 +1,81 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="controls|TodoFrame#ControllerModeTrack"><Setter Property="Margin" Value="0,0,0,16"/></Style>
+    <Style Selector="StackPanel.modeSelector"><Setter Property="Spacing" Value="12"/></Style>
+
+    <Style Selector="Window.nika controls|TodoFrame#ControllerModeTrack">
+        <Setter Property="Pixel" Value="{DynamicResource ControllerPixel}"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="CornerRadius" Value="26"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="BorderBrush" Value="#56707C"/>
+        <Setter Property="Background" Value="#0A293A"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector"><Setter Property="Spacing" Value="3"/></Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton">
+        <Setter Property="Width" Value="162"/>
+        <Setter Property="Height" Value="42"/>
+        <Setter Property="Foreground" Value="#D2E0E0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="ModePlate" Pixel="{DynamicResource ControllerPixel}" CornerRadius="21"
+                                    BorderThickness="2.4" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Path Name="ModeIcon" Width="22" Height="22" VerticalAlignment="Center" Stretch="None" Stroke="{TemplateBinding Foreground}"/>
+                        <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" VerticalAlignment="Center"
+                                          Foreground="{TemplateBinding Foreground}" FontFamily="{TemplateBinding FontFamily}"
+                                          FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}"/>
+                    </StackPanel>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:checked">
+        <Setter Property="Background" Value="#EDCB83"/>
+        <Setter Property="BorderBrush" Value="#EDCB83"/>
+        <Setter Property="Foreground" Value="#0C2938"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:pointerover:not(:checked)">
+        <Setter Property="Background" Value="#1C4352"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:focus-visible"><Setter Property="BorderBrush" Value="#9FE4D3"/></Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:checked:focus-visible"><Setter Property="BorderBrush" Value="#654316"/></Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton /template/ Path#ModeIcon">
+        <Setter Property="StrokeThickness" Value="1.8"/><Setter Property="StrokeLineCap" Value="Round"/><Setter Property="StrokeJoin" Value="Round"/>
+    </Style>
+    <Style Selector="Window.pixelController StackPanel.modeSelector RadioButton /template/ Path#ModeIcon">
+        <Setter Property="StrokeThickness" Value="2"/><Setter Property="StrokeLineCap" Value="Flat"/><Setter Property="StrokeJoin" Value="Miter"/>
+    </Style>
+    <Style Selector="Window.nika RadioButton#StopwatchModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M8,2H14 M11,2V5 M16,6L18,4 M11,8V13L14,11 M18,12.6 A7,7 0 1 1 4,12.6 A7,7 0 1 1 18,12.6Z"/>
+    </Style>
+    <Style Selector="Window.nika RadioButton#ClockModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M11,6V11L15,13 M19,11 A8,8 0 1 1 3,11 A8,8 0 1 1 19,11Z"/>
+    </Style>
+    <Style Selector="Window.nika RadioButton#CountdownModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M4,2H18 M4,20H18 M6,3V5C6,8 9,9 11,11C9,13 6,14 6,17V19 M16,3V5C16,8 13,9 11,11C13,13 16,14 16,17V19 M8,17H14"/>
+    </Style>
+    <Style Selector="Window.nika RadioButton#TimecodeModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M6,4H2V18H6 M16,4H20V18H16 M8,8H9 M13,8H14 M8,14H9 M13,14H14"/>
+    </Style>
+    <Style Selector="Window.pixelController RadioButton#StopwatchModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M8,2H14 M11,2V5 M16,6V4H18 M7,6H15V8H18V17H15V19H7V17H4V8H7Z M11,9V13H14"/>
+    </Style>
+    <Style Selector="Window.pixelController RadioButton#ClockModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M6,3H16V5H19V17H16V19H6V17H3V5H6Z M10,6V12H15"/>
+    </Style>
+    <Style Selector="Window.pixelController RadioButton#CountdownModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M4,2H18 M4,20H18 M6,3V7H8V9H10V12H8V14H6V19 M16,3V7H14V9H12V12H14V14H16V19 M8,17H14"/>
+    </Style>
+    <Style Selector="Window.pixelController RadioButton#TimecodeModeRadio /template/ Path#ModeIcon">
+        <Setter Property="Data" Value="M6,4H2V18H6 M16,4H20V18H16 M8,8H10 M13,8H15 M8,14H10 M13,14H15"/>
+    </Style>
+</Styles>

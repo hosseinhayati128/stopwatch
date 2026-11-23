@@ -12,8 +12,6 @@
         <controls:NikaTimePartsConverter x:Key="NikaTimeParts"/>
         <x:String x:Key="ControllerProjectAction">Set Project</x:String>
         <x:Int32 x:Key="ControllerMenuRow">1</x:Int32>
-        <x:Double x:Key="ControllerModeSpacing">12</x:Double>
-        <Thickness x:Key="ControllerModeMargin">0,0,0,16</Thickness>
         <Thickness x:Key="ControllerRailHeadingMargin">0,0,0,10</Thickness>
         <x:Double x:Key="ControllerLapHeadingFontSize">13</x:Double>
         <DataTemplate x:Key="LegacyRailItem" x:DataType="views:TimerRailItemViewModel">
@@ -63,6 +61,7 @@
         <StyleInclude Source="/Styles/ControllerTimerActions.axaml"/>
         <StyleInclude Source="/Styles/ControllerLapTimes.axaml"/>
         <StyleInclude Source="/Styles/ControllerCountdown.axaml"/>
+        <StyleInclude Source="/Styles/ControllerModeSelector.axaml"/>
         <Style Selector="ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource LegacyRailItem}"/></Style>
         <Style Selector="Window.nika ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource NavyRailItem}"/></Style>
     </Window.Styles>
@@ -195,14 +194,14 @@
                     </Grid>
 
                     <!-- Mode Selector -->
-                    <Border Classes="modeFrame" Grid.Row="1" HorizontalAlignment="Center" Margin="{DynamicResource ControllerModeMargin}">
-                    <StackPanel Classes="modeSelector" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="{DynamicResource ControllerModeSpacing}">
-                        <RadioButton x:Name="StopwatchModeRadio" Content="Stopwatch" IsChecked="True" GroupName="Mode" Checked="ModeRadio_Checked"/>
-                        <RadioButton x:Name="ClockModeRadio" Content="Clock" GroupName="Mode" Checked="ModeRadio_Checked"/>
-                        <RadioButton x:Name="CountdownModeRadio" Content="Countdown" GroupName="Mode" Checked="ModeRadio_Checked"/>
-                        <RadioButton x:Name="TimecodeModeRadio" Content="Timecode" GroupName="Mode" Checked="ModeRadio_Checked"/>
-                    </StackPanel>
-                    </Border>
+                    <controls:TodoFrame x:Name="ControllerModeTrack" Grid.Row="1" HorizontalAlignment="Center">
+                        <StackPanel Classes="modeSelector" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <RadioButton x:Name="StopwatchModeRadio" Content="Stopwatch" IsChecked="True" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                            <RadioButton x:Name="ClockModeRadio" Content="Clock" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                            <RadioButton x:Name="CountdownModeRadio" Content="Countdown" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                            <RadioButton x:Name="TimecodeModeRadio" Content="Timecode" GroupName="Mode" Checked="ModeRadio_Checked"/>
+                        </StackPanel>
+                    </controls:TodoFrame>
 
                     <!-- Countdown Options (Visible only in Countdown mode) -->
                     <Border Grid.Row="2" x:Name="CountdownPanel" IsVisible="False">

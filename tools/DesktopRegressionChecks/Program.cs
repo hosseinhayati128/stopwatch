@@ -54,13 +54,19 @@ if(args.Contains("--panel-frame-baseline")||args.Contains("--panel-frame-checks"
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer")||args.Contains("--controller-timer-list")||args.Contains("--controller-timer-actions")||args.Contains("--controller-lap-times")||args.Contains("--controller-countdown"))
+if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer")||args.Contains("--controller-timer-list")||args.Contains("--controller-timer-actions")||args.Contains("--controller-lap-times")||args.Contains("--controller-countdown")||args.Contains("--controller-mode-selector"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    if(args.Contains("--controller-mode-selector"))
+    {
+        Check("Controller mode selection across themes and restored timers", ControllerModeChecks.Run);
+        Check("Navy mode selector geometry, focus and native captures", ControllerModeChecks.NavySelector);
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--controller-countdown"))
     {
         Check("Controller countdown setup, existing timers and native captures", ControllerCountdownChecks.Run);
