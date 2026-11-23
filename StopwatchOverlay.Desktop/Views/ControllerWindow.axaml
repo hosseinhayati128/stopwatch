@@ -61,6 +61,7 @@
         <StyleInclude Source="/Styles/ControllerActiveTimer.axaml"/>
         <StyleInclude Source="/Styles/ControllerTimerList.axaml"/>
         <StyleInclude Source="/Styles/ControllerTimerActions.axaml"/>
+        <StyleInclude Source="/Styles/ControllerLapTimes.axaml"/>
         <Style Selector="ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource LegacyRailItem}"/></Style>
         <Style Selector="Window.nika ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource NavyRailItem}"/></Style>
     </Window.Styles>
@@ -297,47 +298,52 @@
                     </controls:TodoFrame>
 
                     <!-- Lap Times List -->
-                    <Border x:Name="ControllerLaps" Classes="laps" Grid.Row="5"
-
-                            BorderBrush="{DynamicResource SubtleDividerBrush}"
-
-                            CornerRadius="8"
-
-
-                           >
-                        <Grid RowDefinitions="Auto,*">
-                            <TextBlock Classes="lapHeading" Grid.Row="0" Text="Lap times" FontWeight="Bold" FontSize="{DynamicResource ControllerLapHeadingFontSize}" Margin="0,0,0,6"/>
-                            <TextBlock Classes="nikaOnly" x:Name="NikaLapCount" Grid.Row="0" Margin="145,13,0,0" FontSize="14"/>
-                            <ListBox Classes="originalLaps" Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="13" Margin="0,1"/>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                            <Grid Classes="nikaOnly nikaLapTable" Grid.Row="1" RowDefinitions="30,*">
-                                <Grid ColumnDefinitions="100,*,*" Height="30">
-                                    <TextBlock Text="L A P" Margin="30,0,0,0" FontSize="11"/>
-                                    <TextBlock Grid.Column="1" Text="S P L I T" HorizontalAlignment="Center" FontSize="11"/>
-                                    <TextBlock Grid.Column="2" Text="T O T A L" HorizontalAlignment="Center" FontSize="11"/>
-                                </Grid>
-                                <ItemsControl Grid.Row="1" x:Name="NikaLapTable">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="views:NikaLapRow">
-                                            <Border Background="{Binding Background}" BorderBrush="#509D7B46" BorderThickness="0,0,0,1" CornerRadius="5" Height="43">
-                                                <Grid ColumnDefinitions="100,*,*">
-                                                    <TextBlock Text="{Binding Number}" Margin="30,0,0,0" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="29" FontWeight="SemiBold"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Split}" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="34" FontWeight="SemiBold" LetterSpacing="1.2"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Total}" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{DynamicResource NikaLapDigitsFont}" FontSize="34" FontWeight="SemiBold" LetterSpacing="1.2"/>
-                                                </Grid>
-                                            </Border>
+                    <Border x:Name="ControllerLaps" Classes="laps" Grid.Row="5" BorderBrush="{DynamicResource SubtleDividerBrush}" CornerRadius="8">
+                        <Panel>
+                            <Grid Classes="legacyLapPanel" RowDefinitions="Auto,*">
+                                <TextBlock Classes="lapHeading" Grid.Row="0" Text="Lap times" FontWeight="Bold" FontSize="{DynamicResource ControllerLapHeadingFontSize}" Margin="0,0,0,6"/>
+                                <ListBox Classes="originalLaps" Grid.Row="1" x:Name="LapListBox" Background="Transparent" BorderThickness="0">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="13" Margin="0,1"/>
                                         </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <TextBlock Classes="lapPlaceholder" x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
-                            <TextBlock Classes="lapPlaceholder" x:Name="LapPlaceholder" Grid.Row="1" Text="Click Add lap or press Win+F2 → L to record split times"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
+                            <controls:TodoFrame x:Name="ControllerLapCard" Classes="nikaOnly" CornerRadius="9" Pixel="{DynamicResource ControllerPixel}"
+                                                Background="#092A3B" BorderBrush="#496572" BorderThickness="1.6" ClipToBounds="True">
+                                <Grid RowDefinitions="48,1,Auto,Auto">
+                                    <Grid ColumnDefinitions="*,Auto" Margin="20,0">
+                                        <TextBlock Classes="lapTitle" Text="Lap times"/>
+                                        <TextBlock x:Name="NikaLapCount" Grid.Column="1" FontSize="20" FontWeight="Medium" Foreground="#BCD0D3"/>
+                                    </Grid>
+                                    <Border Grid.Row="1" Background="#365462"/>
+                                    <StackPanel x:Name="LapEmptyState" Grid.Row="2" Height="110" Orientation="Horizontal" Spacing="17" Margin="23,0">
+                                        <controls:TodoFrame Width="50" Height="50" VerticalAlignment="Center" Background="#163B49" CornerRadius="8" Pixel="{DynamicResource ControllerPixel}">
+                                            <controls:NikaActionIcon Width="28" Height="28" Label="Add lap" Ink="#A1C7CC" Pixel="{DynamicResource ControllerPixel}"/>
+                                        </controls:TodoFrame>
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="No laps yet" FontSize="25" FontWeight="SemiBold" Foreground="#FFF0D3"/>
+                                            <TextBlock Text="Use Add lap to record your first split." FontSize="21" Foreground="#BED2D6"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Grid Grid.Row="2" x:Name="LapColumns" Height="34" ColumnDefinitions="0.7*,*,*" Margin="24,0,40,0">
+                                        <TextBlock Text="Lap"/><TextBlock Grid.Column="1" Text="Split" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Column="2" Text="Total" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <ThemeVariantScope Grid.Row="3" RequestedThemeVariant="Dark">
+                                        <ScrollViewer x:Name="LapScroll" ScrollChanged="LapScroll_Changed" Height="126" VerticalContentAlignment="Top" AllowAutoHide="False" Margin="8,0,20,9"
+                                                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                            <Canvas x:Name="LapExtent">
+                                                <ItemsControl x:Name="NikaLapTable" Width="{Binding #LapExtent.Bounds.Width}" ItemTemplate="{DynamicResource NavyLapRow}"/>
+                                            </Canvas>
+                                        </ScrollViewer>
+                                    </ThemeVariantScope>
+                                </Grid>
+                            </controls:TodoFrame>
+                        </Panel>
                     </Border>
 
                     <!-- Status Bar -->

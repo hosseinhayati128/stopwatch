@@ -1,0 +1,67 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls" xmlns:views="using:StopwatchOverlay.Desktop.Views">
+    <Styles.Resources>
+        <DataTemplate x:Key="NavyLapRow" x:DataType="views:NikaLapRow">
+            <controls:TodoFrame Classes="lapRow" Classes.newest="{Binding IsNewest}" Height="42" CornerRadius="5" Pixel="{DynamicResource ControllerPixel}">
+                <Grid ColumnDefinitions="0.7*,*,*" Margin="16,0,20,0">
+                    <TextBlock Classes="lapNumber" Text="{Binding Number}" HorizontalAlignment="Left"/>
+                    <Grid Grid.Column="1" Classes="lapValue split" Classes.numeric="{Binding HasNumericSplit}">
+                        <TextBlock Text="{Binding Split}"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Right">
+                            <controls:ControllerPixelDigits Text="{Binding Split}" AutomationProperties.Name="{Binding Split}"/>
+                        </Viewbox>
+                    </Grid>
+                    <Grid Grid.Column="2" Classes="lapValue" Classes.numeric="{Binding HasNumericTotal}" ToolTip.Tip="{Binding Total}">
+                        <TextBlock Text="{Binding Total}"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Right">
+                            <controls:ControllerPixelDigits Text="{Binding Total}" AutomationProperties.Name="{Binding Total}"/>
+                        </Viewbox>
+                    </Grid>
+                </Grid>
+            </controls:TodoFrame>
+        </DataTemplate>
+    </Styles.Resources>
+    <Style Selector="Window.nika Grid.legacyLapPanel"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.nika Border#ControllerLaps">
+        <Setter Property="VerticalAlignment" Value="Top"/><Setter Property="MinHeight" Value="0"/><Setter Property="MaxHeight" Value="Infinity"/>
+        <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,18,0,0"/>
+    </Style>
+    <Style Selector="controls|TodoFrame#ControllerLapCard TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center"/><Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/>
+    </Style>
+    <Style Selector="TextBlock.lapTitle">
+        <Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="#FFF0D3"/>
+    </Style>
+    <Style Selector="Window.pixelController TextBlock.lapTitle">
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontSize" Value="28"/>
+    </Style>
+    <Style Selector="Grid#LapColumns TextBlock">
+        <Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="Medium"/><Setter Property="Foreground" Value="#B5CCD0"/>
+    </Style>
+    <Style Selector="controls|TodoFrame.lapRow.newest"><Setter Property="Background" Value="#1C4752"/></Style>
+    <Style Selector="TextBlock.lapNumber, Grid.lapValue > TextBlock">
+        <Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Cascadia Mono"/>
+    </Style>
+    <Style Selector="TextBlock.lapNumber">
+        <Setter Property="FontSize" Value="24"/><Setter Property="Foreground" Value="#AAC3CB"/><Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+    <Style Selector="controls|TodoFrame.newest TextBlock.lapNumber"><Setter Property="Foreground" Value="#A2E2CA"/></Style>
+    <Style Selector="Grid.lapValue TextBlock">
+        <Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="HorizontalAlignment" Value="Right"/>
+    </Style>
+    <Style Selector="Grid.lapValue controls|ControllerPixelDigits"><Setter Property="FontSize" Value="34"/></Style>
+    <Style Selector="Grid.lapValue TextBlock"><Setter Property="Foreground" Value="#FFF0D3"/></Style>
+    <Style Selector="Grid.lapValue controls|ControllerPixelDigits"><Setter Property="Foreground" Value="#FFF0D3"/></Style>
+    <Style Selector="Grid.lapValue.split TextBlock"><Setter Property="Foreground" Value="#A5E1CB"/></Style>
+    <Style Selector="Grid.lapValue.split controls|ControllerPixelDigits"><Setter Property="Foreground" Value="#A5E1CB"/></Style>
+    <Style Selector="Grid.lapValue > Viewbox, Window.pixelController Grid.lapValue.numeric > TextBlock"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.pixelController Grid.lapValue.numeric > Viewbox"><Setter Property="IsVisible" Value="True"/></Style>
+    <Style Selector="ScrollViewer#LapScroll /template/ ScrollBar:vertical"><Setter Property="Width" Value="16"/></Style>
+    <Style Selector="ScrollViewer#LapScroll /template/ ScrollBar:vertical Thumb">
+        <Setter Property="Template"><ControlTemplate><Border Name="LapScrollThumb" CornerRadius="4" Background="#6C939F" Margin="3,0" MinHeight="8"/></ControlTemplate></Setter>
+    </Style>
+    <Style Selector="Window.pixelController Thumb /template/ Border#LapScrollThumb"><Setter Property="CornerRadius" Value="0"/></Style>
+</Styles>

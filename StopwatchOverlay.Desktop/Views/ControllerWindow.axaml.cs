@@ -719,7 +719,7 @@ public partial class ControllerWindow : Window
                 : _timerManager.Active == null ? "No timer" : clock ? "Live" : state;
         }
 
-        LapListBox.ItemsSource = session.LapTimes;
+        LapListBox.ItemsSource = nika ? null : session.LapTimes;
         LapPlaceholder.IsVisible = session.LapTimes.Count == 0;
         UpdateNikaDetails();
 
@@ -767,7 +767,9 @@ public partial class ControllerWindow : Window
 
     private string FormatDisplayTime(TimerSession session) => FormatDisplayTime(session, DateTime.UtcNow);
 
-    private string FormatDisplayTime(TimerSession session, DateTime nowUtc)
+    private string FormatDisplayTime(TimerSession session, DateTime nowUtc) => FormatDisplayTime(session, nowUtc, _settings.TimeFormat);
+
+    private string FormatDisplayTime(TimerSession session, DateTime nowUtc, int format)
     {
         TimeSpan time = session.Mode switch
         {
@@ -780,7 +782,7 @@ public partial class ControllerWindow : Window
         time = time.Duration();
         long hours = (long)time.TotalHours;
         long minutes = session.Mode == 1 ? time.Minutes : (long)time.TotalMinutes;
-        string text = _settings.TimeFormat switch
+        string text = format switch
         {
             1 => $"{sign}{hours:00}:{time.Minutes:00}:{time.Seconds:00}",
             2 => $"{sign}{minutes:00}:{time.Seconds:00}.{time.Milliseconds / 100:0}",
@@ -901,7 +903,8 @@ public partial class ControllerWindow : Window
     {
         var session = CurrentTimer;
         if (_timerManager.Active == null || session.Mode == 1) return;
-        string lapStr = $"Lap {session.LapTimes.Count + 1}: {FormatDisplayTime(session)}";
+        int format = Classes.Contains("nika") ? 0 : _settings.TimeFormat;
+        string lapStr = $"Lap {session.LapTimes.Count + 1}: {FormatDisplayTime(session, DateTime.UtcNow, format)}";
         session.LapTimes.Insert(0, lapStr);
         UpdateActiveTimerDisplay();
     }
@@ -1398,6 +1401,7 @@ public partial class ControllerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        if (_lapSource != null) _lapSource.CollectionChanged -= MarkLapsChanged;
         _isExiting = true;
         StopPeriodicReview();
         StopInternetMonitor();

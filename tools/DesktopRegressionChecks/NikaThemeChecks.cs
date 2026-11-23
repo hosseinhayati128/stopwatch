@@ -25,9 +25,12 @@ internal static class NikaThemeChecks
             throw new Exception("Nika must reuse the existing One Piece application palette: " + paletteValue);
         CheckArtworkGeometryAndAlpha();
         var lapBuilder = typeof(ControllerWindow).GetMethod("BuildNikaLaps", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var lapRows = (IReadOnlyList<NikaLapRow>)lapBuilder.Invoke(null, new object[] { new[] { "Lap 3: 00:44:27.0", "Lap 2: 00:29:18.0", "Lap 1: 00:14:36.0" } })!;
+        var lapRows = (IReadOnlyList<NikaLapRow>)lapBuilder.Invoke(null, new object[] { new[] { "Lap 3: 00:44:27", "Lap 2: 00:29:18", "Lap 1: 00:14:36" } })!;
         if (lapRows[0].Split != "00:15:09" || lapRows[1].Split != "00:14:42" || lapRows[2].Split != "00:14:36")
             throw new Exception("Nika lap splits do not derive from recorded totals.");
+        var fractional = (IReadOnlyList<NikaLapRow>)lapBuilder.Invoke(null, new object[] { new[] { "Lap 3: 00:06:31.1", "Lap 2: 00:04:20.9", "Lap 1: 02:10.3" } })!;
+        if (!fractional.Select(row => row.Split).SequenceEqual(["00:02:10.2", "00:02:10.6", "00:02:10.3"]))
+            throw new Exception("Fractional splits lost their recorded tenths.");
         var malformedLaps = (IReadOnlyList<NikaLapRow>)lapBuilder.Invoke(null, new object[] { new[] { "Lap 2: unknown", "Lap 1: 00:00:02.0" } })!;
         if (malformedLaps[0].Split != "—" || malformedLaps[0].Total != "Lap 2: unknown")
             throw new Exception("Malformed stored lap text must remain visible without an invented split.");
@@ -260,7 +263,7 @@ internal static class NikaThemeChecks
     private static void AssertRecordedLapsVisible(ControllerWindow controller)
     {
         var table = controller.FindControl<ItemsControl>("NikaLapTable")!;
-        var rows = table.GetVisualDescendants().OfType<Border>().Where(row => row.DataContext is NikaLapRow).ToArray();
+        var rows = table.GetVisualDescendants().OfType<TodoFrame>().Where(row => row.Classes.Contains("lapRow")).ToArray();
         double bottom = rows.Select(row => row.TranslatePoint(new Point(row.Bounds.Width, row.Bounds.Height), controller)!.Value.Y).DefaultIfEmpty(double.PositiveInfinity).Max();
         var footer = controller.GetVisualDescendants().OfType<Border>().First(border => border.Classes.Contains("nikaFooter"));
         var footerStart = footer.TranslatePoint(default, controller)!.Value;

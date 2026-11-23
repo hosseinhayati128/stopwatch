@@ -3,13 +3,9 @@ using Avalonia.Media;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Markup.Xaml.Styling;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using StopwatchOverlay.Desktop.Controls;
 
 namespace StopwatchOverlay.Desktop.Views;
-
-public sealed record NikaLapRow(string Number, string Split, string Total, IBrush Background);
 
 public partial class ControllerWindow
 {
@@ -50,41 +46,11 @@ public partial class ControllerWindow
         }
     }
 
-    internal static IReadOnlyList<NikaLapRow> BuildNikaLaps(IEnumerable<string> values)
-    {
-        var parsed = values.Select(raw => {
-            var match = Regex.Match(raw, @"^Lap\s+(\d+):\s*(\d+):(\d{2}):(\d{2})(?:[.](\d+))?$", RegexOptions.CultureInvariant);
-            TimeSpan? total = null;
-            if (match.Success && long.TryParse(match.Groups[2].Value, out long hours) && hours <= 200000000
-                && int.TryParse(match.Groups[3].Value, out int minutes) && minutes < 60
-                && int.TryParse(match.Groups[4].Value, out int seconds) && seconds < 60
-                && double.TryParse("0." + match.Groups[5].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out double fraction))
-            {
-                try { total = TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes) + TimeSpan.FromSeconds(seconds + fraction); }
-                catch (OverflowException) { }
-            }
-            return (Raw: raw, Number: match.Success ? match.Groups[1].Value : "—", Total: total);
-        }).ToArray();
-        string Format(TimeSpan value) => $"{(long)value.TotalHours:00}:{value.Minutes:00}:{value.Seconds:00}";
-        return parsed.Select((row, index) => {
-            TimeSpan? previous = index + 1 < parsed.Length ? parsed[index + 1].Total : TimeSpan.Zero;
-            TimeSpan? split = row.Total.HasValue && previous.HasValue && row.Total >= previous ? row.Total - previous : null;
-            return new NikaLapRow(row.Number == "—" ? "—" : row.Number.PadLeft(2, '0'), split.HasValue ? Format(split.Value) : "—",
-                row.Total.HasValue ? Format(row.Total.Value) : row.Raw, index == 0 ? Brush.Parse("#55B58D4D") : Brushes.Transparent);
-        }).ToArray();
-    }
-
-    private string[] _nikaLapSnapshot = [];
     private void UpdateNikaDetails()
     {
         if (!Classes.Contains("nika")) return;
-        if (!_nikaLapSnapshot.SequenceEqual(CurrentTimer.LapTimes))
-        {
-            _nikaLapSnapshot = CurrentTimer.LapTimes.ToArray();
-            NikaLapTable.ItemsSource = BuildNikaLaps(_nikaLapSnapshot);
-        }
+        UpdateNavyLaps(CurrentTimer.LapTimes);
         NikaTimerCount.Text = _timerManager.Sessions.Count.ToString("00");
-        NikaLapCount.Text = $"{CurrentTimer.LapTimes.Count} laps";
         LapButton.Content = "Add lap";
         ResetButton.Content = "Reset";
         ToggleOverlayButton.Content = _overlaysVisible ? "Hide overlay" : "Show overlay";
@@ -126,8 +92,5 @@ public partial class ControllerWindow
             _ => "avares://StopwatchOverlay.Desktop/Assets/Fonts/Nika/#Roboto Condensed Black"
         });
         Resources["NikaTimerWeight"] = choice == "navigator-precision" ? FontWeight.SemiBold : FontWeight.Black;
-        Resources["NikaLapDigitsFont"] = choice == "original-classic"
-            ? new FontFamily("avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Barlow Condensed")
-            : Resources["NikaDigitsFont"];
     }
 }
