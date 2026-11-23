@@ -96,7 +96,8 @@ public partial class SettingsWindow
         {
             if(_emblemPicker!=null){_emblemPicker.Activate();return;}
             var profile=_settings.TodoAppearance.Current;
-            _emblemPicker=new TodoEmblemPickerWindow(launcher?profile.LauncherEmblem:profile.HeaderEmblem,launcher,profile);
+            _emblemPicker=new TodoEmblemPickerWindow(launcher?profile.LauncherEmblem:profile.HeaderEmblem,
+                launcher,profile,_settings.TodoAppearance.IsPixel,_settings.UiScalePercent);
             try {var result=await _emblemPicker.ShowDialog<string?>(this);if(result!=null&&!_closed){if(launcher)profile.LauncherEmblem=result;else profile.HeaderEmblem=result;CommitTodoAppearance();}}
             finally {_emblemPicker=null;}
         };

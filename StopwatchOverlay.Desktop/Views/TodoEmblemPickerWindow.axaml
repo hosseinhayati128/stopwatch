@@ -1,0 +1,97 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:todo="using:StopwatchOverlay.Desktop.Controls"
+        xmlns:core="clr-namespace:StopwatchOverlay;assembly=StopwatchOverlay.Core"
+        x:Class="StopwatchOverlay.Desktop.Views.TodoEmblemPickerWindow"
+        Width="568" Height="620" MinWidth="420" MinHeight="480"
+        SystemDecorations="None" CanResize="True" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="Transparent"
+        FontFamily="{x:Static todo:TodoVisuals.BodyFont}">
+    <Window.Resources>
+        <ControlTheme x:Key="EmblemChoice" TargetType="RadioButton">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="MinHeight" Value="82"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="#FFF2D9"/>
+            <Setter Property="Foreground" Value="{x:Static todo:TodoVisuals.Navy}"/>
+            <Setter Property="BorderBrush" Value="#CBB58B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <todo:TodoFrame Pixel="{DynamicResource EmblemPickerPixel}" CornerRadius="7"
+                                    Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid Margin="3,3,3,2" RowDefinitions="*,Auto" x:DataType="core:TodoAppearanceOption">
+                            <todo:TodoArtwork Choice="{Binding Id}" Width="62" Height="51" VerticalAlignment="Center"/>
+                            <TextBlock Name="EmblemLabel" Grid.Row="1" Text="{Binding Label}" MinHeight="21"
+                                       FontSize="13" FontWeight="SemiBold" Foreground="{TemplateBinding Foreground}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"/>
+                            <Border Name="SelectionCheck" IsVisible="False" Width="17" Height="17"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    CornerRadius="{DynamicResource EmblemCheckRadius}" Background="{x:Static todo:TodoVisuals.Gold}">
+                                <Path Data="M2,7 L5.4,10.3 L12.2,3.2" Stroke="{x:Static todo:TodoVisuals.Navy}" StrokeThickness="2"
+                                      Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </todo:TodoFrame>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover"><Setter Property="BorderBrush" Value="#6E735A"/></Style>
+            <Style Selector="^:checked">
+                <Setter Property="Background" Value="#17495A"/>
+                <Setter Property="Foreground" Value="{x:Static todo:TodoVisuals.Ivory}"/>
+                <Setter Property="BorderBrush" Value="{x:Static todo:TodoVisuals.Gold}"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </Style>
+            <Style Selector="^:checked /template/ Border#SelectionCheck"><Setter Property="IsVisible" Value="True"/></Style>
+            <Style Selector="^:focus-visible /template/ todo|TodoFrame"><Setter Property="InnerBorderBrush" Value="#529CB1"/></Style>
+        </ControlTheme>
+    </Window.Resources>
+    <todo:TodoFrame x:Name="PickerShell" Pixel="{DynamicResource EmblemPickerPixel}" Padding="3" CornerRadius="10"
+                    Background="{x:Static todo:TodoVisuals.Navy}" BorderThickness="1.5"
+                    BorderBrush="{x:Static todo:TodoVisuals.Gold}" InnerBorderBrush="{x:Static todo:TodoVisuals.FineGold}">
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
+            <Border Background="Transparent" Padding="17,10,17,12" PointerPressed="DragTitle">
+                <StackPanel Spacing="1">
+                    <TextBlock Text="Todo appearance" Foreground="#B3C8CA" FontSize="12"/>
+                    <TextBlock x:Name="PickerHeading" FontSize="26" TextWrapping="Wrap" Foreground="{x:Static todo:TodoVisuals.Ivory}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Row="1" Background="#F4E2BE" Padding="9,8">
+                <ScrollViewer x:Name="GalleryScroll" VerticalScrollBarVisibility="Auto" AllowAutoHide="False"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <UniformGrid x:Name="EmblemGallery" Columns="4" VerticalAlignment="Top"/>
+                </ScrollViewer>
+            </Border>
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="16,7">
+                <StackPanel VerticalAlignment="Center" Spacing="1">
+                    <TextBlock x:Name="PreviewLabel" FontSize="12" Foreground="#B3C8CA"/>
+                    <TextBlock x:Name="SelectionName" FontSize="19" FontFamily="{x:Static todo:TodoVisuals.StrongFont}"
+                               Foreground="{x:Static todo:TodoVisuals.Ivory}" TextWrapping="Wrap"/>
+                </StackPanel>
+                <todo:TodoFrame x:Name="PreviewSurface" Grid.Column="1" Pixel="{DynamicResource EmblemPickerPixel}" CornerRadius="6"
+                                Background="#204153" BorderBrush="#52707B" BorderThickness="1" ClipToBounds="True">
+                    <Grid x:Name="PreviewContext" ColumnDefinitions="Auto,Auto" ClipToBounds="True" IsHitTestVisible="False">
+                        <Canvas Grid.ColumnSpan="2" ClipToBounds="True">
+                            <todo:TodoArtwork x:Name="HeaderEngraving" Kind="Header" Opacity="0.65"/>
+                        </Canvas>
+                        <todo:TodoArtwork x:Name="PreviewEmblem"/>
+                        <TextBlock x:Name="PreviewTitle" Grid.Column="1" Text="Todos" VerticalAlignment="Center"
+                                   FontFamily="{x:Static todo:TodoVisuals.HeadingFont}" FontWeight="SemiBold"
+                                   Foreground="{x:Static todo:TodoVisuals.Ivory}"/>
+                    </Grid>
+                </todo:TodoFrame>
+            </Grid>
+            <Border Grid.Row="3" BorderBrush="#41606B" BorderThickness="0,1,0,0">
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="15,8,15,10">
+                    <Button x:Name="CancelEmblem" Grid.Column="1" Content="Cancel" MinWidth="75" Margin="0,0,8,0"
+                            Padding="12,3" FontSize="14" Height="34"/>
+                    <Button x:Name="UseEmblem" Grid.Column="2" Content="Use emblem" MinWidth="112"
+                            FontWeight="SemiBold" Padding="12,3" FontSize="14" Height="34"/>
+                </Grid>
+            </Border>
+            <Border Grid.Row="3" Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Background="Transparent" Cursor="BottomRightCorner" PointerPressed="ResizeCorner"/>
+        </Grid>
+    </todo:TodoFrame>
+</Window>
