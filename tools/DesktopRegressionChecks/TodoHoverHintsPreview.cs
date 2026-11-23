@@ -91,7 +91,7 @@ internal static class TodoHoverHintsPreview
         overlay.ReloadTodos();
         ClockOverlayChecks.Pump(50);
         Capture(overlay, Card(), true, false, null, "pixel", 90, null, left: true, manual: true);
-        Require(ToolTip.GetTip(Card().Children.OfType<Button>().Single(b => b.Classes.Contains("todoDragHandle"))) is string,
+        Require(ToolTip.GetTip(Card().Children.OfType<Button>().Single(b => b.Classes.Contains("todoDragHandle"))) is ToolTip,
             "Manual drag handle lost its reorder hint");
         settings.ThemeMode = AppThemeCatalog.Daylight;
         DeleteTodoNativeChecks.Desktop("ThemeResources", "ApplyApplication", settings.ThemeMode);

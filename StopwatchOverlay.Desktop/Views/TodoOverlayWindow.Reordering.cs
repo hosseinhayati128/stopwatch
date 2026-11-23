@@ -34,7 +34,8 @@ public partial class TodoOverlayWindow
             BorderThickness = new Thickness(0), VerticalAlignment = VerticalAlignment.Top, Cursor = new Cursor(StandardCursorType.SizeAll) };
         handle.Classes.Add("todoDragHandle");
         AutomationProperties.SetName(handle, "Reorder " + entry.Text);
-        ToolTip.SetTip(handle, "Drag this handle or the task title to reorder · Hold near an edge to scroll · Up/Down also moves this task");
+        if (IsNikaTodo) TodoTaskHoverHint.AttachDragHandle(handle, _settings);
+        else ToolTip.SetTip(handle, "Drag this handle or the task title to reorder · Hold near an edge to scroll · Up/Down also moves this task");
         handle.AddHandler(PointerPressedEvent, (_, e) => BeginCardDrag(entry, container, e, false), RoutingStrategies.Tunnel);
         handle.KeyDown += (_, e) =>
         {

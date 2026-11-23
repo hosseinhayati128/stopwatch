@@ -409,14 +409,16 @@ if (args.Contains("--todo-checklist-native") || args.Contains("--todo-checklist-
     args.Contains("--todo-sort-dropdown-native") || args.Contains("--todo-sort-dropdown-preview") || args.Contains("--todo-reorder-preview") || args.Contains("--todo-reorder-native") ||
     args.Contains("--todo-save-sync-preview") || args.Contains("--todo-save-sync-native") ||
     args.Contains("--todo-hover-hints-preview") || args.Contains("--todo-hover-hints-native") ||
-    args.Contains("--todo-detail-hover-hints-native"))
+    args.Contains("--todo-detail-hover-hints-native") || args.Contains("--todo-control-hover-hints-native"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source = new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    if (args.Contains("--todo-detail-hover-hints-native"))
+    if (args.Contains("--todo-control-hover-hints-native"))
+        Check("Todo launcher, priority and Manual hover hints", TodoControlHoverHintChecks.Run);
+    else if (args.Contains("--todo-detail-hover-hints-native"))
         Check("Subtask and attached note hover hints", TodoDetailHoverHintChecks.Run);
     else if (args.Contains("--todo-hover-hints-preview") || args.Contains("--todo-hover-hints-native"))
         Check("Todo task hover hints, state, placement and deadlines", TodoHoverHintsPreview.Run);

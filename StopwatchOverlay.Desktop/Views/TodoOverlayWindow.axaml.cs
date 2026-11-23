@@ -169,6 +169,7 @@ public partial class TodoOverlayWindow : Window
         SkullArtwork.IsVisible = pirate;
         PlainLauncher.IsVisible = !pirate;
         ApplyTodoAppearance();
+        TodoTaskHoverHint.SetLauncher(LauncherButton, _settings, IsExpanded, IsNikaTodo);
         ShortcutHint.Text = $"{(_settings.NoteLeaderShortcut ?? AppSettings.DefaultNoteLeaderShortcut()).Format()} → Space · Esc to collapse";
         _snapshot = null;
         ShowCompletedToggle.IsChecked = _settings.TodoOverlayShowCompleted;
@@ -187,7 +188,7 @@ public partial class TodoOverlayWindow : Window
         Height = IsExpanded ? (IsNikaTodo ? 560 : 500) : 88;
         UpdateExpandedVisibility();
         AutomationProperties.SetName(LauncherButton, IsExpanded ? "Collapse todos" : "Expand todos");
-        ToolTip.SetTip(LauncherButton, IsExpanded ? "Click to collapse todos · Drag to move" : "Click to expand todos · Drag to move");
+        TodoTaskHoverHint.SetLauncher(LauncherButton, _settings, IsExpanded, IsNikaTodo);
         if (IsExpanded)
         {
             ReloadTodos();
@@ -307,7 +308,7 @@ public partial class TodoOverlayWindow : Window
                     Grid.SetRow(statusBadge, 0); Grid.SetColumn(statusBadge, 3);
                     container.Children.Add(statusBadge);
                 }
-                var badge = CreatePriorityBadge(entry);
+                var badge = CreatePriorityBadge(entry, container);
                 Grid.SetColumn(badge, 0);
                 container.Children.Add(badge);
                 if (_organization?.SortMode == "Manual")
@@ -352,7 +353,7 @@ public partial class TodoOverlayWindow : Window
         return new SolidColorBrush(Color.Parse(colors[Math.Clamp(priority, 1, 10) - 1]));
     }
 
-    private Button CreatePriorityBadge(NoteEntry entry)
+    private Button CreatePriorityBadge(NoteEntry entry, Grid card)
     {
         int priority = _organization?.GetPriority(entry) ?? 3;
         var color = PriorityBrush(priority);
@@ -360,7 +361,8 @@ public partial class TodoOverlayWindow : Window
         var badge = new Button { IsEnabled = !_deleteInProgress, Content = label, Width = 30, Height = 26, MinHeight = 26, Padding = new Thickness(3, 1), Margin = new Thickness(0, 3, 7, 0), VerticalAlignment = VerticalAlignment.Top };
         badge.Classes.Add("modern"); badge.Classes.Add("priorityBadge");
         AutomationProperties.SetName(badge, $"Priority {priority}. Change priority for {entry.Text}");
-        ToolTip.SetTip(badge, "Priority " + priority + " · 1 is highest · Click to change");
+        if (IsNikaTodo) TodoTaskHoverHint.AttachPriority(badge, card, _settings, priority);
+        else ToolTip.SetTip(badge, "Priority " + priority + " · 1 is highest · Click to change");
         var menu = new ContextMenu();
         ControlTheme? optionTheme = null;
         if (IsNikaTodo)
