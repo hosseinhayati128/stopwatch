@@ -54,13 +54,23 @@ if(args.Contains("--panel-frame-baseline")||args.Contains("--panel-frame-checks"
     Environment.Exit(failures==0?0:1);
 }
 
-if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer"))
+if(args.Contains("--settings-typography-regressions")||args.Contains("--settings-typography-native")||args.Contains("--settings-appearance-native")||args.Contains("--controller-sizing")||args.Contains("--controller-active-timer")||args.Contains("--controller-timer-list")||args.Contains("--controller-timer-actions"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = new[] { Win32RenderingMode.Software } })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
+    if(args.Contains("--controller-timer-actions"))
+    {
+        Check("Controller timer actions, commands and screen-edge placement", ControllerTimerActionsChecks.Run);
+        Environment.Exit(failures==0?0:1);
+    }
+    if(args.Contains("--controller-timer-list"))
+    {
+        Check("Controller timer list, live states, menus and native captures",ControllerTimerListChecks.Run);
+        Environment.Exit(failures==0?0:1);
+    }
     if(args.Contains("--controller-active-timer"))
     {
         Check("Active timer styles, controls and native scale captures",ControllerActiveTimerChecks.Run);

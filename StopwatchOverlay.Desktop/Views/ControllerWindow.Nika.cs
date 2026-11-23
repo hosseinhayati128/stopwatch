@@ -74,42 +74,6 @@ public partial class ControllerWindow
         }).ToArray();
     }
 
-    private void NikaRailMenu_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (sender is not Button { DataContext: TimerRailItemViewModel timer } button) return;
-        var session = _timerManager.Sessions.FirstOrDefault(item => item.Id == timer.Id);
-        if (session is null) return;
-        _timerManager.Activate(session);
-        TimerRailList.SelectedItem = timer;
-        UpdateActiveTimerDisplay();
-        UpdateOverlayStates();
-        MenuItem Command(string label, EventHandler<Avalonia.Interactivity.RoutedEventArgs> action)
-        {
-            var item = new MenuItem { Header = label, Background = Brush.Parse("#032437"), Foreground = Brush.Parse("#FFF1D9") };
-            item.Click += action;
-            return item;
-        }
-        var menu = new ContextMenu
-        {
-            Background = Brush.Parse("#032437"), Foreground = Brush.Parse("#FFF1D9"),
-            ItemsSource = new object[] {
-                Command("Start / Pause", StartStopButton_Click),
-                Command("Add lap", LapButton_Click),
-                Command("Reset", ResetButton_Click),
-                Command("Show / Hide overlay", ToggleOverlayButton_Click),
-                new Separator(),
-                Command("Edit timer...", EditTimerMenuItem_Click),
-                Command("Set project...", RenameTimerMenuItem_Click),
-                Command(session.IsSeparated ? "Merge with herd overlay" : "Separate clock overlay", ToggleCombinedOverlayMenuItem_Click),
-                Command("Close timer", CloseTimerMenuItem_Click)
-            }
-        };
-        menu.Classes.Add("nikaRailMenu");
-        button.ContextMenu = menu;
-        menu.Open(button);
-        e.Handled = true;
-    }
-
     private string[] _nikaLapSnapshot = [];
     private void UpdateNikaDetails()
     {

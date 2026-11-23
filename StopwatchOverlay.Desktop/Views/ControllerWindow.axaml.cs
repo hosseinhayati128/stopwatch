@@ -16,17 +16,6 @@ using StopwatchOverlay.Platform;
 
 namespace StopwatchOverlay.Desktop.Views;
 
-public sealed class TimerRailItemViewModel
-{
-    public Guid Id { get; init; }
-    public string DisplayName { get; set; } = "";
-    public string DisplaySummary { get; set; } = "";
-    public bool IsRunning { get; set; }
-    public bool IsActive { get; set; }
-    public bool IsSeparated { get; set; }
-    public int Mode { get; set; }
-}
-
 public partial class ControllerWindow : Window
 {
     private readonly TimerSessionManager _timerManager = new();
@@ -693,12 +682,14 @@ public partial class ControllerWindow : Window
 
         UpdateOverlayStates();
         UpdateActiveTimerDisplay();
+        UpdateLiveRail(now);
         UpdateInternetTimerState();
     }
 
     private void UpdateActiveTimerDisplay()
     {
         var session = CurrentTimer;
+        if (_openTimerActions != null) DismissStaleTimerActions(session);
         TimeDisplay.Text = FormatDisplayTime(session);
         ActiveWorkspaceTitle.Text = _timerManager.Active == null ? "No timers" : session.DisplayName;
 
@@ -709,11 +700,10 @@ public partial class ControllerWindow : Window
 
         bool nika = Classes.Contains("nika");
         bool clock = session.Mode == 1;
-        bool finished = session.Mode == 2 && session.CountdownInitialized && session.CountdownRemaining == TimeSpan.Zero;
-        bool started = session.Mode == 2
-            ? session.CountdownRemaining > TimeSpan.Zero && (session.CountdownInitialized || session.CountdownRemaining < session.CountdownDuration)
-            : session.HasAccumulatedTime;
-        StartStopButton.Content = session.IsRunning ? "Pause" : nika && started ? "Resume" : "Start";
+        string state = TimerRailItemViewModel.StateOf(session);
+        if (TimerRailList.SelectedItem is TimerRailItemViewModel row && row.Session == session)
+            row.UpdateDisplay(TimeDisplay.Text!, state);
+        StartStopButton.Content = session.IsRunning ? "Pause" : nika && state == "Paused" ? "Resume" : "Start";
         StartStopButton.IsEnabled = LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && session.Mode != 1;
         RecIndicator.IsVisible = ShowTimerRec(session) && !Classes.Contains("nika");
 
@@ -726,8 +716,7 @@ public partial class ControllerWindow : Window
             ActiveTimerCaption.Text = session.Mode switch { 1 => "Local time", 2 => "Time remaining", 3 => "Timecode", _ => "Elapsed time" };
             ActiveTimerState.Classes.Set("live", clock || session.IsRunning);
             ActiveTimerStatus.Text = hasShortcutFeedback ? _shortcutFeedback
-                : _timerManager.Active == null ? "No timer" : clock ? "Live" : session.IsRunning ? "Running"
-                : finished ? "Finished" : started ? "Paused" : "Ready";
+                : _timerManager.Active == null ? "No timer" : clock ? "Live" : state;
         }
 
         LapListBox.ItemsSource = session.LapTimes;
@@ -802,27 +791,38 @@ public partial class ControllerWindow : Window
         return session.Mode == 1 && _settings.BlinkColon && nowUtc.Millisecond >= 500 ? text.Replace(':', ' ') : text;
     }
 
+    private List<TimerRailItemViewModel> _railItems = [];
+    private long _lastRailTick = -1;
+    private void UpdateLiveRail(DateTime now)
+    {
+        if (!IsVisible || WindowState == WindowState.Minimized) return;
+        long tick = now.Ticks / (TimeSpan.TicksPerMillisecond * 100);
+        if (_lastRailTick == tick) return;
+        _lastRailTick = tick;
+        foreach (var row in _railItems)
+        {
+            var timer = row.Session;
+            if (timer == _timerManager.Active || (timer.Mode != 1 && !timer.IsRunning && !row.IsRunning)) continue;
+            row.UpdateDisplay(FormatDisplayTime(timer, now), TimerRailItemViewModel.StateOf(timer));
+        }
+    }
+
     private void RefreshTimerRail()
     {
-        var active = _timerManager.Active;
-        var items = _timerManager.Sessions.Select(s => new TimerRailItemViewModel
-        {
-            Id = s.Id,
-            DisplayName = s.DisplayName,
-            DisplaySummary = $"{FormatDisplayTime(s)} · {(s.IsRunning ? "Running" : "Paused")}{(!string.IsNullOrWhiteSpace(s.Category) ? $" · [{s.Category}]" : "")}{(s.IsSeparated ? " · Separated" : "")}",
-            IsRunning = s.IsRunning,
-            IsActive = s == active,
-            IsSeparated = s.IsSeparated,
-            Mode = s.Mode
-        }).ToList();
-
         _updatingUi = true;
         try
         {
-            TimerRailList.ItemsSource = items;
-            var activeVm = items.FirstOrDefault(i => i.IsActive);
-            if (activeVm != null)
-                TimerRailList.SelectedItem = activeVm;
+            var sessions = _timerManager.Sessions;
+            bool replace = !_railItems.Select(row => row.Session).SequenceEqual(sessions);
+            if (replace) _railItems = sessions.Select(s => new TimerRailItemViewModel(s)).ToList();
+            var now = DateTime.UtcNow;
+            foreach (var row in _railItems)
+            {
+                row.UpdateMetadata();
+                row.UpdateDisplay(FormatDisplayTime(row.Session, now), TimerRailItemViewModel.StateOf(row.Session));
+            }
+            if (replace) TimerRailList.ItemsSource = _railItems;
+            TimerRailList.SelectedItem = _railItems.FirstOrDefault(row => row.Session == _timerManager.Active);
         }
         finally
         {
@@ -1267,6 +1267,7 @@ public partial class ControllerWindow : Window
                 "ControllerWindow.OnSettingsChanged");
         }
         if(pageOnly)return;
+        if ((change & SettingsChangeKind.OverlayGeometry) != 0) RefreshTimerRail();
         if (_herdOverlay != null)
         {
             ApplyOverlayStyle(_herdOverlay);

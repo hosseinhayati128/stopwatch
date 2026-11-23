@@ -1,0 +1,53 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="Window.nika ListBox#TimerRailList ListBoxItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="RailSurface" Pixel="{DynamicResource ControllerPixel}" CornerRadius="8" BorderThickness="2"
+                                    BorderBrush="#3D5864" Background="#F209293A" ClipToBounds="True">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch"/>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika ListBox#TimerRailList ListBoxItem:pointerover /template/ controls|TodoFrame#RailSurface">
+        <Setter Property="Background" Value="#113747"/>
+    </Style>
+    <Style Selector="Window.nika ListBox#TimerRailList ListBoxItem:selected /template/ controls|TodoFrame#RailSurface">
+        <Setter Property="Background" Value="#164254"/>
+        <Setter Property="BorderBrush" Value="#EDC778"/>
+    </Style>
+    <Style Selector="Window.nika ListBox#TimerRailList ListBoxItem:focus-visible /template/ controls|TodoFrame#RailSurface">
+        <Setter Property="InnerBorderBrush" Value="#D4E6EA"/>
+    </Style>
+    <Style Selector="Window.nika controls|RailProjectTitle.railProject">
+        <Setter Property="FontFamily" Value="{DynamicResource NikaHeadingFont}"/><Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="26"/><Setter Property="Foreground" Value="#FFF0D3"/>
+    </Style>
+    <Style Selector="Window.pixelController controls|RailProjectTitle.railProject">
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="24"/>
+    </Style>
+    <Style Selector="controls|ControllerPixelDigits.railPixels, Window.pixelController TextBlock.railTime"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.pixelController controls|ControllerPixelDigits.railPixels"><Setter Property="IsVisible" Value="True"/></Style>
+    <Style Selector="StackPanel.railState TextBlock"><Setter Property="Foreground" Value="#C2CFD3"/><Setter Property="FontWeight" Value="Medium"/></Style>
+    <Style Selector="StackPanel.railState.running TextBlock"><Setter Property="Foreground" Value="#9EE2C5"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="StackPanel.railState.clock TextBlock"><Setter Property="Foreground" Value="#A5D2E3"/></Style>
+    <Style Selector="Window.nika Button.railMenuAction">
+        <Setter Property="Width" Value="44"/><Setter Property="Height" Value="36"/>
+        <Setter Property="MinWidth" Value="0"/><Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="RailMenuPlate" Pixel="{DynamicResource ControllerPixel}" Background="Transparent" CornerRadius="5">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.railMenuAction:pointerover /template/ controls|TodoFrame#RailMenuPlate"><Setter Property="Background" Value="#295465"/></Style>
+    <Style Selector="Button.railMenuAction:pressed /template/ controls|TodoFrame#RailMenuPlate"><Setter Property="Background" Value="#37677A"/></Style>
+    <Style Selector="Button.railMenuAction:focus-visible /template/ controls|TodoFrame#RailMenuPlate"><Setter Property="InnerBorderBrush" Value="#EDC778"/></Style>
+</Styles>

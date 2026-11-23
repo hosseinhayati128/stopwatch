@@ -1,0 +1,58 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
+    <Styles.Resources>
+        <ControlTheme x:Key="ControllerTimerActionsMenu" TargetType="ContextMenu">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <LayoutTransformControl LayoutTransform="{DynamicResource TimerActionsZoom}">
+                        <controls:TodoFrame Name="ActionSurface" Pixel="{DynamicResource ControllerPixel}" MinWidth="{DynamicResource TimerActionsWidth}"
+                                            Background="#092A3B" BorderBrush="#BC9B61" BorderThickness="1.3" CornerRadius="8" Padding="5">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                            </ScrollViewer>
+                        </controls:TodoFrame>
+                    </LayoutTransformControl>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+        <ControlTheme x:Key="ControllerTimerAction" TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F9EFDA"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <controls:TodoFrame Name="ActionRow" Pixel="{DynamicResource ControllerPixel}" CornerRadius="4"
+                                        Background="{TemplateBinding Background}" MinHeight="31" Padding="5,2,6,2">
+                        <Grid ColumnDefinitions="28,5,*">
+                            <controls:NikaActionIcon Width="17" Height="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Label="{Binding Icon, RelativeSource={RelativeSource TemplatedParent}}" Pixel="{DynamicResource ControllerPixel}" Ink="#B7CDD4"/>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
+                                       FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="{DynamicResource TimerActionsTextSize}"
+                                       FontWeight="{TemplateBinding FontWeight}" Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
+                    </controls:TodoFrame>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:selected, ^:pointerover">
+                <Setter Property="Background" Value="#204B58"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+            <Style Selector="^:selected /template/ controls|NikaActionIcon, ^:pointerover /template/ controls|NikaActionIcon">
+                <Setter Property="Ink" Value="#A5E4D0"/>
+            </Style>
+            <Style Selector="^.closeTimer"><Setter Property="Foreground" Value="#F3A69A"/></Style>
+            <Style Selector="^.closeTimer /template/ controls|NikaActionIcon"><Setter Property="Ink" Value="#F3A69A"/></Style>
+        </ControlTheme>
+        <ControlTheme x:Key="ControllerTimerActionDivider" TargetType="Separator">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Template"><ControlTemplate><Border Background="#385562"/></ControlTemplate></Setter>
+        </ControlTheme>
+    </Styles.Resources>
+    <Style Selector="Button.railMenuAction.actionsOpen /template/ controls|TodoFrame#RailMenuPlate">
+        <Setter Property="Background" Value="#315A69"/>
+        <Setter Property="BorderBrush" Value="#C8A565"/>
+        <Setter Property="BorderThickness" Value="1.4"/>
+    </Style>
+</Styles>
