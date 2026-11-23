@@ -62,6 +62,7 @@
         <StyleInclude Source="/Styles/ControllerLapTimes.axaml"/>
         <StyleInclude Source="/Styles/ControllerCountdown.axaml"/>
         <StyleInclude Source="/Styles/ControllerModeSelector.axaml"/>
+        <StyleInclude Source="/Styles/ControllerActiveHeader.axaml"/>
         <Style Selector="ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource LegacyRailItem}"/></Style>
         <Style Selector="Window.nika ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource NavyRailItem}"/></Style>
     </Window.Styles>
@@ -181,16 +182,16 @@
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" Classes="workspace">
 
                     <!-- Title and New Timer Button -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14" Classes="workspaceTitleRow">
-                        <controls:NikaArtwork Classes="nikaOnly nikaLogPose" Part="LogPose" Grid.ColumnSpan="2" HorizontalAlignment="Right" Width="220" Height="156" Margin="0,-18,215,-14"/>
-                        <StackPanel Grid.Column="0" Classes="workspaceTitlePanel" Spacing="2" VerticalAlignment="Center">
+                    <Grid x:Name="WorkspaceHeader" Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Classes="workspaceTitleRow">
+                        <StackPanel x:Name="WorkspaceTitlePanel" Grid.Column="0" Classes="workspaceTitlePanel" VerticalAlignment="Center">
                             <TextBlock Classes="nikaOnly nikaEyebrow" Text="ACTIVE TIMER"/>
-                            <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading workspaceTitle" Text="Active Timer" VerticalAlignment="Center"/>
-                            <Button Content="{DynamicResource ControllerProjectAction}" Classes="modern renameProject" Margin="10,0,0,0" Padding="8,4" FontSize="12" Click="RenameTimerMenuItem_Click"/>
+                            <StackPanel Classes="titleAndProject">
+                                <TextBlock x:Name="ActiveWorkspaceTitle" Classes="heading workspaceTitle" Text="Active Timer" VerticalAlignment="Center"/>
+                                <Button x:Name="WorkspaceProjectButton" Content="{DynamicResource ControllerProjectAction}" Classes="modern renameProject headerAction" Click="RenameTimerMenuItem_Click"/>
                             </StackPanel>
                         </StackPanel>
-                        <Button x:Name="WorkspaceNewTimerButton" Grid.Column="1" Content="+ New timer" Classes="modern" VerticalAlignment="Top" Click="NewTimerMenuItem_Click"/>
+                        <controls:NikaArtwork x:Name="HeaderCompass" Classes="nikaOnly" Part="LogPose" Grid.Column="1" Width="164" Height="114" Margin="4,0,20,0" VerticalAlignment="Center"/>
+                        <Button x:Name="WorkspaceNewTimerButton" Grid.Column="2" Classes="modern headerAction" VerticalAlignment="Top" Click="NewTimerMenuItem_Click"/>
                     </Grid>
 
                     <!-- Mode Selector -->

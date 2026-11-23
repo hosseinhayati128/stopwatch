@@ -1,0 +1,71 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="Grid.workspaceTitleRow"><Setter Property="Margin" Value="0,0,0,14"/></Style>
+    <Style Selector="StackPanel.workspaceTitlePanel"><Setter Property="Spacing" Value="2"/></Style>
+    <Style Selector="StackPanel.titleAndProject"><Setter Property="Orientation" Value="Horizontal"/></Style>
+    <Style Selector="Button.renameProject">
+        <Setter Property="Margin" Value="10,0,0,0"/><Setter Property="Padding" Value="8,4"/><Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button#WorkspaceNewTimerButton"><Setter Property="Content" Value="+ New timer"/></Style>
+
+    <Style Selector="Window.nika Grid.workspaceTitleRow">
+        <Setter Property="MinHeight" Value="125"/><Setter Property="Margin" Value="0,0,0,13"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.workspaceTitlePanel">
+        <Setter Property="Spacing" Value="4"/><Setter Property="Margin" Value="0,0,16,0"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.titleAndProject">
+        <Setter Property="Orientation" Value="Vertical"/><Setter Property="Spacing" Value="4"/>
+    </Style>
+    <Style Selector="Window.nika TextBlock.nikaEyebrow">
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="LetterSpacing" Value="1.9"/><Setter Property="Foreground" Value="#674C26"/>
+    </Style>
+    <Style Selector="Window.nika TextBlock.workspaceTitle">
+        <Setter Property="FontFamily" Value="{DynamicResource NikaDisplayFont}"/><Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="{DynamicResource HeaderTitleSize}"/><Setter Property="LineHeight" Value="61"/>
+        <Setter Property="Foreground" Value="#092A3A"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="MaxLines" Value="2"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+    <Style Selector="Window.pixelController TextBlock.workspaceTitle"><Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/></Style>
+    <Style Selector="Window.nika Grid.longTitle TextBlock.workspaceTitle"><Setter Property="FontSize" Value="46"/><Setter Property="LineHeight" Value="54"/></Style>
+    <Style Selector="Window.pixelController Grid.longTitle TextBlock.workspaceTitle"><Setter Property="FontSize" Value="44"/></Style>
+    <Style Selector="Window.nika Grid.longTitle controls|NikaArtwork#HeaderCompass, Window.nika Grid.emptyHeader controls|NikaArtwork#HeaderCompass, Window.nika Grid.emptyHeader TextBlock.nikaEyebrow, Window.nika Grid.emptyHeader Button.renameProject">
+        <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="Window.nika Button.headerAction">
+        <Setter Property="HorizontalAlignment" Value="Left"/><Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="FontFamily" Value="{x:Static controls:TodoVisuals.BodyFont}"/><Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Name="HeaderButtonPlate" Pixel="{DynamicResource ControllerPixel}" CornerRadius="{TemplateBinding CornerRadius}"
+                                    Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <controls:NikaActionIcon Name="HeaderButtonIcon" Label="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Pixel="{DynamicResource ControllerPixel}"
+                                                 Ink="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
+                        <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                          FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" FontFamily="{TemplateBinding FontFamily}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika Button#WorkspaceNewTimerButton">
+        <Setter Property="Content" Value="New timer"/><Setter Property="Width" Value="166"/><Setter Property="Height" Value="49"/><Setter Property="Margin" Value="0,4,0,0"/>
+        <Setter Property="FontSize" Value="22"/><Setter Property="Foreground" Value="#FFF2D4"/><Setter Property="Background" Value="#0B2A3A"/>
+        <Setter Property="BorderBrush" Value="#0B2A3A"/><Setter Property="BorderThickness" Value="1.8"/><Setter Property="CornerRadius" Value="9"/>
+    </Style>
+    <Style Selector="Window.nika Button#WorkspaceProjectButton">
+        <Setter Property="Width" Value="147"/><Setter Property="Height" Value="38"/><Setter Property="Margin" Value="0"/>
+        <Setter Property="FontSize" Value="20"/><Setter Property="Foreground" Value="#0B2A3A"/><Setter Property="Background" Value="#EFF2D8A5"/>
+        <Setter Property="BorderBrush" Value="#93743D"/><Setter Property="BorderThickness" Value="1.3"/><Setter Property="CornerRadius" Value="6"/>
+    </Style>
+    <Style Selector="Window.nika Button#WorkspaceProjectButton /template/ controls|NikaActionIcon#HeaderButtonIcon"><Setter Property="Width" Value="19"/><Setter Property="Height" Value="19"/></Style>
+    <Style Selector="Window.nika Button#WorkspaceNewTimerButton /template/ controls|NikaActionIcon#HeaderButtonIcon"><Setter Property="Width" Value="22"/><Setter Property="Height" Value="22"/></Style>
+    <Style Selector="Window.nika Button#WorkspaceProjectButton:pointerover /template/ controls|TodoFrame#HeaderButtonPlate"><Setter Property="Background" Value="#FFE5B1"/></Style>
+    <Style Selector="Window.nika Button#WorkspaceNewTimerButton:pointerover /template/ controls|TodoFrame#HeaderButtonPlate"><Setter Property="Background" Value="#245164"/></Style>
+    <Style Selector="Window.nika Button.headerAction:pressed /template/ controls|TodoFrame#HeaderButtonPlate"><Setter Property="Opacity" Value="0.85"/></Style>
+    <Style Selector="Window.nika Button#WorkspaceProjectButton:focus-visible /template/ controls|TodoFrame#HeaderButtonPlate"><Setter Property="InnerBorderBrush" Value="#503819"/></Style>
+    <Style Selector="Window.nika Button#WorkspaceNewTimerButton:focus-visible /template/ controls|TodoFrame#HeaderButtonPlate"><Setter Property="InnerBorderBrush" Value="#F4CD82"/></Style>
+</Styles>

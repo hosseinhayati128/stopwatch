@@ -78,4 +78,13 @@
     <Style Selector="Window.pixelController RadioButton#TimecodeModeRadio /template/ Path#ModeIcon">
         <Setter Property="Data" Value="M6,4H2V18H6 M16,4H20V18H16 M8,8H10 M13,8H15 M8,14H10 M13,14H15"/>
     </Style>
+    <Style Selector="Window.nika controls|TodoFrame#ControllerModeTrack:disabled">
+        <Setter Property="Background" Value="#344852"/><Setter Property="BorderBrush" Value="#566A73"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:disabled">
+        <Setter Property="Foreground" Value="#C1CBCB"/>
+    </Style>
+    <Style Selector="Window.nika StackPanel.modeSelector RadioButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="#C1CBCB"/><Setter Property="Opacity" Value="1"/>
+    </Style>
 </Styles>

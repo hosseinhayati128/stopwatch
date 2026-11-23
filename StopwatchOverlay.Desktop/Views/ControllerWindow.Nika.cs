@@ -28,6 +28,25 @@ public partial class ControllerWindow
         bool pixel = Classes.Contains("nika") && _settings.NikaControllerPixel;
         Classes.Set("pixelController", pixel);
         Resources["ControllerPixel"] = pixel;
+        Resources["HeaderTitleSize"] = pixel ? 49d : 53d;
+        if (Classes.Contains("nika")) UpdateHeaderTitleFit();
+        else ToolTip.SetTip(ActiveWorkspaceTitle, null);
+    }
+
+    private void UpdateHeaderTitleFit()
+    {
+        if (!Classes.Contains("nika") || WorkspaceHeader.Bounds.Width <= 0 ||
+            !Resources.TryGetValue("HeaderTitleSize", out var size) || size is not double fullSize) return;
+        string title = ActiveWorkspaceTitle.Text ?? "";
+        var width = new FormattedText(title, System.Globalization.CultureInfo.CurrentCulture, ActiveWorkspaceTitle.FlowDirection,
+            new Typeface(ActiveWorkspaceTitle.FontFamily, ActiveWorkspaceTitle.FontStyle, ActiveWorkspaceTitle.FontWeight),
+            fullSize, Brushes.Black).WidthIncludingTrailingWhitespace;
+        // Measure at the full heading size even when the compact heading is currently displayed.
+        var available = WorkspaceHeader.Bounds.Width - WorkspaceNewTimerButton.Width - HeaderCompass.Width
+            - HeaderCompass.Margin.Left - HeaderCompass.Margin.Right - WorkspaceTitlePanel.Margin.Right;
+        bool longTitle = _timerManager.Active != null && (width > available || title.Contains('\n') || title.Contains('\r'));
+        WorkspaceHeader.Classes.Set("longTitle", longTitle);
+        ToolTip.SetTip(ActiveWorkspaceTitle, longTitle ? title : null);
     }
 
     private void ApplyNikaControllerResources(bool enabled)

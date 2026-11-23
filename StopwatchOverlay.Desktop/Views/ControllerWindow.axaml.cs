@@ -59,6 +59,16 @@ public partial class ControllerWindow : Window
     {
         _previewMode = previewSettings != null;
         InitializeComponent();
+        WorkspaceHeader.SizeChanged += (_, e) =>
+        {
+            if (e.PreviousSize.Width != e.NewSize.Width) UpdateHeaderTitleFit();
+        };
+        ActiveWorkspaceTitle.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty || e.Property == TextBlock.FontFamilyProperty ||
+                e.Property == TextBlock.FontWeightProperty || e.Property == FlowDirectionProperty)
+                UpdateHeaderTitleFit();
+        };
 
         _settings = previewSettings ?? SettingsStore.Load();
         ApplyControllerTheme();
@@ -699,7 +709,9 @@ public partial class ControllerWindow : Window
         TimeDisplay.Text = navyCountdown && !session.IsRunning && !session.CountdownInitialized && _setupRemaining is { } pending
             ? FormatTime(pending, false, _settings.TimeFormat)
             : FormatDisplayTime(session, nowUtc);
-        ActiveWorkspaceTitle.Text = _timerManager.Active == null ? "No timers" : session.DisplayName;
+        bool empty = _timerManager.Active == null;
+        WorkspaceHeader.Classes.Set("emptyHeader", empty);
+        ActiveWorkspaceTitle.Text = empty ? (nika ? "No timers yet" : "No timers") : session.DisplayName;
 
         bool hasProject = !string.IsNullOrWhiteSpace(session.Name);
         string catBadge = !string.IsNullOrWhiteSpace(session.Category) ? $" [{session.Category}]" : "";
@@ -760,12 +772,14 @@ public partial class ControllerWindow : Window
         _updatingUi = true;
         try
         {
-            StopwatchModeRadio.IsChecked = CurrentTimer.Mode == 0;
-            ClockModeRadio.IsChecked = CurrentTimer.Mode == 1;
-            CountdownModeRadio.IsChecked = CurrentTimer.Mode == 2;
-            TimecodeModeRadio.IsChecked = CurrentTimer.Mode == 3;
-            CountdownPanel.IsVisible = CurrentTimer.Mode == 2;
-            if (CurrentTimer.Mode == 2) UpdateCountdownInputs(CurrentTimer);
+            ControllerModeTrack.IsEnabled = _timerManager.Active != null || !Classes.Contains("nika");
+            int mode = ControllerModeTrack.IsEnabled ? CurrentTimer.Mode : -1;
+            StopwatchModeRadio.IsChecked = mode == 0;
+            ClockModeRadio.IsChecked = mode == 1;
+            CountdownModeRadio.IsChecked = mode == 2;
+            TimecodeModeRadio.IsChecked = mode == 3;
+            CountdownPanel.IsVisible = mode == 2;
+            if (mode == 2) UpdateCountdownInputs(CurrentTimer);
         }
         finally
         {
