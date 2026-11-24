@@ -69,10 +69,10 @@ internal static class ControllerActiveTimerChecks
                     if (pixel)
                     {
                         var digits = editor.FindControl<ComboBox>("ControllerDigitsCombo")!;
-                        Require(digits.IsEnabled && digits.ItemCount == 5 &&
-                            digits.SelectedItem is NikaThemeOption { Id: NikaThemeCatalog.DefaultLargeClockDigits } &&
+                        Require(digits.IsEnabled && digits.ItemCount == 6 &&
+                            digits.SelectedItem is NikaThemeOption { Id: "ticket-press" } &&
                             NikaThemeCatalog.NormalizeLargeClockDigits("missing-face") == NikaThemeCatalog.DefaultLargeClockDigits,
-                            "Expected Time Ticket as the default and fallback among five large pixel faces.");
+                            "Expected Ticket Press as the default and fallback among six large pixel faces.");
                         var captures = new HashSet<string>();
                         const string faceOutput = "design/one-piece-v2/controller-large-digits/implemented-native";
                         Directory.CreateDirectory(faceOutput);
@@ -88,7 +88,7 @@ internal static class ControllerActiveTimerChecks
                             ControllerSizingChecks.Capture(window, ControllerSizingChecks.Bounds(card, window), capture, faceOutput);
                             captures.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(faceOutput, capture + ".png")))));
                         }
-                        Require(captures.Count == 5, "Selecting a large face did not change the rendered clock.");
+                        Require(captures.Count == digits.ItemCount, "Selecting a large face did not change the rendered clock.");
                         picker.SelectedIndex = 0;
                         Require(!digits.IsEnabled && settings.ControllerLargeClockDigits == "cathode", "Switching to Classic lost the saved face.");
                         picker.SelectedIndex = 1;

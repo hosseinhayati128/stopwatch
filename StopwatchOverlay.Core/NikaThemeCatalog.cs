@@ -16,13 +16,14 @@ public static class NikaThemeCatalog
 {
     public const string DefaultBackground = "navigator-masterwork";
     public const string OriginalClockDigits = "original";
-    public const string DefaultLargeClockDigits = "time-ticket";
+    public const string DefaultLargeClockDigits = "ticket-press";
 
     public static IReadOnlyList<NikaThemeOption> LargeClockDigits { get; } = Array.AsReadOnly(new[]
     {
         new NikaThemeOption(OriginalClockDigits, "Original · Pixel Voyage"),
         new NikaThemeOption("deck-stencil", "07 · Deck Stencil"),
-        new NikaThemeOption(DefaultLargeClockDigits, "16 · Time Ticket (default)"),
+        new NikaThemeOption(DefaultLargeClockDigits, "03 · Ticket Press (default)"),
+        new NikaThemeOption("time-ticket", "16 · Time Ticket"),
         new NikaThemeOption("chartmaker", "17 · Chartmaker"),
         new NikaThemeOption("cathode", "19 · Cathode")
     });

@@ -13,6 +13,7 @@ internal sealed class ControllerDigitAtlas(string name, int digitWidth, int sepa
     private Bitmap? _bitmap;
     private static readonly ControllerDigitAtlas Stencil = new("deck-stencil", 94, 32);
     private static readonly ControllerDigitAtlas Ticket = new("time-ticket", 84, 34, 18);
+    private static readonly ControllerDigitAtlas TicketPress = new("ticket-press", 84, 34, 18);
     private static readonly ControllerDigitAtlas Chartmaker = new("chartmaker", 88, 32);
     private static readonly ControllerDigitAtlas Cathode = new("cathode", 86, 32);
 
@@ -20,6 +21,7 @@ internal sealed class ControllerDigitAtlas(string name, int digitWidth, int sepa
     {
         "deck-stencil" => Stencil,
         "time-ticket" => Ticket,
+        "ticket-press" => TicketPress,
         "chartmaker" => Chartmaker,
         "cathode" => Cathode,
         _ => null
