@@ -5,14 +5,14 @@ using Avalonia.Platform;
 
 namespace StopwatchOverlay.Desktop.Controls;
 
-internal sealed class ControllerDigitAtlas(string name, int digitWidth, int separatorWidth, int capWidth = 0, int minusWidth = 32)
+internal sealed class ControllerDigitAtlas(string name, int digitWidth, int separatorWidth, int capWidth = 0)
 {
     // Two-times artwork. The last slots contain punctuation, the ticket ends and a minus sign.
     private const int SlotWidth = 96;
     private const int Height = 148;
     private Bitmap? _bitmap;
     private static readonly ControllerDigitAtlas Stencil = new("deck-stencil", 94, 32);
-    private static readonly ControllerDigitAtlas Ticket = new("time-ticket", 76, 32, 36, minusWidth: 64);
+    private static readonly ControllerDigitAtlas Ticket = new("time-ticket", 84, 34, 18);
     private static readonly ControllerDigitAtlas Chartmaker = new("chartmaker", 88, 32);
     private static readonly ControllerDigitAtlas Cathode = new("cathode", 86, 32);
 
@@ -25,7 +25,7 @@ internal sealed class ControllerDigitAtlas(string name, int digitWidth, int sepa
         _ => null
     };
 
-    private int Advance(char c) => char.IsAsciiDigit(c) ? digitWidth : c == '-' ? minusWidth : separatorWidth;
+    private int Advance(char c) => char.IsAsciiDigit(c) ? digitWidth : c == '-' ? 32 : separatorWidth;
 
     private int Width(string text)
     {
