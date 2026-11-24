@@ -15,11 +15,27 @@ namespace StopwatchOverlay.Desktop.Views;
 
 internal sealed partial class TimerPickerWindow
 {
-    private Control NavigatorLayout(Button choose,TimerSession? active)
+    internal void ResizeNavyPicker(double ratio)
+    {
+        if (SystemDecorations != SystemDecorations.None || Math.Abs(ratio - 1) < .0001) return;
+        MinWidth *= ratio;
+        MinHeight *= ratio;
+        if (WindowState != WindowState.Normal) return;
+        double width = Width * ratio, height = Height * ratio;
+        if (Screens.ScreenFromWindow(this) is { } screen)
+        {
+            width = Math.Min(width, screen.WorkingArea.Width / RenderScaling);
+            height = Math.Min(height, screen.WorkingArea.Height / RenderScaling);
+        }
+        Width = width;
+        Height = height;
+    }
+
+    private Control NavigatorLayout(Button choose,TimerSession? active,bool pixel)
     {
         var now=DateTime.Now;
         _clocks.ItemsSource=_timers.Select((timer,index)=>ClockPickerItem.Create(timer,index,active,now)).ToArray();
-        _clocks.ItemTemplate=new FuncDataTemplate<ClockPickerItem>((item,_)=>item==null?new Panel():ClockPickerPresentation.CreateRow(item));
+        _clocks.ItemTemplate=new FuncDataTemplate<ClockPickerItem>((item,_)=>item==null?new Panel():ClockPickerPresentation.CreateRow(item,pixel));
         _clocks.Padding=new(0);_clocks.BorderThickness=new(0);_clocks.Background=Brushes.Transparent;
         ScrollViewer.SetHorizontalScrollBarVisibility(_clocks,ScrollBarVisibility.Disabled);
         ScrollViewer.SetVerticalScrollBarVisibility(_clocks,ScrollBarVisibility.Auto);
@@ -28,29 +44,29 @@ internal sealed partial class TimerPickerWindow
             Setters={new Setter(TemplatedControl.TemplateProperty,new FuncControlTemplate<ListBoxItem>((item,scope)=>
             {
                 var presenter=new ContentPresenter{Name="PART_ContentPresenter",HorizontalContentAlignment=HorizontalAlignment.Stretch,
+                    VerticalContentAlignment=VerticalAlignment.Stretch,
                     Background=Brushes.Transparent,BorderThickness=new(0),Padding=new(0)};
                 scope.Register(presenter.Name,presenter);
                 presenter.Bind(ContentPresenter.ContentProperty,new TemplateBinding(ContentControl.ContentProperty),BindingPriority.Template);
                 presenter.Bind(ContentPresenter.ContentTemplateProperty,new TemplateBinding(ContentControl.ContentTemplateProperty),BindingPriority.Template);
-                var border=new Border{Name="ClockPickerRowChrome",CornerRadius=new(4),Child=presenter};
-                border.Bind(Border.BackgroundProperty,item.GetObservable(ListBoxItem.BackgroundProperty));
-                border.Bind(Border.BorderBrushProperty,item.GetObservable(ListBoxItem.BorderBrushProperty));
-                border.Bind(Border.BorderThicknessProperty,item.GetObservable(ListBoxItem.BorderThicknessProperty));
-                border.Bind(Border.PaddingProperty,item.GetObservable(ListBoxItem.PaddingProperty));
-                return border;
-            })),new Setter(Layoutable.HeightProperty,44d),new Setter(TemplatedControl.PaddingProperty,new Thickness(6,0)),
+                var marker = new Border { Name = "ClockPickerSelectionMark", Width = 3, Margin = new(0, 8),
+                    HorizontalAlignment = HorizontalAlignment.Left, CornerRadius = new(pixel ? 0 : 1.5),
+                    Background = ClockPickerPresentation.Gold, IsHitTestVisible = false };
+                marker.Bind(Visual.IsVisibleProperty, item.GetObservable(ListBoxItem.IsSelectedProperty));
+                var line = new Grid { Children = { presenter, marker } };
+                line.Bind(Panel.BackgroundProperty, item.GetObservable(ListBoxItem.BackgroundProperty));
+                return line;
+            })),new Setter(Layoutable.MinHeightProperty,60d),new Setter(Layoutable.MarginProperty,new Thickness(0)),
                 new Setter(TemplatedControl.BackgroundProperty,Brushes.Transparent),
-                new Setter(TemplatedControl.BorderBrushProperty,Brushes.Transparent),
-                new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(1.5)),
+                new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(0)),
                 new Setter(ContentControl.HorizontalContentAlignmentProperty,HorizontalAlignment.Stretch)}
         });
         _clocks.Styles.Add(new Style(s=>s.OfType<ListBoxItem>().Class(":pointerover"))
-            {Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse("#55FFFFFF"))}});
+            {Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse("#28FFFAE8"))}});
         _clocks.Styles.Add(new Style(s=>s.OfType<ListBoxItem>().Class(":selected"))
-            {Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse("#F1D796")),
-                new Setter(TemplatedControl.BorderBrushProperty,ClockPickerPresentation.Gold),new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(1.5))}});
+            {Setters={new Setter(TemplatedControl.BackgroundProperty,Brush.Parse("#72FFEFBD"))}});
         _clocks.SelectedIndex=_timers.Length==0?-1:Math.Max(0,Array.IndexOf(_timers,active));
-        choose.Name="ClockPickerSelect";choose.Classes.Add("clockPickerAction");choose.Margin=new(0,10,0,0);
+        choose.Name="ClockPickerSelect";choose.Classes.Add("clockPickerAction");choose.Margin=new(0);
         choose.Width=123;choose.Height=32;choose.IsEnabled=_clocks.SelectedIndex>=0;
         _clocks.SelectionChanged+=(_,_)=>
         {choose.IsEnabled=_clocks.SelectedIndex>=0;if(_clocks.SelectedIndex>=0)_clocks.ScrollIntoView(_clocks.SelectedIndex);};
@@ -58,7 +74,7 @@ internal sealed partial class TimerPickerWindow
         var close=new Button{Name="ClockPickerClose",Content="×",Width=28,Height=28,FontSize=23,Padding=new(0)};
         close.Classes.Add("clockPickerAction");close.Classes.Add("clockPickerClose");close.Click+=(_,_)=>Close();
         AutomationProperties.SetName(close,"Close clock picker");ToolTip.SetTip(close,"Close (Esc)");
-        var header=new Grid{ColumnDefinitions=new("*,Auto"),Margin=new(0,0,0,10)};
+        var header=new Grid{ColumnDefinitions=new("*,Auto"),Margin=new(0,0,0,9)};
         var heading=new StackPanel{Name="ClockPickerDragHeader",Spacing=3,Background=Brushes.Transparent};
         heading.PointerPressed+=(_,e)=>
         {
@@ -67,14 +83,26 @@ internal sealed partial class TimerPickerWindow
         };
         heading.Children.Add(new TextBlock{Text="Choose a clock",FontFamily=StopwatchTypography.Resolve("navigator-bold").NameFont,
             FontWeight=FontWeight.Bold,FontSize=27,Foreground=ClockPickerPresentation.Navy});
-        heading.Children.Add(new TextBlock{Text=$"{_timers.Length} clocks",FontFamily=ClockPickerPresentation.Body,FontSize=11,Foreground=ClockPickerPresentation.Muted});
+        heading.Children.Add(new TextBlock{Text=_timers.Length==1?"1 clock":$"{_timers.Length} clocks",FontFamily=ClockPickerPresentation.Body,FontSize=11,Foreground=ClockPickerPresentation.Muted});
         header.Children.Add(heading);Grid.SetColumn(close,1);header.Children.Add(close);
-        var footer=new StackPanel{Spacing=0,Margin=new(0,10,0,0)};
-        footer.Children.Add(new TextBlock{Text="1–9 select  ·  ↑↓ move  ·  Enter confirm  ·  Esc close",FontSize=10,
-            FontFamily=ClockPickerPresentation.Body,Foreground=ClockPickerPresentation.Muted,TextWrapping=TextWrapping.Wrap});
+        var footer = new Grid { ColumnDefinitions = new("*,10,Auto"), Margin = new(0, 9, 0, 0) };
+        footer.Children.Add(new TextBlock { Text = "↑↓ move  ·  Enter confirm\n1–9 select  ·  Esc close", FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center, FontFamily = ClockPickerPresentation.Body,
+            Foreground = ClockPickerPresentation.Muted, TextWrapping = TextWrapping.Wrap });
+        Grid.SetColumn(choose, 2);
         footer.Children.Add(choose);
-        var layout=new Grid{RowDefinitions=new("Auto,*,Auto")};
-        layout.Children.Add(header);Grid.SetRow(_clocks,1);layout.Children.Add(_clocks);Grid.SetRow(footer,2);layout.Children.Add(footer);
+        var layout = new Grid { RowDefinitions = new("Auto,1,*,1,Auto") };
+        layout.Children.Add(header);
+        foreach (int line in new[] { 1, 3 })
+        {
+            var rule = new Border { Background = ClockPickerPresentation.Rule };
+            Grid.SetRow(rule, line);
+            layout.Children.Add(rule);
+        }
+        Grid.SetRow(_clocks, 2);
+        layout.Children.Add(_clocks);
+        Grid.SetRow(footer, 4);
+        layout.Children.Add(footer);
         return layout;
     }
 

@@ -46,6 +46,7 @@ internal static class DesktopPageAppearance
             if(window is ControllerWindow controller)ResizeController(controller,_scale/previousScale,window.ClientSize);
             if(window is SettingsWindow inspector)inspector.RefreshPageScale();
             if(window is TodoEmblemPickerWindow picker)picker.ApplyPageScale(_scale);
+            if(window is TimerPickerWindow clocks)clocks.ResizeNavyPicker(_scale / previousScale);
             if(window is ShortcutsWindow shortcuts)shortcuts.FitNavigatorContent();
             if(window is NoteEntryWindow note)note.FitNoteEditorContent(_scale != previousScale);
             if(window is NotesViewerWindow viewer)viewer.FitViewerContent();
@@ -83,6 +84,7 @@ internal static class DesktopPageAppearance
         window.PropertyChanged+=ContentChanged;window.Closed+=Closed;
         if(window is SettingsWindow inspector)inspector.RefreshPageScale();
         if(window is TodoEmblemPickerWindow picker)picker.ApplyPageScale(_scale);
+        if(window is TimerPickerWindow clocks)clocks.ResizeNavyPicker(_scale);
         if(window is ShortcutsWindow shortcuts)
         {
             window.SizeChanged+=ShortcutsSizeChanged;

@@ -40,65 +40,92 @@ internal static class ClockPickerPresentation
     internal static readonly FontFamily Body=StopwatchTypography.Resolve("modern-deck").NameFont;
     private static readonly StopwatchTypographyProfile Navigator=StopwatchTypography.Resolve("navigator-bold");
 
-    internal static Control CreateRow(ClockPickerItem item)
-    {
-        var row=new Grid{Name="ClockPickerRow",ColumnDefinitions=new("24,10,10,8,*,Auto,8,Auto"),
-            Height=41,FlowDirection=FlowDirection.LeftToRight};
-        var rule=new Border{BorderBrush=Brush.Parse("#499A7B48"),BorderThickness=new(0,0,0,.7),IsHitTestVisible=false};
-        Grid.SetColumnSpan(rule,8);row.Children.Add(rule);
-        AutomationProperties.SetName(row,item.Details);ToolTip.SetTip(row,item.Details);
-        var key=new Border{Name="ClockPickerKeycap",Width=22,Height=22,CornerRadius=new(3),
-            Background=Navy,BorderBrush=Gold,BorderThickness=new(.8),IsVisible=item.Number<=9,
-            Child=new TextBlock{Text=item.Number.ToString(CultureInfo.InvariantCulture),FontFamily=Body,FontSize=12,
-                FontWeight=FontWeight.SemiBold,Foreground=Cream,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        row.Children.Add(key);
-        row.Children.Add(new TextBlock{Text=item.Number.ToString(CultureInfo.InvariantCulture),IsVisible=item.Number>9,
-            FontFamily=Body,FontSize=11,Foreground=Muted,VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center});
-        var status=new ClockPickerStatus(item){Width=10,Height=12,VerticalAlignment=VerticalAlignment.Center,IsHitTestVisible=false};
-        Grid.SetColumn(status,2);row.Children.Add(status);
-        var name=new TextBlock{Name="ClockPickerName",Text=item.Name,FontFamily=item.RightToLeft?new("Segoe UI"):Navigator.NameFont,
-            FontWeight=item.RightToLeft?FontWeight.SemiBold:FontWeight.Bold,FontSize=item.RightToLeft?17:20,Foreground=Navy,
-            TextTrimming=TextTrimming.CharacterEllipsis,TextWrapping=TextWrapping.NoWrap,MaxLines=1,
-            FlowDirection=item.RightToLeft?FlowDirection.RightToLeft:FlowDirection.LeftToRight,VerticalAlignment=VerticalAlignment.Center};
-        Grid.SetColumn(name,4);row.Children.Add(name);
-        var badge=new Border{Name="ClockPickerActive",IsVisible=item.Current,Width=45,Height=16,Margin=new(6,0,0,0),
-            Background=Navy,BorderBrush=Gold,BorderThickness=new(.8),CornerRadius=new(3),VerticalAlignment=VerticalAlignment.Center,
-            Child=new TextBlock{Text="ACTIVE",FontFamily=Body,FontWeight=FontWeight.SemiBold,FontSize=8,Foreground=Cream,
-                HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        Grid.SetColumn(badge,5);row.Children.Add(badge);
-        var measured=new FormattedText(item.Time,CultureInfo.InvariantCulture,FlowDirection.LeftToRight,
-            new Typeface(Navigator.TimerFont,FontStyle.Normal,FontWeight.Black),22,Navy);
-        double timeSize=Math.Min(22,22*110/Math.Max(1,measured.WidthIncludingTrailingWhitespace));
-        var time=new TextBlock{Name="ClockPickerTime",Text=item.Time,FontFamily=Navigator.TimerFont,FontWeight=FontWeight.Black,
-            FontSize=timeSize,Foreground=Navy,TextWrapping=TextWrapping.NoWrap,FlowDirection=FlowDirection.LeftToRight,
-            HorizontalAlignment=HorizontalAlignment.Right};
-        var mode=new TextBlock{Name="ClockPickerMode",Text=item.Mode,FontFamily=Body,FontSize=9,Foreground=Muted,
-            HorizontalAlignment=HorizontalAlignment.Right};
-        var values=new StackPanel{Spacing=0,VerticalAlignment=VerticalAlignment.Center};values.Children.Add(time);values.Children.Add(mode);
-        Grid.SetColumn(values,7);row.Children.Add(values);
-        return row;
-    }
-}
+    internal static readonly IBrush Rule = Brush.Parse("#40916A36");
+    private static readonly IBrush Paused = Brush.Parse("#966328");
+    private static readonly IBrush Live = Brush.Parse("#1C655D");
 
-internal sealed class ClockPickerStatus(ClockPickerItem item):Control
-{
-    private static readonly IBrush Teal=Brush.Parse("#087480"),Amber=Brush.Parse("#995817");
-    public override void Render(DrawingContext dc)
+    internal static Control CreateRow(ClockPickerItem item, bool pixel)
     {
-        var rect=new Rect(0,1,9,10);
-        if(item.Mode=="Clock")
+        var row = new Grid
         {
-            dc.DrawEllipse(null,new Pen(Teal,1.3),rect.Center,4.5,4.5);
-            dc.DrawLine(new Pen(Teal,1.2),rect.Center,new Point(rect.Center.X,2));
-            dc.DrawLine(new Pen(Teal,1.2),rect.Center,new Point(8,8));
-        }
-        else if(item.Running)
+            Name = "ClockPickerRow", ColumnDefinitions = new("22,10,*,10,Auto"),
+            FlowDirection = FlowDirection.LeftToRight, Margin = new Thickness(8, 7)
+        };
+        AutomationProperties.SetName(row, item.Details);
+        ToolTip.SetTip(row, item.Details);
+
+        var number = Label(item.Number.ToString(CultureInfo.InvariantCulture), 13, Muted,
+            item.Number <= 9 ? FontWeight.Bold : FontWeight.Normal);
+        number.Name = "ClockPickerNumber";
+        number.HorizontalAlignment = HorizontalAlignment.Center;
+        row.Children.Add(number);
+
+        var nameFont = item.RightToLeft ? new FontFamily("Segoe UI") : pixel ? Body : Navigator.NameFont;
+        var name = Label(item.Name, pixel ? 15 : 18, Navy, FontWeight.Bold, nameFont);
+        name.Name = "ClockPickerName";
+        name.FlowDirection = item.RightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        name.TextWrapping = TextWrapping.Wrap;
+        name.TextTrimming = TextTrimming.CharacterEllipsis;
+        name.MaxLines = 2;
+
+        var detail = new Grid { ColumnDefinitions = new("6,5,*") };
+        detail.Children.Add(new Border
         {
-            var triangle=new StreamGeometry();using(var path=triangle.Open())
-            {path.BeginFigure(rect.TopLeft,true);path.LineTo(new Point(rect.Right,rect.Center.Y));path.LineTo(rect.BottomLeft);path.EndFigure(true);}
-            dc.DrawGeometry(Teal,null,triangle);
+            Width = 6, Height = 6, CornerRadius = new(pixel ? 0 : 3),
+            Background = item.State == "Paused" ? Paused : Live, VerticalAlignment = VerticalAlignment.Center
+        });
+        var status = Label($"{item.Mode} · {item.State}", 11, Muted, FontWeight.Medium);
+        status.Name = "ClockPickerMode";
+        status.TextTrimming = TextTrimming.CharacterEllipsis;
+        Grid.SetColumn(status, 2);
+        detail.Children.Add(status);
+        var info = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center, Children = { name, detail } };
+        Grid.SetColumn(info, 2);
+        row.Children.Add(info);
+
+        var time = CreateTime(item.Time, pixel);
+        AutomationProperties.SetName(time, item.Time);
+        time.HorizontalAlignment = HorizontalAlignment.Right;
+        var values = new StackPanel
+        {
+            Spacing = 3, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right,
+            Children = { time }
+        };
+        if (item.Current)
+        {
+            var active = Label("Active", 11, Live, FontWeight.Bold);
+            active.Name = "ClockPickerActive";
+            active.HorizontalAlignment = HorizontalAlignment.Right;
+            values.Children.Add(active);
         }
-        else
-        {dc.DrawRectangle(Amber,null,new Rect(0,1,3,10));dc.DrawRectangle(Amber,null,new Rect(6,1,3,10));}
+        Grid.SetColumn(values, 4);
+        row.Children.Add(values);
+        var entry = new Grid { Children = { row } };
+        if (item.Number > 1)
+            entry.Children.Add(new Border { Height = 1, Background = Rule, IsHitTestVisible = false,
+                VerticalAlignment = VerticalAlignment.Top });
+        return entry;
     }
+
+    private static Control CreateTime(string text, bool pixel)
+    {
+        const double maxWidth = 124;
+        if (pixel)
+        {
+            var digits = new ControllerPixelDigits { Name = "ClockPickerTime", Text = text, FontSize = 26, Foreground = Navy };
+            digits.Measure(Size.Infinity);
+            if (digits.DesiredSize.Width > maxWidth)
+                digits.FontSize *= (maxWidth - 6) / (digits.DesiredSize.Width - 6);
+            return digits;
+        }
+        var size = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            new Typeface(Navigator.TimerFont, FontStyle.Normal, FontWeight.Black), 24, Navy);
+        var label = Label(text, 24 * Math.Min(1, maxWidth / size.WidthIncludingTrailingWhitespace), Navy, FontWeight.Black, Navigator.TimerFont);
+        label.Name = "ClockPickerTime";
+        return label;
+    }
+
+    private static TextBlock Label(string text, double size, IBrush ink, FontWeight weight, FontFamily? font = null) =>
+        new() { Text = text, FontSize = size, Foreground = ink, FontWeight = weight, FontFamily = font ?? Body,
+            VerticalAlignment = VerticalAlignment.Center };
 }

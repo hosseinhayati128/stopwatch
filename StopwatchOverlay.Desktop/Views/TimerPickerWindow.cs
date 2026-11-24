@@ -23,8 +23,8 @@ internal sealed partial class TimerPickerWindow : Window
     {
         bool framed=settings?.ThemeMode==AppThemeCatalog.Nika;
         Title = "Choose a clock";
-        Width = 460;
-        Height = framed?480:410;
+        Width = framed ? 475 : 460;
+        Height = framed ? 465 : 410;
         if(framed)
         {
             MinWidth=360;MinHeight=300;
@@ -60,7 +60,7 @@ internal sealed partial class TimerPickerWindow : Window
         Grid.SetRow(choose, 2);
         if(framed)
         {
-            var surface=new StopwatchFrameSurface{Child=NavigatorLayout(choose,active),Padding=new Thickness(8)};
+            var surface=new StopwatchFrameSurface{Child=NavigatorLayout(choose,active,settings!.NikaControllerPixel),Padding=new Thickness(8)};
             // Keep the existing dialog material; reuse of artwork does not link preferences.
             surface.Bind(StopwatchFrameSurface.BackgroundProperty,this.GetResourceObservable("DialogSurfaceBrush"));
             Content=surface;

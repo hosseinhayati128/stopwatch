@@ -109,10 +109,10 @@ internal static class PickerStabilityChecks
                 Require((style&0x00C00000)==0,"The native HWND still has caption/border styles: "+style.ToString("X"));
             }
             // The screenshot must include the native client root, including transparent outer corners.
-            using var bitmap=new RenderTargetBitmap(new PixelSize(460,480),new Vector(96,96));
+            using var bitmap=new RenderTargetBitmap(PixelSize.FromSize(picker.ClientSize,1),new Vector(96,96));
             bitmap.Render(picker);
             var pixels=SharedFrameChecks.Pixels(bitmap);
-            Require(pixels[3]==0&&pixels[(460-1)*4+3]==0,"The frame's outer corners are not transparent.");
+            Require(pixels[3]==0&&pixels[(bitmap.PixelSize.Width-1)*4+3]==0,"The frame's outer corners are not transparent.");
             Directory.CreateDirectory(Output);bitmap.Save(Path.Combine(Output,"standalone-picker.png"));
         }
         finally{picker.Close();}

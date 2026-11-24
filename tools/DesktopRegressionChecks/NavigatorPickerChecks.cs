@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
 using StopwatchOverlay;
+using StopwatchOverlay.Desktop.Controls;
 using StopwatchOverlay.Desktop.Views;
 
 internal static class NavigatorPickerChecks
@@ -24,24 +25,25 @@ internal static class NavigatorPickerChecks
         internal readonly Window Window;
         internal ListBox List=>Window.GetVisualDescendants().OfType<ListBox>().Single();
         internal TimerSession? Chosen=>(TimerSession?)PickerType.GetProperty("SelectedTimer",Hidden)!.GetValue(Window);
-        internal Fixture(string theme=AppThemeCatalog.Nika,int count=12,bool mixed=true,int activeIndex=0,TimeSpan? elapsed=null)
+        private static TimerSession[] Samples(TimeSpan? elapsed)
         {
-            Timers=Enumerable.Range(1,count).Select(i=>new TimerSession(i){Name="Clock "+i}).ToArray();
-            Timers[0].Name="Illustration — The Grand Voyage";Timers[0].IsSeparated=true;
-            Timers[0].RestoreElapsed(elapsed??new TimeSpan(123,44,27),false);
-            Timers[1].Name="Office clock";Timers[1].Mode=1;
-            Timers[2].Name="برنامه‌نویسی پروژه";
-            Timers[3].Name="Tea break";Timers[3].Mode=2;Timers[3].CountdownRemaining=new TimeSpan(0,8,15);Timers[3].IsRunning=true;
-            Timers[4].Name="Editing / episode 12";Timers[4].Mode=3;Timers[4].RestoreElapsed(new TimeSpan(1,12,8),false);
-            Timers[5].Name="";
-            if(!mixed)
-            {
-                string[] names={"Illustration","Coding","Reading","Study","Writing","Planning"};
-                string[] times={"00:44:27","01:12:08","00:18:42","00:36:10","00:08:15","00:05:32"};
-                for(int i=0;i<6;i++){Timers[i].Name=names[i];Timers[i].Mode=0;Timers[i].IsSeparated=false;
-                    Timers[i].RestoreElapsed(TimeSpan.Parse(times[i]),false);Timers[i].IsRunning=i is 0 or 1 or 4;}
-            }
-            Window=(Window)Activator.CreateInstance(PickerType,Hidden,null,new object[]{Timers,Timers[activeIndex],new AppSettings{ThemeMode=theme}},null)!;
+            var timers=Enumerable.Range(1,12).Select(i=>new TimerSession(i){Name="Clock "+i}).ToArray();
+            timers[0].Name="Illustration — The Grand Voyage";timers[0].IsSeparated=true;
+            timers[0].RestoreElapsed(elapsed??new TimeSpan(123,44,27),false);
+            timers[1].Name="Office clock";timers[1].Mode=1;
+            timers[2].Name="برنامه‌نویسی پروژه";
+            timers[3].Name="Tea break";timers[3].Mode=2;timers[3].CountdownRemaining=new TimeSpan(0,8,15);timers[3].IsRunning=true;
+            timers[4].Name="Editing / episode 12";timers[4].Mode=3;timers[4].RestoreElapsed(new TimeSpan(1,12,8),false);
+            timers[5].Name="";
+            return timers;
+        }
+        internal Fixture(string theme=AppThemeCatalog.Nika,TimeSpan? elapsed=null)
+            : this(Samples(elapsed), theme, 0, false) { }
+
+        internal Fixture(TimerSession[] timers, string theme, int activeIndex, bool pixel)
+        {
+            Timers=timers;
+            Window=(Window)Activator.CreateInstance(PickerType,Hidden,null,new object[]{Timers,Timers[activeIndex],new AppSettings{ThemeMode=theme,NikaControllerPixel=pixel}},null)!;
             Window.ShowActivated=false;Window.ShowInTaskbar=false;Window.Show();ClockOverlayChecks.Pump(80);
         }
         public void Dispose()=>Window.Close();
@@ -69,11 +71,13 @@ internal static class NavigatorPickerChecks
             Pointer(f,second,RawPointerEventType.Move);
             Require(second.IsPointerOver&&f.List.SelectedIndex==0&&f.Chosen==null,
                 $"Hover state: over={second.IsPointerOver}, selection={f.List.SelectedIndex}, confirmed={f.Chosen!=null}, row={second.Bounds}.");
-            Require((second.Background as ISolidColorBrush)?.Color==Color.Parse("#55FFFFFF"),"Native hover wash did not apply.");
+            Require((second.Background as ISolidColorBrush)?.Color==Color.Parse("#28FFFAE8"),"Native hover wash did not apply.");
             Pointer(f,second,RawPointerEventType.LeftButtonDown,RawInputModifiers.LeftMouseButton);
             Pointer(f,second,RawPointerEventType.LeftButtonUp);
             Require(f.List.SelectedIndex==1&&f.Window.IsVisible&&f.Chosen==null,"Single click did not select without confirming.");
-            Require((second.Background as ISolidColorBrush)?.Color==Color.Parse("#F1D796"),"Selected hover lost the gold selection treatment.");
+            Require((second.Background as ISolidColorBrush)?.Color==Color.Parse("#72FFEFBD"),"Hover hid the selection wash.");
+            f.List.ScrollIntoView(4);
+            ClockOverlayChecks.Pump(50);
             var fifth=(ListBoxItem)f.List.ContainerFromIndex(4)!;
             Pointer(f,fifth,RawPointerEventType.Move);
             for(int i=0;i<2&&f.Window.IsVisible;i++)
@@ -123,8 +127,8 @@ internal static class NavigatorPickerChecks
         using var f=new Fixture(elapsed:TimeSpan.MaxValue);f.Window.Width=360;f.Window.Height=300;ClockOverlayChecks.Pump(60);
         var first=Row(f.List,0);var time=Text(first,"ClockPickerTime");
         Require(time.Text=="256204778:48:05","Maximum elapsed value was truncated or wrapped.");
-        var at=time.TranslatePoint(default,first)!.Value;
-        Require(at.X+time.Bounds.Width<=first.Bounds.Width+1,"Complete maximum-hour time exceeded the minimum-width row.");
+        var right=time.TranslatePoint(new Point(time.Bounds.Width,0),first)!.Value.X;
+        Require(right<=first.Bounds.Width+1,"Complete maximum-hour time exceeded the minimum-width row.");
         f.List.SelectedIndex=11;f.List.ScrollIntoView(11);ClockOverlayChecks.Pump(40);
         f.List.SelectedIndex=0;f.List.ScrollIntoView(0);ClockOverlayChecks.Pump(40);
         first=Row(f.List,0);
@@ -134,48 +138,78 @@ internal static class NavigatorPickerChecks
     }
     internal static void Evidence()
     {
-        string output=Path.GetFullPath("design/one-piece-v2/clock-picker/native-implementation");Directory.CreateDirectory(output);
-        void Save(Control control,string name)
+        const string output = "design/one-piece-v2/clock-picker/unified-surface";
+        Directory.CreateDirectory(output);
+        foreach (bool pixel in new[] { false, true })
+        foreach (int scale in new[] { 70, 90, 125 })
         {
-            using var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(control.Bounds.Width),(int)Math.Ceiling(control.Bounds.Height)),new Vector(96,96));
-            bitmap.Render(control);bitmap.Save(Path.Combine(output,name+".png"));
-        }
-        using(var f=new Fixture(count:6,mixed:false))
-        {f.List.SelectedIndex=2;Pointer(f,(Control)f.List.ContainerFromIndex(1)!,RawPointerEventType.Move);Save((Control)f.Window.Content!,"row-states");}
-        using(var f=new Fixture(count:6))
-        {
-            Save((Control)f.Window.Content!,"names-and-modes");
-            f.Window.Width=360;f.Window.Height=300;ClockOverlayChecks.Pump(60);Save((Control)f.Window.Content!,"minimum-size");
-            f.Window.Width=460;f.Window.Height=480;ClockOverlayChecks.Pump(50);
-            var content=(Control)f.Window.Content!;f.Window.Content=null;content.Width=460;content.Height=480;
-            foreach(double scale in new[]{1.5,2})
+            var timers = new[] { "Illustration", "Coastal field recordings and interview edits", "Reading", "Tea break" }
+                .Select((name, i) => new TimerSession(i + 1) { Name = name }).ToArray();
+            timers[0].RestoreElapsed(new TimeSpan(0, 44, 38), false);
+            timers[0].IsRunning = true;
+            timers[1].RestoreElapsed(new TimeSpan(1, 12, 8), false);
+            timers[2].RestoreElapsed(new TimeSpan(0, 18, 42), false);
+            timers[3].Mode = 2;
+            timers[3].CountdownRemaining = new TimeSpan(0, 8, 15);
+            timers[3].IsRunning = true;
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
             {
-                var zoom=new Viewbox{Width=460*scale,Height=480*scale,Child=content};f.Window.Content=zoom;
-                f.Window.Width=460*scale;f.Window.Height=480*scale;ClockOverlayChecks.Pump(50);
-                // The OS can constrain the hidden host to the monitor and center
-                // this oversized child at a negative origin. Export the complete
-                // native subtree at zero origin, independent of that host limit.
-                zoom.Arrange(new Rect(0,0,460*scale,480*scale));
-                Save(zoom,$"names-and-modes-{scale:0.0}x");f.Window.Content=null;zoom.Child=null;
+                using var f = new Fixture(timers, AppThemeCatalog.Nika, 0, pixel);
+                var frame = f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+                double zoom = scale / 100d;
+                Require(Math.Abs(f.Window.Width - 475 * zoom) < 1 && Math.Abs(f.Window.Height - 465 * zoom) < 1,
+                    "Picker window did not follow application scale.");
+                var frameEnd = frame.TranslatePoint(new Point(frame.Bounds.Width, frame.Bounds.Height), f.Window)!.Value;
+                Require(Math.Abs(frameEnd.X - f.Window.ClientSize.Width) < 2 && Math.Abs(frameEnd.Y - f.Window.ClientSize.Height) < 2,
+                    "The scaled picker frame did not fit its window.");
+                var longName = Text(Row(f.List, 1), "ClockPickerName");
+                Require(longName.TextLayout.TextLines.Count == 2 && !longName.TextLayout.TextLines.Any(l => l.HasCollapsed), "Long name should fit in two lines.");
+                Require(Row(f.List, 0).GetVisualDescendants().OfType<ControllerPixelDigits>().Any() == pixel, "Wrong time face.");
+                for (int index = 0; index <= 1; index++)
+                {
+                    if (index == 1)
+                    {
+                        Key((Control)f.List.ContainerFromIndex(0)!, Avalonia.Input.Key.Down);
+                        ClockOverlayChecks.Pump(50);
+                    }
+                    var selected = (ListBoxItem)f.List.ContainerFromIndex(index)!;
+                    var mark = f.List.GetVisualDescendants().OfType<Border>().Single(c => c.Name == "ClockPickerSelectionMark" && c.IsVisible);
+                    Require(f.List.SelectedIndex == index && selected.IsKeyboardFocusWithin && mark.GetVisualAncestors().Contains(selected),
+                        "The selection mark did not follow keyboard focus.");
+                    var idle = (ListBoxItem)f.List.ContainerFromIndex(2)!;
+                    Require((f.List.Background as ISolidColorBrush)?.Color.A == 0 && (idle.Background as ISolidColorBrush)?.Color.A == 0 &&
+                        idle.BorderThickness == new Thickness(0), "Idle clock rows should share the picker's paper.");
+                    var badge = f.List.GetVisualDescendants().OfType<TextBlock>().Single(c => c.Name == "ClockPickerActive");
+                    Require(badge.GetVisualAncestors().Contains(Row(f.List, 0)), "Active badge moved before confirmation.");
+                    var size = PixelSize.FromSize(f.Window.ClientSize, 1);
+                    var choose = f.Window.GetVisualDescendants().OfType<Button>().Single(c => c.Name == "ClockPickerSelect");
+                    var buttonInk = choose.TranslatePoint(new Point(10, choose.Bounds.Height / 2), f.Window)!.Value;
+                    // Source the full, arranged frame in logical coordinates. The window's
+                    // scaled wrapper has a smaller culling viewport at zoom levels below 100%.
+                    using var image = new RenderTargetBitmap(size, new Vector(96, 96));
+                    var pageTransform = frame.RenderTransform;
+                    frame.SetCurrentValue(Visual.RenderTransformProperty, null);
+                    try
+                    {
+                        using var dc = image.CreateDrawingContext();
+                        var brush = new VisualBrush(frame) { Stretch = Stretch.Fill,
+                            SourceRect = new RelativeRect(new Rect(frame.Bounds.Size), RelativeUnit.Absolute) };
+                        dc.DrawRectangle(brush, null, new Rect(0, 0, size.Width, size.Height));
+                    }
+                    finally { frame.SetCurrentValue(Visual.RenderTransformProperty, pageTransform); }
+                    image.Save(Path.Combine(output, $"{(pixel ? "pixel" : "classic")}-{(index == 0 ? "active" : "browse")}-{scale}.png"));
+                    var bytes = SharedFrameChecks.Pixels(image);
+                    var offset = ((int)buttonInk.Y * size.Width + (int)buttonInk.X) * 4;
+                    Require(bytes[offset + 1] < 90 && bytes[offset + 3] == 255,
+                        $"Missing Select clock button in the {scale}% capture: sample {buttonInk} green {bytes[offset+1]} alpha {bytes[offset+3]}, frame {frame.Bounds}, client {f.Window.ClientSize}.");
+                }
+                Key((Control)f.List.ContainerFromIndex(1)!, Avalonia.Input.Key.Enter);
+                Require(f.Chosen == timers[1] && !f.Window.IsVisible, "Enter failed to confirm the highlighted row.");
             }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
         }
-        using(var f=new Fixture(activeIndex:10))
-        {f.List.SelectedIndex=10;f.List.ScrollIntoView(11);ClockOverlayChecks.Pump(60);Save((Control)f.Window.Content!,"twelve-clocks");}
-        var board=new Canvas{Width=1520,Height=824,Background=Brush.Parse("#10232F")};
-        void At(Control control,double x,double y){Canvas.SetLeft(control,x);Canvas.SetTop(control,y);board.Children.Add(control);}
-        TextBlock Label(string text,int size=18)=>new(){Text=text,FontFamily=StopwatchOverlay.Desktop.Controls.StopwatchTypography.Resolve("modern-deck").NameFont,FontSize=size,Foreground=Brush.Parse("#F6E8C9")};
-        At(Label("NAVIGATOR / ACTUAL NATIVE PICKER",32),42,32);At(Label("Native list items, buttons and selection · shared frame · no added timer loop",17),44,83);
-        string[] files={"row-states","names-and-modes","twelve-clocks"};string[] titles={"01  Row states","02  Names & timing modes","03  Twelve clocks"};
-        var images=new List<Bitmap>();
-        try
-        {
-            for(int i=0;i<3;i++){var bitmap=new Bitmap(Path.Combine(output,files[i]+".png"));images.Add(bitmap);
-                At(Label(titles[i],25),48+i*488,146);At(new Image{Source=bitmap,Width=460,Height=480},42+i*488,202);}
-            At(Label("ACTIVE stays with the current clock. Gold outline follows selection. Pale wash follows hover.",16),48,727);
-            At(Label("Native controls rendered off-screen; operating-system window captions are outside these content captures.",12),48,778);
-            board.Measure(new Size(1520,824));board.Arrange(new Rect(0,0,1520,824));Save(board,"navigator-native");
-        }
-        finally{foreach(var bitmap in images)bitmap.Dispose();}
     }
     private static TextBlock Text(Control root,string name)=>root.GetVisualDescendants().OfType<TextBlock>().Single(c=>c.Name==name);
     private static Control Row(ListBox list,int index)=>(list.ContainerFromIndex(index) as Control)?.GetVisualDescendants().OfType<Control>().SingleOrDefault(c=>c.Name=="ClockPickerRow")
@@ -185,21 +219,21 @@ internal static class NavigatorPickerChecks
         using var f=new Fixture();var row=Row(f.List,0);
         Require(Text(row,"ClockPickerTime").Text=="123:44:27","Elapsed hours wrapped at 24.");
         Require(Text(row,"ClockPickerName").Text==f.Timers[0].Name,"Full name was lost from the native text control.");
-        Require(row.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ClockPickerActive").IsVisible,"Current timer lost ACTIVE badge.");
+        Require(Text(row,"ClockPickerActive").IsVisible,"Current timer lost its Active label.");
         Require((AutomationProperties.GetName(row)??"").Contains("Separated"),"Accessible row details omitted separated status.");
         Require((ToolTip.GetTip(row)?.ToString()??"").Contains(f.Timers[0].Name),"Tooltip omitted the full project name.");
         f.List.SelectedIndex=2;ClockOverlayChecks.Pump(30);
-        Require(row.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ClockPickerActive").IsVisible,"Selection moved the ACTIVE badge.");
-        Require(Text(Row(f.List,1),"ClockPickerMode").Text=="Clock","Live clock mode missing.");
+        Require(Text(row,"ClockPickerActive").IsVisible,"Selection moved the Active label.");
+        Require(Text(Row(f.List,1),"ClockPickerMode").Text=="Clock · Live","Live clock mode missing.");
         Require(Text(Row(f.List,3),"ClockPickerTime").Text=="00:08:15","Countdown did not use remaining time.");
-        Require(Text(Row(f.List,4),"ClockPickerMode").Text=="Timecode","Timecode mode missing.");
-        Require(Text(Row(f.List,5),"ClockPickerName").Text=="Timer 6","Unnamed clock fallback changed.");
-        Require(Text(Row(f.List,2),"ClockPickerName").FlowDirection==FlowDirection.RightToLeft,"RTL name did not keep its direction.");
+        Require(Text(Row(f.List,4),"ClockPickerMode").Text=="Timecode · Paused","Timecode mode missing.");
+        f.List.ScrollIntoView(5);ClockOverlayChecks.Pump(50);Require(Text(Row(f.List,5),"ClockPickerName").Text=="Timer 6","Unnamed clock fallback changed.");
+        f.List.ScrollIntoView(2);ClockOverlayChecks.Pump(50);Require(Text(Row(f.List,2),"ClockPickerName").FlowDirection==FlowDirection.RightToLeft,"RTL name did not keep its direction.");
         f.Window.Width=360;f.Window.Height=300;f.List.SelectedIndex=0;f.List.ScrollIntoView(0);ClockOverlayChecks.Pump(70);
         row=Row(f.List,0);var name=Text(row,"ClockPickerName");var time=Text(row,"ClockPickerTime");
-        var badge=row.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ClockPickerActive");
+        var badge=Text(row,"ClockPickerActive");
         var nameAt=name.TranslatePoint(default,row)!.Value;var timeAt=time.TranslatePoint(default,row)!.Value;var badgeAt=badge.TranslatePoint(default,row)!.Value;
-        Require(nameAt.X+name.Bounds.Width<=badgeAt.X+1&&badgeAt.X+badge.Bounds.Width<=timeAt.X+1,"Name, ACTIVE and time overlap at minimum size.");
+        Require(nameAt.X+name.Bounds.Width<=badgeAt.X+1&&timeAt.Y+time.Bounds.Height<=badgeAt.Y+1,"Name, ACTIVE and time overlap at minimum size.");
         Require(timeAt.X+time.Bounds.Width<=row.Bounds.Width+1,"Time was clipped outside the row at minimum size.");
         var root=(Control)f.Window.Content!;
         var close=f.Window.GetVisualDescendants().OfType<Button>().Single(c=>c.Name=="ClockPickerClose");
@@ -220,7 +254,8 @@ internal static class NavigatorPickerChecks
             Key((Control)f.List.ContainerFromIndex(1)!,Avalonia.Input.Key.End);ClockOverlayChecks.Pump(60);
             Require(f.List.SelectedIndex==11,"End did not reach clocks beyond nine.");
             var last=Row(f.List,11);
-            Require(!last.GetVisualDescendants().OfType<Border>().Single(c=>c.Name=="ClockPickerKeycap").IsVisible,"Clock 12 incorrectly advertises a digit shortcut.");
+            Require(Text(last,"ClockPickerNumber").Text=="12" && Text(last,"ClockPickerNumber").FontWeight==FontWeight.Normal,
+                "Clock 12 should have a plain index beyond the digit shortcuts.");
             Key(f.Window,Avalonia.Input.Key.NumPad2);ClockOverlayChecks.Pump(15);
             Require(f.Chosen==f.Timers[1]&&!f.Window.IsVisible,"Scrolled numpad shortcut did not use absolute position two.");
         }
