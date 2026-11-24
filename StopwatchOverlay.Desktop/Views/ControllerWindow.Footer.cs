@@ -8,6 +8,13 @@ public partial class ControllerWindow
         uint FirstKey, string FirstAction, uint SecondKey, string SecondAction);
     private FooterState? _lastFooter;
 
+    private static string ClockReturnLabel(TimerSession timer) => timer.LastNonClockMode switch
+    {
+        2 => "Switch to countdown",
+        3 => "Switch to timecode",
+        _ => "Switch to stopwatch"
+    };
+
     private void UpdateControllerFooter(TimerSession? timer, string state)
     {
         bool clock = timer?.Mode == 1;
@@ -15,12 +22,7 @@ public partial class ControllerWindow
         uint first = clock || StartStopButton.IsEnabled
             ? keys.GetValueOrDefault(clock ? ShortcutAction.ToggleClock : ShortcutAction.StartStop) : 0;
         uint second = timer == null ? 0 : keys.GetValueOrDefault(clock ? ShortcutAction.ToggleOverlay : ShortcutAction.Reset);
-        string firstAction = clock ? timer!.LastNonClockMode switch
-        {
-            2 => "Switch to countdown",
-            3 => "Switch to timecode",
-            _ => "Switch to stopwatch"
-        } : (string)StartStopButton.Content!;
+        string firstAction = clock ? ClockReturnLabel(timer!) : (string)StartStopButton.Content!;
         string secondAction = clock ? (IsTimerOverlayVisible(timer!) ? "Hide overlay" : "Show overlay") : "Reset";
         string status = timer == null ? "No timer" : clock ? "Live clock" : state;
         var view = new FooterState(status, _settings.LeaderShortcut, first, firstAction, second, secondAction);

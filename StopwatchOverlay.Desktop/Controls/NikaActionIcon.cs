@@ -15,6 +15,8 @@ public sealed class NikaActionIcon : Control
     public bool Pixel { get => GetValue(PixelProperty); set => SetValue(PixelProperty, value); }
     private static readonly Dictionary<string, Geometry> PixelSymbols = new()
     {
+        ["Next"] = Geometry.Parse("M1,5H7V4H6V3H5V2H7V3H8V4H9V5H10V7H9V8H8V9H7V10H5V9H6V8H7V7H1Z M11,2H12V10H11Z"),
+        ["Stopwatch"] = Geometry.Parse("M4,0H8V1H7V3H8V4H10V5H11V9H10V10H9V11H3V10H2V9H1V5H2V4H4V3H5V1H4Z M4,5H3V9H4V10H8V9H9V5H8V4H4Z M5,5H6V7H8V8H5Z"),
         ["Separate"] = Geometry.Parse("M1,4H3V9H8V11H1Z M6,1H11V6H9V4H8V5H7V6H5V4H6V3H7V2H6Z"),
         ["Combine"] = Geometry.Parse("M1,5H7V11H1Z M2,6V10H6V6Z M5,1H11V7H9V3H5Z M8,3H10V5H9V6H8V7H6V5H7V4H8Z"),
         ["Project"] = Geometry.Parse("M1,2H5V3H11V10H1Z M2,4V9H10V4Z"),
@@ -28,6 +30,8 @@ public sealed class NikaActionIcon : Control
     };
     private static readonly Dictionary<string, Geometry> Symbols = new()
     {
+        ["Next"] = Geometry.Parse("M2,12H17 M10,5L17,12L10,19 M21,4V20"),
+        ["Stopwatch"] = Geometry.Parse("M8,2H16 M12,2V6 M20,14A8,8 0 1 1 4,14A8,8 0 1 1 20,14 M12,9V14H16"),
         ["Start"] = Geometry.Parse("M6,3 L21,12 L6,21 Z"),
         ["Separate"] = Geometry.Parse("M4,8V20H16V14 M12,4H20V12 M20,4L11,13"),
         ["Combine"] = Geometry.Parse("M3,10H14V21H3Z M10,3H21V14 M20,4L10,14"),

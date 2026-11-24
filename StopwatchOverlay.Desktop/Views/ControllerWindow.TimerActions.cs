@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives.PopupPositioning;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -13,16 +14,44 @@ public partial class ControllerWindow
 {
     private ContextMenu? _openTimerActions;
 
-    private readonly record struct TimerActionsState(TimerSession Timer, string State, bool OverlaysVisible, bool Separated);
+    private readonly record struct TimerActionsState(TimerSession? Timer, string? Name, string State, bool OverlaysVisible,
+        bool Separated, int Mode, int PreviousMode, bool CanStart, bool HasNext);
 
-    private TimerActionsState GetTimerActionsState(TimerSession session) =>
-        new(session, TimerRailItemViewModel.StateOf(session), _overlaysVisible, session.IsSeparated);
-
-    private void DismissStaleTimerActions(TimerSession active)
+    private TimerActionsState GetTimerActionsState()
     {
-        if (_openTimerActions?.Tag is TimerActionsState snapshot && snapshot != GetTimerActionsState(active))
+        var session = _timerManager.Active;
+        return new(session, session?.Name, session == null ? "" : TimerRailItemViewModel.StateOf(session), _overlaysVisible,
+            session?.IsSeparated == true, session?.Mode ?? -1, session?.LastNonClockMode ?? 0, StartStopButton.IsEnabled, _timerManager.Count > 1);
+    }
+
+    private void DismissStaleTimerActions()
+    {
+        if (_openTimerActions?.Tag is TimerActionsState snapshot && snapshot != GetTimerActionsState())
             _openTimerActions.Close();
     }
+
+    private void NavyTimers_Click(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (NavyTimersButton.ContextMenu is { IsOpen: true } open) open.Close();
+        else OpenTimerActions(NavyTimersButton);
+    }
+
+    private void NavyTimers_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Down && NavyTimersButton.ContextMenu?.IsOpen != true) NavyTimers_Click(sender, e);
+    }
+
+    private Separator TimerMenuHeading(string name, string state)
+    {
+        var heading = new Separator { Theme = (ControlTheme)this.FindResource("TimerMenuHeading")!, Tag = name, DataContext = state };
+        heading.Classes.Set("running", state is "Running" or "Finished");
+        heading.Classes.Set("clock", state == "Clock");
+        return heading;
+    }
+
+    private Separator TimerManagementHeading() =>
+        new() { Theme = (ControlTheme)this.FindResource("TimerManagementHeading")! };
 
     private void NikaRailMenu_Click(object? sender, RoutedEventArgs e)
     {
@@ -31,21 +60,30 @@ public partial class ControllerWindow
 
         e.Handled = true;
         if (button.ContextMenu is { IsOpen: true }) return;
-        _openTimerActions?.Close();
         if (!ReferenceEquals(_timerManager.Active, timer.Session))
             TimerRailList.SelectedItem = timer;
         else
             UpdateActiveTimerDisplay();
-        var session = timer.Session;
-        var snapshot = GetTimerActionsState(session);
+        OpenTimerActions(button, row);
+    }
+
+    private void OpenTimerActions(Button button, ListBoxItem? row = null)
+    {
+        _openTimerActions?.Close();
+        var snapshot = GetTimerActionsState();
+        bool header = row == null;
         double scale = DesktopPageAppearance.Scale(this);
         var menu = new ContextMenu
         {
             Theme = (ControlTheme)this.FindResource("ControllerTimerActionsMenu")!,
             PlacementTarget = button,
-            Placement = PlacementMode.Custom,
-            Tag = snapshot,
-            CustomPopupPlacementCallback = placement =>
+            Placement = header ? PlacementMode.BottomEdgeAlignedRight : PlacementMode.Custom,
+            VerticalOffset = header ? 3 : 0,
+            Tag = snapshot
+        };
+        if (row != null)
+        {
+            menu.CustomPopupPlacementCallback = placement =>
             {
                 var buttonTop = button.TranslatePoint(default, this);
                 var buttonBottom = button.TranslatePoint(new Point(0, button.Bounds.Height), this);
@@ -59,12 +97,12 @@ public partial class ControllerWindow
                 placement.ConstraintAdjustment = PopupPositionerConstraintAdjustment.FlipY | PopupPositionerConstraintAdjustment.FlipX |
                     PopupPositionerConstraintAdjustment.SlideX | PopupPositionerConstraintAdjustment.SlideY |
                     PopupPositionerConstraintAdjustment.ResizeY;
-            }
-        };
+            };
+        }
         menu.Resources["ControllerPixel"] = _settings.NikaControllerPixel;
         menu.Resources["TimerActionsZoom"] = new ScaleTransform(scale, scale);
-        menu.Resources["TimerActionsWidth"] = Math.Max(224, 172 / scale);
-        menu.Resources["TimerActionsTextSize"] = Math.Max(16, 12.5 / scale);
+        menu.Resources["TimerActionsWidth"] = header ? 220d : Math.Max(224, 172 / scale);
+        menu.Resources["TimerActionsTextSize"] = header ? Math.Max(15, 13 / scale) : Math.Max(16, 12.5 / scale);
         var actionTheme = (ControlTheme)this.FindResource("ControllerTimerAction")!;
         var dividerTheme = (ControlTheme)this.FindResource("ControllerTimerActionDivider")!;
 
@@ -77,33 +115,46 @@ public partial class ControllerWindow
             item.Click += (source, args) =>
             {
                 menu.Close();
-                if (_timerManager.Active == session && snapshot == GetTimerActionsState(session))
+                if (snapshot == GetTimerActionsState())
                     handler(source, args);
             };
             menu.Items.Add(item);
             return item;
         }
 
-        if (session.Mode != 1)
+        if (snapshot.Timer is { } session)
         {
-            string transport = (string)StartStopButton.Content!;
-            Command(transport, transport, StartStopButton_Click);
-            Command("Add lap", "Add lap", LapButton_Click);
-            Command("Reset", "Reset", ResetButton_Click);
-            Divider();
+            if (header) menu.Items.Add(TimerMenuHeading(session.DisplayName, snapshot.State));
+            if (session.Mode != 1)
+            {
+                string transport = (string)StartStopButton.Content!;
+                Command(transport, transport, StartStopButton_Click).IsEnabled = snapshot.CanStart;
+                Command("Add lap", "Add lap", LapButton_Click);
+                Command("Reset", "Reset", ResetButton_Click);
+                if (!header) Divider();
+            }
+            else if (header)
+                Command(ClockReturnLabel(session), "Stopwatch", (_, _) => ToggleClockMode());
+            Command(_overlaysVisible ? "Hide timer overlays" : "Show timer overlays", "Hide overlay", ToggleOverlayButton_Click);
+            Command(session.IsSeparated ? "Combine overlays" : "Separate overlay", session.IsSeparated ? "Combine" : "Separate", ToggleCombinedOverlayMenuItem_Click);
+            if (!header) Divider();
+            Command("Edit timer…", "Edit", EditTimerMenuItem_Click);
+            Command("Set project…", "Project", RenameTimerMenuItem_Click);
+            if (!header) Divider();
+            Command("Close timer…", "Close", CloseTimerMenuItem_Click).Classes.Add("closeTimer");
         }
-        Command(_overlaysVisible ? "Hide timer overlays" : "Show timer overlays", "Hide overlay", ToggleOverlayButton_Click);
-        Command(session.IsSeparated ? "Combine overlays" : "Separate overlay", session.IsSeparated ? "Combine" : "Separate", ToggleCombinedOverlayMenuItem_Click);
-        Divider();
-        Command("Edit timer…", "Edit", EditTimerMenuItem_Click);
-        Command("Set project…", "Project", RenameTimerMenuItem_Click);
-        Divider();
-        Command("Close timer…", "Close", CloseTimerMenuItem_Click).Classes.Add("closeTimer");
+        if (header)
+        {
+            if (snapshot.Timer != null) menu.Items.Add(TimerManagementHeading());
+            Command("New timer…", "New timer", NewTimerMenuItem_Click);
+            if (snapshot.Timer != null) Command("Next active timer", "Next", NextTimerMenuItem_Click).IsEnabled = snapshot.HasNext;
+        }
 
         menu.Opened += (_, _) =>
         {
-            menu.SelectedIndex = 0;
-            ((MenuItem)menu.Items[0]!).Focus();
+            var first = menu.Items.OfType<MenuItem>().First(item => item.IsEnabled);
+            menu.SelectedIndex = menu.Items.IndexOf(first);
+            first.Focus();
         };
         menu.Closed += (_, _) =>
         {

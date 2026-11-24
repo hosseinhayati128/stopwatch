@@ -701,7 +701,6 @@ public partial class ControllerWindow : Window
     private void UpdateActiveTimerDisplayAt(DateTime nowUtc)
     {
         var session = CurrentTimer;
-        if (_openTimerActions != null) DismissStaleTimerActions(session);
         bool nika = Classes.Contains("nika");
         bool navyCountdown = nika && session.Mode == 2;
         if (navyCountdown) UpdateCountdownSetup(session, nowUtc.ToLocalTime());
@@ -725,6 +724,7 @@ public partial class ControllerWindow : Window
         StartStopButton.Content = session.IsRunning ? "Pause" : nika && state == "Paused" ? "Resume" : "Start";
         LapButton.IsEnabled = ResetButton.IsEnabled = _timerManager.Active != null && !clock;
         StartStopButton.IsEnabled = ResetButton.IsEnabled && (!navyCountdown || session.IsRunning || _setupRemaining.HasValue);
+        if (_openTimerActions != null) DismissStaleTimerActions();
         RecIndicator.IsVisible = ShowTimerRec(session) && !Classes.Contains("nika");
 
         StatusDot.Fill = session.IsRunning ? Brushes.LimeGreen : Classes.Contains("nika") ? Brushes.Peru : Brushes.Gray;

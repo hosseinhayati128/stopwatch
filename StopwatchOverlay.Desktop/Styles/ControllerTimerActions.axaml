@@ -1,6 +1,45 @@
 <Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
     <Styles.Resources>
+        <ControlTheme x:Key="TimerMenuHeading" TargetType="Separator">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Height" Value="NaN"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid ColumnDefinitions="*,Auto" Margin="7,3,7,6">
+                        <StackPanel Spacing="2" Margin="0,0,5,0">
+                            <TextBlock Text="ACTIVE TIMER" FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="10"
+                                       LetterSpacing="1.1" FontWeight="SemiBold" Foreground="#E6C584"/>
+                            <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" MaxWidth="148"
+                                       HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       ToolTip.Tip="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                       FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="17" FontWeight="SemiBold" Foreground="#FFF1D9"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Name="MenuTimerState" x:DataType="x:String" Text="{Binding}" VerticalAlignment="Center"
+                                   FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="12" FontWeight="SemiBold"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^ /template/ TextBlock#MenuTimerState"><Setter Property="Foreground" Value="#F5D58C"/></Style>
+            <Style Selector="^.running /template/ TextBlock#MenuTimerState"><Setter Property="Foreground" Value="#A6E4CC"/></Style>
+            <Style Selector="^.clock /template/ TextBlock#MenuTimerState"><Setter Property="Foreground" Value="#A9DBEB"/></Style>
+        </ControlTheme>
+        <ControlTheme x:Key="TimerManagementHeading" TargetType="Separator">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Height" Value="NaN"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border BorderBrush="#385562" BorderThickness="0,1,0,0" Padding="0,6,0,1" Margin="7,3,7,1">
+                        <TextBlock Text="TIMER MANAGEMENT" FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="10"
+                                   FontWeight="SemiBold" LetterSpacing="1.1" Foreground="#E6C584"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
         <ControlTheme x:Key="ControllerTimerActionsMenu" TargetType="ContextMenu">
             <Setter Property="Template">
                 <ControlTemplate>
@@ -50,6 +89,21 @@
             <Setter Property="Template"><ControlTemplate><Border Background="#385562"/></ControlTemplate></Setter>
         </ControlTheme>
     </Styles.Resources>
+    <Style Selector="Window.nika Button#NavyTimersButton">
+        <Setter Property="HotKey" Value="Alt+T"/>
+        <Setter Property="Background" Value="#123345"/>
+        <Setter Property="BorderBrush" Value="#64818C"/>
+    </Style>
+    <Style Selector="Button#NavyTimersButton:pointerover, Button#NavyTimersButton:focus-visible, Button#NavyTimersButton.actionsOpen">
+        <Setter Property="Background" Value="#173F50"/><Setter Property="BorderBrush" Value="#BA9E68"/>
+    </Style>
+    <Style Selector="Button#NavyTimersButton /template/ Path.timersChevron">
+        <Setter Property="Data" Value="M0,0L5,5L10,0L10,2L5,7L0,2Z"/>
+    </Style>
+    <Style Selector="Window.pixelController Button#NavyTimersButton /template/ Path.timersChevron">
+        <Setter Property="Data" Value="M0,0H2V2H4V4H6V2H8V0H10V2H8V4H6V6H4V4H2V2H0Z"/>
+    </Style>
+    <Style Selector="MenuItem.timerAction:disabled"><Setter Property="Opacity" Value="0.55"/></Style>
     <Style Selector="Button.railMenuAction.actionsOpen /template/ controls|TodoFrame#RailMenuPlate">
         <Setter Property="Background" Value="#315A69"/>
         <Setter Property="BorderBrush" Value="#C8A565"/>

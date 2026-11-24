@@ -119,16 +119,24 @@
             </Grid>
         </Border>
 
-        <!-- Menu Bar -->
+        <Button x:Name="NavyTimersButton" Classes="nikaOnly" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                Margin="0,0,26,0" AutomationProperties.Name="Timers" Click="NavyTimers_Click" KeyDown="NavyTimers_KeyDown">
+            <Button.Template>
+                <ControlTemplate>
+                    <controls:TodoFrame Name="TimersPlate" Pixel="{DynamicResource ControllerPixel}" Padding="9,3" CornerRadius="5"
+                                        BorderThickness="1.25" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="Timers" FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="15"
+                                       FontWeight="SemiBold" Foreground="#FFF1D9" VerticalAlignment="Center"/>
+                            <Path Classes="timersChevron" Width="10" Height="7" Fill="#E7C47F" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </controls:TodoFrame>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <!-- Menu bar for the standard controller themes. -->
         <Menu Classes="controllerMenu" Grid.Row="{DynamicResource ControllerMenuRow}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,0,1">
             <MenuItem Header="_Timers">
-                <MenuItem Classes="nikaOnly" Header="Start / Pause" Click="StartStopButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Add lap" Click="LapButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Reset" Click="ResetButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Show / Hide overlay" Click="ToggleOverlayButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Records &amp; Analytics" Click="DashboardButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Settings" Click="SettingsButton_Click"/>
-                <MenuItem Classes="nikaOnly" Header="Shortcuts" Click="ShortcutsButton_Click"/>
                 <MenuItem Header="_New timer" Click="NewTimerMenuItem_Click"/>
                 <MenuItem Header="_Next active timer" Click="NextTimerMenuItem_Click"/>
                 <MenuItem x:Name="ToggleCombinedMenuItem" Header="_Combine overlays" Click="ToggleCombinedOverlayMenuItem_Click"/>

@@ -97,18 +97,16 @@ internal static class NikaThemeChecks
                     throw new Exception("Nika secondary action loses cream text in " + state + ": " + actionLabel.Foreground);
                 ((IPseudoClasses)lap.Classes).Set(state, false);
             }
-            var timerMenu = controller.GetLogicalDescendants().OfType<MenuItem>().First(item => item.Header?.ToString() == "_Timers");
-            if (!timerMenu.IsEffectivelyVisible || timerMenu.Items.Count < 7)
-                throw new Exception("Nika hides existing timer menu commands.");
-            timerMenu.IsSubMenuOpen = true; ClockOverlayChecks.Pump(50);
-            var menuCommand = timerMenu.Items.OfType<MenuItem>().First();
-            if (menuCommand.Foreground is not ISolidColorBrush menuText || menuText.Color != Color.Parse("#FFF1D9")
-                || menuCommand.Background is not ISolidColorBrush menuBackground || menuBackground.Color != Color.Parse("#032437"))
-                throw new Exception("Nika submenu lost its coordinated readable palette: " + menuCommand.Foreground + ", " + menuCommand.Background);
-            if (!menuCommand.GetVisualDescendants().OfType<Border>().Any(border =>
-                border.Background is ISolidColorBrush surface && surface.Color == Color.Parse("#032437")))
-                throw new Exception("Nika submenu template does not render a navy surface.");
-            timerMenu.IsSubMenuOpen = false;
+            var timerTrigger = controller.FindControl<Button>("NavyTimersButton")!;
+            if (!timerTrigger.IsEffectivelyVisible) throw new Exception("Navy Timers menu is hidden.");
+            timerTrigger.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            ClockOverlayChecks.Pump(55);
+            var timerMenu = timerTrigger.ContextMenu!;
+            var surface = timerMenu.GetVisualDescendants().OfType<TodoFrame>().First(f => f.Name == "ActionSurface");
+            if (!timerMenu.IsOpen || timerMenu.Items.OfType<MenuItem>().Count() < 7 ||
+                surface.Background is not ISolidColorBrush navy || navy.Color != Color.Parse("#092A3B"))
+                throw new Exception("Navy Timers menu lost its actions or readable surface.");
+            timerMenu.Close();
             foreach (var (width, height) in new[] { (1400, 720), (1040, 720), (1040, 520), (600, 720), (600, 520) })
             {
                 controller.Width = width; controller.Height = height; ClockOverlayChecks.Pump(150); controller.UpdateLayout();

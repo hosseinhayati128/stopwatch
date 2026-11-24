@@ -25,6 +25,7 @@ public partial class ControllerWindow
     private ResourceInclude? _nikaControllerResources;
     private void ApplyActiveTimerStyle()
     {
+        _openTimerActions?.Close();
         bool pixel = Classes.Contains("nika") && _settings.NikaControllerPixel;
         Classes.Set("pixelController", pixel);
         Resources["ControllerPixel"] = pixel;
