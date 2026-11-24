@@ -15,6 +15,9 @@ public sealed class NikaActionIcon : Control
     public bool Pixel { get => GetValue(PixelProperty); set => SetValue(PixelProperty, value); }
     private static readonly Dictionary<string, Geometry> PixelSymbols = new()
     {
+        ["Records & Analytics"] = Geometry.Parse("M8,1H11V11H8Z M4,4H7V11H4Z M0,7H3V11H0Z"),
+        ["Settings"] = Geometry.Parse("M5,0H7V2H8V1H10V2H11V3H10V4H11V5H12V7H11V8H10V9H11V10H10V11H8V10H7V12H5V10H4V11H2V10H1V9H2V8H1V7H0V5H1V4H2V3H1V2H2V1H4V2H5Z M4,3V4H3V8H4V9H8V8H9V4H8V3Z M5,4H7V5H8V7H7V8H5V7H4V5H5Z"),
+        ["Shortcuts"] = Geometry.Parse("M1,1H11V2H12V9H11V10H1V9H0V2H1Z M2,2V3H1V8H2V9H10V8H11V3H10V2Z M2,3H3V4H2Z M4,3H5V4H4Z M6,3H7V4H6Z M8,3H9V4H8Z M3,5H4V6H3Z M5,5H6V6H5Z M7,5H8V6H7Z M9,5H10V6H9Z M3,7H9V8H3Z"),
         ["Next"] = Geometry.Parse("M1,5H7V4H6V3H5V2H7V3H8V4H9V5H10V7H9V8H8V9H7V10H5V9H6V8H7V7H1Z M11,2H12V10H11Z"),
         ["Stopwatch"] = Geometry.Parse("M4,0H8V1H7V3H8V4H10V5H11V9H10V10H9V11H3V10H2V9H1V5H2V4H4V3H5V1H4Z M4,5H3V9H4V10H8V9H9V5H8V4H4Z M5,5H6V7H8V8H5Z"),
         ["Separate"] = Geometry.Parse("M1,4H3V9H8V11H1Z M6,1H11V6H9V4H8V5H7V6H5V4H6V3H7V2H6Z"),
@@ -43,15 +46,15 @@ public sealed class NikaActionIcon : Control
         ["Hide overlay"] = Geometry.Parse("M1,12 Q12,-3 23,12 Q12,27 1,12 Z M16,12 A4,4 0 1 1 8,12 A4,4 0 1 1 16,12"),
         ["Edit"] = Geometry.Parse("M4,16 L17,3 L21,7 L8,20 L3,21 Z M14,6 L18,10"),
         ["New timer"] = Geometry.Parse("M12,3 V21 M3,12 H21"),
-        ["Records & Analytics"] = Geometry.Parse("M3,13 H7 V22 H3 Z M10,7 H14 V22 H10 Z M17,2 H21 V22 H17 Z"),
-        ["Settings"] = Geometry.Parse("M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M5,5 L7,7 M17,17 L19,19 M5,19 L7,17 M17,7 L19,5 M19,12 A7,7 0 1 1 5,12 A7,7 0 1 1 19,12 M15,12 A3,3 0 1 1 9,12 A3,3 0 1 1 15,12"),
-        ["Shortcuts"] = Geometry.Parse("M2,5 H22 V19 H2 Z M5,8 H6 M9,8 H10 M13,8 H14 M17,8 H19 M5,12 H6 M9,12 H10 M13,12 H14 M17,12 H19 M7,16 H17")
+        ["Records & Analytics"] = Geometry.Parse("M2,15H6.5V21H2Z M9,9.5H13.5V21H9Z M16,4H20.5V21H16Z"),
+        ["Settings"] = Geometry.Parse("M10,2H14L14.8,4.5L17,5.5L19.5,4.8L21.5,8.2L19.8,10.3V13.4L21.5,15.5L19.5,19L17,18.3L14.8,19.6L14,22H10L9.2,19.6L6.9,18.3L4.5,19L2.5,15.5L4.2,13.4V10.3L2.5,8.2L4.5,4.8L6.9,5.5L9.2,4.5Z M15.7,12A3.7,3.7 0 1 1 8.3,12A3.7,3.7 0 1 1 15.7,12Z"),
+        ["Shortcuts"] = Geometry.Parse("M3.5,4H20.5Q22.5,4 22.5,6V17Q22.5,19 20.5,19H3.5Q1.5,19 1.5,17V6Q1.5,4 3.5,4Z M5,8H7 M10,8H12 M15,8H17 M6,11.5H8 M11,11.5H13 M16,11.5H18 M7.5,15H16.5")
     };
     static NikaActionIcon() => AffectsRender<NikaActionIcon>(LabelProperty, InkProperty, PixelProperty);
     public NikaActionIcon() { IsHitTestVisible = false; }
     public override void Render(DrawingContext context)
     {
-        string key = Label switch { "Resume" => "Start", "Show overlay" => "Hide overlay", "Set project" => "Edit", "+ New timer" => "New timer", _ => Label };
+        string key = Label switch { "Resume" => "Start", "Show overlay" => "Hide overlay", "Set project" => "Edit", "+ New timer" => "New timer", "Shortcuts unavailable" => "Shortcuts", _ => Label };
         if (Pixel && PixelSymbols.TryGetValue(key, out var pixel))
         {
             using (context.PushTransform(Matrix.CreateScale(Bounds.Width / 12, Bounds.Height / 12)))

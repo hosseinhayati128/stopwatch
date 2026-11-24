@@ -244,6 +244,8 @@
                                         <ComboBoxItem Content="Classic Navy"/>
                                         <ComboBoxItem Content="Pixel Navy"/>
                                     </ComboBox>
+                                    <TextBlock Text="Large Pixel Navy digits" Classes="subheading"/>
+                                    <ComboBox x:Name="ControllerDigitsCombo" HorizontalAlignment="Stretch" AutomationProperties.Name="Large Pixel Navy digits"/>
                                     <TextBlock Text="Sidebar artwork" Classes="subheading"/>
                                     <ComboBox x:Name="NikaArtworkCombo" HorizontalAlignment="Stretch"/>
                                 </StackPanel>

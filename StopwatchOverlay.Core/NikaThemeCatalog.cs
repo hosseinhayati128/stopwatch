@@ -15,6 +15,19 @@ public readonly record struct NikaArtworkRegion(double X, double Y, double Width
 public static class NikaThemeCatalog
 {
     public const string DefaultBackground = "navigator-masterwork";
+    public const string OriginalClockDigits = "original";
+    public const string DefaultLargeClockDigits = "time-ticket";
+
+    public static IReadOnlyList<NikaThemeOption> LargeClockDigits { get; } = Array.AsReadOnly(new[]
+    {
+        new NikaThemeOption(OriginalClockDigits, "Original · Pixel Voyage"),
+        new NikaThemeOption("deck-stencil", "07 · Deck Stencil"),
+        new NikaThemeOption(DefaultLargeClockDigits, "16 · Time Ticket (default)"),
+        new NikaThemeOption("chartmaker", "17 · Chartmaker"),
+        new NikaThemeOption("cathode", "19 · Cathode")
+    });
+
+    public static string NormalizeLargeClockDigits(string? value) => Normalize(value, LargeClockDigits, DefaultLargeClockDigits);
 
     public static IReadOnlyList<NikaThemeOption> Backgrounds { get; } = Array.AsReadOnly(new[]
     {

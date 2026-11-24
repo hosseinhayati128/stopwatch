@@ -1,0 +1,39 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:StopwatchOverlay.Desktop.Controls">
+    <Style Selector="Border.navDivider">
+        <Setter Property="Width" Value="1"/>
+        <Setter Property="Height" Value="19"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="#395562"/>
+    </Style>
+    <Style Selector="Window.nika Button.navDestination">
+        <Setter Property="Height" Value="42"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        <Setter Property="Background" Value="#0D2D3D"/>
+        <Setter Property="BorderBrush" Value="#0D2D3D"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <controls:TodoFrame Pixel="{DynamicResource ControllerPixel}" CornerRadius="5" Padding="11,0"
+                                    BorderThickness="2" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <controls:NikaActionIcon Label="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                                 Pixel="{DynamicResource ControllerPixel}" Ink="#B3D9D6" Width="21" Height="21" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" VerticalAlignment="Center"
+                                   FontFamily="{x:Static controls:TodoVisuals.BodyFont}" FontSize="19" FontWeight="SemiBold" Foreground="#FFF1D9"/>
+                    </StackPanel>
+                </controls:TodoFrame>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Window.nika Button.navDestination:pointerover">
+        <Setter Property="Background" Value="#235466"/>
+        <Setter Property="BorderBrush" Value="#497783"/>
+    </Style>
+    <Style Selector="Window.nika Button.navDestination:focus-visible">
+        <Setter Property="Background" Value="#153B4E"/>
+        <Setter Property="BorderBrush" Value="#F1C76D"/>
+    </Style>
+</Styles>

@@ -168,6 +168,7 @@ namespace StopwatchOverlay
         public string NikaBackground { get; set; } = NikaThemeCatalog.DefaultBackground;
         public string NikaTypography { get; set; } = "original-classic";
         public bool NikaControllerPixel { get; set; }
+        public string ControllerLargeClockDigits { get; set; } = NikaThemeCatalog.DefaultLargeClockDigits;
         public string NikaSidebarArtwork { get; set; } = "sun-warrior";
         public double UiScalePercent { get; set; } = 90;
         public TypographySettings Typography { get; set; } = new();
@@ -606,6 +607,7 @@ namespace StopwatchOverlay
             NikaBackground = NikaThemeCatalog.NormalizeBackground(NikaBackground);
             NikaTypography = NikaThemeCatalog.NormalizeTypography(NikaTypography);
             NikaSidebarArtwork = NikaThemeCatalog.NormalizeArtwork(NikaSidebarArtwork);
+            ControllerLargeClockDigits = NikaThemeCatalog.NormalizeLargeClockDigits(ControllerLargeClockDigits);
             TodoAppearance ??= new();
             TodoAppearance.Normalize();
             StopwatchAppearance ??= new();

@@ -121,6 +121,8 @@ public partial class SettingsWindow : Window
             LoadNikaChoice(NikaBackgroundCombo, NikaThemeCatalog.Backgrounds, NikaThemeCatalog.NormalizeBackground(_settings.NikaBackground));
             LoadNikaChoice(NikaTypographyCombo, NikaThemeCatalog.Typography, NikaThemeCatalog.NormalizeTypography(_settings.NikaTypography));
             ControllerStyleCombo.SelectedIndex = _settings.NikaControllerPixel ? 1 : 0;
+            LoadNikaChoice(ControllerDigitsCombo, NikaThemeCatalog.LargeClockDigits, NikaThemeCatalog.NormalizeLargeClockDigits(_settings.ControllerLargeClockDigits));
+            ControllerDigitsCombo.IsEnabled = _settings.NikaControllerPixel;
             LoadNikaChoice(NikaArtworkCombo, NikaThemeCatalog.Artworks, NikaThemeCatalog.NormalizeArtwork(_settings.NikaSidebarArtwork));
             OverlayThemeCombo.ItemsSource = OverlayThemeCatalog.All;
             OverlayThemeCombo.SelectedItem = OverlayThemeCatalog.Normalize(_settings.OverlayTheme);
@@ -243,6 +245,7 @@ public partial class SettingsWindow : Window
         NikaBackgroundCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
         NikaTypographyCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
         ControllerStyleCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.ControllerStyle);
+        ControllerDigitsCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.ControllerStyle);
         NikaArtworkCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.Theme);
         OverlayThemeCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayTheme);
         ScreenCombo.SelectionChanged += (_, _) => CommitControls(SettingsChangeKind.OverlayScreen);
@@ -455,7 +458,11 @@ public partial class SettingsWindow : Window
                 _settings.OverlayTheme = OverlayThemeCatalog.Normalize(OverlayThemeCombo.SelectedItem?.ToString());
 
             if ((change & SettingsChangeKind.ControllerStyle) != 0)
+            {
                 _settings.NikaControllerPixel = ControllerStyleCombo.SelectedIndex == 1;
+                ControllerDigitsCombo.IsEnabled = _settings.NikaControllerPixel;
+                _settings.ControllerLargeClockDigits = NikaThemeCatalog.NormalizeLargeClockDigits((ControllerDigitsCombo.SelectedItem as NikaThemeOption)?.Id);
+            }
 
             if ((change & SettingsChangeKind.OverlayScreen) != 0)
                 _settings.ScreenIndex = Math.Max(0, ScreenCombo.SelectedIndex);

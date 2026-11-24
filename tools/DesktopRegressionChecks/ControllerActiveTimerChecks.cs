@@ -66,6 +66,36 @@ internal static class ControllerActiveTimerChecks
                         Require(button.GetVisualDescendants().OfType<NikaActionIcon>().Single().Pixel == pixel, "Incorrect action icons.");
                     }
                     ControllerSizingChecks.Capture(window, $"{(pixel ? "pixel" : "classic")}-running-{scale}", Output);
+                    if (pixel)
+                    {
+                        var digits = editor.FindControl<ComboBox>("ControllerDigitsCombo")!;
+                        Require(digits.IsEnabled && digits.ItemCount == 5 &&
+                            digits.SelectedItem is NikaThemeOption { Id: NikaThemeCatalog.DefaultLargeClockDigits } &&
+                            NikaThemeCatalog.NormalizeLargeClockDigits("missing-face") == NikaThemeCatalog.DefaultLargeClockDigits,
+                            "Expected Time Ticket as the default and fallback among five large pixel faces.");
+                        var captures = new HashSet<string>();
+                        const string faceOutput = "design/one-piece-v2/controller-large-digits/implemented-native";
+                        Directory.CreateDirectory(faceOutput);
+                        foreach (var choice in NikaThemeCatalog.LargeClockDigits)
+                        {
+                            digits.SelectedItem = choice;
+                            ClockOverlayChecks.Pump(50);
+                            Require(settings.ControllerLargeClockDigits == choice.Id && settings.OverlayTheme == overlay, "Wrong large clock selection.");
+                            string settingsPath = Path.Combine(Path.GetTempPath(), $"large-digits-{Guid.NewGuid():N}.json");
+                            try { Require(SettingsStore.Save(settings, settingsPath) && SettingsStore.Load(settingsPath).ControllerLargeClockDigits == choice.Id, "Large digit selection failed to persist."); }
+                            finally { File.Delete(settingsPath); }
+                            var capture = $"{choice.Id}-{scale}";
+                            ControllerSizingChecks.Capture(window, ControllerSizingChecks.Bounds(card, window), capture, faceOutput);
+                            captures.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(faceOutput, capture + ".png")))));
+                        }
+                        Require(captures.Count == 5, "Selecting a large face did not change the rendered clock.");
+                        picker.SelectedIndex = 0;
+                        Require(!digits.IsEnabled && settings.ControllerLargeClockDigits == "cathode", "Switching to Classic lost the saved face.");
+                        picker.SelectedIndex = 1;
+                        digits.SelectedIndex = 0;
+                        ClockOverlayChecks.Pump(50);
+                        Require(settings.ControllerLargeClockDigits == NikaThemeCatalog.OriginalClockDigits, "Original pixel face was not restored.");
+                    }
                     int laps = timer.LapTimes.Count;
                     Click("LapButton");
                     Require(timer.LapTimes.Count == laps + 1, "Add lap did not record a lap.");

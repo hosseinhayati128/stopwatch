@@ -20,13 +20,29 @@ public sealed class ControllerPixelDigits : TemplatedControl
     private readonly Dictionary<char, DrawingGroup> _glyphs = new();
     private IBrush? _ink;
     private double _size;
+    private ControllerDigitAtlas? _largeFace;
+
+    internal void SelectLargeFace(string id)
+    {
+        var face = ControllerDigitAtlas.Resolve(id);
+        if (_largeFace == face) return;
+        _largeFace = face;
+        RenderOptions.SetBitmapInterpolationMode(this, Avalonia.Media.Imaging.BitmapInterpolationMode.None);
+        InvalidateMeasure();
+        InvalidateVisual();
+    }
 
     protected override Size MeasureOverride(Size availableSize) =>
-        new(Math.Ceiling(StopwatchTypography.Width(Text ?? "", Face, FontSize * 156 / 166)) + 6, FontSize * 173 / 166);
+        new(Math.Ceiling(_largeFace?.Measure(Text ?? "", FontSize) ?? StopwatchTypography.Width(Text ?? "", Face, FontSize * 156 / 166)) + 6, FontSize * 173 / 166);
 
     public override void Render(DrawingContext context)
     {
         if (Text is not { Length: > 0 } time || Foreground is not { } ink) return;
+        if (_largeFace is not null)
+        {
+            _largeFace.Draw(context, time, FontSize, Bounds.Size);
+            return;
+        }
         double size = FontSize * 156 / 166;
         if (_size != size || !Equals(_ink, ink))
         {

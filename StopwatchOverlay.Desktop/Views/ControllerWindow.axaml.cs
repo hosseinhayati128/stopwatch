@@ -170,6 +170,7 @@ public partial class ControllerWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             ToolTip.SetTip(ShortcutsTopButton, status);
+            ToolTip.SetTip(NavyShortcutsButton, status);
             ShortcutsTopButton.Content = status.StartsWith("ERROR ") ? "Shortcuts unavailable" : "Shortcuts";
             _shortcutsWindow?.SetRegistrationStatus(status);
         });

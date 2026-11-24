@@ -28,6 +28,7 @@ public partial class ControllerWindow
         _openTimerActions?.Close();
         bool pixel = Classes.Contains("nika") && _settings.NikaControllerPixel;
         Classes.Set("pixelController", pixel);
+        PixelTimeDisplay.SelectLargeFace(pixel ? _settings.ControllerLargeClockDigits : NikaThemeCatalog.OriginalClockDigits);
         Resources["ControllerPixel"] = pixel;
         Resources["HeaderTitleSize"] = pixel ? 49d : 53d;
         if (Classes.Contains("nika")) UpdateHeaderTitleFit();

@@ -20,6 +20,7 @@ public partial class ControllerWindow
         _settings.NikaBackground=settings.NikaBackground;
         _settings.NikaTypography=settings.NikaTypography;
         _settings.NikaControllerPixel=settings.NikaControllerPixel;
+        _settings.ControllerLargeClockDigits=settings.ControllerLargeClockDigits;
         _settings.NikaSidebarArtwork=settings.NikaSidebarArtwork;
         _appearancePreviewSize=new Size(1120,736);
         Width=1120;Height=736;

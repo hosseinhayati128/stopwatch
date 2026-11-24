@@ -72,7 +72,7 @@
     <Style Selector="Window.nika Border.status"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika.compact Grid#ControllerFrame"><Setter Property="Margin" Value="6"/></Style>
     <Style Selector="Window.nika.compact Border.nikaHeader"><Setter Property="Padding" Value="12,8,70,8"/><Setter Property="Height" Value="86"/></Style>
-    <Style Selector="Window.nika.compact StackPanel.nikaHeaderNav"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="Window.nika.compact controls|TodoFrame#NavyNavigation"><Setter Property="IsVisible" Value="False"/></Style>
     <Style Selector="Window.nika.compact Grid.workspace"><Setter Property="Margin" Value="12,12,12,0"/></Style>
     <Style Selector="Window.nika Button.topAction"><Setter Property="FontSize" Value="17"/><Setter Property="FontWeight" Value="Medium"/></Style>
     <Style Selector="Window.nika Grid.railHeadingRow"><Setter Property="Margin" Value="10,0,10,8"/></Style>

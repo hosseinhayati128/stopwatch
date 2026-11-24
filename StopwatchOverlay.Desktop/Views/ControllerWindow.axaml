@@ -63,6 +63,7 @@
         <StyleInclude Source="/Styles/ControllerCountdown.axaml"/>
         <StyleInclude Source="/Styles/ControllerModeSelector.axaml"/>
         <StyleInclude Source="/Styles/ControllerActiveHeader.axaml"/>
+        <StyleInclude Source="/Styles/ControllerNavigation.axaml"/>
         <Style Selector="ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource LegacyRailItem}"/></Style>
         <Style Selector="Window.nika ListBox#TimerRailList"><Setter Property="ItemTemplate" Value="{StaticResource NavyRailItem}"/></Style>
     </Window.Styles>
@@ -111,11 +112,17 @@
                     <TextBlock Classes="nikaHeaderTitle" Text="Stopwatch Controller" FontFamily="{DynamicResource NikaDisplayFont}" FontWeight="ExtraBold" Foreground="#FFF1D9"/>
                     <TextBlock Classes="nikaHeaderCaption" Text="GRAND LINE  ·  NAVIGATOR EDITION" Foreground="#D9B76E" FontSize="11" LetterSpacing="3"/>
                 </StackPanel>
-                <StackPanel Classes="nikaHeaderNav" Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                    <Button Classes="topAction" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
-                    <Button Classes="topAction" Content="Settings" Click="SettingsButton_Click"/>
-                    <Button Classes="topAction" Content="Shortcuts" Click="ShortcutsButton_Click"/>
-                </StackPanel>
+                <controls:TodoFrame x:Name="NavyNavigation" Grid.Column="2" Pixel="{DynamicResource ControllerPixel}"
+                                    Padding="3" CornerRadius="9" Background="#0D2D3D" BorderBrush="#52727B"
+                                    BorderThickness="1.3" VerticalAlignment="Center">
+                    <StackPanel Classes="nikaHeaderNav" Orientation="Horizontal">
+                        <Button Classes="navDestination" Content="Records &amp; Analytics" Click="DashboardButton_Click"/>
+                        <Border Classes="navDivider"/>
+                        <Button Classes="navDestination" Content="Settings" Click="SettingsButton_Click"/>
+                        <Border Classes="navDivider"/>
+                        <Button x:Name="NavyShortcutsButton" Classes="navDestination" Content="{Binding #ShortcutsTopButton.Content}" Click="ShortcutsButton_Click"/>
+                    </StackPanel>
+                </controls:TodoFrame>
             </Grid>
         </Border>
 
