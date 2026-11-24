@@ -15,7 +15,7 @@ using StopwatchOverlay.Desktop.Views;
 internal static class RunningClocksChecks
 {
     private const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
-    private const string Output="design/one-piece-v2/running-clocks/native-implementation";
+    private const string Output="design/one-piece-v2/running-clocks/navy-implementation";
     private static void Require(bool condition,string message){if(!condition)throw new Exception(message);}
     private sealed class Fixture:IDisposable
     {
@@ -24,8 +24,10 @@ internal static class RunningClocksChecks
         internal readonly ControllerWindow Controller;
         internal readonly TimerSessionManager Timers;
         internal Window Window=> (Window)typeof(ControllerWindow).GetField("_activeClocksShelf",Hidden)!.GetValue(Controller)!;
-        internal Fixture(int count=3)
+        internal Fixture(int count=3, bool pixel=false, int scale=100)
         {
+            Settings.UiScalePercent=scale;
+            Settings.NikaControllerPixel=pixel;
             Controller=(ControllerWindow)typeof(ControllerWindow).GetConstructor(Hidden,null,[typeof(AppSettings)],null)!.Invoke([Settings]);
             typeof(ControllerWindow).GetField("_projectTimeStore",Hidden)!.SetValue(Controller,new ProjectTimeStore(Path.Combine(data,"history.json")));
             Timers=(TimerSessionManager)typeof(ControllerWindow).GetField("_timerManager",Hidden)!.GetValue(Controller)!;
@@ -84,12 +86,12 @@ internal static class RunningClocksChecks
     internal static void Layout()
     {
         using var f=new Fixture();
-        Require(f.Window.Content is StopwatchFrameSurface,"Running Clocks still uses the basic rectangular layout.");
+        Require(f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(),"Running Clocks still uses the basic rectangular layout.");
         Require(f.Window.SystemDecorations==SystemDecorations.None&&((ISolidColorBrush)f.Window.Background!).Color.A==0,"Shelf has native chrome or an opaque exterior.");
-        Require(Math.Abs(f.Window.Bounds.Width-350)<1&&Math.Abs(f.Window.Bounds.Height-292)<1,"Three-row shelf lost the approved 350 × 292 spacing.");
+        Require(Math.Abs(f.Window.Bounds.Width-410)<1&&Math.Abs(f.Window.Bounds.Height-272)<1,"Three-row shelf lost the approved spacing.");
         Require(f.Buttons("RunningClockSelect").Length==3&&f.Buttons("RunningClockPause").All(b=>b.Bounds.Width>=34&&b.Bounds.Height>=34),"Rows or accessible pause hit areas are missing.");
         var positions=f.Buttons("RunningClockSelect").Select(b=>b.TranslatePoint(default,f.Window)!.Value.Y).ToArray();
-        Require(Math.Abs(positions[1]-positions[0]-44)<1,"Rows were tightened instead of preserving the approved spacing.");
+        Require(Math.Abs(positions[1]-positions[0]-51)<1,"Incorrect shelf row spacing.");
         var clock=f.Timers.Sessions[3];clock.Mode=1;clock.IsRunning=true;f.Update();
         Require(f.Buttons("RunningClockSelect").Length==3,"Wall clocks entered the running-timer list.");
     }
@@ -109,7 +111,7 @@ internal static class RunningClocksChecks
         f.Call("ToggleActiveClocksShelf");ClockOverlayChecks.Pump(30);
         foreach(var timer in f.Timers.Sessions)timer.IsRunning=false;
         f.Buttons("RunningClockPause")[0].Focus(NavigationMethod.Tab);f.Update();
-        Require(f.Buttons("RunningClocksHide").Single().IsFocused&&Math.Abs(f.Window.Bounds.Height-194)<1,"Empty shelf failed to shrink or retain usable focus.");
+        Require(f.Buttons("RunningClocksHide").Single().IsFocused&&Math.Abs(f.Window.Bounds.Height-159)<1,"Empty shelf failed to shrink or retain usable focus.");
     }
     internal static void ReadabilityAndScrolling()
     {
@@ -124,7 +126,7 @@ internal static class RunningClocksChecks
         Require(name.TextTrimming==TextTrimming.CharacterEllipsis&&f.Texts("RunningClockName")[1].FlowDirection==FlowDirection.RightToLeft,"Long/RTL names lost their presentation.");
         var scroll=f.Window.GetVisualDescendants().OfType<ScrollViewer>().Single();
         var hide=f.Buttons("RunningClocksHide").Single();var at=hide.TranslatePoint(default,f.Window);
-        Require(scroll.Extent.Height>scroll.Viewport.Height&&Math.Abs(f.Window.Bounds.Height-380)<1,"Long lists do not scroll within five rows.");
+        Require(scroll.Extent.Height>scroll.Viewport.Height&&Math.Abs(f.Window.Bounds.Height-374)<1,"Long lists do not scroll within five rows.");
         f.Buttons("RunningClockSelect")[7].BringIntoView();ClockOverlayChecks.Pump(30);
         Require(scroll.Offset.Y>0&&at==hide.TranslatePoint(default,f.Window),"Scrolling moved the footer or failed to reveal the last row.");
         f.Window.Activate();var lastPause=f.Buttons("RunningClockPause")[7];lastPause.Focus(NavigationMethod.Tab);
@@ -135,13 +137,17 @@ internal static class RunningClocksChecks
     }
     internal static void StableUpdatesAndThemes()
     {
-        using var f=new Fixture();Require(f.Window.Content is StopwatchFrameSurface,"Nika shelf is not framed.");
+        using var f=new Fixture();Require(f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any(),"Nika shelf is not framed.");
         var buttons=f.Buttons("RunningClockSelect");var frame=f.Window.Content;
         for(int i=0;i<60;i++)f.Call("UpdateActiveClocksShelf");
         Require(ReferenceEquals(frame,f.Window.Content)&&buttons.SequenceEqual(f.Buttons("RunningClockSelect")),"Unchanged ticks rebuild the shelf controls.");
         f.Settings.ThemeMode=AppThemeCatalog.Midnight;f.Update();
-        Require(f.Window.Content is not StopwatchFrameSurface&&f.Window.GetVisualDescendants().OfType<Button>().Count(b=>Equals(b.Content,"Pause"))==3,"Legacy theme lost its plain shelf.");
-        f.Settings.ThemeMode=AppThemeCatalog.Nika;f.Update();Require(f.Window.Content is StopwatchFrameSurface&&f.Buttons("RunningClockSelect").Length==3,"Switching back did not restore the shelf.");
+        Require(!f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any()&&f.Window.GetVisualDescendants().OfType<Button>().Count(b=>Equals(b.Content,"Pause"))==3,"Legacy theme lost its plain shelf.");
+        f.Settings.ThemeMode=AppThemeCatalog.Nika;f.Update();Require(f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Any()&&f.Buttons("RunningClockSelect").Length==3,"Switching back did not restore the shelf.");
+        f.Settings.NikaControllerPixel=true;f.Update();
+        Require(f.Window.GetVisualDescendants().OfType<ControllerPixelDigits>().Count()==3,"Open shelf did not adopt the controller's Pixel profile.");
+        var rows=f.Buttons("RunningClockSelect"); f.Settings.UiScalePercent=70;f.Update();
+        Require(rows.SequenceEqual(f.Buttons("RunningClockSelect"))&&Math.Abs(f.Window.Width-287)<1,"Scale change rebuilt rows or lost the requested width.");
         Click(f.Buttons("RunningClocksHide").Single());f.Timers.Sessions[3].IsRunning=true;f.Call("ToggleActiveClocksShelf");ClockOverlayChecks.Pump(30);
         Require(f.Buttons("RunningClockSelect").Length==4,"Reopening retained stale running clocks.");
     }
@@ -165,12 +171,46 @@ internal static class RunningClocksChecks
     internal static void Evidence()
     {
         Directory.CreateDirectory(Output);
-        foreach(var (count,label) in new[]{(3,"three"),(8,"many"),(0,"empty")})
+        foreach(bool pixel in new[]{false,true})
+        foreach(int scale in new[]{70,90,125})
+        foreach(int count in new[]{4,0})
         {
-            using var f=new Fixture(count);var content=(Control)f.Window.Content!;
-            Require(content is StopwatchFrameSurface,"Cannot capture an unimplemented shelf.");
-            using var image=new RenderTargetBitmap(new PixelSize((int)content.Bounds.Width,(int)content.Bounds.Height),new Vector(96,96));
-            image.Render(content);image.Save(Path.Combine(Output,"shelf-"+label+".png"));
+            using var f=new Fixture(count,pixel,scale);
+            string[] names=["Illustration","Coastal recordings and field notes","Reading","Piano practice"];
+            int[] seconds=[2678,4328,1122,555];
+            for(int i=0;i<count;i++)
+            {
+                var timer=f.Timers.Sessions[i];timer.Name=names[i];timer.RestoreElapsed(TimeSpan.FromSeconds(seconds[i]),false);timer.IsRunning=true;
+            }
+            f.Update();
+            var content=f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+            var size=PixelSize.FromSize(f.Window.ClientSize,1);
+            Require(Math.Abs(size.Width-410*scale/100d)<2 && Math.Abs(size.Height-(count==0?159:323)*scale/100d)<2,"Incorrect scaled shelf size.");
+            if(count>0)
+            {
+                var name=f.Texts("RunningClockName")[1];
+                Require(name.TextLayout.TextLines.Count==2&&!name.TextLayout.TextLines.Any(l=>l.HasCollapsed),"Long project should wrap completely.");
+                var rows=content.GetVisualDescendants().OfType<Border>().Where(b=>b.Name=="RunningClockRow").ToArray();
+                bool Active(int i)=>rows[i].GetVisualDescendants().OfType<TextBlock>().Single(t=>t.Name=="RunningClockActive").IsVisible
+                    && (rows[i].Background as ISolidColorBrush)?.Color.A>0;
+                Require(Active(0)&&!Active(1),"Active tint and label do not identify the current timer.");
+                Click(f.Buttons("RunningClockSelect")[1]);f.Update();Require(!Active(0)&&Active(1),"Active treatment did not move to the selected row.");
+                Click(f.Buttons("RunningClockSelect")[0]);f.Update();
+                var scroll=content.GetVisualDescendants().OfType<ScrollViewer>().Single();
+                Require(scroll.Extent.Height<=scroll.Viewport.Height+1,"Four rows should fit without scrolling.");
+                Require(content.GetVisualDescendants().OfType<ControllerPixelDigits>().Count()==(pixel?count:0),"Wrong clock face.");
+            }
+            using var image=new RenderTargetBitmap(size,new Vector(96,96));
+            var transform=content.RenderTransform;
+            content.SetCurrentValue(Visual.RenderTransformProperty,null);
+            try
+            {
+                using var dc=image.CreateDrawingContext();
+                dc.DrawRectangle(new VisualBrush(content){Stretch=Stretch.Fill,SourceRect=new RelativeRect(new Rect(content.Bounds.Size),RelativeUnit.Absolute)},
+                    null,new Rect(0,0,size.Width,size.Height));
+            }
+            finally {content.SetCurrentValue(Visual.RenderTransformProperty,transform);}
+            image.Save(Path.Combine(Output,$"{(pixel?"pixel":"classic")}-{(count==0?"empty":"running")}-{scale}.png"));
         }
     }
 }

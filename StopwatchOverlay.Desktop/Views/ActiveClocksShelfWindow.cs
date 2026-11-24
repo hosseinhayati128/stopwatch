@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -24,13 +23,17 @@ internal sealed class ActiveClocksShelfWindow : Window
     private ScrollViewer _scroll = new();
     private Button _hide = new();
     private TextBlock? _count;
-    private TextBlock? _hint;
-    private Grid? _layout;
+    private Control? _empty;
+    private StopwatchFrameSurface? _frame;
+    private LayoutTransformControl? _scaleHost;
+    private const int RowHeight = 51;
+    private double _scale = 1;
+    private bool _pixel;
     private bool _framed;
     private OverlayWindow? _anchor;
-    private sealed record Row(Button Select,TextBlock Time,Button Pause,TextBlock? Name=null,Border? Badge=null,Border? Chrome=null);
+    private sealed record Row(Button Select,Control Time,Button Pause,TextBlock? Name=null,TextBlock? Badge=null,Border? Chrome=null);
     private static readonly StopwatchTypographyProfile Typography=StopwatchTypography.Resolve("navigator-bold");
-    private static readonly IBrush ActiveWash=Brush.Parse("#56F7E6B2"),Rule=Brush.Parse("#499A7B48");
+    private static readonly IBrush ActiveWash=Brush.Parse("#55FFF1C5"), Teal=Brush.Parse("#1C655D");
     private readonly Action<TimerSession> _select;
     private readonly Action<TimerSession> _pause;
     private readonly Dictionary<Guid,Row> _controls = new();
@@ -55,50 +58,92 @@ internal sealed class ActiveClocksShelfWindow : Window
         SizeChanged+=(_,_)=>RepositionAtAnchor();
     }
 
-    internal void ApplyTheme(string theme)
+    internal void ApplyAppearance(AppSettings settings)
     {
-        bool framed=AppThemeCatalog.Normalize(theme)==AppThemeCatalog.Nika;
-        if(framed==_framed)return;
-        _framed=framed;
-        BuildLayout();
+        bool framed = AppThemeCatalog.Normalize(settings.ThemeMode) == AppThemeCatalog.Nika;
+        bool pixel = framed && settings.NikaControllerPixel;
+        double scale = framed ? AppUiScale.Normalize(settings.UiScalePercent) / 100 : 1;
+        if (framed != _framed || pixel != _pixel)
+        {
+            _framed = framed;
+            _pixel = pixel;
+            _scale = scale;
+            BuildLayout();
+        }
+        else if (_scale != scale && _scaleHost != null)
+        {
+            _scale = scale;
+            _scaleHost.LayoutTransform = new ScaleTransform(scale, scale);
+            ResizeShelf(_runningIds?.Length ?? 0);
+        }
     }
 
     private void BuildLayout()
     {
-        Content=null;_controls.Clear();_runningIds=null;_count=null;_hint=null;_layout=null;
+        Content=null;_controls.Clear();_runningIds=null;_count=null;_empty=null;_frame=null;_scaleHost=null;
         _rows=new StackPanel{Spacing=_framed?0:4};
-        _scroll=new ScrollViewer{Content=_rows,MaxHeight=220,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
+        _scroll=new ScrollViewer{Content=_rows,MaxHeight=_framed?5*RowHeight:220,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility=ScrollBarVisibility.Auto};
         _hide=new Button{Name="RunningClocksHide",Content="Hide",HorizontalAlignment=HorizontalAlignment.Right};
         _hide.Click+=(_,_)=>Hide();AutomationProperties.SetName(_hide,"Hide running clocks");
         if(_framed)
         {
             Background=Brushes.Transparent;TransparencyLevelHint=new[]{WindowTransparencyLevel.Transparent};
-            SizeToContent=SizeToContent.Manual;Height=194;
-            var header=new Grid{Height=49};
-            header.Children.Add(new TextBlock{Text="Running clocks",FontFamily=Typography.NameFont,FontWeight=FontWeight.Bold,
-                FontSize=24,Foreground=ClockPickerPresentation.Navy,VerticalAlignment=VerticalAlignment.Top,Margin=new(0,-1,0,0)});
-            _count=new TextBlock{FontFamily=ClockPickerPresentation.Body,FontSize=10,Foreground=ClockPickerPresentation.Muted,
-                VerticalAlignment=VerticalAlignment.Top,Margin=new(1,30,0,0)};
-            header.Children.Add(_count);
-            _hide.Width=61;_hide.Height=34;_hide.Classes.Add("shelfAction");_hide.Classes.Add("shelfHide");
+            SizeToContent=SizeToContent.Manual;
+            var header = new Grid { ColumnDefinitions = new("*,Auto") };
+            header.Children.Add(new TextBlock { Text="Running clocks", FontFamily=Typography.NameFont, FontWeight=FontWeight.Bold,
+                FontSize=24, Foreground=ClockPickerPresentation.Navy, VerticalAlignment=VerticalAlignment.Center });
+            _hide.Width=38;_hide.Height=32;_hide.Classes.Add("shelfAction");_hide.Classes.Add("shelfHide");
             ToolTip.SetTip(_hide,"Hide this panel; timers keep running");
-            var footer=new Grid{ColumnDefinitions=new("*,Auto")};
-            _hint=new TextBlock{Text="Select a clock to switch",FontFamily=ClockPickerPresentation.Body,FontSize=9,
-                Foreground=ClockPickerPresentation.Muted,VerticalAlignment=VerticalAlignment.Bottom,Margin=new(1,0,0,11)};
-            footer.Children.Add(_hint);Grid.SetColumn(_hide,1);_hide.VerticalAlignment=VerticalAlignment.Bottom;footer.Children.Add(_hide);
-            _layout=new Grid{RowDefinitions=new("49,*,57")};_layout.Children.Add(header);
-            Grid.SetRow(_scroll,1);_layout.Children.Add(_scroll);Grid.SetRow(footer,2);_layout.Children.Add(footer);
-            Content=new StopwatchFrameSurface{ArtworkScale=.14,Padding=new(7),Background=Brush.Parse("#EBD3A5"),Child=_layout};
+            Grid.SetColumn(_hide,1); header.Children.Add(_hide);
+            var panel = new Grid { RowDefinitions = new("Auto,7,Auto,*") };
+            panel.Children.Add(header);
+            _count = new TextBlock { FontFamily=ClockPickerPresentation.Body, FontSize=11,
+                Foreground=ClockPickerPresentation.Muted, Margin=new(0,0,0,8) };
+            Grid.SetRow(_count,2); panel.Children.Add(_count);
+            Grid.SetRow(_scroll,3); panel.Children.Add(_scroll);
+            _empty = EmptyState();
+            Grid.SetRow(_empty,3); panel.Children.Add(_empty);
+            _frame = new StopwatchFrameSurface { ArtworkScale=.14, Padding=new(7), Width=410,
+                Background=Brush.Parse("#EBD3A5"), Child=panel };
+            _scaleHost = new LayoutTransformControl { Child=_frame, LayoutTransform=new ScaleTransform(_scale,_scale) };
+            Content = _scaleHost;
+            ResizeShelf(0);
             return;
         }
         ClearValue(BackgroundProperty);TransparencyLevelHint=Array.Empty<WindowTransparencyLevel>();
-        Height=double.NaN;SizeToContent=SizeToContent.Height;
+        Width=350;Height=double.NaN;SizeToContent=SizeToContent.Height;
         var layout = new StackPanel { Margin = new Thickness(10), Spacing = 6 };
         layout.Children.Add(new TextBlock { Text = "Running clocks" });
         layout.Children.Add(_scroll);
         layout.Children.Add(_hide);
         Content = layout;
+    }
+
+    private void ResizeShelf(int count)
+    {
+        double height = count == 0 ? 159 : 119 + Math.Min(5, count) * RowHeight;
+        _frame!.Height = height;
+        Width = _frame.Width * _scale;
+        Height = height * _scale;
+    }
+
+    private Control EmptyState()
+    {
+        var group = new Grid { ColumnDefinitions = new("32,12,*"), VerticalAlignment = VerticalAlignment.Center };
+        var glyph = new Avalonia.Controls.Shapes.Path { Stroke=Teal, StrokeThickness=2,
+            HorizontalAlignment=HorizontalAlignment.Center, VerticalAlignment=VerticalAlignment.Center,
+            Data=Geometry.Parse(_pixel
+                ? "M10,1 H18 M14,1 V5 M8,5 H20 V8 H23 V11 H26 V21 H23 V24 H20 V27 H8 V24 H5 V21 H2 V11 H5 V8 H8 Z M14,10 V16 H19"
+                : "M10,1 H18 M14,1 V5 M14,5 A11,11 0 1 1 13.99,5 Z M14,10 V16 L19,18") };
+        group.Children.Add(glyph);
+        var copy = new StackPanel { Spacing=4 };
+        copy.Children.Add(new TextBlock { Text="No running timers", FontFamily=_pixel?ClockPickerPresentation.Body:Typography.NameFont,
+            FontSize=_pixel?16:19, FontWeight=FontWeight.Bold, Foreground=ClockPickerPresentation.Navy });
+        copy.Children.Add(new TextBlock { Text="Start or resume a timer to see it here.", FontFamily=ClockPickerPresentation.Body,
+            FontSize=12, Foreground=ClockPickerPresentation.Muted });
+        Grid.SetColumn(copy,2); group.Children.Add(copy);
+        return new Border { BorderBrush=ClockPickerPresentation.Rule, BorderThickness=new(0,1,0,0), Child=group };
     }
 
     internal void UpdateClocks(IReadOnlyList<TimerSession> timers, TimerSession? active, Func<TimerSession, string> format)
@@ -135,17 +180,10 @@ internal sealed class ActiveClocksShelfWindow : Window
             }
             if(_framed)
             {
-                Height=running.Length==0?194:Math.Min(5,running.Length)*44+160;
-                _count!.Text=$"{running.Length} running";_hint!.IsVisible=running.Length>0;
-                _layout!.RowDefinitions[2].Height=new GridLength(running.Length==0?31:57);
-                if(running.Length==0)
-                {
-                    var empty=new StackPanel{Spacing=7,Margin=new(0,6,0,0)};
-                    empty.Children.Add(new TextBlock{Text="No running timers",FontFamily=Typography.NameFont,FontSize=18,
-                        FontWeight=FontWeight.Bold,Foreground=ClockPickerPresentation.Navy});
-                    empty.Children.Add(new TextBlock{Text="Start a timer to see it here.",FontFamily=ClockPickerPresentation.Body,
-                        FontSize=10,Foreground=ClockPickerPresentation.Muted});_rows.Children.Add(empty);
-                }
+                ResizeShelf(running.Length);
+                _count!.Text=$"{running.Length} running  ·  Select a name to switch";
+                _count.IsVisible=_scroll.IsVisible=running.Length>0;
+                _empty!.IsVisible=running.Length==0;
             }
             else if (running.Length == 0) _rows.Children.Add(new TextBlock { Text = "No running clocks" });
             _scroll.Offset=offset;
@@ -163,10 +201,15 @@ internal sealed class ActiveClocksShelfWindow : Window
         {
             var controls = _controls[timer.Id];
             string time=format(timer);
+            if (controls.Time is ControllerPixelDigits digits)
+            {
+                if (digits.Text != time) digits.Text = time;
+            }
+            else if (controls.Time is TextBlock clock && clock.Text != time) clock.Text = time;
             if(!_framed)
             {
                 controls.Select.Content = timer == active ? $"{timer.DisplayName} · Active" : timer.DisplayName;
-                controls.Time.Text=time;continue;
+                continue;
             }
             if(controls.Name!.Text!=timer.DisplayName)
             {
@@ -178,46 +221,41 @@ internal sealed class ActiveClocksShelfWindow : Window
                     if(char.IsLetter(c))break;
                 }
                 name.FlowDirection=rtl?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
-                name.FontFamily=rtl?new FontFamily("Segoe UI"):Typography.NameFont;
-                name.FontSize=rtl?16:18;name.FontWeight=rtl?FontWeight.SemiBold:FontWeight.Bold;
+                name.FontFamily=rtl?new FontFamily("Segoe UI"):_pixel?ClockPickerPresentation.Body:Typography.NameFont;
+                name.FontSize=rtl?16:_pixel?15:18;name.FontWeight=rtl?FontWeight.SemiBold:FontWeight.Bold;
                 AutomationProperties.SetName(controls.Select,"Select "+timer.DisplayName);ToolTip.SetTip(controls.Select,timer.DisplayName);
                 AutomationProperties.SetName(controls.Pause,"Pause "+timer.DisplayName);ToolTip.SetTip(controls.Pause,"Pause "+timer.DisplayName);
             }
-            if(controls.Time.Text!=time)
-            {
-                var measured=new FormattedText(time,CultureInfo.InvariantCulture,FlowDirection.LeftToRight,
-                    new Typeface(Typography.TimerFont,FontStyle.Normal,FontWeight.Black),20,ClockPickerPresentation.Navy);
-                controls.Time.FontSize=Math.Min(20,20*129/Math.Max(1,measured.WidthIncludingTrailingWhitespace));
-                controls.Time.Text=time;
-            }
             bool current=timer==active;
             controls.Badge!.IsVisible=current;controls.Chrome!.Background=current?ActiveWash:Brushes.Transparent;
-            controls.Name.VerticalAlignment=current?VerticalAlignment.Top:VerticalAlignment.Center;
         }
     }
 
     private void AddFramedRow(TimerSession timer)
     {
         var name=new TextBlock{Name="RunningClockName",Foreground=ClockPickerPresentation.Navy,
-            TextTrimming=TextTrimming.CharacterEllipsis,TextWrapping=TextWrapping.NoWrap,MaxLines=1};
-        var badge=new Border{Width=39,Height=13,Background=ClockPickerPresentation.Navy,BorderBrush=ClockPickerPresentation.Gold,
-            BorderThickness=new(.6),CornerRadius=new(3),HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top,
-            Margin=new(1,25,0,0),Child=new TextBlock{Text="ACTIVE",FontFamily=ClockPickerPresentation.Body,FontSize=7,
-                Foreground=ClockPickerPresentation.Cream,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        var label=new Grid{Height=40};label.Children.Add(name);label.Children.Add(badge);
-        var select=new Button{Name="RunningClockSelect",Content=label,HorizontalAlignment=HorizontalAlignment.Stretch,Height=44};
+            TextTrimming=TextTrimming.CharacterEllipsis,TextWrapping=TextWrapping.Wrap,MaxLines=2};
+        var badge=new TextBlock{Name="RunningClockActive",Text="Active",FontFamily=ClockPickerPresentation.Body,FontSize=11,
+            FontWeight=FontWeight.Bold,Foreground=Teal,HorizontalAlignment=HorizontalAlignment.Right};
+        var select=new Button{Name="RunningClockSelect",Content=name,HorizontalAlignment=HorizontalAlignment.Stretch,Height=RowHeight};
         select.Classes.Add("shelfSelect");select.Click+=(_,_)=>_select(timer);
-        var time=new TextBlock{Name="RunningClockTime",FontFamily=Typography.TimerFont,FontWeight=FontWeight.Black,
-            Foreground=ClockPickerPresentation.Navy,VerticalAlignment=VerticalAlignment.Center,FlowDirection=FlowDirection.LeftToRight,TextWrapping=TextWrapping.NoWrap};
+        Control time=_pixel?new ControllerPixelDigits { FontSize=22, Foreground=ClockPickerPresentation.Navy }
+            : new TextBlock{FontFamily=Typography.TimerFont,FontWeight=FontWeight.Black,
+                FontSize=22,Foreground=ClockPickerPresentation.Navy};
+        time.Name="RunningClockTime";time.FlowDirection=FlowDirection.LeftToRight;
+        var values=new StackPanel { VerticalAlignment=VerticalAlignment.Center };
+        values.Children.Add(new Viewbox { MaxWidth=145, Stretch=Stretch.Uniform, StretchDirection=StretchDirection.DownOnly,
+            HorizontalAlignment=HorizontalAlignment.Right, Child=time });
+        values.Children.Add(badge);
         var bars=new StackPanel{Orientation=Orientation.Horizontal,Spacing=3,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};
         for(int i=0;i<2;i++)bars.Children.Add(new Border{Width=3,Height=10,CornerRadius=new(.5),Background=ClockPickerPresentation.Cream});
         var pause=new Button{Name="RunningClockPause",Content=bars,Width=34,Height=34,VerticalAlignment=VerticalAlignment.Center};
         pause.Classes.Add("shelfAction");pause.Click+=(_,_)=>_pause(timer);
-        var grid=new Grid{Height=44,ColumnDefinitions=new("*,12,Auto,6,34")};grid.Children.Add(select);
-        Grid.SetColumn(time,2);grid.Children.Add(time);Grid.SetColumn(pause,4);grid.Children.Add(pause);
-        var rule=new Border{BorderBrush=Rule,BorderThickness=new(0,0,0,.7),Margin=new(5,0,5,0),IsHitTestVisible=false};
+        var grid=new Grid{Height=RowHeight,ColumnDefinitions=new("*,9,Auto,9,34")};grid.Children.Add(select);
+        Grid.SetColumn(values,2);grid.Children.Add(values);Grid.SetColumn(pause,4);grid.Children.Add(pause);
+        var rule=new Border{Background=ClockPickerPresentation.Rule,Height=1,VerticalAlignment=VerticalAlignment.Top,IsHitTestVisible=false};
         Grid.SetColumnSpan(rule,5);grid.Children.Add(rule);
-        var chrome=new Border{CornerRadius=new(4),Child=grid};_rows.Children.Add(chrome);
+        var chrome=new Border{Name="RunningClockRow",Child=grid};_rows.Children.Add(chrome);
         _controls.Add(timer.Id,new(select,time,pause,name,badge,chrome));
     }
 
@@ -231,11 +269,11 @@ internal sealed class ActiveClocksShelfWindow : Window
             scope.Register(presenter.Name,presenter);
             presenter.Bind(ContentPresenter.ContentProperty,new TemplateBinding(ContentControl.ContentProperty),BindingPriority.Template);
             presenter.Bind(ContentPresenter.ForegroundProperty,button.GetObservable(Button.ForegroundProperty));
-            var border=new Border{CornerRadius=new(4),Child=presenter,Padding=select?new Thickness(4,0):new Thickness(0)};
-            border.Bind(Border.BackgroundProperty,button.GetObservable(Button.BackgroundProperty));
-            border.Bind(Border.BorderBrushProperty,button.GetObservable(Button.BorderBrushProperty));
-            border.Bind(Border.BorderThicknessProperty,button.GetObservable(Button.BorderThicknessProperty));
-            if(!select){border.Width=hide?53:26;border.Height=26;border.HorizontalAlignment=HorizontalAlignment.Center;border.VerticalAlignment=VerticalAlignment.Center;}
+            var border=new TodoFrame{Pixel=_pixel&&!select&&!hide,CornerRadius=new(4),Child=presenter,Padding=select?new Thickness(4,0):new Thickness(0)};
+            border.Bind(TodoFrame.BackgroundProperty,button.GetObservable(Button.BackgroundProperty));
+            border.Bind(TodoFrame.BorderBrushProperty,button.GetObservable(Button.BorderBrushProperty));
+            border.Bind(TodoFrame.BorderThicknessProperty,button.GetObservable(Button.BorderThicknessProperty));
+            if(!select){border.Width=hide?38:25;border.Height=hide?30:25;border.HorizontalAlignment=HorizontalAlignment.Center;border.VerticalAlignment=VerticalAlignment.Center;}
             return new Border{Background=Brushes.Transparent,Child=border};
         });
         foreach(string kind in new[]{"shelfSelect","shelfAction"})
@@ -243,7 +281,7 @@ internal sealed class ActiveClocksShelfWindow : Window
             bool select=kind=="shelfSelect";
             Styles.Add(new Style(s=>s.OfType<Button>().Class(kind)){Setters={new Setter(TemplatedControl.TemplateProperty,template),
                 new Setter(TemplatedControl.BackgroundProperty,select?Brushes.Transparent:ClockPickerPresentation.Navy),
-                new Setter(TemplatedControl.BorderBrushProperty,select?Brushes.Transparent:ClockPickerPresentation.Gold),
+                new Setter(TemplatedControl.BorderBrushProperty,Brushes.Transparent),
                 new Setter(TemplatedControl.BorderThicknessProperty,new Thickness(1)),new Setter(TemplatedControl.PaddingProperty,new Thickness(0)),
                 new Setter(Layoutable.MinWidthProperty,0d),new Setter(Layoutable.MinHeightProperty,0d),
                 new Setter(TemplatedControl.FontFamilyProperty,ClockPickerPresentation.Body),new Setter(TemplatedControl.FontSizeProperty,11d),
