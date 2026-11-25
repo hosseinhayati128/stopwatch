@@ -78,24 +78,23 @@ public partial class ProjectRecordEditorWindow
         };
     }
 
-    private void PositionValidationMessage()
+    private bool PositionValidationMessage()
     {
         var fields = (Grid)StartTimeBox.Parent!;
         var field = _validationTarget;
         bool inline = field?.Parent == fields;
-        Panel owner = inline ? fields : RecordBody;
+        var owner = inline ? fields : _recordFooterContent!;
         if (ValidationText.Parent != owner)
         {
-            ((Panel)ValidationText.Parent!).Children.Remove(ValidationText);
+            (ValidationText.Parent as Panel)?.Children.Remove(ValidationText);
             owner.Children.Add(ValidationText);
         }
-        if (inline)
-        {
-            Grid.SetRow(ValidationText, Grid.GetRow(field!) + 1);
-            Grid.SetColumn(ValidationText, Grid.GetColumn(field!));
-        }
-        ValidationText.Margin = new Thickness(0, inline ? 5 : 10, 0, 0);
-        ValidationText.FontSize = inline ? 12 : 11;
-        ValidationText.FontWeight = inline ? FontWeight.SemiBold : FontWeight.Normal;
+        Grid.SetRow(ValidationText, inline ? Grid.GetRow(field!) + 1 : 1);
+        Grid.SetColumn(ValidationText, inline ? Grid.GetColumn(field!) : 0);
+        Grid.SetColumnSpan(ValidationText, inline ? 1 : owner.ColumnDefinitions.Count);
+        ValidationText.Margin = new Thickness(0, inline ? 5 : 4, 0, 0);
+        ValidationText.FontSize = 12;
+        ValidationText.FontWeight = FontWeight.SemiBold;
+        return inline;
     }
 }

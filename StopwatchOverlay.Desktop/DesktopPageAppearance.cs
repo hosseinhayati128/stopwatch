@@ -61,6 +61,7 @@ internal static class DesktopPageAppearance
                 confirmation.FitNoteDeletionContent(_scale!=previousScale);
             }
             if(window is ProjectRecordDeleteWindow deletion)deletion.FitDeleteRecordContent(_scale!=previousScale);
+            if(window is ProjectRecordEditorWindow record && _scale != previousScale)record.RefitNavigatorRecord();
         }
     }
     internal static bool UsesPixelController => _settings?.NikaControllerPixel == true;

@@ -171,16 +171,17 @@ public partial class ProjectRecordEditorWindow : Window
 
     private void UpdateDurationPreview()
     {
-        HideValidation();
-        if (!TryReadUtcRange(out _, out DateTime startUtc, out DateTime endUtc, out _))
+        bool valid = TryReadUtcRange(out string projectName, out DateTime startUtc, out DateTime endUtc, out string error);
+        if (_recordFooterContent != null)
         {
-            DurationPreviewText.Text = "—";
-            UpdateNavigatorSummary(null);
+            UpdateRecordFooter(valid ? endUtc - startUtc : null, projectName);
+            if (valid) HideValidation();
+            else ShowValidation(error, scrollIntoView: false);
             return;
         }
 
-        DurationPreviewText.Text = FormatDuration(endUtc - startUtc);
-        UpdateNavigatorSummary(endUtc - startUtc);
+        HideValidation();
+        DurationPreviewText.Text = valid ? FormatDuration(endUtc - startUtc) : "—";
     }
 
     private void Save_Click(object? sender, RoutedEventArgs e)
@@ -224,7 +225,9 @@ public partial class ProjectRecordEditorWindow : Window
                     ProjectRecordMutationStatus.OpenInterval =>
                         "This timer is currently running. Pause it before editing the record.",
                     ProjectRecordMutationStatus.Overlap =>
-                        "That range overlaps another record from the same timer. Adjust the start or end time.",
+                        _recordFooterContent != null
+                            ? "Adjust the times to avoid overlapping another record."
+                            : "That range overlaps another record from the same timer. Adjust the start or end time.",
                     _ => "The record could not be saved."
                 });
                 return;
@@ -276,6 +279,12 @@ public partial class ProjectRecordEditorWindow : Window
         }
 
         projectName = IsAddingProject ? (NewProjectBox.Text?.Trim() ?? "") : projectChoice!.Name;
+        if (_recordFooterContent != null && IsAddingProject && projectName.Length == 0)
+        {
+            _validationTarget = NewProjectBox;
+            error = "Enter a project name.";
+            return false;
+        }
         try
         {
             projectName = ProjectTimeHistory.NormalizeProjectName(projectName);
@@ -294,9 +303,9 @@ public partial class ProjectRecordEditorWindow : Window
         }
 
         bool preserveStart = _record != null
-            && EndpointMatchesOriginal(StartDatePicker, StartTimeBox, _record.StartUtc);
+            && EndpointMatchesOriginal(startLocal.Date, StartTimeBox, _record.StartUtc);
         bool preserveEnd = _record?.EndUtc is DateTime originalEnd
-            && EndpointMatchesOriginal(EndDatePicker, EndTimeBox, originalEnd);
+            && EndpointMatchesOriginal(endLocal.Date, EndTimeBox, originalEnd);
 
         if (TimeZoneInfo.Local.IsAmbiguousTime(startLocal) && !preserveStart)
         {
@@ -349,7 +358,19 @@ public partial class ProjectRecordEditorWindow : Window
         return true;
     }
 
-    private static bool TryReadLocalDateTime(
+    private DateTime? ReadRecordDate(CalendarDatePicker picker)
+    {
+        // While the native text field has focus, the date can still be a draft.
+        // The CalendarDatePicker commits it on Enter or loss of focus.
+        var input = picker == StartDatePicker ? _startDateInput : _endDateInput;
+        if (input is not { IsFocused: true } || picker.IsDropDownOpen)
+            return picker.SelectedDate;
+
+        return DateTime.TryParseExact(input.Text, picker.CustomDateFormatString,
+            CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime date) ? date : null;
+    }
+
+    private bool TryReadLocalDateTime(
         CalendarDatePicker datePicker,
         TextBox timeBox,
         string label,
@@ -360,7 +381,7 @@ public partial class ProjectRecordEditorWindow : Window
         local = default;
         error = "";
         invalidField = null;
-        if (datePicker.SelectedDate is not DateTime date)
+        if (ReadRecordDate(datePicker) is not DateTime date)
         {
             invalidField = datePicker;
             error = $"Choose the {label} date.";
@@ -392,24 +413,24 @@ public partial class ProjectRecordEditorWindow : Window
     }
 
     private static bool EndpointMatchesOriginal(
-        CalendarDatePicker datePicker,
+        DateTime date,
         TextBox timeBox,
         DateTime originalUtc)
     {
         DateTime originalLocal = EnsureUtc(originalUtc).ToLocalTime();
-        return datePicker.SelectedDate?.Date == originalLocal.Date
+        return date == originalLocal.Date
             && string.Equals(
                 timeBox.Text?.Trim() ?? "",
                 originalLocal.ToString("HH:mm:ss", CultureInfo.InvariantCulture),
                 StringComparison.Ordinal);
     }
 
-    private void ShowValidation(string message)
+    private void ShowValidation(string message, bool scrollIntoView = true)
     {
         ValidationText.Text = message;
         ValidationText.IsVisible = true;
         UpdateNavigatorValidation(true);
-        if (_theme == AppThemeCatalog.Nika)
+        if (scrollIntoView && _recordFooterContent != null && ValidationText.Parent != _recordFooterContent)
             Dispatcher.UIThread.Post(() =>
             {
                 if (IsVisible && ValidationText.IsVisible) ValidationText.BringIntoView();

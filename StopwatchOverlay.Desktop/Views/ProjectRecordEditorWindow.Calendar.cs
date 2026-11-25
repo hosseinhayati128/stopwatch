@@ -16,12 +16,21 @@ public partial class ProjectRecordEditorWindow
 {
     private static readonly FontFamily CalendarLettering =
         new("avares://StopwatchOverlay.Desktop/Assets/Fonts/Stopwatch/#Stopwatch Calendar");
+    private TextBox? _startDateInput;
+    private TextBox? _endDateInput;
 
     private void ConfigureRecordCalendar(CalendarDatePicker picker)
     {
         picker.IsTodayHighlighted = true;
         picker.TemplateApplied += (_, args) =>
         {
+            var input = args.NameScope.Get<TextBox>("PART_TextBox");
+            if (picker == StartDatePicker) _startDateInput = input;
+            else _endDateInput = input;
+            input.TextChanged += (_, _) =>
+            {
+                if (input.IsFocused) UpdateDurationPreview();
+            };
             var toggle = args.NameScope.Get<Button>("PART_Button");
             bool pixel = DesktopPageAppearance.UsesPixelController;
             toggle.Theme = (ControlTheme)this.FindResource("RecordCalendarToggle")!;

@@ -52,11 +52,12 @@ internal static class ProjectRecordNativeChecks
     internal static void Layout()
     {
         using var f=new Fixture();Require(f.Window.Content is StopwatchFrameSurface,"Record editor is missing the shared native frame.");
-        Require(f.Window.SystemDecorations==SystemDecorations.None&&f.Window.Width==560&&f.Window.Height==620,"Record editor differs from the approved native dimensions/chrome.");
+        double compactHeight = f.Window.Height;
+        Require(f.Window.SystemDecorations==SystemDecorations.None&&f.Window.Width==560&&compactHeight==480,"Record editor differs from the approved native dimensions/chrome.");
         var work=f.Window.Screens.ScreenFromWindow(f.Window)!.WorkingArea;
         f.Window.Position=new PixelPoint(work.X+30,work.Bottom-(int)(630*f.Window.RenderScaling));
         Click(f.Named<Button>("RecordNewProjectButton"));ClockOverlayChecks.Pump(25);
-        Require(f.Window.Height==Math.Min(732,work.Height/f.Window.RenderScaling-16)&&f.Window.Position.Y+Math.Ceiling(f.Window.Bounds.Height*f.Window.RenderScaling)<=work.Bottom,
+        Require(f.Window.Height>compactHeight&&f.Window.Position.Y+Math.Ceiling(f.Window.Bounds.Height*f.Window.RenderScaling)<=work.Bottom,
             $"Expansion bounds: height={f.Window.Height}, position={f.Window.Position}, bounds={f.Window.Bounds}, scale={f.Window.RenderScaling}, work={work}.");
         f.Window.Height=440;ClockOverlayChecks.Pump(25);var scroll=f.Named<ScrollViewer>("RecordScroll");
         double y=f.Save.TranslatePoint(default,f.Window)!.Value.Y;scroll.Offset=new Vector(0,1000);ClockOverlayChecks.Pump(25);
@@ -77,7 +78,7 @@ internal static class ProjectRecordNativeChecks
     {
         using var f=new Fixture();
         foreach(var (start,end) in new[]{("09:00:00","08:45:00"),("25:00","10:30"),("09:00","bad"),("09:00","09:00")})
-        {f.Range(start,end);Click(f.Save);Require(f.Writes==0&&f.Window.IsVisible&&f.Named<TextBlock>("ValidationText").IsVisible,"Invalid range reached persistence or lacks feedback.");}
+        {f.Range(start,end);Require(!f.Save.IsEffectivelyEnabled,"Invalid input left Save enabled.");Click(f.Save);Require(f.Writes==0&&f.Window.IsVisible&&f.Named<TextBlock>("ValidationText").IsVisible,"Invalid range reached persistence or lacks feedback.");}
         f.Range("09:00","10:30");f.Named<CalendarDatePicker>("EndDatePicker").SelectedDate=DateTime.Today.AddDays(1);Click(f.Save);Require(f.Writes==0,"Future range accepted.");
         f.Range("09:00","10:30");Click(f.Named<Button>("RecordNewProjectButton"));f.Named<TextBox>("NewProjectBox").Text=" ";Click(f.Save);Require(f.Writes==0,"Empty project accepted.");
         f.Named<TextBox>("NewProjectBox").Text="برنامه نویسی";ClockOverlayChecks.Pump(20);Require(f.Named<TextBox>("NewProjectBox").FlowDirection==FlowDirection.RightToLeft,"Persian draft direction missing.");
@@ -247,19 +248,21 @@ internal static class ProjectRecordNativeChecks
                 end.SelectedDate = day; startTime.Text = "zz"; Click(f.Save);
                 Require(error.Parent == grid && Grid.GetRow(error) == Grid.GetRow(startTime)+1, "Start-time error in wrong row.");
                 startTime.Text = "09:00"; ClockOverlayChecks.Pump(30); Click(f.Save);
-                Require(f.Writes == 1 && error.IsVisible && error.Parent == f.Named<StackPanel>("RecordBody"), "Commit error still attached to an endpoint.");
+                Require(f.Writes == 1 && error.IsVisible && error.Parent == f.Named<Border>("RecordFooter").Child, "Commit error did not move to the footer.");
             }
             finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance","Shutdown"); }
         }
     }
 
-    private static void CaptureRange(Window window, Border card, string file)
+    private static void CaptureRange(Window window, Border? card, string file)
     {
         var frame = window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
-        var topLeft = card.TranslatePoint(default,window)!.Value;
-        var bottomRight = card.TranslatePoint(new Point(card.Bounds.Width,card.Bounds.Height),window)!.Value;
-        int left = (int)Math.Floor(topLeft.X)-2, top = (int)Math.Floor(topLeft.Y)-2;
-        var size = new PixelSize((int)Math.Ceiling(bottomRight.X)+2-left,(int)Math.Ceiling(bottomRight.Y)+2-top);
+        var topLeft = card?.TranslatePoint(default, window) ?? default;
+        var bottomRight = card?.TranslatePoint(new Point(card.Bounds.Width, card.Bounds.Height), window) ??
+            new Point(window.ClientSize.Width, window.ClientSize.Height);
+        int margin = card == null ? 0 : 2;
+        int left = (int)Math.Floor(topLeft.X)-margin, top = (int)Math.Floor(topLeft.Y)-margin;
+        var size = new PixelSize((int)Math.Ceiling(bottomRight.X)+margin-left,(int)Math.Ceiling(bottomRight.Y)+margin-top);
         using var image = new RenderTargetBitmap(size,new Vector(96,96));
         var transform = frame.RenderTransform;
         frame.SetCurrentValue(Visual.RenderTransformProperty,null);
@@ -278,8 +281,12 @@ internal static class ProjectRecordNativeChecks
         using(var f=new Fixture())
         {
             var date=f.Named<CalendarDatePicker>("StartDatePicker");var input=date.GetVisualDescendants().OfType<TextBox>().First();
-            input.Focus();input.Text="not a date";f.Save.Focus();ClockOverlayChecks.Pump(20);Click(f.Save);
+            input.Focus();input.Text="not a date";ClockOverlayChecks.Pump(25);
+            Require(!f.Save.IsEffectivelyEnabled,"An invalid date draft left Save enabled before the field committed.");
+            KeyDown(input,Avalonia.Input.Key.Enter);ClockOverlayChecks.Pump(25);Click(f.Save);
             Require(f.Writes==0&&f.Window.IsVisible,$"Invalid typed date saved previous date: input={input.Text}, text={date.Text}, selected={date.SelectedDate}.");
+            input.Focus();input.Text=DateTime.Today.AddDays(-1).ToString("dd MMM yyyy");ClockOverlayChecks.Pump(25);
+            Require(f.Save.IsEffectivelyEnabled,"A corrected date draft left Save disabled.");
         }
         using(var f=new Fixture())
         {
@@ -301,9 +308,80 @@ internal static class ProjectRecordNativeChecks
             using var f=new Fixture(status:commitError?ProjectRecordMutationStatus.Overlap:ProjectRecordMutationStatus.Success);
             f.Window.Height=440;if(!commitError)f.Range("09:00","08:45");ClockOverlayChecks.Pump(25);
             var scroll=f.Named<ScrollViewer>("RecordScroll");scroll.Offset=default;Click(f.Save);ClockOverlayChecks.Pump(45);
-            var error=f.Named<TextBlock>("ValidationText");double y=error.TranslatePoint(default,scroll)!.Value.Y;
-            Require(error.IsVisible&&y>=-1&&y+error.Bounds.Height<=scroll.Viewport.Height+1,
-                $"Failed save feedback is outside the short form viewport (commit={commitError}, y={y}, height={error.Bounds.Height}, viewport={scroll.Viewport.Height}).");
+            var error=f.Named<TextBlock>("ValidationText");
+            Control surface = commitError ? f.Named<Border>("RecordFooter") : scroll;
+            double y=error.TranslatePoint(default,surface)!.Value.Y;
+            double visibleHeight = commitError ? surface.Bounds.Height : scroll.Viewport.Height;
+            Require(error.IsVisible&&y>=-1&&y+error.Bounds.Height<=visibleHeight+1,
+                $"Failed save feedback is outside the short form viewport (commit={commitError}, y={y}, height={error.Bounds.Height}, viewport={visibleHeight}).");
+        }
+    }
+
+    internal static void FooterStates()
+    {
+        const string folder = "design/one-piece-v2/time-record/duration-footer-implementation";
+        Directory.CreateDirectory(folder);
+        foreach (int scale in new[] { 70, 90, 125 })
+        foreach (bool pixel in new[] { false, true })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale, NikaControllerPixel = pixel };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                void Snapshot(Fixture f, string state)
+                {
+                    var footer = f.Named<Border>("RecordFooter");
+                    var duration = f.Named<TextBlock>("DurationPreviewText");
+                    var scroll = f.Named<ScrollViewer>("RecordScroll");
+                    var frame = f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+                    Require(!footer.GetVisualAncestors().Contains(scroll), "The footer is inside the scrollable body.");
+                    Require(Math.Abs(frame.Bounds.Height * scale / 100 - f.Window.ClientSize.Height) < 2, "Zoom clipped or distorted the frame.");
+                    var amountRight = duration.TranslatePoint(new Point(duration.Bounds.Width, 0), f.Window)!.Value.X;
+                    var cancelLeft = f.Named<Button>("CancelButton").TranslatePoint(default, f.Window)!.Value.X;
+                    Require(amountRight <= cancelLeft, "The duration spills into the actions.");
+                    Require(f.Save.GetVisualDescendants().OfType<TodoFrame>().Any(b => b.Pixel) == pixel, "Wrong primary button frame.");
+                    string prefix = $"{(pixel ? "pixel" : "classic")}-{state}-{scale}";
+                    CaptureRange(f.Window, footer, Path.Combine(folder, prefix + ".png"));
+                    if (scale == 90 && state == "same-day" && !pixel)
+                        CaptureRange(f.Window, null, Path.Combine(folder, "editor-classic-90.png"));
+                }
+
+                using (var f = new Fixture())
+                {
+                    Require(f.Save.IsEffectivelyEnabled && f.Named<TextBlock>("DurationPreviewText").Text == "01:30:00" &&
+                        f.Named<TextBlock>("RecordFooterStatus").Text == "Project · Illustration", "Wrong initial save state.");
+                    Snapshot(f, "same-day");
+                    f.Range("09:00", "08:45");
+                    ClockOverlayChecks.Pump(40);
+                    Require(!f.Save.IsEffectivelyEnabled && f.Writes == 0 &&
+                        f.Named<TextBlock>("RecordFooterStatus").Text == "Correct the end time to save." &&
+                        f.Named<TextBlock>("ValidationText").IsVisible, "Invalid time did not update the footer and inline error.");
+                    Snapshot(f, "invalid");
+                    f.Range("09:00", "10:30");
+                    Require(f.Save.IsEffectivelyEnabled && !f.Named<TextBlock>("ValidationText").IsVisible, "Correction did not restore the save action.");
+                }
+                using (var f = new Fixture(editing: true, status: ProjectRecordMutationStatus.Overlap))
+                {
+                    var duration = f.Named<TextBlock>("DurationPreviewText");
+                    Require(duration.Text == "02:15:00" && Equals(f.Save.Content, "Save changes") &&
+                        duration.FontFamily.Name.Contains("Stopwatch Pixel Digits") == pixel, "Wrong overnight duration, typeface, or action.");
+                    Snapshot(f, "overnight");
+                    f.Range("10:45", "12:00");
+                    Click(f.Save);
+                    ClockOverlayChecks.Pump(40);
+                    var validation = f.Named<TextBlock>("ValidationText");
+                    Require(f.Writes == 1 && validation.Parent == f.Named<Border>("RecordFooter").Child &&
+                        validation.IsVisible && validation.Text!.Contains("overlapping") &&
+                        !f.Named<TextBlock>("RecordFooterStatus").IsVisible &&
+                        duration.Text == "01:15:00" && f.Save.IsEffectivelyEnabled, "Overlap hid the calculated duration or failed to report the save error.");
+                    Snapshot(f, "overlap");
+                    f.Named<CalendarDatePicker>("StartDatePicker").SelectedDate = DateTime.Today.AddYears(-100);
+                    ClockOverlayChecks.Pump(40);
+                    Require(f.Save.IsEffectivelyEnabled && !validation.IsVisible &&
+                        f.Named<TextBlock>("RecordDurationCaption").Text!.StartsWith("Duration · "), "Long duration or correction left stale feedback.");
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
         }
     }
     internal static void Evidence()

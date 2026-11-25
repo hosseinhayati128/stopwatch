@@ -15,9 +15,6 @@ public partial class ProjectRecordEditorWindow
     private bool _navigatorAdding;
     private ProjectChoice? _previousProject;
     private Button? _newProjectButton;
-    private Border? _durationCard;
-    private TextBlock? _durationHint;
-    private TextBlock? _recordHint;
     private static readonly IBrush RecordRule=Brush.Parse("#509A7B48"),RecordDanger=Brush.Parse("#8F3328"),RecordField=Brush.Parse("#F7E8C7");
     private bool IsAddingProject=>_navigatorAdding||ProjectSelector.SelectedItem is ProjectChoice{IsNew:true};
 
@@ -27,7 +24,7 @@ public partial class ProjectRecordEditorWindow
         Resources["PrimaryTextBrush"]=ClockPickerPresentation.Navy;Resources["SecondaryTextBrush"]=ClockPickerPresentation.Muted;
         Resources["DangerTextBrush"]=RecordDanger;Resources["SurfaceRaisedBrush"]=RecordField;Resources["BorderBrush"]=RecordRule;
         FontFamily=ClockPickerPresentation.Body;Foreground=ClockPickerPresentation.Navy;FontSize=12;
-        Width=MinWidth=560;Height=620;MinHeight=380;MaxHeight=double.PositiveInfinity;SizeToContent=SizeToContent.Manual;
+        Width=MinWidth=560;Height=480;MinHeight=380;MaxHeight=double.PositiveInfinity;SizeToContent=SizeToContent.Manual;
         SystemDecorations=SystemDecorations.None;Background=Brushes.Transparent;TransparencyLevelHint=[WindowTransparencyLevel.Transparent];
         Content=null;RecordScroll.Content=null;RecordSurface.Child=null;RecordBody.Children.Clear();RecordActions.Children.Clear();
         foreach(var field in new Control[]{StartDatePicker,EndDatePicker,StartTimeBox,EndTimeBox,DurationPreviewText})
@@ -79,18 +76,11 @@ public partial class ProjectRecordEditorWindow
         draft.Children.Add(RecordLabel("This record will be added to the new project's history.",11));
         RecordBody.Children.Add(ProjectLabel);RecordBody.Children.Add(projectRow);RecordBody.Children.Add(NewProjectPanel);
         RecordBody.Children.Add(BuildEndpointFields());
-        DurationPreviewText.Classes.Clear();DurationPreviewText.FontFamily=type.TimerFont;DurationPreviewText.FontWeight=type.TimerWeight;DurationPreviewText.FontSize=32;
-        DurationPreviewText.Foreground=ClockPickerPresentation.Navy;DurationPreviewText.MaxWidth=240;DurationPreviewText.TextTrimming=TextTrimming.CharacterEllipsis;
-        _durationHint=RecordLabel("",12);var summary=new Grid{ColumnDefinitions=new("*,Auto"),Children={new StackPanel{Spacing=5,VerticalAlignment=VerticalAlignment.Center,Children={RecordLabel("DURATION",10),_durationHint}},DurationPreviewText}};Grid.SetColumn(DurationPreviewText,1);
-        _durationCard=new Border{Margin=new(0,16,0,0),Padding=new(12),MinHeight=76,BorderBrush=RecordRule,BorderThickness=new(1),CornerRadius=new(6),Background=Brush.Parse("#46FFF3D8"),Child=summary};RecordBody.Children.Add(_durationCard);
-        _recordHint=RecordLabel("",11,new Thickness(0,10,0,0));RecordBody.Children.Add(_recordHint);
-        ValidationText.FontSize=11;ValidationText.Margin=new(0,10,0,0);RecordBody.Children.Add(ValidationText);RecordScroll.Content=RecordBody;
-        foreach(var button in new[]{CancelButton,SaveButton}){NavigatorFormStyles.StyleButton(button,button==SaveButton);button.Height=38;button.Padding=new(10,0);}
-        CancelButton.Width=82;SaveButton.Width=132;
-        var actions=new Grid{ColumnDefinitions=new("82,*,132"),Children={CancelButton,SaveButton}};Grid.SetColumn(SaveButton,2);
-        var footer=new Grid{RowDefinitions=new("24,38"),Margin=new(0,12,0,0),Children={new Border{Height=1,Background=RecordRule,VerticalAlignment=VerticalAlignment.Top},RecordLabel("Tab move · Esc close",10,new Thickness(0,4,0,0)),actions}};Grid.SetRow(actions,1);
-        var layout=new Grid{RowDefinitions=new("76,*,74"),Children={header,RecordScroll,footer}};Grid.SetRow(RecordScroll,1);Grid.SetRow(footer,2);
+        RecordScroll.Content = RecordBody;
+        var footer = BuildRecordFooter();
+        var layout=new Grid{RowDefinitions=new("76,*,Auto"),Children={header,RecordScroll,footer}};Grid.SetRow(RecordScroll,1);Grid.SetRow(footer,2);
         Content=new StopwatchFrameSurface{ArtworkScale=.16,Padding=new(10),Background=Brush.Parse("#EBD3A5"),Child=layout};
+        SizeChanged += (_, _) => FitRecordFrame();
         PointerPressed+=(_,e)=>{var p=e.GetPosition(this);if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed&&p.X>=Bounds.Width-18&&p.Y>=Bounds.Height-18){BeginResizeDrag(WindowEdge.SouthEast,e);e.Handled=true;}};
         UpdateNavigatorProject();
     }
@@ -99,29 +89,7 @@ public partial class ProjectRecordEditorWindow
     {
         if(_newProjectButton==null)return;
         _newProjectButton.Content=IsAddingProject?"Back":"New…";
-        double desired=IsAddingProject?732:620;var screen=IsVisible?Screens.ScreenFromWindow(this):null;
-        if(screen!=null){double available=screen.WorkingArea.Height/RenderScaling-16;MinHeight=Math.Min(380,available);desired=Math.Min(desired,available);}
-        Height=desired;
-        if(screen!=null)Position=new PixelPoint(Position.X,Math.Clamp(Position.Y,screen.WorkingArea.Y,screen.WorkingArea.Bottom-(int)Math.Ceiling(desired*RenderScaling)));
-    }
-    private void UpdateNavigatorSummary(TimeSpan? duration)
-    {
-        if(_durationHint==null)return;
-        DurationPreviewText.Text=duration is{} value?(value.Days>0?$"{value.Days}d ":"")+value.ToString(@"hh\:mm\:ss"):"—";
-        DurationPreviewText.FontSize=DurationPreviewText.Text.Length>10?22:32;ToolTip.SetTip(DurationPreviewText,DurationPreviewText.Text);
-        _durationHint.Text=duration==null?"Check the time range":_record?.EndUtc!=null?"Updated record length":"Time to add";
-        int days = ((EndDatePicker.SelectedDate?.Date - StartDatePicker.SelectedDate?.Date)?.Days).GetValueOrDefault();
-        _dayOffset!.IsVisible = duration.HasValue && days > 0;
-        _dayOffset.Text = days == 1 ? "Next day" : $"+{days} days";
-        _recordHint!.IsVisible = !_dayOffset.IsVisible;
-        _recordHint.Text = _record?.EndUtc!=null?"Changes will update this completed record.":"Completed time will be added to this project's history.";
-    }
-    private void UpdateNavigatorValidation(bool show)
-    {
-        if(_durationCard==null)return;
-        if (show) PositionValidationMessage();
-        foreach(var field in new Control[]{ProjectSelector,NewProjectBox,StartDatePicker,EndDatePicker,StartTimeBox,EndTimeBox})field.Classes.Set("invalidTime",show&&field==_validationTarget);
-        _durationCard.BorderBrush=show?RecordDanger:RecordRule;DurationPreviewText.Foreground=show?RecordDanger:ClockPickerPresentation.Navy;_recordHint!.IsVisible=!show;
+        RefitNavigatorRecord();
     }
     private static TextBlock RecordLabel(string text,double size,Thickness margin=default)=>new(){Text=text,FontFamily=ClockPickerPresentation.Body,FontSize=size,Foreground=ClockPickerPresentation.Muted,TextWrapping=TextWrapping.Wrap,Margin=margin,VerticalAlignment=VerticalAlignment.Center};
 }
