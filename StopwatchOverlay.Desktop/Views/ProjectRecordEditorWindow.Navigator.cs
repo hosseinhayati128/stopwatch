@@ -78,10 +78,7 @@ public partial class ProjectRecordEditorWindow
         var draft=(StackPanel)NewProjectPanel.Child!;draft.Spacing=7;((TextBlock)draft.Children[0]).FontSize=10;
         draft.Children.Add(RecordLabel("This record will be added to the new project's history.",11));
         RecordBody.Children.Add(ProjectLabel);RecordBody.Children.Add(projectRow);RecordBody.Children.Add(NewProjectPanel);
-        var start=Endpoint("START",StartDatePicker,StartTimeBox);var end=Endpoint("END",EndDatePicker,EndTimeBox);
-        var range=new Grid{ColumnDefinitions=new("*,20,*"),Children={start,end}};Grid.SetColumn(end,2);
-        RecordBody.Children.Add(new Border{Margin=new(0,18,0,0),Padding=new(12),Background=Brush.Parse("#26FFFFFF"),BorderBrush=RecordRule,BorderThickness=new(1),CornerRadius=new(6),Child=range});
-        RecordBody.Children.Add(RecordLabel("Local time · 24-hour format · HH:mm or HH:mm:ss",10,new Thickness(0,9,0,0)));
+        RecordBody.Children.Add(BuildEndpointFields());
         DurationPreviewText.Classes.Clear();DurationPreviewText.FontFamily=type.TimerFont;DurationPreviewText.FontWeight=type.TimerWeight;DurationPreviewText.FontSize=32;
         DurationPreviewText.Foreground=ClockPickerPresentation.Navy;DurationPreviewText.MaxWidth=240;DurationPreviewText.TextTrimming=TextTrimming.CharacterEllipsis;
         _durationHint=RecordLabel("",12);var summary=new Grid{ColumnDefinitions=new("*,Auto"),Children={new StackPanel{Spacing=5,VerticalAlignment=VerticalAlignment.Center,Children={RecordLabel("DURATION",10),_durationHint}},DurationPreviewText}};Grid.SetColumn(DurationPreviewText,1);
@@ -113,14 +110,18 @@ public partial class ProjectRecordEditorWindow
         DurationPreviewText.Text=duration is{} value?(value.Days>0?$"{value.Days}d ":"")+value.ToString(@"hh\:mm\:ss"):"—";
         DurationPreviewText.FontSize=DurationPreviewText.Text.Length>10?22:32;ToolTip.SetTip(DurationPreviewText,DurationPreviewText.Text);
         _durationHint.Text=duration==null?"Check the time range":_record?.EndUtc!=null?"Updated record length":"Time to add";
-        _recordHint!.Text=duration!=null&&StartDatePicker.SelectedDate?.Date<EndDatePicker.SelectedDate?.Date?"The record crosses midnight into a later day.":_record?.EndUtc!=null?"Changes will update this completed record.":"Completed time will be added to this project's history.";
+        int days = ((EndDatePicker.SelectedDate?.Date - StartDatePicker.SelectedDate?.Date)?.Days).GetValueOrDefault();
+        _dayOffset!.IsVisible = duration.HasValue && days > 0;
+        _dayOffset.Text = days == 1 ? "Next day" : $"+{days} days";
+        _recordHint!.IsVisible = !_dayOffset.IsVisible;
+        _recordHint.Text = _record?.EndUtc!=null?"Changes will update this completed record.":"Completed time will be added to this project's history.";
     }
     private void UpdateNavigatorValidation(bool show)
     {
         if(_durationCard==null)return;
+        if (show) PositionValidationMessage();
         foreach(var field in new Control[]{ProjectSelector,NewProjectBox,StartDatePicker,EndDatePicker,StartTimeBox,EndTimeBox})field.Classes.Set("invalidTime",show&&field==_validationTarget);
         _durationCard.BorderBrush=show?RecordDanger:RecordRule;DurationPreviewText.Foreground=show?RecordDanger:ClockPickerPresentation.Navy;_recordHint!.IsVisible=!show;
     }
-    private static StackPanel Endpoint(string title,Control date,Control time)=>new(){Spacing=7,Children={RecordLabel(title,10),date,RecordLabel("TIME",10,new Thickness(0,5,0,0)),time}};
     private static TextBlock RecordLabel(string text,double size,Thickness margin=default)=>new(){Text=text,FontFamily=ClockPickerPresentation.Body,FontSize=size,Foreground=ClockPickerPresentation.Muted,TextWrapping=TextWrapping.Wrap,Margin=margin,VerticalAlignment=VerticalAlignment.Center};
 }

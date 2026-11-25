@@ -307,6 +307,7 @@ if(args.Contains("--time-record-native"))
     Check("record typed dates and long duration layout",ProjectRecordNativeChecks.TypedDatesAndLongRanges);
     Check("record short-height validation and commit feedback",ProjectRecordNativeChecks.ErrorVisibility);
     Check("record calendar themes, field selection, navigation and native captures",ProjectRecordNativeChecks.CalendarPopups);
+    Check("record endpoint rows, date offsets, inline validation and scaled captures",ProjectRecordNativeChecks.EndpointFields);
     Check("record actual native captures",ProjectRecordNativeChecks.Evidence);
     Environment.Exit(failures==0?0:1);
 }

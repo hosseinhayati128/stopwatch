@@ -1,4 +1,20 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:StopwatchOverlay.Desktop.Controls">
+  <ControlTheme x:Key="RecordCalendarToggle" TargetType="Button">
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Margin" Value="0,2,2,2"/>
+    <Setter Property="Background" Value="#EAD2A3"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" BorderBrush="#C9AC7A" BorderThickness="1,0,0,0">
+          <Path Width="19" Height="19" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Data="M2,4 H17 V17 H2 Z M2,8 H17 M6,1 V6 M13,1 V6 M6,11 H8 M11,11 H13"
+                Stroke="#102B3B" StrokeThickness="{DynamicResource RecordCalendarIconStroke}"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover"><Setter Property="Background" Value="#DFC18A"/></Style>
+    <Style Selector="^:pressed"><Setter Property="Background" Value="#CCA76D"/></Style>
+  </ControlTheme>
   <ControlTheme x:Key="RecordCalendarNav" TargetType="Button">
     <Setter Property="Padding" Value="0"/>
     <Setter Property="Foreground" Value="#102B3B"/>

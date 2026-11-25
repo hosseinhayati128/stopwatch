@@ -333,14 +333,15 @@ public partial class ProjectRecordEditorWindow : Window
 
         if (endUtc <= startUtc)
         {
-            _validationTarget = EndTimeBox;
-            error = "End time must be later than start time.";
+            bool earlierDate = endLocal.Date < startLocal.Date;
+            _validationTarget = earlierDate ? EndDatePicker : EndTimeBox;
+            error = earlierDate ? "End date must be on or after the start date." : "End time must be later than start time.";
             return false;
         }
 
         if (endUtc > DateTime.UtcNow.AddSeconds(1))
         {
-            _validationTarget = EndDatePicker;
+            _validationTarget = endLocal.Date == DateTime.Today ? EndTimeBox : EndDatePicker;
             error = "A historical record cannot end in the future.";
             return false;
         }

@@ -125,8 +125,19 @@ internal static class ProjectRecordNativeChecks
                     var picker = f.Named<CalendarDatePicker>(field);
                     picker.SelectedDate = selected;
                     picker.DisplayDate = selected;
-                    picker.IsDropDownOpen = true;
-                    ClockOverlayChecks.Pump(60);
+                    var toggle = picker.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_Button");
+                    toggle.BringIntoView();
+                    // CalendarDatePicker posts selected-date formatting to the dispatcher.
+                    ClockOverlayChecks.Pump(35);
+                    void OpenCalendar()
+                    {
+                        RunningClocksChecks.Pointer(f.Window,toggle,RawPointerEventType.Move);
+                        RunningClocksChecks.Pointer(f.Window,toggle,RawPointerEventType.LeftButtonDown,RawInputModifiers.LeftMouseButton);
+                        RunningClocksChecks.Pointer(f.Window,toggle,RawPointerEventType.LeftButtonUp);
+                        ClockOverlayChecks.Pump(60);
+                        Require(picker.IsDropDownOpen, $"Calendar button did not open {field} at {scale}%.");
+                    }
+                    OpenCalendar();
                     var popup = picker.GetVisualDescendants().OfType<Popup>().Concat(picker.GetLogicalDescendants().OfType<Popup>()).First();
                     var layout = (LayoutTransformControl)popup.Child!;
                     var cal = (Calendar)layout.Child!;
@@ -171,22 +182,97 @@ internal static class ProjectRecordNativeChecks
                     KeyDown(cal,Avalonia.Input.Key.Right); KeyDown(cal,Avalonia.Input.Key.Escape);
                     ClockOverlayChecks.Pump(30);
                     Require(!picker.IsDropDownOpen && f.Window.IsVisible && picker.SelectedDate == selected && f.Writes == 0, "Escape lost the draft or closed the editor.");
-                    picker.IsDropDownOpen = true; ClockOverlayChecks.Pump(30);
+                    OpenCalendar();
                     KeyDown(cal,Avalonia.Input.Key.Right); KeyDown(cal,Avalonia.Input.Key.Enter);
                     ClockOverlayChecks.Pump(30);
                     Require(!picker.IsDropDownOpen && picker.SelectedDate == selected.AddDays(1) && f.Writes == 0,"Calendar keyboard selection did not reach the date field.");
-                    picker.IsDropDownOpen = true;
-                    ClockOverlayChecks.Pump(30);
+                    OpenCalendar();
+                    current = cal.GetVisualDescendants().OfType<CalendarDayButton>().Single(d => Equals(d.DataContext,today));
                     var popupRoot = TopLevel.GetTopLevel(current)!;
+                    RunningClocksChecks.Pointer(popupRoot,current,RawPointerEventType.Move);
                     RunningClocksChecks.Pointer(popupRoot,current,RawPointerEventType.LeftButtonDown,RawInputModifiers.LeftMouseButton);
+                    ClockOverlayChecks.Pump(30);
                     RunningClocksChecks.Pointer(popupRoot,current,RawPointerEventType.LeftButtonUp);
                     ClockOverlayChecks.Pump(30);
-                    Require(!picker.IsDropDownOpen && picker.SelectedDate == today && f.Writes == 0, "Clicking today did not select and dismiss.");
+                    Require(!picker.IsDropDownOpen && picker.SelectedDate == today && f.Writes == 0,
+                        $"Clicking today did not select and dismiss ({scale}%, pixel={pixel}, {field}, open={picker.IsDropDownOpen}, selected={picker.SelectedDate:d}, expected={today:d}, writes={f.Writes}).");
                 }
             }
             finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance","Shutdown"); }
         }
     }
+    internal static void EndpointFields()
+    {
+        const string output = "design/one-piece-v2/time-record/start-end-fields-implementation";
+        Directory.CreateDirectory(output);
+        var day = DateTime.Today.AddDays(-4);
+        foreach (int scale in new[] { 70, 90, 125 })
+        foreach (bool pixel in new[] { false, true })
+        {
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance","Initialize",new AppSettings
+                { ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale, NikaControllerPixel = pixel });
+            try
+            {
+                using var f = new Fixture(editing:pixel, status:ProjectRecordMutationStatus.Overlap);
+                var card = f.Named<Border>("RecordRange");
+                var grid = (Grid)card.Child!;
+                var start = f.Named<CalendarDatePicker>("StartDatePicker");
+                var end = f.Named<CalendarDatePicker>("EndDatePicker");
+                var startTime = f.Named<TextBox>("StartTimeBox");
+                var time = f.Named<TextBox>("EndTimeBox");
+                var error = f.Named<TextBlock>("ValidationText");
+                start.SelectedDate = day;
+                Require(time.FontFamily.Name.Contains("Stopwatch Pixel Digits") == pixel, "Wrong time typeface.");
+                foreach (string state in new[] { "same-day", "overnight", "invalid" })
+                {
+                    bool overnight = state == "overnight";
+                    end.SelectedDate = overnight ? day.AddDays(1) : day;
+                    startTime.Text = overnight ? "23:15:00" : "09:00:00";
+                    time.Text = overnight ? "01:30:00" : state == "invalid" ? "08:45:00" : "10:30:00";
+                    ClockOverlayChecks.Pump(30);
+                    if (state == "invalid") Click(f.Save);
+                    ClockOverlayChecks.Pump(30);
+                    var nextDay = grid.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Next day" && t.IsEffectivelyVisible);
+                    Require(nextDay == overnight && f.Writes == 0, "Incorrect overnight cue or unexpected write.");
+                    Require(error.IsVisible == (state == "invalid"), "Incorrect range validation.");
+                    if (error.IsVisible)
+                        Require(error.Parent == grid && Grid.GetColumn(error) == Grid.GetColumn(time) &&
+                            Grid.GetRow(error) == Grid.GetRow(time) + 1 && time.Classes.Contains("invalidTime"), "Error is detached from the end time.");
+                    CaptureRange(f.Window,card,Path.Combine(output,$"{(pixel ? "pixel" : "classic")}-{state}-{scale}.png"));
+                }
+                time.Text = "10:30"; end.SelectedDate = day.AddDays(2); ClockOverlayChecks.Pump(30);
+                Require(!error.IsVisible && grid.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text == "+2 days" && t.IsEffectivelyVisible),"Multi-day or corrected range is wrong.");
+                end.SelectedDate = day.AddDays(-1); Click(f.Save);
+                Require(error.Parent == grid && Grid.GetColumn(error) == Grid.GetColumn(end) && end.Classes.Contains("invalidTime"), "Earlier end date highlighted the time.");
+                end.SelectedDate = day; startTime.Text = "zz"; Click(f.Save);
+                Require(error.Parent == grid && Grid.GetRow(error) == Grid.GetRow(startTime)+1, "Start-time error in wrong row.");
+                startTime.Text = "09:00"; ClockOverlayChecks.Pump(30); Click(f.Save);
+                Require(f.Writes == 1 && error.IsVisible && error.Parent == f.Named<StackPanel>("RecordBody"), "Commit error still attached to an endpoint.");
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance","Shutdown"); }
+        }
+    }
+
+    private static void CaptureRange(Window window, Border card, string file)
+    {
+        var frame = window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+        var topLeft = card.TranslatePoint(default,window)!.Value;
+        var bottomRight = card.TranslatePoint(new Point(card.Bounds.Width,card.Bounds.Height),window)!.Value;
+        int left = (int)Math.Floor(topLeft.X)-2, top = (int)Math.Floor(topLeft.Y)-2;
+        var size = new PixelSize((int)Math.Ceiling(bottomRight.X)+2-left,(int)Math.Ceiling(bottomRight.Y)+2-top);
+        using var image = new RenderTargetBitmap(size,new Vector(96,96));
+        var transform = frame.RenderTransform;
+        frame.SetCurrentValue(Visual.RenderTransformProperty,null);
+        try
+        {
+            using var dc = image.CreateDrawingContext();
+            dc.DrawRectangle(new VisualBrush(frame){Stretch=Stretch.Fill,SourceRect=new RelativeRect(frame.Bounds,RelativeUnit.Absolute)},
+                null,new Rect(new Point(-left,-top),window.ClientSize));
+        }
+        finally { frame.SetCurrentValue(Visual.RenderTransformProperty,transform); }
+        image.Save(file);
+    }
+
     internal static void TypedDatesAndLongRanges()
     {
         using(var f=new Fixture())

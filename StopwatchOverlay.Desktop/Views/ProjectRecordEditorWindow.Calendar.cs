@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -21,6 +22,12 @@ public partial class ProjectRecordEditorWindow
         picker.IsTodayHighlighted = true;
         picker.TemplateApplied += (_, args) =>
         {
+            var toggle = args.NameScope.Get<Button>("PART_Button");
+            bool pixel = DesktopPageAppearance.UsesPixelController;
+            toggle.Theme = (ControlTheme)this.FindResource("RecordCalendarToggle")!;
+            toggle.CornerRadius = new CornerRadius(pixel ? 0 : 3);
+            toggle.Resources["RecordCalendarIconStroke"] = pixel ? 2d : 1.6;
+            AutomationProperties.SetName(toggle, picker == StartDatePicker ? "Open start date calendar" : "Open end date calendar");
             var calendar = args.NameScope.Get<Calendar>("PART_Calendar");
             var popup = args.NameScope.Get<Popup>("PART_Popup");
             // Keep the date picker's actual calendar and its native input handlers.
