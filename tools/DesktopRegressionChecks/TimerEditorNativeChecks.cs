@@ -28,16 +28,18 @@ internal static class TimerEditorNativeChecks
         internal TextBox Time=>Window.FindControl<TextBox>("TimeValueBox")!;
         internal TextBox Start=>Window.FindControl<TextBox>("StartTimeBox")!;
         internal Button Save=>Window.FindControl<Button>("SaveButton")!;
-        internal Fixture(string theme=AppThemeCatalog.Nika,int mode=0,bool intervals=true,TimeSpan? elapsed=null)
+        internal ComboBox State => Window.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "StateAfterSave");
+        internal Fixture(string theme=AppThemeCatalog.Nika,int mode=0,bool intervals=true,TimeSpan? elapsed=null,
+            bool pixel=false,bool running=true,string name="Illustration")
         {
             typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!.GetMethod("ApplyApplication",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[theme]);
-            var value=elapsed??TimeSpan.FromSeconds(2667);Timer.RestoreElapsed(value,false);Timer.IsRunning=true;Timer.Mode=mode;Timer.CountdownRemaining=value;
+            var value=elapsed??TimeSpan.FromSeconds(2667);Timer.RestoreElapsed(value,false);Timer.IsRunning=running;Timer.Mode=mode;Timer.CountdownRemaining=value;Timer.Name=name;
             var now=DateTime.UtcNow;now=new DateTime(now.Ticks-now.Ticks%TimeSpan.TicksPerSecond,DateTimeKind.Utc);
             ProjectWorkIntervalView[] records=intervals?[
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-3).AddSeconds(-890),now.AddHours(-3)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-2).AddSeconds(-878),now.AddHours(-2)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddSeconds(-899),null)]:[];
-            Window=new TimerEditorWindow(Timer,["Illustration","Reading"],records,true,new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false});
+            Window=new TimerEditorWindow(Timer,[name,"Reading"],records,true,new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,NikaControllerPixel=pixel});
             Window.ShowActivated=false;Window.ShowInTaskbar=false;Window.Show();ClockOverlayChecks.Pump(55);
         }
         public void Dispose()=>Window.Close();
@@ -111,7 +113,7 @@ internal static class TimerEditorNativeChecks
         Click(f.Window.FindControl<Button>("ToggleCategoryInputButton")!);var category=f.Window.FindControl<TextBox>("CustomCategoryBox")!;
         Require(category.IsVisible,"New category entry was lost.");category.Text="Craft";
         f.Window.FindControl<NumericUpDown>("ScorePerHourBox")!.Value=2.5m;
-        Click(f.Window.FindControl<Button>("PauseResumeButton")!);f.Time.Text="1h 30m";ClockOverlayChecks.Pump(20);Click(f.Save);
+        f.State.SelectedIndex=1;f.Time.Text="1h 30m";ClockOverlayChecks.Pump(20);Click(f.Save);
         Require(f.Window.WasSaved&&f.Window.NewProjectName=="Pencil study"&&f.Window.NewCategory=="Craft"&&f.Window.NewScorePerHour==2.5&&
             !f.Window.NewIsRunning&&f.Window.NewTimeValue==TimeSpan.FromMinutes(90),"Reparented fields changed the save result contract.");
         Require(f.Timer.Name=="Illustration"&&f.Timer.IsRunning&&f.Timer.Elapsed==TimeSpan.FromSeconds(2667),"Editor mutated the timer before the controller applied results.");
@@ -227,5 +229,87 @@ internal static class TimerEditorNativeChecks
             using var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(child.Bounds.Width),(int)Math.Ceiling(child.Bounds.Height)),new Vector(96,96));
             bitmap.Render(child);bitmap.Save(Path.Combine(Output,selector+"-dropdown.png"));box.IsDropDownOpen=false;
         }
+    }
+
+    internal static void IdentityAndTimeDraft()
+    {
+        const string output = "design/one-piece-v2/timer-editor/identity-implementation";
+        Directory.CreateDirectory(output);
+        foreach (bool pixel in new[] { false, true })
+        foreach (int percent in new[] { 70, 90, 125 })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, UiScalePercent = percent, NikaControllerPixel = pixel };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                foreach (var (sample, name, running, mode, seconds, delta) in new[]
+                {
+                    ("running", "Illustration", true, 0, 2538, 300),
+                    ("paused", "Coastal field recordings and interview edits for the archive", false, 0, 4592, -60),
+                    ("countdown", "Sketch warm-up", true, 2, 762, 300)
+                })
+                {
+                    var elapsed = TimeSpan.FromSeconds(seconds);
+                    using var f = new Fixture(mode: mode, intervals: false, elapsed: elapsed, pixel: pixel, running: running, name: name);
+                    string Stamp(TimeSpan value) => value.ToString(@"hh\:mm\:ss");
+                    var texts = f.Window.GetVisualDescendants().OfType<TextBlock>().ToArray();
+                    var project = texts.Single(t => t.Text == name && t.TextWrapping == TextWrapping.Wrap && t.FontSize == 21);
+                    var liveState = texts.Single(t => t.Text == (running ? "Running" : "Paused") && t.FontSize == 12);
+                    var digits = f.Window.GetVisualDescendants().OfType<ControllerPixelDigits>().SingleOrDefault();
+                    var classicDigits = texts.SingleOrDefault(t => t.Name == "ClassicTimerReading");
+                    Require(pixel || classicDigits?.Foreground is ISolidColorBrush { Color: var ink } && ink == Color.Parse("#FFF2D5"),
+                        "Classic digits lost contrast against the navy band.");
+                    string? Reading() => pixel ? digits!.Text : classicDigits!.Text;
+                    Require((digits != null) == pixel && Reading() == Stamp(elapsed) && f.Time.Text == Stamp(elapsed), "Wrong live or initial draft reading for " + sample);
+                    Require(f.State.SelectedIndex == (running ? 0 : 1), "Incorrect initial state selection.");
+                    var draft = TimeSpan.FromSeconds(seconds + delta);
+                    Click(f.Window.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Tag, delta.ToString())));
+                    f.Save.Focus();
+                    f.Window.FindControl<ScrollViewer>("EditorScroll")!.Offset = default;
+                    ClockOverlayChecks.Pump(30);
+                    Require(f.Time.Text == Stamp(draft) && f.Save.IsEnabled && Reading() == Stamp(elapsed), "Quick adjustment changed live time or lost draft.");
+                    double zoom = percent / 100d;
+                    var size = PixelSize.FromSize(f.Window.ClientSize, 1);
+                    var screen = f.Window.Screens.ScreenFromWindow(f.Window) ?? f.Window.Screens.Primary!;
+                    var footer = f.Save.TranslatePoint(new Point(f.Save.Bounds.Width, f.Save.Bounds.Height), f.Window)!.Value;
+                    Require(Math.Abs(size.Width - 620 * zoom) <= 2 && Math.Abs(size.Height - Math.Min(780 * zoom, screen.WorkingArea.Height / f.Window.RenderScaling - 16)) <= 2,
+                        $"Incorrect native client size at {percent}%: {size}.");
+                    Require(footer.Y <= size.Height && footer.X <= size.Width && project.TranslatePoint(new Point(0, project.Bounds.Height), f.Window)!.Value.Y < f.Time.TranslatePoint(default, f.Window)!.Value.Y,
+                        $"Clipped identity or footer at {percent}%.");
+                    Require(sample != "paused" || project.Bounds.Height > 40, "Long project name did not wrap.");
+                    var frame = f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+                    var transform = frame.RenderTransform;
+                    using var image = new RenderTargetBitmap(size, new Vector(96, 96));
+                    frame.SetCurrentValue(Visual.RenderTransformProperty, null);
+                    try
+                    {
+                        using var dc = image.CreateDrawingContext();
+                        var brush = new VisualBrush(frame) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(frame.Bounds, RelativeUnit.Absolute) };
+                        dc.DrawRectangle(brush, null, new Rect(0, 0, size.Width, size.Height));
+                    }
+                    finally { frame.SetCurrentValue(Visual.RenderTransformProperty, transform); }
+                    image.Save(Path.Combine(output, $"{(pixel ? "pixel" : "classic")}-{sample}-{percent}.png"));
+                    f.State.SelectedIndex = running ? 1 : 0;
+                    var next = elapsed + TimeSpan.FromSeconds(mode == 2 ? -1 : 1);
+                    if (mode == 2) f.Timer.CountdownRemaining = next;
+                    else f.Timer.RestoreElapsed(next, false);
+                    ClockOverlayChecks.Pump(550);
+                    Require(Reading() == Stamp(next) && f.Time.Text == Stamp(draft) && liveState.Text == (running ? "Running" : "Paused") && f.Timer.IsRunning == running,
+                        "Live refresh and pending edits interfered with each other.");
+                    Click(f.Save);
+                    Require(f.Window.WasSaved && f.Window.NewTimeValue == draft && f.Window.NewIsRunning == !running && f.Window.NewProjectName == name, "Incorrect saved draft.");
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
+        }
+        using var clock = new Fixture(mode: 1, intervals: false);
+        var reading = clock.Window.FindControl<TextBlock>("LiveTimePreview")!;
+        Require(TimeSpan.TryParse(reading.Text, out var time) && (DateTime.Now.TimeOfDay - time).Duration() < TimeSpan.FromSeconds(3) &&
+            !clock.Window.GetVisualDescendants().Any(v => v is ComboBox { Name: "StateAfterSave" }), "Clock mode has a stale wall time or an inapplicable state selector.");
+        using var canceled = new Fixture(intervals: false);
+        canceled.Time.Text = "20m";
+        canceled.State.SelectedIndex = 1;
+        PressKey(canceled.Window, Avalonia.Input.Key.Escape);
+        Require(!canceled.Window.WasSaved && canceled.Timer.IsRunning && canceled.Timer.Elapsed == TimeSpan.FromSeconds(2667), "Cancel applied pending time or state.");
     }
 }

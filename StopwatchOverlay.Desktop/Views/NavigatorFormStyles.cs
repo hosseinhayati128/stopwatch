@@ -35,6 +35,15 @@ internal static class NavigatorFormStyles
                     Background=Brushes.Transparent,Padding=new(0),BorderThickness=new(0),RenderTransform=new MatrixTransform(Matrix.Identity)};
                 scope.Register(presenter.Name,presenter);presenter.Bind(ContentPresenter.ContentProperty,new TemplateBinding(ContentControl.ContentProperty),BindingPriority.Template);
                 presenter.Bind(ContentPresenter.ForegroundProperty,button.GetObservable(Button.ForegroundProperty));
+                if (button.Classes.Contains("pixelAction"))
+                {
+                    var frame=new TodoFrame { Pixel=true,Child=presenter };
+                    frame.Bind(TodoFrame.BackgroundProperty,button.GetObservable(Button.BackgroundProperty));
+                    frame.Bind(TodoFrame.BorderBrushProperty,button.GetObservable(Button.BorderBrushProperty));
+                    frame.Bind(TodoFrame.BorderThicknessProperty,button.GetObservable(Button.BorderThicknessProperty));
+                    frame.Bind(Decorator.PaddingProperty,button.GetObservable(Button.PaddingProperty));
+                    return frame;
+                }
                 var border=new Border{CornerRadius=new(4),Child=presenter};
                 border.Bind(Border.BackgroundProperty,button.GetObservable(Button.BackgroundProperty));border.Bind(Border.BorderBrushProperty,button.GetObservable(Button.BorderBrushProperty));
                 border.Bind(Border.BorderThicknessProperty,button.GetObservable(Button.BorderThicknessProperty));border.Bind(Border.PaddingProperty,button.GetObservable(Button.PaddingProperty));return border;

@@ -16,10 +16,7 @@ internal sealed record ClockPickerItem(int Number,string Name,string Time,string
     {
         string mode=timer.Mode switch{1=>"Clock",2=>"Countdown",3=>"Timecode",_=>"Stopwatch"};
         string state=timer.Mode==1?"Live":timer.IsRunning?"Running":"Paused";
-        TimeSpan value=timer.Mode==1?now.TimeOfDay:timer.Mode==2?timer.CountdownRemaining:timer.Elapsed;
-        // Abs after dividing ticks also handles TimeSpan.MinValue safely.
-        long seconds=Math.Abs(value.Ticks/TimeSpan.TicksPerSecond);
-        string time=FormattableString.Invariant($"{(value.Ticks<0?"-":"")}{seconds/3600:00}:{seconds/60%60:00}:{seconds%60:00}");
+        string time=ReadTime(timer,now);
         string details=$"{index+1}. {timer.DisplayName} · {time} · {state} · {mode}"
             +(timer==active?" · Active":"")+(!string.IsNullOrWhiteSpace(timer.Category)?$" · [{timer.Category}]":"")
             +(timer.IsSeparated?" · Separated":"");
@@ -30,6 +27,19 @@ internal sealed record ClockPickerItem(int Number,string Name,string Time,string
             if(char.IsLetter(c))break;
         }
         return new(index+1,timer.DisplayName,time,mode,state,timer.IsRunning,timer==active,details,rtl);
+    }
+
+    internal static string ReadTime(TimerSession timer, DateTime now)
+    {
+        TimeSpan value = timer.Mode == 1 ? now.TimeOfDay : timer.Mode == 2 ? timer.CountdownRemaining : timer.Elapsed;
+        return FormatTime(value);
+    }
+
+    internal static string FormatTime(TimeSpan value)
+    {
+        // Divide before Abs so even TimeSpan.MinValue is representable.
+        long seconds = Math.Abs(value.Ticks / TimeSpan.TicksPerSecond);
+        return FormattableString.Invariant($"{(value.Ticks < 0 ? "-" : "")}{seconds / 3600:00}:{seconds / 60 % 60:00}:{seconds % 60:00}");
     }
 }
 

@@ -1012,6 +1012,7 @@ if(args.Contains("--timer-editor-native"))
     Check("editor pointer, keyboard and dropdown input",TimerEditorNativeChecks.InputStates);
     Check("editor pending discard, undo and confirmed deletion",TimerEditorNativeChecks.RecordActions);
     Check("editor themes, modes and closed timer lifecycle",TimerEditorNativeChecks.ThemesModesAndLifecycle);
+    Check("editor Classic and Pixel identity, independent live readings, state drafts and scaled captures",TimerEditorNativeChecks.IdentityAndTimeDraft);
     Check("editor hidden and visible ownership",TimerEditorChecks.HiddenOwner);
     Check("editor actual native captures",TimerEditorNativeChecks.Evidence);
     Environment.Exit(failures==0?0:1);

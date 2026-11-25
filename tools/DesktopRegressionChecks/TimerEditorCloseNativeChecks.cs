@@ -101,7 +101,7 @@ internal static class TimerEditorCloseNativeChecks
         foreach (string action in new[] { "cancel", "escape", "x", "native", "enter", "space" })
         {
             using var f = new Fixture(); f.Open(); f.Draft();
-            Named<TextBox>(f.Editor, "TimeValueBox").Text = "invalid duration"; Click(f.Editor, "PauseResumeButton"); ClockOverlayChecks.Pump(20);
+            Named<TextBox>(f.Editor, "TimeValueBox").Text = "invalid duration"; Named<ComboBox>(f.Editor, "StateAfterSave").SelectedIndex = 1; ClockOverlayChecks.Pump(20);
             string? records = Named<TextBlock>(f.Editor, "RecordsStatusText").Text;
             var prompt = f.Prompt(); Click(f.Editor, "DeleteTimerButton"); ClockOverlayChecks.Pump(20);
             Require(f.Prompts.Count == 1, "Repeated editor close action opened duplicate confirmations.");

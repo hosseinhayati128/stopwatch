@@ -39,10 +39,7 @@ public partial class TimerEditorWindow
         HeadingText.Text="Edit timer";HeadingText.Classes.Clear();HeadingText.FontFamily=StopwatchTypography.Resolve("navigator-bold").NameFont;
         HeadingText.FontSize=30;HeadingText.FontWeight=FontWeight.Bold;HeadingText.HorizontalAlignment=HorizontalAlignment.Left;
         HeadingText.Foreground=ClockPickerPresentation.Navy;
-        SubheadingText.Text=$"{_timer.DisplayName}  ·  {(_timer.Mode switch{1=>"Clock",2=>"Countdown",3=>"Timecode",_=>"Stopwatch"})}  ·  {(_isRunning?"Running":"Paused")}";
-        SubheadingText.FontSize=12;SubheadingText.TextAlignment=TextAlignment.Left;SubheadingText.Margin=new(0,2,0,0);
-        SubheadingText.TextWrapping=TextWrapping.NoWrap;SubheadingText.TextTrimming=TextTrimming.CharacterEllipsis;
-        var title=new StackPanel{Background=Brushes.Transparent,Children={HeadingText,SubheadingText}};
+        var title=new StackPanel{Background=Brushes.Transparent,Children={HeadingText}};
         title.PointerPressed+=(_,e)=>{if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed){BeginMoveDrag(e);e.Handled=true;}};
         var close=new Button{Content=new Avalonia.Controls.Shapes.Path{Data=Geometry.Parse("M 2,2 L 14,14 M 14,2 L 2,14"),Width=16,Height=16,
             Stroke=ClockPickerPresentation.Navy,StrokeThickness=2,StrokeLineCap=PenLineCap.Round},Padding=new(0),Width=28,Height=28,VerticalAlignment=VerticalAlignment.Top,Margin=new(0,6,0,0)};
@@ -61,24 +58,14 @@ public partial class TimerEditorWindow
         ToggleProjectInputButton.Height=ToggleCategoryInputButton.Height=36;
         IdleStopForProjectCheck.FontSize=11;IdleStopForProjectCheck.Margin=new(0);
         // The full project name remains available without widening a long/RTL form.
-        IdleStopForProjectCheck.ContentTemplate=new FuncDataTemplate<object>((value,_)=>new TextBlock{Text=value?.ToString(),TextWrapping=TextWrapping.Wrap,FontSize=11});
-        EditorBody.Children.Add(ProjectLabel);EditorBody.Children.Add(ProjectRow);EditorBody.Children.Add(CategoryRow);EditorBody.Children.Add(IdleStopForProjectCheck);
+        IdleStopForProjectCheck.ContentTemplate=new FuncDataTemplate<object>((value,_)=>new TextBlock{Text=value?.ToString(),TextWrapping=TextWrapping.Wrap,FontSize=11,Foreground=ClockPickerPresentation.Navy});
 
         foreach(var control in new Control[]{TimeValueLabel,LiveTimePreview,TimeValueBox,AdjustmentSummaryText,QuickAdjustButtons,PauseResumeButton,SegmentHeaderLabel,StartTimeBox,SegmentDetailText,RecordsStatusText,DiscardRecordsButton,DeleteTimerButton})
             if(control.Parent is Panel parent)parent.Children.Remove(control);
-        TimeValueLabel.Text=_timer.Mode==2?"Remaining time":"Elapsed time";
-        TimeValueLabel.FontFamily=StopwatchTypography.Resolve("navigator-bold").NameFont;TimeValueLabel.FontSize=21;TimeValueLabel.Foreground=ClockPickerPresentation.Navy;
-        LiveTimePreview.FontSize=11;
-        var timeHeader=new Grid{ColumnDefinitions=new("*,Auto"),Margin=new(0,0,0,10),Children={TimeValueLabel,LiveTimePreview}};Grid.SetColumn(LiveTimePreview,1);
-        TimeValueBox.Height=46;TimeValueBox.FontSize=27;TimeValueBox.FontFamily=StopwatchTypography.Resolve("navigator-bold").TimerFont;
-        PauseResumeButton.Width=116;PauseResumeButton.Height=36;PauseResumeButton.Margin=new(10,0,0,0);
-        var timeRow=new Grid{ColumnDefinitions=new("*,Auto"),Children={TimeValueBox,PauseResumeButton}};Grid.SetColumn(PauseResumeButton,1);
-        AdjustmentSummaryText.FontSize=11;AdjustmentSummaryText.Margin=new(0,8,0,0);
-        QuickAdjustButtons.HorizontalAlignment=HorizontalAlignment.Left;QuickAdjustButtons.Margin=new(0,12,0,0);
-        foreach(var button in QuickAdjustButtons.Children.OfType<Button>()){NavigatorFormStyles.StyleButton(button);button.Height=30;button.Padding=new(9,2);}
-        TimeCard.Child=new StackPanel{Children={timeHeader,timeRow,AdjustmentSummaryText,QuickAdjustButtons}};
-        TimeCard.Background=Brush.Parse("#46FFF3D8");TimeCard.BorderBrush=EditorRule;TimeCard.CornerRadius=new(7);TimeCard.Margin=new(0,18,0,0);
-        EditorBody.Children.Add(TimeCard);
+        bool pixel = _settings.NikaControllerPixel;
+        EditorBody.Children.Add(BuildTimerIdentity(pixel));
+        EditorBody.Children.Add(BuildTimeDraft(pixel));
+        EditorBody.Children.Add(ProjectLabel);EditorBody.Children.Add(ProjectRow);EditorBody.Children.Add(CategoryRow);EditorBody.Children.Add(IdleStopForProjectCheck);
 
         SegmentHeaderLabel.Text="LATEST SEGMENT START";SegmentHeaderLabel.FontSize=10;
         var latest=new Grid{ColumnDefinitions=new("184,16,*"),Margin=new(0,17,0,0)};
@@ -109,13 +96,11 @@ public partial class TimerEditorWindow
         footer.Children.Add(new Border{Background=EditorRule,Height=1,VerticalAlignment=VerticalAlignment.Top});
         footer.Children.Add(EditorLabel("Ctrl+Enter save  ·  Esc cancel"+(UndoPreviousEditButton.IsVisible?"  ·  Ctrl+Z undo":""),10,new Thickness(1,5,0,0)));
         Grid.SetRow(EditorActions,2);footer.Children.Add(EditorActions);
-        var layout=new Grid{RowDefinitions=new("70,*,80"),Children={header,EditorScroll,footer}};Grid.SetRow(EditorScroll,1);Grid.SetRow(footer,2);
-        Content=new StopwatchFrameSurface{ArtworkScale=.16,Padding=new(10),Background=EditorPaper,Child=layout};
-        Opened+=(_,_)=>
-        {
-            var area=Screens.ScreenFromWindow(this)?.WorkingArea;
-            if(area.HasValue){double available=area.Value.Height/RenderScaling-16;MinHeight=Math.Min(520,available);Height=Math.Min(780,available);}
-        };
+        var layout=new Grid{RowDefinitions=new("50,*,80"),Children={header,EditorScroll,footer}};Grid.SetRow(EditorScroll,1);Grid.SetRow(footer,2);
+        _navigatorFrame=new StopwatchFrameSurface{ArtworkScale=.16,Padding=new(10),Background=EditorPaper,Child=layout};
+        Content=_navigatorFrame;
+        SizeChanged+=(_,_)=>FitEditorFrame();
+        Opened+=(_,_)=>FitEditorWindow(1);
         PointerPressed+=(_,e)=>
         {
             var p=e.GetPosition(this);

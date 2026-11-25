@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using StopwatchOverlay.Desktop.Controls;
 
 namespace StopwatchOverlay.Desktop.Views;
 
@@ -172,7 +173,7 @@ public partial class TimerEditorWindow : Window
         }
 
         // Initialize Time Value Box and Summary
-        TimeValueBox.Text = FormatDuration(_currentTimeSpan);
+        TimeValueBox.Text = FormatDraftDuration(_currentTimeSpan);
         UpdateAdjustmentSummary();
 
         UpdateRunningButton();
@@ -232,6 +233,11 @@ public partial class TimerEditorWindow : Window
 
     private void UpdateLivePreview()
     {
+        if (_navigatorFrame != null)
+        {
+            UpdateNavigatorReading();
+            return;
+        }
         if (_timer.Mode == 1)
         {
             LiveTimePreview.Text = $"Live: {DateTime.Now:HH:mm:ss}";
@@ -249,6 +255,7 @@ public partial class TimerEditorWindow : Window
     private void UpdateRunningButton()
     {
         PauseResumeButton.Content = _isRunning ? "Pause Timer" : "Resume Timer";
+        if (_stateAfterSave != null) _stateAfterSave.SelectedIndex = _isRunning ? 0 : 1;
         if (_settings?.ThemeMode == AppThemeCatalog.Nika) return;
         if (_isRunning)
         {
@@ -353,7 +360,7 @@ public partial class TimerEditorWindow : Window
         if(TryGetSafeDuration(out _) && TryGetStartTotal(out var total))
         {
             _currentTimeSpan=total;
-            _isUpdatingInternally=true;TimeValueBox.Text=FormatDuration(total);_isUpdatingInternally=false;
+            _isUpdatingInternally=true;TimeValueBox.Text=FormatDraftDuration(total);_isUpdatingInternally=false;
         }
         ValidateInputs();
     }
@@ -452,7 +459,7 @@ public partial class TimerEditorWindow : Window
             }
 
             _isUpdatingInternally = true;
-            TimeValueBox.Text = FormatDuration(_currentTimeSpan);
+            TimeValueBox.Text = FormatDraftDuration(_currentTimeSpan);
             _isUpdatingInternally = false;
             ValidateInputs();
         }
@@ -694,6 +701,9 @@ public partial class TimerEditorWindow : Window
             }
         }
     }
+
+    private string FormatDraftDuration(TimeSpan value) =>
+        _settings?.ThemeMode == AppThemeCatalog.Nika ? ClockPickerItem.FormatTime(value) : FormatDuration(value);
 
     public static string FormatDuration(TimeSpan time)
     {
