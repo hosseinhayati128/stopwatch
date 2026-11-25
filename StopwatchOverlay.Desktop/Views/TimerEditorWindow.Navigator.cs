@@ -15,7 +15,6 @@ namespace StopwatchOverlay.Desktop.Views;
 
 public partial class TimerEditorWindow
 {
-    private TextBlock? _recordsSummary;
     private static readonly IBrush EditorPaper=Brush.Parse("#EBD3A5"),FieldPaper=Brush.Parse("#F7E8C7"),
         EditorRule=Brush.Parse("#509A7B48"),EditorDanger=Brush.Parse("#8F3328");
 
@@ -53,7 +52,7 @@ public partial class TimerEditorWindow
         {field.Classes.Add("editorField");field.MinHeight=36;field.FontSize=13;field.Padding=new(10,5);}
         AutoTextDirection.Attach(CustomProjectBox);AutoTextDirection.Attach(CustomCategoryBox);
         foreach(var button in new[]{ToggleProjectInputButton,ToggleCategoryInputButton,PauseResumeButton,CancelButton,UndoPreviousEditButton,SaveButton,DiscardRecordsButton,DeleteTimerButton})
-            NavigatorFormStyles.StyleButton(button,button==SaveButton,button==DiscardRecordsButton||button==DeleteTimerButton);
+            NavigatorFormStyles.StyleButton(button,button==SaveButton,button==DiscardRecordsButton);
         IdleStopForProjectCheck.FontSize=11;IdleStopForProjectCheck.Margin=new(0);
         IdleStopForProjectCheck.ContentTemplate=new FuncDataTemplate<object>((value,_)=>new TextBlock{Text=value?.ToString(),TextWrapping=TextWrapping.Wrap,FontSize=11,Foreground=ClockPickerPresentation.Navy});
 
@@ -68,18 +67,7 @@ public partial class TimerEditorWindow
         var segments = new StackPanel { Margin = new(0,16,0,0) };
         BuildRecordedSegments(segments, StartTimeBox, SegmentDetailText, SegmentsExpander, _intervals, pixel);
         EditorBody.Children.Add(segments);
-        RecordsStatusText.Margin=new(0,0,0,10);
-        var recordButtons=new WrapPanel{Orientation=Orientation.Horizontal,Children={DiscardRecordsButton,DeleteTimerButton}};
-        DiscardRecordsButton.Width=170;DiscardRecordsButton.Margin=new(0,0,8,8);DeleteTimerButton.Margin=new(0,0,0,8);
-        RecordsCard.Child=new StackPanel{Children={RecordsStatusText,recordButtons,
-            EditorLabel("Closing the timer keeps saved project records.",11)}};
-        RecordsCard.Margin=new(0,6,0,0);RecordsCard.Background=Brush.Parse("#30FFFFFF");RecordsCard.BorderBrush=EditorRule;
-        _recordsSummary=EditorLabel("",10);
-        var recordsHeader=new StackPanel{Spacing=2,Children={EditorLabel("Project records",13),_recordsSummary}};
-        var records=new Expander{Name="EditorRecordsExpander",Header=recordsHeader,Content=RecordsCard,Margin=new(0,7,0,0),HorizontalContentAlignment=HorizontalAlignment.Stretch};
-        StyleEditorExpander(records);
-        AutomationProperties.SetName(records,"Project records");
-        EditorBody.Children.Add(records);UpdateNavigatorRecordsSummary();
+        EditorBody.Children.Add(BuildProjectRecords(pixel));
         EditorScroll.Content=EditorBody;
 
         CancelButton.Width=82;CancelButton.MinWidth=0;UndoPreviousEditButton.Width=146;UndoPreviousEditButton.MinWidth=0;SaveButton.Width=132;
@@ -148,14 +136,6 @@ public partial class TimerEditorWindow
 
     private static TextBlock EditorLabel(string text,double size,Thickness margin=default)=>new(){Text=text,FontSize=size,
         FontFamily=ClockPickerPresentation.Body,Foreground=ClockPickerPresentation.Muted,Margin=margin,TextWrapping=TextWrapping.Wrap};
-
-    private void UpdateNavigatorRecordsSummary()
-    {
-        if(_recordsSummary==null)return;
-        _recordsSummary.Text=_discardRecords?"Removal pending until Save":"Included in project history";
-        _recordsSummary.Foreground=_discardRecords?EditorDanger:ClockPickerPresentation.Muted;
-        RecordsStatusText.Foreground=_discardRecords?EditorDanger:ClockPickerPresentation.Muted;
-    }
 
     private static void StyleEditorExpander(Expander expander)
     {

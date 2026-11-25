@@ -1014,6 +1014,7 @@ if(args.Contains("--timer-editor-native"))
     Check("editor themes, modes and closed timer lifecycle",TimerEditorNativeChecks.ThemesModesAndLifecycle);
     Check("editor Classic and Pixel identity, independent live readings, state drafts and scaled captures",TimerEditorNativeChecks.IdentityAndTimeDraft);
     Check("editor project and category fields, draft switching, idle rules and scaled captures",TimerEditorNativeChecks.ProjectFields);
+    Check("editor records drafts, reversible removal, empty history and scaled layouts",TimerEditorNativeChecks.ProjectRecords);
     Check("editor hidden and visible ownership",TimerEditorChecks.HiddenOwner);
     Check("editor actual native captures",TimerEditorNativeChecks.Evidence);
     Environment.Exit(failures==0?0:1);

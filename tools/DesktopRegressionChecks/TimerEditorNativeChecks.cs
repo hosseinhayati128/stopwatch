@@ -153,6 +153,64 @@ internal static class TimerEditorNativeChecks
         toggle.RaiseEvent(new KeyEventArgs{RoutedEvent=InputElement.KeyUpEvent,Key=Avalonia.Input.Key.Space});ClockOverlayChecks.Pump(20);
         Require(segments.IsExpanded,"Keyboard activation cannot expand recorded segments.");
     }
+    internal static void ProjectRecords()
+    {
+        const string folder = "design/one-piece-v2/timer-editor/project-records-implementation";
+        Directory.CreateDirectory(folder);
+        foreach (bool pixel in new[] { false, true })
+        foreach (int scale in new[] { 70, 90, 125 })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, NikaControllerPixel = pixel, UiScalePercent = scale };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                foreach (string state in new[] { "included", "pending", "empty" })
+                {
+                    bool hasRecords = state != "empty";
+                    using var f = new Fixture(intervals: hasRecords, settings: settings);
+                    var section = f.Window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "EditorRecordsExpander");
+                    var action = f.Window.FindControl<Button>("DiscardRecordsButton")!;
+                    var score = f.Window.FindControl<NumericUpDown>("ScorePerHourBox")!;
+                    var summary = ((StackPanel)section.Header!).Children.OfType<TextBlock>().Last();
+                    score.Value = 2.5m;
+                    Require(!section.IsExpanded && summary.IsVisible && summary.Text == (hasRecords ? "Included in project history" : "No saved records"),
+                        "Collapsed records summary does not match the timer's history.");
+                    section.IsExpanded = true;
+                    ClockOverlayChecks.Pump(25);
+                    Require(!summary.IsVisible && action.IsVisible == hasRecords, "Incorrect expanded summary or history action.");
+                    if (hasRecords)
+                    {
+                        action.Focus(NavigationMethod.Tab);
+                        Click(action);
+                        Require(Equals(action.Content, "Keep records") && action.IsFocused && !f.Window.DiscardRecordsRequested,
+                            "Marking records lost keyboard focus or immediately applied removal.");
+                        section.IsExpanded = false;
+                        Require(summary.IsVisible && summary.Text == "Removal pending", "Collapsed header lost pending status.");
+                        section.IsExpanded = true;
+                        if (state == "included")
+                        {
+                            Click(action);
+                            Require(Equals(action.Content, "Remove on save") && score.Value == 2.5m, "Keeping records lost an unrelated draft edit.");
+                        }
+                    }
+                    f.Save.Focus();
+                    ClockOverlayChecks.Pump(25);
+                    var scroll = f.Window.FindControl<ScrollViewer>("EditorScroll")!;
+                    scroll.Offset = new Vector(0, scroll.Extent.Height);
+                    ClockOverlayChecks.Pump(35);
+                    var bottom = section.TranslatePoint(new Point(0, section.Bounds.Height), scroll)!.Value.Y;
+                    Require(section.TranslatePoint(default, scroll)!.Value.Y >= -1 && bottom <= scroll.Bounds.Height + 1,
+                        $"Project records is clipped at {scale}%.");
+                    Capture(f.Window, Path.Combine(folder, $"{(pixel ? "pixel" : "classic")}-{state}-{scale}.png"));
+                    Click(f.Save);
+                    Require(f.Window.WasSaved && f.Window.NewScorePerHour == 2.5 && f.Window.DiscardRecordsRequested == (state == "pending"),
+                        "Save lost the score or applied the wrong history action.");
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
+        }
+    }
+
     internal static void RecordActions()
     {
         using(var f=new Fixture())

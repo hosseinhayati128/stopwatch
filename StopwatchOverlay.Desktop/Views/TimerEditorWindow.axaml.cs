@@ -177,7 +177,11 @@ public partial class TimerEditorWindow : Window
         UpdateAdjustmentSummary();
 
         UpdateRunningButton();
-        UpdateRecordsStatus();
+        if (_settings?.ThemeMode != AppThemeCatalog.Nika)
+        {
+            DiscardRecordsButton.Click += DiscardRecordsButton_Click;
+            UpdateRecordsStatus();
+        }
         UndoPreviousEditButton.IsVisible = canUndo;
         _segmentDetails = SegmentDetailText.Text;
         ApplyNavigatorLayout();
@@ -292,7 +296,6 @@ public partial class TimerEditorWindow : Window
                 RecordsStatusText.Foreground = sBrush;
             DiscardRecordsButton.IsEnabled = true;
         }
-        UpdateNavigatorRecordsSummary();
     }
 
     private void UpdateAdjustmentSummary()

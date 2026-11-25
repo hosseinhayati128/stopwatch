@@ -249,7 +249,6 @@
                                 MinWidth="150" Height="34"
                                 Margin="0,0,8,0"
                                 Classes="danger"
-                                Click="DiscardRecordsButton_Click"
                                 ToolTip.Tip="Removes this session's time from project records (does not log it)"/>
                         <Button Grid.Column="2"
                                 x:Name="DeleteTimerButton"
