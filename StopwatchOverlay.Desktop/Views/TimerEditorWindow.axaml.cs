@@ -68,6 +68,8 @@ public partial class TimerEditorWindow : Window
         _currentTimeSpan = _originalTotalElapsed;
 
         InitializeComponent();
+        // A focused button handles Enter itself, so route the editor's save shortcut first.
+        AddHandler(KeyDownEvent, OnSaveShortcut, RoutingStrategies.Tunnel);
 
         Title = $"Edit {timer.DisplayName}";
         HeadingText.Text = $"Edit {timer.DisplayName}";
@@ -440,6 +442,7 @@ public partial class TimerEditorWindow : Window
             SegmentDetailText.Text=_segmentDetails;
             if(this.TryFindResource("SecondaryTextBrush",out var brush)&&brush is IBrush ink)SegmentDetailText.Foreground=ink;
         }
+        UpdateFooterValidation(durationValid, startValid);
         return SaveButton.IsEnabled=durationValid&&startValid;
     }
 
@@ -688,6 +691,13 @@ public partial class TimerEditorWindow : Window
         Close(true);
     }
 
+    private void OnSaveShortcut(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || (e.KeyModifiers & KeyModifiers.Control) == 0) return;
+        e.Handled = true;
+        SaveButton_Click(this, e);
+    }
+
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
@@ -695,11 +705,6 @@ public partial class TimerEditorWindow : Window
         {
             e.Handled = true;
             Close(false);
-        }
-        else if (e.Key == Key.Enter && (e.KeyModifiers & KeyModifiers.Control) != 0)
-        {
-            e.Handled = true;
-            SaveButton_Click(this, e);
         }
         else if (e.Key == Key.Z && (e.KeyModifiers & KeyModifiers.Control) != 0)
         {

@@ -123,8 +123,6 @@ public partial class TimerEditorWindow
             button.Padding = new(9, 2);
             if (pixel) button.Classes.Add("pixelAction");
         }
-        if (pixel)
-            foreach (var button in new[] { SaveButton, CancelButton, UndoPreviousEditButton }) button.Classes.Add("pixelAction");
         AdjustmentSummaryText.FontSize = 11;
         AdjustmentSummaryText.Margin = new(0, 7, 0, 0);
         return new Border { Margin = new(0, 13, 0, 14), Padding = new(0, 0, 0, 13), BorderThickness = new(0, 0, 0, 1),

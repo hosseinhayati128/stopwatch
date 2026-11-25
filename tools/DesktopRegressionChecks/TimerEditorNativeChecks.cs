@@ -30,7 +30,7 @@ internal static class TimerEditorNativeChecks
         internal Button Save=>Window.FindControl<Button>("SaveButton")!;
         internal ComboBox State => Window.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "StateAfterSave");
         internal Fixture(string theme=AppThemeCatalog.Nika,int mode=0,bool intervals=true,TimeSpan? elapsed=null,
-            bool pixel=false,bool running=true,string name="Illustration",AppSettings? settings=null)
+            bool pixel=false,bool running=true,string name="Illustration",AppSettings? settings=null,bool canUndo=true)
         {
             typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!.GetMethod("ApplyApplication",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[theme]);
             var value=elapsed??TimeSpan.FromSeconds(2667);Timer.RestoreElapsed(value,false);Timer.IsRunning=running;Timer.Mode=mode;Timer.CountdownRemaining=value;Timer.Name=name;
@@ -39,7 +39,7 @@ internal static class TimerEditorNativeChecks
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-3).AddSeconds(-890),now.AddHours(-3)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-2).AddSeconds(-878),now.AddHours(-2)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddSeconds(-899),null)]:[];
-            Window=new TimerEditorWindow(Timer,[name,"Reading"],records,true,settings??new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,NikaControllerPixel=pixel});
+            Window=new TimerEditorWindow(Timer,[name,"Reading"],records,canUndo,settings??new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,NikaControllerPixel=pixel});
             Window.ShowActivated=false;Window.ShowInTaskbar=false;Window.Show();ClockOverlayChecks.Pump(55);
         }
         public void Dispose()=>Window.Close();
@@ -360,21 +360,116 @@ internal static class TimerEditorNativeChecks
         Require(!canceled.Window.WasSaved && canceled.Timer.IsRunning && canceled.Timer.Elapsed == TimeSpan.FromSeconds(2667), "Cancel applied pending time or state.");
     }
 
-    private static void Capture(Window window, string file)
+    private static void Capture(Window window, string file, PixelRect? crop = null)
     {
         var size = PixelSize.FromSize(window.ClientSize, 1);
         var frame = window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
         var transform = frame.RenderTransform;
-        using var image = new RenderTargetBitmap(size, new Vector(96, 96));
+        using var image = new RenderTargetBitmap(crop?.Size ?? size, new Vector(96, 96));
         frame.SetCurrentValue(Visual.RenderTransformProperty, null);
         try
         {
             using var dc = image.CreateDrawingContext();
             var brush = new VisualBrush(frame) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(frame.Bounds, RelativeUnit.Absolute) };
-            dc.DrawRectangle(brush, null, new Rect(0, 0, size.Width, size.Height));
+            dc.DrawRectangle(brush, null, new Rect(-(crop?.X ?? 0), -(crop?.Y ?? 0), size.Width, size.Height));
         }
         finally { frame.SetCurrentValue(Visual.RenderTransformProperty, transform); }
         image.Save(file);
+    }
+
+    internal static void Footer()
+    {
+        const string folder = "design/one-piece-v2/timer-editor/footer-implementation";
+        Directory.CreateDirectory(folder);
+        foreach (int scale in new[] { 70, 90, 125 })
+        foreach (bool pixel in new[] { false, true })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, NikaControllerPixel = pixel, UiScalePercent = scale };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                foreach (string state in new[] { "available", "unavailable", "invalid" })
+                {
+                    using var f = new Fixture(intervals: false, running: false, settings: settings, canUndo: state != "unavailable");
+                    var footer = f.Window.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "EditorFooter");
+                    var error = footer.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "FooterError");
+                    var undo = f.Window.FindControl<Button>("UndoPreviousEditButton")!;
+                    var cancel = f.Window.FindControl<Button>("CancelButton")!;
+                    var scroll = f.Window.FindControl<ScrollViewer>("EditorScroll")!;
+                    var initial = f.Save.TranslatePoint(default, f.Window)!.Value;
+                    if (state == "invalid") f.Time.Text = "15x";
+                    ClockOverlayChecks.Pump(30);
+                    Require(undo.IsVisible == (state != "unavailable") && f.Save.IsEnabled == (state != "invalid"), "Wrong footer action availability.");
+                    Require(error.IsEffectivelyVisible == (state == "invalid") && (state != "invalid" || error.Text == "Enter a valid elapsed time to save."),
+                        "Footer validation does not match the invalid field.");
+                    scroll.Offset = new Vector(0, scroll.Extent.Height);
+                    ClockOverlayChecks.Pump(30);
+                    var after = f.Save.TranslatePoint(default, f.Window)!.Value;
+                    Require(Math.Abs(initial.X - after.X) <= 1 && Math.Abs(initial.Y - after.Y) <= 1, "Scrolling or validation moved Save.");
+                    Require(undo.Classes.Contains("pixelAction") == pixel && f.Save.Classes.Contains("pixelAction") == pixel, "Wrong footer button style.");
+                    foreach (var (button, key) in new[] { (undo, "Ctrl+Z"), (cancel, "Esc"), (f.Save, "Ctrl+Enter") })
+                    {
+                        if (!button.IsVisible) continue;
+                        var hint = button.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == key);
+                        var right = hint.TranslatePoint(new Point(hint.Bounds.Width, hint.Bounds.Height), button)!.Value;
+                        Require(right.X <= button.Bounds.Width && right.Y <= button.Bounds.Height, $"Clipped {key} at {scale}%.");
+                    }
+                    var a = footer.TranslatePoint(default, f.Window)!.Value;
+                    var b = footer.TranslatePoint(new Point(footer.Bounds.Width, footer.Bounds.Height), f.Window)!.Value;
+                    int x = (int)Math.Floor(a.X) - 5, y = (int)Math.Floor(a.Y) - 4;
+                    var rect = new PixelRect(x, y, (int)Math.Ceiling(b.X) + 5 - x, (int)Math.Ceiling(b.Y) + 4 - y);
+                    Require(x >= 0 && y >= 0 && rect.Right <= f.Window.ClientSize.Width + 1 && rect.Bottom <= f.Window.ClientSize.Height + 1,
+                        "Footer outside client area.");
+                    Capture(f.Window, Path.Combine(folder, $"{(pixel ? "pixel" : "classic")}-{state}-{scale}.png"), rect);
+
+                    switch (state)
+                    {
+                        case "available":
+                            PressKey(cancel, Avalonia.Input.Key.Z, KeyModifiers.Control);
+                            Require(f.Window.WasSaved && f.Window.UndoRequested, "Ctrl+Z failed to undo.");
+                            break;
+                        case "unavailable":
+                            PressKey(cancel, Avalonia.Input.Key.Z, KeyModifiers.Control);
+                            Require(f.Window.IsVisible && !f.Window.UndoRequested, "Unavailable undo ran.");
+                            PressKey(cancel, Avalonia.Input.Key.Escape);
+                            Require(!f.Window.IsVisible && !f.Window.WasSaved, "Escape failed to cancel.");
+                            break;
+                        case "invalid":
+                            PressKey(cancel, Avalonia.Input.Key.Enter, KeyModifiers.Control);
+                            Require(f.Window.IsVisible && !f.Window.WasSaved, "Ctrl+Enter accepted an invalid time.");
+                            f.Start.Text = "bad";
+                            f.Time.Text = "15m";
+                            ClockOverlayChecks.Pump(20);
+                            Require(!f.Save.IsEnabled && error.Text == "Enter a valid start time to save.", "Footer did not switch validation fields.");
+                            f.Start.Text = DateTime.Now.AddMinutes(-10).ToString("HH:mm:ss");
+                            f.Time.Text = "15m";
+                            ClockOverlayChecks.Pump(20);
+                            Require(f.Save.IsEnabled && !error.IsEffectivelyVisible, "Correcting time left Save disabled.");
+                            PressKey(cancel, Avalonia.Input.Key.Enter, KeyModifiers.Control);
+                            Require(f.Window.WasSaved && f.Window.NewTimeValue == TimeSpan.FromMinutes(15), "Ctrl+Enter failed after correction.");
+                            break;
+                    }
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
+        }
+        var large = new TypographySettings();
+        large.Global.SizePercent = 175;
+        DeleteTodoNativeChecks.Desktop("DesktopTypography", "Initialize", large);
+        try
+        {
+            using var f = new Fixture();
+            f.Window.Width = f.Window.MinWidth;
+            ClockOverlayChecks.Pump(50);
+            var undo = f.Window.FindControl<Button>("UndoPreviousEditButton")!;
+            var cancel = f.Window.FindControl<Button>("CancelButton")!;
+            var undoEnd = undo.TranslatePoint(new Point(undo.Bounds.Width, undo.Bounds.Height), f.Window)!.Value;
+            var cancelStart = cancel.TranslatePoint(default, f.Window)!.Value;
+            var saveEnd = f.Save.TranslatePoint(new Point(f.Save.Bounds.Width, f.Save.Bounds.Height), f.Window)!.Value;
+            Require(undoEnd.Y <= cancelStart.Y && cancelStart.X >= 0 && saveEnd.X <= f.Window.ClientSize.Width && saveEnd.Y <= f.Window.ClientSize.Height,
+                "Large dialog fonts clipped or overlapped footer actions.");
+        }
+        finally { DeleteTodoNativeChecks.Desktop("DesktopTypography", "Shutdown"); }
     }
 
     internal static void ProjectFields()

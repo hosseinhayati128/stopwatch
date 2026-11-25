@@ -70,13 +70,8 @@ public partial class TimerEditorWindow
         EditorBody.Children.Add(BuildProjectRecords(pixel));
         EditorScroll.Content=EditorBody;
 
-        CancelButton.Width=82;CancelButton.MinWidth=0;UndoPreviousEditButton.Width=146;UndoPreviousEditButton.MinWidth=0;SaveButton.Width=132;
-        EditorActions.ColumnDefinitions=new("82,*,146,10,132");Grid.SetColumn(UndoPreviousEditButton,2);Grid.SetColumn(SaveButton,4);UndoPreviousEditButton.Margin=new(0);
-        var footer=new Grid{RowDefinitions=new("18,12,38"),Margin=new(0,12,0,0)};
-        footer.Children.Add(new Border{Background=EditorRule,Height=1,VerticalAlignment=VerticalAlignment.Top});
-        footer.Children.Add(EditorLabel("Ctrl+Enter save  ·  Esc cancel"+(UndoPreviousEditButton.IsVisible?"  ·  Ctrl+Z undo":""),10,new Thickness(1,5,0,0)));
-        Grid.SetRow(EditorActions,2);footer.Children.Add(EditorActions);
-        var layout=new Grid{RowDefinitions=new("50,*,80"),Children={header,EditorScroll,footer}};Grid.SetRow(EditorScroll,1);Grid.SetRow(footer,2);
+        var footer = BuildEditorFooter(pixel);
+        var layout=new Grid{RowDefinitions=new("50,*,Auto"),Children={header,EditorScroll,footer}};Grid.SetRow(EditorScroll,1);Grid.SetRow(footer,2);
         _navigatorFrame=new StopwatchFrameSurface{ArtworkScale=.16,Padding=new(10),Background=EditorPaper,Child=layout};
         Content=_navigatorFrame;
         SizeChanged+=(_,_)=>FitEditorFrame();
