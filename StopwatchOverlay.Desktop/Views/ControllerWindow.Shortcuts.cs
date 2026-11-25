@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using StopwatchOverlay.ActivityWatch;
+using StopwatchOverlay.Desktop.Platform;
 using StopwatchOverlay.Mood;
 using StopwatchOverlay.PeriodicReview;
 
@@ -26,9 +27,16 @@ public partial class ControllerWindow
 
     private void ShowControllerFromShortcut()
     {
-        Show();
-        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
-        Activate();
+        if (RaiseOpenTimerDialog()) return;
+        if (!IsVisible) Show();
+        ShortcutWindowPresentation.BringForward(this);
+    }
+
+    private bool RaiseOpenTimerDialog()
+    {
+        if (_timerCommandDialog is not { } dialog) return false;
+        ShortcutWindowPresentation.BringForward(dialog);
+        return true;
     }
 
     private NoteCommandAction ResolveNoteCommand(uint key)
@@ -58,15 +66,18 @@ public partial class ControllerWindow
         {
             if (IsVisible && WindowState != WindowState.Minimized)
             {
-                await dialog.ShowDialog(this);
+                var result = dialog.ShowDialog(this);
+                ShortcutWindowPresentation.BringForward(dialog);
+                await result;
             }
             else
             {
                 var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 dialog.Closed += (_, _) => closed.TrySetResult();
                 dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                dialog.Topmost = true;
+                if (!OperatingSystem.IsWindows()) dialog.Topmost = true;
                 dialog.Show();
+                ShortcutWindowPresentation.BringForward(dialog);
                 await closed.Task;
             }
         }
@@ -75,7 +86,7 @@ public partial class ControllerWindow
 
     private async void OpenTimerPicker()
     {
-        if (_timerCommandDialog != null || _timerManager.Count == 0) return;
+        if (RaiseOpenTimerDialog() || _timerManager.Count == 0) return;
         var picker = new TimerPickerWindow(_timerManager.Sessions, _timerManager.Active, _settings);
         await ShowTimerCommandDialog(picker);
         if (!_isExiting && _timerManager.Activate(picker.SelectedTimer))
@@ -112,6 +123,7 @@ public partial class ControllerWindow
         }
         UpdateActiveClocksShelf();
         _activeClocksShelf.Show();
+        if (OperatingSystem.IsWindows()) ShortcutWindowPresentation.BringForward(_activeClocksShelf, activate: false);
     }
 
     private void UpdateActiveClocksShelf()
@@ -224,7 +236,7 @@ public partial class ControllerWindow
 
     private async void OpenAddRecord()
     {
-        if (_timerCommandDialog != null) return;
+        if (RaiseOpenTimerDialog()) return;
         var view = _projectHistory.CreateView(DateTime.UtcNow);
         string? projectKey = view.Projects.FirstOrDefault(project =>
             string.Equals(project.Name, _timerManager.Active?.Name, StringComparison.OrdinalIgnoreCase))?.Key;
@@ -237,6 +249,7 @@ public partial class ControllerWindow
 
     private async Task OpenPeriodicReviewAsync(DateTime? startUtc = null, DateTime? endUtc = null)
     {
+        if (!_isExiting && !startUtc.HasValue && RaiseOpenTimerDialog()) return;
         if (_isExiting || _timerCommandDialog != null)
         { if (startUtc.HasValue) _periodicReviewService?.OnPromptIgnored(); return; }
         CancelPeriodicReviewPrompt();

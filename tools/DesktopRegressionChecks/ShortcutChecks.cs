@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -13,6 +14,103 @@ using StopwatchOverlay.Platform;
 internal static class ShortcutChecks
 {
     private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    [DllImport("user32.dll")]
+    private static extern nint GetWindow(nint hwnd, uint command);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(nint hwnd, nint after, int x, int y, int width, int height, uint flags);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong(nint hwnd, int index);
+
+    [DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
+
+    internal static void WindowsForeground()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var blocker = new Window { Topmost = true, ShowActivated = false, ShowInTaskbar = false };
+        blocker.Show();
+        nint blockerHandle = blocker.TryGetPlatformHandle()!.Handle;
+        void Cover()
+        {
+            Require(SetWindowPos(blockerHandle, -1, 0, 0, 0, 0, 0x13), "Could not raise the test blocker.");
+            ClockOverlayChecks.Pump(25);
+        }
+        void RequireInFront(Window window, string action)
+        {
+            nint handle = window.TryGetPlatformHandle()!.Handle;
+            for (nint previous = GetWindow(blockerHandle, 3); previous != 0; previous = GetWindow(previous, 3))
+                if (previous == handle) return;
+            throw new Exception($"{action} left {window.GetType().Name} below the blocker.");
+        }
+        try
+        {
+            fixture.Controller.Show();
+            Cover();
+            fixture.Command(KeyCode.VcW);
+            RequireInFront(fixture.Controller, "Open controller");
+
+            fixture.Controller.WindowState = WindowState.Minimized;
+            Cover();
+            fixture.Command(KeyCode.VcW);
+            Require(fixture.Controller.WindowState != WindowState.Minimized, "Shortcut did not restore the minimized controller.");
+            RequireInFront(fixture.Controller, "Restore controller");
+
+            foreach (var (key, type) in new[]
+            {
+                (KeyCode.VcA, "ProjectRecordEditorWindow"), (KeyCode.VcE, "TimerEditorWindow"),
+                (KeyCode.VcK, "TimerPickerWindow"), (KeyCode.VcD, "ProjectDashboardWindow")
+            })
+            {
+                Cover();
+                fixture.Command(key);
+                var window = fixture.Window(type);
+                RequireInFront(window, key.ToString());
+                Cover();
+                fixture.Command(key);
+                RequireInFront(window, "Reopen existing panel");
+                if (key != KeyCode.VcD)
+                {
+                    Cover();
+                    fixture.Command(KeyCode.VcW);
+                    RequireInFront(window, "Open controller with a modal panel");
+                }
+                window.Close();
+                ClockOverlayChecks.Pump(30);
+            }
+            fixture.Controller.Hide();
+            Cover();
+            fixture.Command(KeyCode.VcA);
+            var ownerless = fixture.Window("ProjectRecordEditorWindow");
+            RequireInFront(ownerless, "Add record with hidden controller");
+            Require(!fixture.Controller.IsVisible, "Add record opened the hidden controller.");
+            ownerless.Close();
+            ClockOverlayChecks.Pump(30);
+
+            Cover();
+            nint foreground = GetForegroundWindow();
+            fixture.Key(KeyCode.VcF3, ModifierMask.LeftMeta);
+            ClockOverlayChecks.Pump(35);
+            RequireInFront(fixture.Window("NoteCommandHintWindow"), "Note shortcut hint");
+            Require(GetForegroundWindow() == foreground, "The shortcut hint stole keyboard focus.");
+
+            Cover();
+            fixture.Command(KeyCode.VcN, notes: true);
+            RequireInFront(fixture.Window("NoteEntryWindow"), "Quick Note");
+            blocker.Topmost = false;
+            blocker.Activate();
+            ClockOverlayChecks.Pump(4200);
+            Require((GetWindowLong(fixture.Controller.TryGetPlatformHandle()!.Handle, -20) & 8) == 0,
+                "The controller stayed topmost after being hidden.");
+            var note = fixture.Window("NoteEntryWindow");
+            Require((GetWindowLong(note.TryGetPlatformHandle()!.Handle, -20) & 8) == 0,
+                "Quick Note stayed topmost after switching away.");
+        }
+        finally { blocker.Close(); }
+    }
 
     private sealed class Fixture : IDisposable
     {

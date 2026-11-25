@@ -266,6 +266,7 @@ public partial class ControllerWindow : Window
                 hint.Activated += (_, _) => { if (hint.IsVisible) hint.Focus(); };
             }
             hint.Show();
+            if (OperatingSystem.IsWindows()) ShortcutWindowPresentation.BringForward(hint, activate: false);
             if (PlatformServices.HotKey is PortalHotKeyService)
             {
                 hint.Activate();
@@ -304,6 +305,7 @@ public partial class ControllerWindow : Window
         if (_commandHintWindow is not ShortcutCommandHintWindow hint) return;
         bool expanded = hint.AdvanceExpansion();
         hint.Show();
+        if (OperatingSystem.IsWindows()) ShortcutWindowPresentation.BringForward(hint, activate: false);
         _commandModeTimer?.Stop();
         if (_commandModeTimer != null) _commandModeTimer.Interval = TimeSpan.FromSeconds(expanded ? 5 : 2);
         _commandModeTimer?.Start();
@@ -347,6 +349,8 @@ public partial class ControllerWindow : Window
                         if (!todoOverlay.IsExpanded) todoOverlay.ToggleExpanded();
                     }
                     else todoOverlay.ToggleExpanded();
+                    if (OperatingSystem.IsWindows())
+                        ShortcutWindowPresentation.BringForward(todoOverlay, activate: todoOverlay.IsExpanded);
                     return;
                 }
                 if (noteAction == 0)
@@ -362,7 +366,10 @@ public partial class ControllerWindow : Window
                     else
                     {
                         todoOverlay.Show();
-                        if (todoOverlay.IsExpanded) { todoOverlay.Activate(); todoOverlay.Focus(); }
+                        if (OperatingSystem.IsWindows())
+                            ShortcutWindowPresentation.BringForward(todoOverlay, activate: todoOverlay.IsExpanded);
+                        else if (todoOverlay.IsExpanded) todoOverlay.Activate();
+                        if (todoOverlay.IsExpanded) todoOverlay.Focus();
                     }
                     return;
                 }
@@ -374,8 +381,11 @@ public partial class ControllerWindow : Window
                     NoteCommandAction.ViewNotes => new NotesViewerWindow(_settings),
                     _ => null
                 };
-                noteWindow?.Show();
-                noteWindow?.Activate();
+                if (noteWindow != null)
+                {
+                    noteWindow.Show();
+                    ShortcutWindowPresentation.BringForward(noteWindow);
+                }
                 return;
             }
 
@@ -451,6 +461,7 @@ public partial class ControllerWindow : Window
                 break;
             case ShortcutAction.OpenDashboard:
                 DashboardButton_Click(this, new RoutedEventArgs());
+                if (_dashboardWindow != null) ShortcutWindowPresentation.BringForward(_dashboardWindow);
                 break;
             case ShortcutAction.OpenController:
                 ShowControllerFromShortcut();
@@ -951,7 +962,7 @@ public partial class ControllerWindow : Window
 
     private async void CreateNewTimer()
     {
-        if (_timerCommandDialog != null) return;
+        if (RaiseOpenTimerDialog()) return;
         var dialog = CreateProjectChooser(null);
         await ShowTimerCommandDialog(dialog);
         if (!dialog.WasAccepted || _isExiting) return;
@@ -988,7 +999,7 @@ public partial class ControllerWindow : Window
 
     private async void CloseSession(TimerSession session)
     {
-        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
+        if (RaiseOpenTimerDialog() || !_timerManager.Sessions.Contains(session)) return;
         string targetName = session.DisplayName;
         var dialog = new ConfirmationDialogWindow(
             "Close Timer",
@@ -1023,7 +1034,7 @@ public partial class ControllerWindow : Window
 
     private async void OpenTimerEditor(TimerSession session)
     {
-        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
+        if (RaiseOpenTimerDialog() || !_timerManager.Sessions.Contains(session)) return;
         var projectNames = _projectHistory.ProjectNames.ToList();
         var intervals = _projectHistory.GetIntervalsForTimer(session.Id);
         var editor = new TimerEditorWindow(session, projectNames, intervals, canUndo: _lastTimerEdit?.Session == session, settings: _settings);
@@ -1165,7 +1176,7 @@ public partial class ControllerWindow : Window
     private async void RenameTimerMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         var session = CurrentTimer;
-        if (_timerCommandDialog != null || !_timerManager.Sessions.Contains(session)) return;
+        if (RaiseOpenTimerDialog() || !_timerManager.Sessions.Contains(session)) return;
         var dialog = CreateProjectChooser(session);
         await ShowTimerCommandDialog(dialog);
         if (!dialog.WasAccepted || _isExiting || !_timerManager.Sessions.Contains(session)) return;

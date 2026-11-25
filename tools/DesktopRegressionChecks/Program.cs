@@ -1126,6 +1126,7 @@ if(args.Contains("--stopwatch-redraw-regression")||args.Contains("--navigator-pi
 }
 if (args.Contains("--shortcuts-only"))
 {
+    Check("shortcut windows rise above a native blocker", ShortcutChecks.WindowsForeground);
     Check("Windows registration, fast timer picker and note leader", ShortcutChecks.WindowsRegistrationAndRouting);
     Check("full timer commands require four deliberate presses", ShortcutChecks.TimerCommandsFourthPress);
     Check("timer command popup dismisses on selection", ShortcutChecks.TimerCommandsDismissal);
