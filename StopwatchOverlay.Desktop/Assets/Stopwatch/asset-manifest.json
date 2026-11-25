@@ -987,9 +987,9 @@
     },
     {
       "id": "pixel-voyage",
-      "timerFamily": "Press Start 2P",
-      "timerFile": "Assets/Fonts/Stopwatch/PressStart2P-Regular.ttf",
-      "timerLicense": "Assets/Fonts/Stopwatch/OFL-pressstart2p.txt",
+      "timerFamily": "Stopwatch Pixel Digits",
+      "timerFile": "Assets/Fonts/Stopwatch/StopwatchPixelDigits-Regular.ttf",
+      "timerLicense": "../LICENSE",
       "nameFamily": "Press Start 2P",
       "nameFile": "Assets/Fonts/Stopwatch/PressStart2P-Regular.ttf",
       "nameLicense": "Assets/Fonts/Stopwatch/OFL-pressstart2p.txt",

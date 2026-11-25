@@ -63,6 +63,7 @@ internal static class DesktopPageAppearance
             if(window is ProjectRecordDeleteWindow deletion)deletion.FitDeleteRecordContent(_scale!=previousScale);
         }
     }
+    internal static bool UsesPixelController => _settings?.NikaControllerPixel == true;
     internal static double Scale(Window window)=>Pages.ContainsKey(window)?_scale:1;
     internal static object? Content(Window window)=>Pages.TryGetValue(window,out var transform)?transform.Child:window.Content;
     private static bool IsPage(Window window)=>window.GetType().Namespace==typeof(ControllerWindow).Namespace&&window is not

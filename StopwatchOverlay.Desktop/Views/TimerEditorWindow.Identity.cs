@@ -42,7 +42,6 @@ public partial class TimerEditorWindow
         {
             label.HorizontalAlignment = HorizontalAlignment.Center;
             var digits = new ControllerPixelDigits { FontSize = 45, Height = 43, Foreground = ReadoutInk };
-            digits.SelectLargeFace(_settings!.ControllerLargeClockDigits);
             digits.Bind(ControllerPixelDigits.TextProperty, LiveTimePreview.GetObservable(TextBlock.TextProperty));
             digits.Bind(AutomationProperties.NameProperty, LiveTimePreview.GetObservable(TextBlock.TextProperty));
             display = digits;

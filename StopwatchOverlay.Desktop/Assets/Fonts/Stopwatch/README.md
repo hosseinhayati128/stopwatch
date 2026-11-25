@@ -1,5 +1,9 @@
 # Stopwatch typography sources
 
+Stopwatch Pixel Digits is the project's original four-column, six-row numeral design from the compact Pixel calendar. The font includes decimal digits, time separators, signs and a space. It is covered by the repository license.
+
+Stopwatch Calendar adds matching letters for the twelve English month names. The Pixel date picker uses it for its headings and uses Stopwatch Pixel Digits for the dates.
+
 Downloaded 2026-10-31 from the official Google Fonts repository. Fonts are bundled with their original SIL Open Font License files; no font data was modified.
 
 - Nunito (rounded typography): https://github.com/google/fonts/tree/main/ofl/nunito

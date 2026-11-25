@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
@@ -103,6 +104,87 @@ internal static class ProjectRecordNativeChecks
             var date=f.Named<CalendarDatePicker>("StartDatePicker");date.Focus();date.IsDropDownOpen=true;ClockOverlayChecks.Pump(25);
             Require(date.IsDropDownOpen,"Calendar does not open.");KeyDown(date,Avalonia.Input.Key.Escape);ClockOverlayChecks.Pump(20);
             Require(f.Window.IsVisible&&!date.IsDropDownOpen&&f.Writes==0,"Calendar Escape closes the whole editor or fails to close the popup.");
+        }
+    }
+    internal static void CalendarPopups()
+    {
+        const string folder = "design/one-piece-v2/time-record/calendar-popup-implementation";
+        Directory.CreateDirectory(folder);
+        var today = DateTime.Today;
+        var selected = today.Day > 7 ? today.AddDays(-7) : today.AddDays(7);
+        foreach (int scale in new[] { 70, 90, 125 })
+        foreach (bool pixel in new[] { false, true })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale, NikaControllerPixel = pixel };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                using var f = new Fixture(editing: pixel);
+                foreach (string field in new[] { "StartDatePicker", "EndDatePicker" })
+                {
+                    var picker = f.Named<CalendarDatePicker>(field);
+                    picker.SelectedDate = selected;
+                    picker.DisplayDate = selected;
+                    picker.IsDropDownOpen = true;
+                    ClockOverlayChecks.Pump(60);
+                    var popup = picker.GetVisualDescendants().OfType<Popup>().Concat(picker.GetLogicalDescendants().OfType<Popup>()).First();
+                    var layout = (LayoutTransformControl)popup.Child!;
+                    var cal = (Calendar)layout.Child!;
+                    var days = cal.GetVisualDescendants().OfType<CalendarDayButton>().ToArray();
+                    var header = cal.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_HeaderButton");
+                    var monthView = cal.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "PART_MonthView");
+                    var current = days.Single(d => Equals(d.DataContext,today));
+                    var chosen = days.Single(d => Equals(d.DataContext,selected));
+                    Require(chosen.IsEffectivelyVisible && chosen.Classes.Contains(":selected") && current.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "TodayMark").IsEffectivelyVisible, "Missing selection or today mark.");
+                    Require(Math.Abs(layout.Bounds.Width - 320 * scale / 100d) < 2 && monthView.Children.OfType<TextBlock>().All(t => !string.IsNullOrWhiteSpace(t.Text)), "Wrong scale or blank weekday.");
+                    Require(header.FontFamily.Name.Contains("Stopwatch Calendar") == pixel, "Wrong month typeface.");
+                    if (field == "StartDatePicker")
+                    {
+                        using var image = new RenderTargetBitmap(new PixelSize(540,520),new Vector(96,96));
+                        image.Render(cal);
+                        image.Save(Path.Combine(folder,$"{(pixel ? "pixel" : "classic")}-{scale}.png"));
+                    }
+                    var next = cal.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_NextButton");
+                    var prev = cal.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_PreviousButton");
+                    for (int i = 1; i <= 12; i++)
+                    {
+                        Click(next);
+                        var expected = selected.AddMonths(i);
+                        Require(cal.DisplayDate.Month == expected.Month && cal.DisplayDate.Year == expected.Year, "Next month did not advance.");
+                        Require(days.Count(b => b.IsEffectivelyVisible && b.DataContext is DateTime date && date.Month == expected.Month)
+                            == DateTime.DaysInMonth(expected.Year, expected.Month), "The calendar hid a day in the current month.");
+                        if (pixel)
+                        {
+                            var face = new Typeface(header.FontFamily);
+                            Require(FontManager.Current.TryGetGlyphTypeface(face,out var glyphs)
+                                && expected.ToString("MMMM", System.Globalization.CultureInfo.InvariantCulture).All(c => glyphs.GetGlyph(c) != 0),
+                                "Missing month lettering.");
+                        }
+                    }
+                    for (int i = 0; i < 12; i++) Click(prev);
+                    Require(cal.DisplayDate.Month == selected.Month && picker.SelectedDate == selected, "Month navigation changed the selected date.");
+                    Click(header);
+                    Require(cal.DisplayMode == CalendarMode.Year,"Month chooser missing.");
+                    Click(header);
+                    Require(cal.DisplayMode == CalendarMode.Decade,"Year chooser missing.");
+                    cal.DisplayMode = CalendarMode.Month;
+                    KeyDown(cal,Avalonia.Input.Key.Right); KeyDown(cal,Avalonia.Input.Key.Escape);
+                    ClockOverlayChecks.Pump(30);
+                    Require(!picker.IsDropDownOpen && f.Window.IsVisible && picker.SelectedDate == selected && f.Writes == 0, "Escape lost the draft or closed the editor.");
+                    picker.IsDropDownOpen = true; ClockOverlayChecks.Pump(30);
+                    KeyDown(cal,Avalonia.Input.Key.Right); KeyDown(cal,Avalonia.Input.Key.Enter);
+                    ClockOverlayChecks.Pump(30);
+                    Require(!picker.IsDropDownOpen && picker.SelectedDate == selected.AddDays(1) && f.Writes == 0,"Calendar keyboard selection did not reach the date field.");
+                    picker.IsDropDownOpen = true;
+                    ClockOverlayChecks.Pump(30);
+                    var popupRoot = TopLevel.GetTopLevel(current)!;
+                    RunningClocksChecks.Pointer(popupRoot,current,RawPointerEventType.LeftButtonDown,RawInputModifiers.LeftMouseButton);
+                    RunningClocksChecks.Pointer(popupRoot,current,RawPointerEventType.LeftButtonUp);
+                    ClockOverlayChecks.Pump(30);
+                    Require(!picker.IsDropDownOpen && picker.SelectedDate == today && f.Writes == 0, "Clicking today did not select and dismiss.");
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance","Shutdown"); }
         }
     }
     internal static void TypedDatesAndLongRanges()

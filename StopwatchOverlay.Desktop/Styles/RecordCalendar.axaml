@@ -1,0 +1,92 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:StopwatchOverlay.Desktop.Controls">
+  <ControlTheme x:Key="RecordCalendarNav" TargetType="Button">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Foreground" Value="#102B3B"/>
+    <Setter Property="Background" Value="#F2DCB0"/>
+    <Setter Property="BorderBrush" Value="#A77A38"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="{DynamicResource DateCellRadius}"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource DateCellRadius}">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover"><Setter Property="Background" Value="#E8CE9E"/></Style>
+    <Style Selector="^:pressed"><Setter Property="Background" Value="#D7B978"/></Style>
+    <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.48"/></Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="RecordCalendarDay" TargetType="CalendarDayButton">
+    <Setter Property="Margin" Value="2,1"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#102B3B"/>
+    <Setter Property="FontFamily" Value="{DynamicResource DateDigitFont}"/>
+    <Setter Property="FontSize" Value="{DynamicResource DateDigitSize}"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="{DynamicResource DateCellRadius}">
+          <Grid>
+            <local:RecordCalendarNumber Text="{TemplateBinding Content}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" Foreground="{TemplateBinding Foreground}" IsHitTestVisible="False"/>
+            <Border Name="TodayMark" IsVisible="False" Background="{TemplateBinding Foreground}" CornerRadius="{DynamicResource DateCellRadius}" Width="{DynamicResource TodayMarkWidth}" Height="3" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,1"/>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:inactive"><Setter Property="Foreground" Value="#807158"/></Style>
+    <Style Selector="^:pointerover"><Setter Property="Background" Value="#EBD4AA"/></Style>
+    <Style Selector="^:dayfocused"><Setter Property="BorderBrush" Value="#A77A38"/></Style>
+    <Style Selector="^:today"><Setter Property="Foreground" Value="#15665D"/><Setter Property="BorderBrush" Value="#15665D"/></Style>
+    <Style Selector="^:today /template/ Border#TodayMark"><Setter Property="IsVisible" Value="True"/></Style>
+    <Style Selector="^:selected"><Setter Property="Background" Value="#102B3B"/><Setter Property="Foreground" Value="#F7E8C7"/></Style>
+    <Style Selector="^:disabled, ^:blackout"><Setter Property="Opacity" Value="0.45"/></Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="RecordCalendarItem" TargetType="CalendarItem">
+    <Setter Property="DayTitleTemplate"><Template><TextBlock FontSize="12" Foreground="#665338" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Template></Setter>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Width="320" Background="#F7E8C7" BorderBrush="{DynamicResource DateFrameBrush}" BorderThickness="{DynamicResource DateFrameThickness}" CornerRadius="{DynamicResource DateFrameRadius}" Padding="11,10">
+          <Grid RowDefinitions="29,9,1,Auto">
+            <Grid ColumnDefinitions="*,31,4,31">
+              <Button Name="PART_HeaderButton" Theme="{StaticResource RecordCalendarNav}" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" FontFamily="{DynamicResource DateHeadingFont}" FontSize="{DynamicResource DateHeadingSize}" FontWeight="{DynamicResource DateHeadingWeight}"/>
+              <Button Grid.Column="1" Name="PART_PreviousButton" Theme="{StaticResource RecordCalendarNav}" HorizontalContentAlignment="Center" AutomationProperties.Name="Previous" ToolTip.Tip="Previous">
+                <Path Data="{DynamicResource DateBackArrow}" Fill="#102B3B" Width="12" Height="12"/>
+              </Button>
+              <Button Grid.Column="3" Name="PART_NextButton" Theme="{StaticResource RecordCalendarNav}" HorizontalContentAlignment="Center" AutomationProperties.Name="Next" ToolTip.Tip="Next">
+                <Path Data="{DynamicResource DateForwardArrow}" Fill="#102B3B" Width="12" Height="12"/>
+              </Button>
+            </Grid>
+            <Border Grid.Row="2" Background="#A77A38"/>
+            <Grid Name="PART_MonthView" Grid.Row="3" ColumnDefinitions="*,*,*,*,*,*,*" RowDefinitions="29,33,33,33,33,33,33">
+              <Grid.Styles><Style Selector="CalendarDayButton"><Setter Property="Theme" Value="{StaticResource RecordCalendarDay}"/></Style></Grid.Styles>
+            </Grid>
+            <Grid Name="PART_YearView" Grid.Row="3" ColumnDefinitions="*,*,*,*" RowDefinitions="53,53,53" IsVisible="False">
+              <Grid.Styles>
+                <Style Selector="CalendarButton">
+                  <Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#102B3B"/>
+                  <Setter Property="FontFamily" Value="{DynamicResource DateHeadingFont}"/><Setter Property="FontSize" Value="15"/>
+                  <Setter Property="Template"><ControlTemplate><Border Margin="2" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource DateCellRadius}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Content="{TemplateBinding Content}"/></Border></ControlTemplate></Setter>
+                </Style>
+                <Style Selector="CalendarButton:pointerover, CalendarButton:focus"><Setter Property="Background" Value="#EBD4AA"/></Style>
+                <Style Selector="CalendarButton:selected, CalendarButton:btnfocused"><Setter Property="Background" Value="#102B3B"/><Setter Property="Foreground" Value="#F7E8C7"/></Style>
+              </Grid.Styles>
+            </Grid>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <ControlTheme x:Key="RecordCalendar" TargetType="Calendar">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Name="PART_Root">
+          <CalendarItem Name="PART_CalendarItem" Theme="{StaticResource RecordCalendarItem}"/>
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

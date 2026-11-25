@@ -67,6 +67,7 @@ internal static class ClockPickerPresentation
         var number = Label(item.Number.ToString(CultureInfo.InvariantCulture), 13, Muted,
             item.Number <= 9 ? FontWeight.Bold : FontWeight.Normal);
         number.Name = "ClockPickerNumber";
+        if (pixel) number.FontFamily = StopwatchTypography.PixelNumbers;
         number.HorizontalAlignment = HorizontalAlignment.Center;
         row.Children.Add(number);
 

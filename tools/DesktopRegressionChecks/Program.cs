@@ -306,6 +306,7 @@ if(args.Contains("--time-record-native"))
     Check("record native popup input and theme compatibility",ProjectRecordNativeChecks.InputAndThemes);
     Check("record typed dates and long duration layout",ProjectRecordNativeChecks.TypedDatesAndLongRanges);
     Check("record short-height validation and commit feedback",ProjectRecordNativeChecks.ErrorVisibility);
+    Check("record calendar themes, field selection, navigation and native captures",ProjectRecordNativeChecks.CalendarPopups);
     Check("record actual native captures",ProjectRecordNativeChecks.Evidence);
     Environment.Exit(failures==0?0:1);
 }

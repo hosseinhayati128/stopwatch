@@ -63,7 +63,11 @@ public partial class ProjectRecordEditorWindow
         foreach(var field in new TemplatedControl[]{ProjectSelector,NewProjectBox,StartDatePicker,EndDatePicker,StartTimeBox,EndTimeBox})
         {field.Classes.Add("editorField");field.Height=38;field.MinHeight=0;field.FontFamily=ClockPickerPresentation.Body;field.FontSize=13;field.Padding=new(10,5);}
         foreach(var date in new[]{StartDatePicker,EndDatePicker})
-        {date.SelectedDateFormat=CalendarDatePickerFormat.Custom;date.CustomDateFormatString="dd MMM yyyy";date.HorizontalAlignment=HorizontalAlignment.Stretch;date.ClearValue(PaddingProperty);}
+        {
+            date.SelectedDateFormat=CalendarDatePickerFormat.Custom;date.CustomDateFormatString="dd MMM yyyy";
+            date.HorizontalAlignment=HorizontalAlignment.Stretch;date.ClearValue(PaddingProperty);
+            ConfigureRecordCalendar(date);
+        }
         Styles.Add(new Style(s=>s.OfType<CalendarDatePicker>().Class("editorField").Template().OfType<TextBox>()){
             Setters={new Setter(TemplatedControl.BackgroundProperty,RecordField),new Setter(TemplatedControl.ForegroundProperty,ClockPickerPresentation.Navy),new Setter(TemplatedControl.BorderBrushProperty,RecordRule)}});
         Styles.Add(new Style(s=>s.OfType<CalendarDatePicker>().Class("invalidTime").Template().OfType<TextBox>()){

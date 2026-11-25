@@ -48,6 +48,7 @@
         <Setter Property="FontSize" Value="24"/><Setter Property="Foreground" Value="#AAC3CB"/><Setter Property="FontWeight" Value="Medium"/>
     </Style>
     <Style Selector="controls|TodoFrame.newest TextBlock.lapNumber"><Setter Property="Foreground" Value="#A2E2CA"/></Style>
+    <Style Selector="Window.pixelController TextBlock.lapNumber"><Setter Property="FontFamily" Value="{x:Static controls:StopwatchTypography.PixelNumbers}"/></Style>
     <Style Selector="Grid.lapValue TextBlock">
         <Setter Property="FontSize" Value="27"/><Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="HorizontalAlignment" Value="Right"/>

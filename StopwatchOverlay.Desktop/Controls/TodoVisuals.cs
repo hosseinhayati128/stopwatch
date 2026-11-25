@@ -114,7 +114,7 @@ public static class TodoVisuals
         badge.BorderBrush = stamp ? Priority(priority) : Ivory;
         badge.BorderThickness = new Thickness(1);
         badge.Content = new TextBlock { Text = priority.ToString(), FontSize = 14, FontWeight = FontWeight.Bold,
-            FontFamily = StrongFont, Foreground = stamp ? Priority(priority) : Ivory, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, RenderTransform=new TranslateTransform(0,-1) };
+            FontFamily = pixel ? StopwatchTypography.PixelNumbers : StrongFont, Foreground = stamp ? Priority(priority) : Ivory, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, RenderTransform=new TranslateTransform(0,-1) };
         badge.Template = new FuncControlTemplate<Button>((b, scope) => {
             var frame = new TodoFrame { Pixel = pixel, CornerRadius = new CornerRadius(stamp ? 3 : 16), Padding = new Thickness(0) };
             frame.Bind(Border.BackgroundProperty,b.GetObservable(Button.BackgroundProperty)); frame.Bind(Border.BorderBrushProperty,b.GetObservable(Button.BorderBrushProperty)); frame.Bind(Border.BorderThicknessProperty,b.GetObservable(Button.BorderThicknessProperty));

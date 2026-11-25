@@ -5,7 +5,7 @@ using Avalonia.Media;
 
 namespace StopwatchOverlay.Desktop.Controls;
 
-/// <summary>The controller uses the original Pixel Voyage metrics, including its narrow colons.</summary>
+/// <summary>Compact readouts share the Pixel UI numerals. The large clock uses its selected face.</summary>
 public sealed class ControllerPixelDigits : TemplatedControl
 {
     public static readonly StyledProperty<string?> TextProperty = TextBlock.TextProperty.AddOwner<ControllerPixelDigits>();
@@ -16,7 +16,7 @@ public sealed class ControllerPixelDigits : TemplatedControl
         AffectsRender<ControllerPixelDigits>(TextProperty, FontSizeProperty, ForegroundProperty);
     }
 
-    private static readonly StopwatchTypographyProfile Face = StopwatchTypography.Resolve("pixel-voyage");
+    private StopwatchTypographyProfile Face = StopwatchTypography.Resolve("pixel-voyage");
     private readonly Dictionary<char, DrawingGroup> _glyphs = new();
     private IBrush? _ink;
     private double _size;
@@ -25,7 +25,9 @@ public sealed class ControllerPixelDigits : TemplatedControl
     internal void SelectLargeFace(string id)
     {
         var face = ControllerDigitAtlas.Resolve(id);
-        if (_largeFace == face) return;
+        if (_largeFace == face && Face == StopwatchTypography.OriginalPixelFace) return;
+        Face = StopwatchTypography.OriginalPixelFace;
+        _glyphs.Clear();
         _largeFace = face;
         RenderOptions.SetBitmapInterpolationMode(this, Avalonia.Media.Imaging.BitmapInterpolationMode.None);
         InvalidateMeasure();

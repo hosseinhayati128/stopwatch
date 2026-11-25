@@ -53,7 +53,7 @@ internal static class RunningClocksChecks
         target.RaiseEvent(new KeyEventArgs{RoutedEvent=InputElement.KeyUpEvent,Key=key});
     }
     private static ulong inputTime=10000;
-    internal static void Pointer(Window window,Control control,RawPointerEventType type,RawInputModifiers modifiers=RawInputModifiers.None)
+    internal static void Pointer(TopLevel window,Control control,RawPointerEventType type,RawInputModifiers modifiers=RawInputModifiers.None)
     {
         var flags=BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
         var platform=typeof(TopLevel).GetProperty("PlatformImpl",flags)!.GetValue(window)!;

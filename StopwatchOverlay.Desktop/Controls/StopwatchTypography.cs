@@ -15,13 +15,15 @@ public static class StopwatchTypography
     private static readonly FontFamily Serif=new("avares://StopwatchOverlay.Desktop/Assets/Fonts/Pirate/#Almendra");
     private static readonly StopwatchTypographyProfile Navigator=new(Digits,FontWeight.Black,Serif,FontWeight.Bold,StopwatchDigitStyle.Font,.52);
     private static FontFamily Font(string directory,string family)=>new($"avares://StopwatchOverlay.Desktop/Assets/Fonts/{directory}/#{family}");
+    public static FontFamily PixelNumbers { get; } = Font("Stopwatch", "Stopwatch Pixel Digits");
+    internal static readonly StopwatchTypographyProfile OriginalPixelFace = new(Font("Stopwatch","Press Start 2P"),FontWeight.Normal,Font("Stopwatch","Press Start 2P"),FontWeight.Normal,StopwatchDigitStyle.Pixel,.66);
     private static readonly IReadOnlyDictionary<string,StopwatchTypographyProfile> Profiles=new Dictionary<string,StopwatchTypographyProfile>
     {
         ["navigator-bold"]=Navigator,
         ["captains-serif"]=new(Font("Nika","Playfair Display ExtraBold"),FontWeight.ExtraBold,Serif,FontWeight.Bold,StopwatchDigitStyle.Font,.56),
         ["typewriter-log"]=new(Font("Acanthus","Cascadia Mono"),FontWeight.SemiBold,Font("Acanthus","Cascadia Mono"),FontWeight.SemiBold,StopwatchDigitStyle.Font,.60),
         ["instrument-digital"]=new(Font("Nika","Rajdhani SemiBold"),FontWeight.SemiBold,Font("Pirate","Barlow Condensed"),FontWeight.SemiBold,StopwatchDigitStyle.SevenSegment,.56),
-        ["pixel-voyage"]=new(Font("Stopwatch","Press Start 2P"),FontWeight.Normal,Font("Stopwatch","Press Start 2P"),FontWeight.Normal,StopwatchDigitStyle.Pixel,.66),
+        ["pixel-voyage"]=OriginalPixelFace with { TimerFont = PixelNumbers, DigitAdvance = .46 },
         ["modern-deck"]=new(Font("Nika","Inter ExtraBold"),FontWeight.ExtraBold,Font("Acanthus","Inter"),FontWeight.SemiBold,StopwatchDigitStyle.Font,.64),
         ["art-deco"]=new(Font("Stopwatch","Poiret One"),FontWeight.Normal,Font("Stopwatch","Poiret One"),FontWeight.Normal,StopwatchDigitStyle.Inline,.48),
         ["rounded-deck"]=new(Font("Stopwatch","Nunito ExtraBold"),FontWeight.ExtraBold,Font("Stopwatch","Nunito"),FontWeight.Bold,StopwatchDigitStyle.Font,.60),
