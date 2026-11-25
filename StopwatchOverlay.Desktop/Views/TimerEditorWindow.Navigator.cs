@@ -64,15 +64,10 @@ public partial class TimerEditorWindow
         EditorBody.Children.Add(BuildTimeDraft(pixel));
         EditorBody.Children.Add(BuildProjectFields(pixel));
 
-        SegmentHeaderLabel.Text="LATEST SEGMENT START";SegmentHeaderLabel.FontSize=10;
-        var latest=new Grid{ColumnDefinitions=new("184,16,*"),Margin=new(0,17,0,0)};
-        latest.Children.Add(new StackPanel{Children={SegmentHeaderLabel,StartTimeBox}});
-        SegmentDetailText.TextWrapping=TextWrapping.Wrap;SegmentDetailText.VerticalAlignment=VerticalAlignment.Bottom;
-        Grid.SetColumn(SegmentDetailText,2);latest.Children.Add(SegmentDetailText);EditorBody.Children.Add(latest);
-        EditorBody.Children.Add(EditorLabel("Editing the start adjusts elapsed time.",10,new Thickness(1,6,0,0)));
-        SegmentsExpander.Margin=new(0,17,0,0);StyleEditorExpander(SegmentsExpander);
-        SegmentsExpander.Header=EditorLabel($"Recorded segments · {_intervals.Count} segments",13);
-        EditorBody.Children.Add(SegmentsExpander);
+        StyleEditorExpander(SegmentsExpander);
+        var segments = new StackPanel { Margin = new(0,16,0,0) };
+        BuildRecordedSegments(segments, StartTimeBox, SegmentDetailText, SegmentsExpander, _intervals, pixel);
+        EditorBody.Children.Add(segments);
         RecordsStatusText.Margin=new(0,0,0,10);
         var recordButtons=new WrapPanel{Orientation=Orientation.Horizontal,Children={DiscardRecordsButton,DeleteTimerButton}};
         DiscardRecordsButton.Width=170;DiscardRecordsButton.Margin=new(0,0,8,8);DeleteTimerButton.Margin=new(0,0,0,8);

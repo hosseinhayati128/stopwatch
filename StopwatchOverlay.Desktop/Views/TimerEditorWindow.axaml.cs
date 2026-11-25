@@ -192,7 +192,7 @@ public partial class TimerEditorWindow : Window
         {
             Interval = TimeSpan.FromMilliseconds(500)
         };
-        _liveRefreshTimer.Tick += (_, _) => UpdateLivePreview();
+        _liveRefreshTimer.Tick += (_, _) => { UpdateLivePreview(); RefreshSegmentDuration(); };
 
         Opened += (_, _) =>
         {
