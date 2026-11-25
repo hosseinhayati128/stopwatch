@@ -122,8 +122,74 @@ internal static class NotesViewerNativeChecks
     static void Capture(Window w,Control frame,int scale,string state)
     {
         using var bitmap=new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(w.ClientSize.Width),(int)Math.Ceiling(w.ClientSize.Height)),new Vector(96,96));
-        if(scale>=100)bitmap.Render(w);else{using var dc=bitmap.CreateDrawingContext();dc.DrawRectangle(new VisualBrush(frame){Stretch=Stretch.Fill,SourceRect=new RelativeRect(frame.Bounds,RelativeUnit.Absolute)},null,new Rect(frame.Bounds.Size));}
+        var transform = frame.RenderTransform;
+        frame.SetCurrentValue(Visual.RenderTransformProperty, null);
+        try
+        {
+            using var dc = bitmap.CreateDrawingContext();
+            var brush = new VisualBrush(frame) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(frame.Bounds, RelativeUnit.Absolute) };
+            dc.DrawRectangle(brush, null, new Rect(w.ClientSize));
+        }
+        finally { frame.SetCurrentValue(Visual.RenderTransformProperty, transform); }
         bitmap.Save(Path.Combine(Output,$"notes-viewer-{state}-{scale}.png"));
+    }
+
+    internal static void Search()
+    {
+        Directory.CreateDirectory(Output);
+        foreach (int scale in new[] { 70, 90, 125 })
+        {
+            using var fixture = new Fixture(scale);
+            var added = ObsidianNotesSync.AppendEntry(fixture.Settings.ObsidianVaultFolder, NoteType.Todo,
+                "Review the [map legend](https://example.org/atlas)", fixture.Settings.NotesSubfolder, DateTime.Today.AddHours(11));
+            Require(added.Success, "Could not seed formatted Todo.");
+            var w = fixture.Open();
+            try
+            {
+                var field = Named<TextBox>(w, "SearchField");
+                var frame = w.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+                void KeyPress(Control sender, Key key, KeyModifiers modifiers = KeyModifiers.None) =>
+                    sender.RaiseEvent(new KeyEventArgs { RoutedEvent=InputElement.KeyDownEvent, Key=key, KeyModifiers=modifiers });
+                void Query(string query, int expected)
+                {
+                    field.Text = query;
+                    ClockOverlayChecks.Pump(60);
+                    Require(Rows(w).Length == expected, $"Expected {expected} rows for '{query}' at {scale}%.");
+                }
+                KeyPress(w, Avalonia.Input.Key.F, KeyModifiers.Control);
+                Require(field.IsFocused && !Timer(w).IsEnabled, "Ctrl+F must focus search and pause auto-close.");
+                Query("dashboard", 2);
+                Capture(w,frame,scale,"search");
+                KeyPress(field, Avalonia.Input.Key.Enter);
+                Require(w.IsVisible, "Enter in search closed the viewer.");
+                Filter(w,"Reminders");
+                Require(Rows(w).Length==1 && field.Text=="dashboard", "Filter lost the search.");
+                Capture(w,frame,scale,"search-reminders");
+                Rows(w).Single().GetVisualDescendants().OfType<CheckBox>().Single().IsChecked = true;
+                ClockOverlayChecks.Pump(60);
+                Require(field.Text=="dashboard" && Rows(w).Length==1, "Reload lost the active search.");
+                Query("unknown",0);
+                Require(Named<TextBlock>(w,"EmptyMessageText").IsEffectivelyVisible, "Missing empty result.");
+                Capture(w,frame,scale,"search-empty");
+                KeyPress(w,Avalonia.Input.Key.Escape);
+                ClockOverlayChecks.Pump(40);
+                Require(w.IsVisible && field.Text=="" && Rows(w).Length==1, "Esc should clear the query and keep the tab.");
+                Filter(w,"Todos");
+                Query("THE MAP",1);
+                var linked = Rows(w).Single().GetVisualDescendants().OfType<TextBlock>().Single(t=>t.ContextMenu!=null);
+                var runs = linked.Inlines!.OfType<Avalonia.Controls.Documents.Run>().ToList();
+                Require(string.Concat(runs.Select(r=>r.Text))=="Review the map legend" &&
+                    runs.Any(r=>r.Text=="map" && r.FontWeight==FontWeight.Bold && r.TextDecorations==TextDecorations.Underline),
+                    "A cross-format match lost link text, styling, or highlighting.");
+                Query("example.org",0);
+                Named<Button>(w,"ClearSearch").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ClockOverlayChecks.Pump(40);
+                Require(Rows(w).Length==4 && field.IsFocused, "Clear must restore the tab and keyboard focus.");
+                KeyPress(field,Avalonia.Input.Key.Escape);
+                Require(!w.IsVisible, "Esc with an empty search must close the viewer.");
+            }
+            finally { w.Close(); }
+        }
     }
     internal static void Behavior()
     {

@@ -45,6 +45,7 @@ public partial class NotesViewerWindow : Window
         };
         _autoCloseTimer.Tick += AutoCloseTimer_Tick;
 
+        ConfigureSearch();
         Opened += OnWindowOpened;
         ApplyViewerAppearance();
     }
@@ -72,6 +73,7 @@ public partial class NotesViewerWindow : Window
     private void LoadNotes()
     {
         _allEntries.Clear();_organization=null;_loadMessage=null;
+        _todoDisplayText.Clear();
         _loadedNotesContext = (_settings.ObsidianVaultFolder, _settings.NotesSubfolder, _settings.HabiticaUserId, _settings.HabiticaClientId, _settings.HabiticaEnabled);
         string vaultFolder = _settings.ObsidianVaultFolder;
         if (string.IsNullOrWhiteSpace(vaultFolder) || !Directory.Exists(vaultFolder))
@@ -104,10 +106,11 @@ public partial class NotesViewerWindow : Window
     {
         ItemsContainer.Children.Clear();
 
-        var filtered = _currentFilter.HasValue
-            ? _allEntries.Where(e => e.Type == _currentFilter.Value).ToList()
-            : _allEntries;
-        UpdateViewerSummary(filtered.Count);
+        string query = SearchField.Text?.Trim() ?? "";
+        var matches = query.Length == 0 ? _allEntries : _allEntries
+            .Where(e => DisplayText(e).Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        var filtered = _currentFilter.HasValue ? matches.Where(e => e.Type == _currentFilter.Value).ToList() : matches;
+        UpdateViewerSummary(filtered.Count, matches, query.Length != 0 && _loadMessage == null);
         if(_loadMessage!=null)
         {
             if(_viewerSummary!=null)ShowViewerEmpty(_loadTitle,_loadMessage);
@@ -117,6 +120,17 @@ public partial class NotesViewerWindow : Window
 
         if (filtered.Count == 0)
         {
+            if (query.Length > 0)
+            {
+                if (_viewerSummary != null) ShowViewerEmpty("No matches", "Try another word or clear the search.");
+                else
+                {
+                    EmptyMessageText.Text = "No matches. Try another word or clear the search.";
+                    EmptyMessageText.IsVisible = true;
+                    ItemsContainer.Children.Add(EmptyMessageText);
+                }
+                return;
+            }
             if(_viewerSummary!=null)
             {
                 string kind=_currentFilter switch{NoteType.Todo=>"todos",NoteType.Reminder=>"reminders",NoteType.Note=>"quick notes",_=>"notes, todos or reminders"};
@@ -188,13 +202,13 @@ public partial class NotesViewerWindow : Window
             // Entries in this date
             foreach (var entry in group.OrderByDescending(e => e.Timestamp))
             {
-                var entryBorder = CreateEntryCard(entry);
+                var entryBorder = CreateEntryCard(entry, query);
                 ItemsContainer.Children.Add(entryBorder);
             }
         }
     }
 
-    private Border CreateEntryCard(NoteEntry entry)
+    private Border CreateEntryCard(NoteEntry entry, string query)
     {
         var border = new Border
         {
@@ -280,7 +294,8 @@ public partial class NotesViewerWindow : Window
         var contentText = entry.Type == NoteType.Todo
             ? Controls.TodoRichText.Create(entry.Text, entry.IsCompleted)
             : new TextBlock { Text = entry.Text, TextWrapping = TextWrapping.Wrap };
-        Controls.AutoTextDirection.Apply(contentText, entry.Type == NoteType.Todo ? string.Concat(FormattedTodoText.Parse(entry.Text).Select(part => part.Text)) : entry.Text);
+        string display = DisplayText(entry);
+        Controls.AutoTextDirection.Apply(contentText, display);
         contentText.FontSize = 13;
         contentText.VerticalAlignment = VerticalAlignment.Top;
         string textBrushKey = entry.IsCompleted ? "SecondaryTextBrush" : "PrimaryTextBrush";
@@ -291,6 +306,8 @@ public partial class NotesViewerWindow : Window
         {
             contentText.TextDecorations = TextDecorations.Strikethrough;
         }
+        if (query.Length > 0)
+            HighlightMatches(contentText, display, query);
 
         void ToggleProgress()
         {
@@ -429,7 +446,7 @@ public partial class NotesViewerWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key is Key.Enter or Key.Escape)
+        if (!e.Handled && e.Key is (Key.Enter or Key.Escape))
         {
             e.Handled = true;
             _autoCloseTimer.Stop();

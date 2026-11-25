@@ -347,6 +347,7 @@ if (args.Contains("--notes-viewer-native"))
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")){Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml")});
     Check("Notes viewer native layouts",NotesViewerNativeChecks.Layout);
     Check("Notes viewer actions and lifecycle",NotesViewerNativeChecks.Behavior);
+    Check("Notes viewer search and keyboard", NotesViewerNativeChecks.Search);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 

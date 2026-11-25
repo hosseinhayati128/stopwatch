@@ -18,7 +18,7 @@
             Padding="16"
             Margin="10"
             BoxShadow="0 8 28 0 #77000000">
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
             <!-- Header (Draggable) -->
             <Grid Grid.Row="0" Margin="0,0,0,8" PointerPressed="OnHeaderPointerPressed" Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -80,8 +80,26 @@
                 </StackPanel>
             </Border>
 
+            <Border x:Name="SearchBar" Grid.Row="2" Margin="0,0,0,10" CornerRadius="4"
+                    Background="{DynamicResource DialogSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <Grid ColumnDefinitions="34,*,55">
+                    <Path Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"
+                          Stroke="{DynamicResource SecondaryTextBrush}" StrokeThickness="1.7"
+                          Data="M12,7 A5,5 0 1 1 2,7 A5,5 0 1 1 12,7 M11,11 L16,16"/>
+                    <TextBox x:Name="SearchField" Grid.Column="1" Watermark="Search entries" Height="36" MinHeight="0"
+                             AutomationProperties.Name="Search entries" VerticalContentAlignment="Center"
+                             Padding="0,4" Background="Transparent" BorderThickness="0"/>
+                    <TextBlock x:Name="SearchShortcut" Grid.Column="2" Text="Ctrl+F" FontSize="12"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <Button x:Name="ClearSearch" Grid.Column="2" Content="Clear" IsVisible="False"
+                            AutomationProperties.Name="Clear search" Background="Transparent" BorderThickness="0"
+                            FontSize="12" Padding="8,2" Height="28" MinHeight="0"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
             <!-- Content Area -->
-            <Border Grid.Row="2"
+            <Border Grid.Row="3"
                     Background="{DynamicResource DialogSurfaceBrush}"
                     BorderBrush="{DynamicResource BorderSoftBrush}"
                     BorderThickness="1"
@@ -103,12 +121,12 @@
             </Border>
 
             <!-- Footer -->
-            <Grid Grid.Row="3" Margin="0,10,0,0">
-                <TextBlock Text="Press Enter or Esc to close immediately"
+            <Grid Grid.Row="4" Margin="0,10,0,0" ColumnDefinitions="Auto,12,*">
+                <TextBlock x:Name="SearchHint" Text="Ctrl+F search  ·  Esc close"
                            FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            HorizontalAlignment="Left"/>
-                <TextBlock x:Name="VaultLocationText"
+                <TextBlock x:Name="VaultLocationText" Grid.Column="2" TextTrimming="CharacterEllipsis"
                            Text=""
                            FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"

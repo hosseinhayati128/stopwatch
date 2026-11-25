@@ -35,7 +35,7 @@ public partial class NotesViewerWindow
         CountdownBadge.Margin=new(0);CountdownBadge.Padding=new(8,3);CountdownBadge.CornerRadius=new(3);CountdownBadge.Background=ViewerCream;CountdownBadge.BorderBrush=ViewerRule;
         var subrow=new Grid {ColumnDefinitions=new("*,Auto"),Margin=new(0,4,0,0),Children={_viewerSummary,CountdownBadge}};Grid.SetColumn(CountdownBadge,1);
         var top=new StackPanel {Margin=new(0,0,0,14),Children={heading,subrow}};
-        var tabs=new WrapPanel {Orientation=Orientation.Horizontal,Margin=new(0,0,0,8)};
+        var tabs=new WrapPanel {Orientation=Orientation.Horizontal};
         foreach(var (label,type) in new (string,NoteType?)[]{("All",null),("Todos",NoteType.Todo),("Notes",NoteType.Note),("Reminders",NoteType.Reminder)})
         {
             var button=new Button {Name="ViewerTab"+label,Content=label,MinHeight=34,Padding=new(14,6),Margin=new(0,0,6,6),CornerRadius=new(4),BorderBrush=ClockPickerPresentation.Gold,BorderThickness=new(1),
@@ -48,26 +48,37 @@ public partial class NotesViewerWindow
         EmptyMessageText.Margin=new(0);EmptyMessageText.FontSize=13;EmptyMessageText.Foreground=ClockPickerPresentation.Muted;EmptyMessageText.TextWrapping=TextWrapping.Wrap;
         _viewerEmpty=new StackPanel {Spacing=10,MaxWidth=390,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,Children={_viewerEmptyTitle,EmptyMessageText}};
         var surface=new Border {Padding=new(12),BorderBrush=ViewerRule,BorderThickness=new(1),CornerRadius=new(6),Background=Brush.Parse("#26FFF3D8"),Child=new Grid {Children={NotesScrollViewer,_viewerEmpty}}};
-        var hint=ViewerText("Enter / Esc close",11,ClockPickerPresentation.Muted);
+        ((Panel)SearchBar.Parent!).Children.Remove(SearchBar);
+        ((Panel)SearchHint.Parent!).Children.Remove(SearchHint);
+        SearchHint.Foreground=ClockPickerPresentation.Muted;
+        SearchBar.Background=Brush.Parse("#FBF0D7");
+        SearchBar.BorderBrush=ViewerRule;
+        SearchField.Foreground=ClearSearch.Foreground=ClockPickerPresentation.Navy;
+        SearchField.FontSize=14;
+        SearchShortcut.Foreground=ClockPickerPresentation.Muted;
+        SearchField.GotFocus+=(_,_)=>SearchBar.BorderBrush=ViewerTeal;
+        SearchField.LostFocus+=(_,_)=>SearchBar.BorderBrush=ViewerRule;
+        var filters=new StackPanel {Spacing=2,Children={tabs,SearchBar}};
         VaultLocationText.Foreground=ClockPickerPresentation.Muted;VaultLocationText.TextTrimming=TextTrimming.CharacterEllipsis;
-        var footer=new Grid {ColumnDefinitions=new("Auto,16,*"),Children={hint,VaultLocationText}};Grid.SetColumn(VaultLocationText,2);
+        var footer=new Grid {ColumnDefinitions=new("Auto,16,*"),Children={SearchHint,VaultLocationText}};Grid.SetColumn(VaultLocationText,2);
         _viewerStatus=ViewerText("",12,Brush.Parse("#9C3026"));_viewerStatus.TextWrapping=TextWrapping.Wrap;
         _viewerStatusScroll=new ScrollViewer {Content=_viewerStatus,MaxHeight=100,Margin=new(0,0,0,10),IsVisible=false,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled};
         var bottom=new StackPanel {Margin=new(0,14,0,0),Children={_viewerStatusScroll,footer}};
-        var layout=new Grid {RowDefinitions=new("Auto,Auto,*,Auto"),Children={top,tabs,surface,bottom}};Grid.SetRow(tabs,1);Grid.SetRow(surface,2);Grid.SetRow(bottom,3);
+        var layout=new Grid {RowDefinitions=new("Auto,Auto,*,Auto"),Children={top,filters,surface,bottom}};Grid.SetRow(filters,1);Grid.SetRow(surface,2);Grid.SetRow(bottom,3);
         Content=new StopwatchFrameSurface {ArtworkScale=.16,Padding=new(10),Background=Brush.Parse("#EBD3A5"),Child=layout};
         double scale=AppUiScale.Normalize(_settings.UiScalePercent)/100;
         MinWidth=620*scale;MinHeight=440*scale;Width=760*scale;Height=580*scale;
         Opened+=(_,_)=>FitViewerContent();SizeChanged+=(_,_)=>FitViewerContent();
     }
 
-    private void UpdateViewerSummary(int count)
+    private void UpdateViewerSummary(int count, IReadOnlyList<NoteEntry> matches, bool searching)
     {
         if(_viewerSummary==null)return;
-        _viewerSummary.Text=(_currentFilter==null?$"{_allEntries.Count} entries":$"{count} of {_allEntries.Count} entries")+" · Newest first";
+        _viewerSummary.Text=searching ? (count == 1 ? "1 match" : $"{count} matches")
+            : (_currentFilter==null?$"{_allEntries.Count} entries":$"{count} of {_allEntries.Count} entries")+" · Newest first";
         foreach(var (button,label,type) in _viewerTabs)
         {
-            int total=_allEntries.Count(e=>type==null||e.Type==type);button.Content=$"{label}  {total}";
+            int total=matches.Count(e=>type==null||e.Type==type);button.Content=$"{label}  {total}";
             bool active=type==_currentFilter;button.Background=active?ClockPickerPresentation.Navy:Brushes.Transparent;button.Foreground=active?Brushes.White:ClockPickerPresentation.Navy;
             AutomationProperties.SetName(button,$"{label}, {total} entries"+(active?", selected":""));
         }
@@ -105,7 +116,7 @@ public partial class NotesViewerWindow
     private void PauseAutoClose()
     {
         _autoCloseTimer.Stop();
-        if(_viewerSummary!=null)CountdownText.Text="Auto-close paused";
+        CountdownText.Text="Auto-close paused";
     }
 
     internal void FitViewerContent()
