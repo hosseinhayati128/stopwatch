@@ -506,7 +506,7 @@ public partial class TimerEditorWindow : Window
         {
             ProjectSelector.IsVisible = false;
             CustomProjectBox.IsVisible = true;
-            ToggleProjectInputButton.Content = "List...";
+            ToggleProjectInputButton.Content = _navigatorFrame != null ? "Choose existing" : "List...";
             UpdateIdleStopCheck();
             CustomProjectBox.Focus();
         }
@@ -514,7 +514,7 @@ public partial class TimerEditorWindow : Window
         {
             CustomProjectBox.IsVisible = false;
             ProjectSelector.IsVisible = true;
-            ToggleProjectInputButton.Content = "New...";
+            ToggleProjectInputButton.Content = _navigatorFrame != null ? "New project" : "New...";
             UpdateIdleStopCheck();
             ProjectSelector.Focus();
         }
@@ -540,14 +540,14 @@ public partial class TimerEditorWindow : Window
         {
             CategorySelector.IsVisible = false;
             CustomCategoryBox.IsVisible = true;
-            ToggleCategoryInputButton.Content = "List...";
+            ToggleCategoryInputButton.Content = _navigatorFrame != null ? "Choose existing" : "List...";
             CustomCategoryBox.Focus();
         }
         else
         {
             CustomCategoryBox.IsVisible = false;
             CategorySelector.IsVisible = true;
-            ToggleCategoryInputButton.Content = "New...";
+            ToggleCategoryInputButton.Content = _navigatorFrame != null ? "New category" : "New...";
             CategorySelector.Focus();
         }
     }
@@ -590,7 +590,13 @@ public partial class TimerEditorWindow : Window
         bool isActive = _settings.IsIdleStopActiveForProject(project, out int timeoutMinutes, out _);
         IdleStopForProjectCheck.IsChecked = isActive;
 
-        if (hasProject)
+        if (_settings.ThemeMode == AppThemeCatalog.Nika)
+        {
+            string target = hasProject ? "timers for this project" : "unassigned timers";
+            string unit = timeoutMinutes == 1 ? "minute" : "minutes";
+            IdleStopForProjectCheck.Content = $"Stop {target} after {timeoutMinutes} idle {unit}";
+        }
+        else if (hasProject)
         {
             IdleStopForProjectCheck.Content = $"Idle stop for \"{project}\" ({timeoutMinutes}m timeout)";
         }

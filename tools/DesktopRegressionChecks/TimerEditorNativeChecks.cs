@@ -30,7 +30,7 @@ internal static class TimerEditorNativeChecks
         internal Button Save=>Window.FindControl<Button>("SaveButton")!;
         internal ComboBox State => Window.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "StateAfterSave");
         internal Fixture(string theme=AppThemeCatalog.Nika,int mode=0,bool intervals=true,TimeSpan? elapsed=null,
-            bool pixel=false,bool running=true,string name="Illustration")
+            bool pixel=false,bool running=true,string name="Illustration",AppSettings? settings=null)
         {
             typeof(App).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!.GetMethod("ApplyApplication",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[theme]);
             var value=elapsed??TimeSpan.FromSeconds(2667);Timer.RestoreElapsed(value,false);Timer.IsRunning=running;Timer.Mode=mode;Timer.CountdownRemaining=value;Timer.Name=name;
@@ -39,7 +39,7 @@ internal static class TimerEditorNativeChecks
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-3).AddSeconds(-890),now.AddHours(-3)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddHours(-2).AddSeconds(-878),now.AddHours(-2)),
                 new(Guid.NewGuid(),Timer.Id,"Illustration","Illustration",now.AddSeconds(-899),null)]:[];
-            Window=new TimerEditorWindow(Timer,[name,"Reading"],records,true,new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,NikaControllerPixel=pixel});
+            Window=new TimerEditorWindow(Timer,[name,"Reading"],records,true,settings??new AppSettings{ThemeMode=theme,ActivityWatchEnabled=false,NikaControllerPixel=pixel});
             Window.ShowActivated=false;Window.ShowInTaskbar=false;Window.Show();ClockOverlayChecks.Pump(55);
         }
         public void Dispose()=>Window.Close();
@@ -277,18 +277,7 @@ internal static class TimerEditorNativeChecks
                     Require(footer.Y <= size.Height && footer.X <= size.Width && project.TranslatePoint(new Point(0, project.Bounds.Height), f.Window)!.Value.Y < f.Time.TranslatePoint(default, f.Window)!.Value.Y,
                         $"Clipped identity or footer at {percent}%.");
                     Require(sample != "paused" || project.Bounds.Height > 40, "Long project name did not wrap.");
-                    var frame = f.Window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
-                    var transform = frame.RenderTransform;
-                    using var image = new RenderTargetBitmap(size, new Vector(96, 96));
-                    frame.SetCurrentValue(Visual.RenderTransformProperty, null);
-                    try
-                    {
-                        using var dc = image.CreateDrawingContext();
-                        var brush = new VisualBrush(frame) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(frame.Bounds, RelativeUnit.Absolute) };
-                        dc.DrawRectangle(brush, null, new Rect(0, 0, size.Width, size.Height));
-                    }
-                    finally { frame.SetCurrentValue(Visual.RenderTransformProperty, transform); }
-                    image.Save(Path.Combine(output, $"{(pixel ? "pixel" : "classic")}-{sample}-{percent}.png"));
+                    Capture(f.Window, Path.Combine(output, $"{(pixel ? "pixel" : "classic")}-{sample}-{percent}.png"));
                     f.State.SelectedIndex = running ? 1 : 0;
                     var next = elapsed + TimeSpan.FromSeconds(mode == 2 ? -1 : 1);
                     if (mode == 2) f.Timer.CountdownRemaining = next;
@@ -311,5 +300,86 @@ internal static class TimerEditorNativeChecks
         canceled.State.SelectedIndex = 1;
         PressKey(canceled.Window, Avalonia.Input.Key.Escape);
         Require(!canceled.Window.WasSaved && canceled.Timer.IsRunning && canceled.Timer.Elapsed == TimeSpan.FromSeconds(2667), "Cancel applied pending time or state.");
+    }
+
+    private static void Capture(Window window, string file)
+    {
+        var size = PixelSize.FromSize(window.ClientSize, 1);
+        var frame = window.GetVisualDescendants().OfType<StopwatchFrameSurface>().Single();
+        var transform = frame.RenderTransform;
+        using var image = new RenderTargetBitmap(size, new Vector(96, 96));
+        frame.SetCurrentValue(Visual.RenderTransformProperty, null);
+        try
+        {
+            using var dc = image.CreateDrawingContext();
+            var brush = new VisualBrush(frame) { Stretch = Stretch.Fill, SourceRect = new RelativeRect(frame.Bounds, RelativeUnit.Absolute) };
+            dc.DrawRectangle(brush, null, new Rect(0, 0, size.Width, size.Height));
+        }
+        finally { frame.SetCurrentValue(Visual.RenderTransformProperty, transform); }
+        image.Save(file);
+    }
+
+    internal static void ProjectFields()
+    {
+        const string output = "design/one-piece-v2/timer-editor/project-fields-implementation";
+        Directory.CreateDirectory(output);
+        foreach (bool pixel in new[] { false, true })
+        foreach (int scale in new[] { 70, 90, 125 })
+        {
+            var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika, NikaControllerPixel = pixel, UiScalePercent = scale };
+            DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Initialize", settings);
+            try
+            {
+                foreach (string state in new[] { "existing", "long", "new" })
+                {
+                    string name = state == "long" ? "Field recordings and interview edits for the coastal history archive · Spring collection" : "Illustration";
+                    int minutes = state == "long" ? 12 : 5;
+                    settings.ProjectIdleRules[name] = new() { Enabled = true, IdleMinutes = minutes };
+                    using var f = new Fixture(name: name, intervals: false, settings: settings, elapsed: TimeSpan.FromSeconds(2538));
+                    T Get<T>(string id) where T : Control => f.Window.FindControl<T>(id)!;
+                    var project = Get<ComboBox>("ProjectSelector");
+                    var toggleProject = Get<Button>("ToggleProjectInputButton");
+                    var toggleCategory = Get<Button>("ToggleCategoryInputButton");
+                    var idle = Get<CheckBox>("IdleStopForProjectCheck");
+                    var score = Get<NumericUpDown>("ScorePerHourBox");
+                    score.Value = 2.5m;
+                    Require(Equals(toggleProject.Content, "New project") && Equals(toggleCategory.Content, "New category") &&
+                        Equals(idle.Content, $"Stop timers for this project after {minutes} idle minutes") && idle.IsChecked == true,
+                        "Incorrect initial project actions or idle rule.");
+                    Require(project.Bounds.Width > 470 && (state != "long" || project.Bounds.Height > 40), "Project selection failed to use full width or wrap.");
+                    string expectedCategory = "Creative", expectedProject = name;
+                    if (state == "new")
+                    {
+                        project.SelectedIndex = 0;
+                        Require(Equals(idle.Content, "Stop unassigned timers after 5 idle minutes"), "Unassigned idle rule has the wrong scope.");
+                        project.SelectedItem = name;
+                        var projectEntry = Get<TextBox>("CustomProjectBox");
+                        var categoryEntry = Get<TextBox>("CustomCategoryBox");
+                        Click(toggleProject); projectEntry.Text = expectedProject = "Oral history interviews";
+                        Click(toggleCategory); categoryEntry.Text = expectedCategory = "Fieldwork";
+                        Click(toggleProject); Click(toggleCategory);
+                        Require(project.IsVisible && Equals(project.SelectedItem, name) && Get<ComboBox>("CategorySelector").IsFocused, "Existing selection or focus lost.");
+                        Click(toggleCategory); Click(toggleProject);
+                        ClockOverlayChecks.Pump(25);
+                        Require(projectEntry.IsFocused && projectEntry.Text == expectedProject && categoryEntry.Text == expectedCategory &&
+                            Equals(toggleProject.Content, "Choose existing") && Equals(toggleCategory.Content, "Choose existing") &&
+                            idle.IsChecked == false && Equals(idle.Content, "Stop timers for this project after 5 idle minutes"), "New-entry mode lost its draft or idle rule.");
+                        projectEntry.SelectionStart = projectEntry.SelectionEnd = projectEntry.CaretIndex = expectedProject.Length;
+                    }
+                    else f.Save.Focus();
+                    var scroll = Get<ScrollViewer>("EditorScroll");
+                    scroll.Offset = default;
+                    ClockOverlayChecks.Pump(45);
+                    var bottom = idle.TranslatePoint(new Point(0, idle.Bounds.Height), scroll)!.Value.Y;
+                    if (bottom > scroll.Bounds.Height - 4) { scroll.Offset = new Vector(0, bottom - scroll.Bounds.Height + 8); ClockOverlayChecks.Pump(30); }
+                    Require(idle.TranslatePoint(new Point(0, idle.Bounds.Height), scroll)!.Value.Y <= scroll.Bounds.Height + 1, "Idle rule clipped.");
+                    Capture(f.Window, Path.Combine(output, $"{(pixel ? "pixel" : "classic")}-{state}-{scale}.png"));
+                    Click(f.Save);
+                    Require(f.Window.WasSaved && f.Window.NewProjectName == expectedProject && f.Window.NewCategory == expectedCategory &&
+                        f.Window.NewScorePerHour == 2.5 && f.Timer.Name == name, "Project editor returned the wrong saved values.");
+                }
+            }
+            finally { DeleteTodoNativeChecks.Desktop("DesktopPageAppearance", "Shutdown"); }
+        }
     }
 }

@@ -28,6 +28,9 @@ public partial class TimerEditorWindow
         Resources["DangerTextBrush"]=EditorDanger;
         Resources["SurfaceRaisedBrush"]=FieldPaper;
         Resources["BorderBrush"]=EditorRule;
+        Resources["ComboBoxDropDownGlyphForeground"]=ClockPickerPresentation.Navy;
+        Resources["ComboBoxDropDownGlyphForegroundFocused"]=ClockPickerPresentation.Navy;
+        Resources["CheckBoxCheckBackgroundStrokeUnchecked"]=ClockPickerPresentation.Muted;
         FontFamily=ClockPickerPresentation.Body;Foreground=ClockPickerPresentation.Navy;FontSize=12;
         Width=620;MinWidth=560;Height=780;MinHeight=520;MaxHeight=double.PositiveInfinity;SizeToContent=SizeToContent.Manual;
         SystemDecorations=SystemDecorations.None;Background=Brushes.Transparent;
@@ -46,18 +49,12 @@ public partial class TimerEditorWindow
         NavigatorFormStyles.StyleButton(close);close.Click+=(_,_)=>Close(false);AutomationProperties.SetName(close,"Close timer editor");ToolTip.SetTip(close,"Close (Esc)");
         var header=new Grid{ColumnDefinitions=new("*,32"),Children={title,close}};Grid.SetColumn(close,1);
 
-        ProjectLabel.FontSize=10;
-        ProjectRow.Margin=new(0,0,0,12);CategoryRow.Margin=new(0,0,0,10);CategoryRow.ColumnDefinitions=new("*,156");
-        ((Control)CategoryRow.Children[0]).Margin=new(0,0,16,0);
         foreach(var field in new TemplatedControl[]{ProjectSelector,CustomProjectBox,CategorySelector,CustomCategoryBox,ScorePerHourBox,TimeValueBox,StartTimeBox})
         {field.Classes.Add("editorField");field.MinHeight=36;field.FontSize=13;field.Padding=new(10,5);}
         AutoTextDirection.Attach(CustomProjectBox);AutoTextDirection.Attach(CustomCategoryBox);
         foreach(var button in new[]{ToggleProjectInputButton,ToggleCategoryInputButton,PauseResumeButton,CancelButton,UndoPreviousEditButton,SaveButton,DiscardRecordsButton,DeleteTimerButton})
             NavigatorFormStyles.StyleButton(button,button==SaveButton,button==DiscardRecordsButton||button==DeleteTimerButton);
-        ToggleProjectInputButton.Width=70;ToggleCategoryInputButton.Width=62;
-        ToggleProjectInputButton.Height=ToggleCategoryInputButton.Height=36;
         IdleStopForProjectCheck.FontSize=11;IdleStopForProjectCheck.Margin=new(0);
-        // The full project name remains available without widening a long/RTL form.
         IdleStopForProjectCheck.ContentTemplate=new FuncDataTemplate<object>((value,_)=>new TextBlock{Text=value?.ToString(),TextWrapping=TextWrapping.Wrap,FontSize=11,Foreground=ClockPickerPresentation.Navy});
 
         foreach(var control in new Control[]{TimeValueLabel,LiveTimePreview,TimeValueBox,AdjustmentSummaryText,QuickAdjustButtons,PauseResumeButton,SegmentHeaderLabel,StartTimeBox,SegmentDetailText,RecordsStatusText,DiscardRecordsButton,DeleteTimerButton})
@@ -65,7 +62,7 @@ public partial class TimerEditorWindow
         bool pixel = _settings.NikaControllerPixel;
         EditorBody.Children.Add(BuildTimerIdentity(pixel));
         EditorBody.Children.Add(BuildTimeDraft(pixel));
-        EditorBody.Children.Add(ProjectLabel);EditorBody.Children.Add(ProjectRow);EditorBody.Children.Add(CategoryRow);EditorBody.Children.Add(IdleStopForProjectCheck);
+        EditorBody.Children.Add(BuildProjectFields(pixel));
 
         SegmentHeaderLabel.Text="LATEST SEGMENT START";SegmentHeaderLabel.FontSize=10;
         var latest=new Grid{ColumnDefinitions=new("184,16,*"),Margin=new(0,17,0,0)};
@@ -107,6 +104,51 @@ public partial class TimerEditorWindow
             if(e.GetCurrentPoint(this).Properties.IsLeftButtonPressed&&p.X>=Bounds.Width-18&&p.Y>=Bounds.Height-18)
             {BeginResizeDrag(WindowEdge.SouthEast,e);e.Handled=true;}
         };
+    }
+
+    private Control BuildProjectFields(bool pixel)
+    {
+        CustomProjectBox.Watermark = "Project name";
+        CustomCategoryBox.Watermark = "Category name";
+        ProjectSelector.ItemTemplate = new FuncDataTemplate<string>((name, _) => new TextBlock
+        {
+            Text = name, TextWrapping = TextWrapping.Wrap, FontFamily = ClockPickerPresentation.Body, FontSize = 14
+        });
+        ProjectSelector.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        var project = BuildSelectionField("Project", ProjectSelector, CustomProjectBox, ToggleProjectInputButton, pixel);
+        var category = BuildSelectionField("Category", CategorySelector, CustomCategoryBox, ToggleCategoryInputButton, pixel);
+        ((Panel)ScorePerHourBox.Parent!).Children.Remove(ScorePerHourBox);
+        var scoreLabel = ProjectFieldLabel("Score per hour");
+        AutomationProperties.SetName(ScorePerHourBox, "Score per hour");
+        var score = new StackPanel { Spacing = 5, Children = { new Grid { Height = 26, Children = { scoreLabel } }, ScorePerHourBox } };
+        var row = new Grid { ColumnDefinitions = new("*,18,140"), Children = { category, score } };
+        Grid.SetColumn(score, 2);
+        return new StackPanel { Spacing = 10, Children = { project, row, IdleStopForProjectCheck } };
+    }
+
+    private static TextBlock ProjectFieldLabel(string title) => new()
+    {
+        Text = title, FontFamily = ClockPickerPresentation.Body, FontSize = 14, FontWeight = FontWeight.SemiBold,
+        Foreground = ClockPickerPresentation.Navy, VerticalAlignment = VerticalAlignment.Center
+    };
+
+    private static Control BuildSelectionField(string title, ComboBox list, TextBox entry, Button action, bool pixel)
+    {
+        var fields = (Grid)list.Parent!;
+        if (fields.Parent is Panel parent) parent.Children.Remove(fields);
+        fields.Children.Remove(action);
+        fields.ColumnDefinitions = new("*");
+        fields.Margin = default;
+        AutomationProperties.SetName(list, title);
+        AutomationProperties.SetName(entry, title);
+        action.Content = "New " + title.ToLowerInvariant();
+        action.Height = 26;
+        action.Margin = default;
+        action.Padding = new(9, 1);
+        if (pixel) action.Classes.Add("pixelAction");
+        var header = new Grid { ColumnDefinitions = new("*,Auto"), Children = { ProjectFieldLabel(title), action } };
+        Grid.SetColumn(action, 1);
+        return new StackPanel { Spacing = 5, Children = { header, fields } };
     }
 
     private static TextBlock EditorLabel(string text,double size,Thickness margin=default)=>new(){Text=text,FontSize=size,
