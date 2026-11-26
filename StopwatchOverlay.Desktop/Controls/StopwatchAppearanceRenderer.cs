@@ -35,9 +35,9 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         double scale=face.TextSize/48;
         var frame=assets.Get("frame",profile.Frame);
         var background=assets.Get("background",profile.Background);
-        var frameRect=new Rect(0,12*scale,bounds.Width,bounds.Height-12*scale);
-        var layout=StopwatchFrameRenderer.GetLayout(frame,frameRect.Size,.18*scale);
-        var content=frameRect.Deflate(layout.ContentInsets);
+        var parts=StopwatchFaceLayout.Create(bounds.Size,frame,scale,out var layout);
+        var frameRect=parts.Frame;
+        var content=parts.Content;
         if(mask==null||!ReferenceEquals(maskLayout,layout)||maskBounds!=frameRect)
         {
             mask=StopwatchFrameMask.Create(frame,frameRect,scale,profile.Frame=="open-corners");
@@ -49,10 +49,10 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         if(profile.Artwork!="clean")
         {
             bool corner=profile.Artwork=="corner-stamp";
-            var artwork=corner?new Rect(28*scale,33*scale,48*scale,48*scale):new Rect(-30*scale,30*scale,116*scale,116*scale);
+            var artwork=parts.Artwork(corner);
             using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.Artwork)*.58),bounds))
             using(context.PushGeometryClip(mask))
-            using(context.PushClip(new Rect(0,0,82*scale,bounds.Height)))
+            using(context.PushClip(parts.ArtworkClip))
                 context.Custom(new StopwatchInkArtwork(artwork,background.IsDark));
         }
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.Frame)),bounds))
@@ -67,7 +67,7 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         double timeWidth=StopwatchTypography.Width(face.Text,typography,face.TextSize);
         var timeOrigin=state.IsClockMode
             ? StopwatchTypography.CenteredTimeOrigin(face.Text,frameRect.Center,typography,face.TextSize)
-            : new Point((bounds.Width-timeWidth)/2,content.Top);
+            : parts.Time(timeWidth).TopLeft;
         using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.TimeText)),bounds))
         // ContentInsets already fit a safe rectangle inside the border. Text
         // needs only this cheap clip, not another full decorative stencil.
@@ -76,20 +76,18 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
 
         if(!state.IsClockMode)
         {
-            double nameMaxWidth=Math.Max(1,Math.Min(bounds.Width-100*scale,content.Width-23*scale));
+            double nameMaxWidth=parts.NameMaxWidth;
             var key=(face.ProjectName,typography,scale,nameMaxWidth,nameBrush);
             if(cachedName==null||nameKey!=key)
             {
-                cachedName=StopwatchTypography.Format(face.ProjectName,typography.NameFont,typography.NameWeight,(typography.DigitStyle==StopwatchDigitStyle.Pixel?14:20)*scale,nameBrush);
-                cachedName.MaxTextWidth=nameMaxWidth;cachedName.MaxTextHeight=32*scale;cachedName.Trimming=TextTrimming.CharacterEllipsis;
+                cachedName=parts.FormatName(face.ProjectName,typography,nameBrush);
                 nameEdge=palette.Edge==null?null:cachedName.BuildGeometry(default);nameKey=key;
             }
             var name=cachedName;
-            double nameWidth=Math.Min(name.WidthIncludingTrailingWhitespace,name.MaxTextWidth);
-            double nameX=(bounds.Width-nameWidth-23*scale)/2+23*scale,nameY=content.Top+48*scale;
+            var nameBounds=parts.ProjectName(name);
             using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.ProjectName)),bounds))
             using(context.PushClip(content))
-            using(context.PushTransform(Matrix.CreateTranslation(nameX,nameY)))
+            using(context.PushTransform(Matrix.CreateTranslation(nameBounds.X,nameBounds.Y)))
             {
                 if(nameEdge!=null)context.DrawGeometry(null,new Pen(palette.Edge,1.6*scale,lineJoin:PenLineJoin.Round),nameEdge);
                 context.DrawText(name,default);
@@ -97,7 +95,7 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
             using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
             {
                 bool running=StopwatchAppearancePolicy.MarkerFor(state.IsRunning,state.IsClockMode)==StopwatchMarker.Running;
-                var rect=new Rect(nameX-23*scale,nameY+7*scale,13*scale,14*scale);
+                var rect=parts.Marker(nameBounds);
                 if(running)
                 {
                     var triangle=new StreamGeometry();using(var g=triangle.Open())
@@ -114,7 +112,7 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         if(state.IsActive)
         {
             using(context.PushOpacityMask(StopwatchOpacity.Mask(StopwatchAppearancePolicy.LayerOpacity(profile,StopwatchOpaqueLayers.StateMarkers)),bounds))
-                DrawActive(context,bounds.Width,scale,StopwatchTypography.Resolve("navigator-bold").NameFont);
+                DrawActive(context,parts.ActiveBadge,scale,StopwatchTypography.Resolve("navigator-bold").NameFont);
         }
         if(face.ShowRec)
         {
@@ -126,9 +124,8 @@ public sealed class StopwatchAppearanceRenderer(StopwatchAppearanceAssets assets
         }
     }
 
-    private static void DrawActive(DrawingContext context,double width,double scale,FontFamily font)
+    private static void DrawActive(DrawingContext context,Rect rect,double scale,FontFamily font)
     {
-        var rect=new Rect(width/2-42*scale,8*scale,84*scale,22*scale);
         context.DrawRectangle(Navy,new Pen(Gold,1.5*scale),rect,5*scale,5*scale);
         context.DrawRectangle(null,new Pen(Ivory,.45*scale),rect.Deflate(3*scale),3*scale,3*scale);
         var text=StopwatchTypography.Format("ACTIVE",font,FontWeight.Bold,13*scale,Ivory);

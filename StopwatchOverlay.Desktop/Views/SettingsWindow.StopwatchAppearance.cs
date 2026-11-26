@@ -105,17 +105,28 @@ public partial class SettingsWindow
             0, 100, value => profile.BackgroundOpacity = value);
         background.Children.Add(new Border { Height = 1, Background = SettingsRule, Margin = new(0, 2, 0, 4) });
         background.Children.Add(new TextBlock { Text = "Keep opaque", FontSize = 14, FontWeight = FontWeight.SemiBold });
-        background.Children.Add(new TextBlock { Text = "Checked parts ignore background opacity.", FontSize = 12, TextWrapping = TextWrapping.Wrap });
+        background.Children.Add(new TextBlock { Text = "Checked parts stay opaque. Hover or focus a part to locate it.", FontSize = 12, TextWrapping = TextWrapping.Wrap });
 
         var layers = new UniformGrid { Columns = 3 };
         layers.SizeChanged += (_, e) => layers.Columns = Math.Clamp((int)(e.NewSize.Width / 116), 1, 3);
+        Border? hovered = null, focused = null, highlighted = null;
+        void Locate(Border? row)
+        {
+            if (highlighted == row) return;
+            highlighted?.Classes.Remove("locatedPart");
+            highlighted = row;
+            highlighted?.Classes.Add("locatedPart");
+            _stopwatchPreview.HighlightLayer(row?.Tag is StopwatchOpaqueLayers part ? part : StopwatchOpaqueLayers.None);
+        }
+        layers.DetachedFromVisualTree += (_, _) => { hovered = focused = null; Locate(null); };
         foreach (var (flag, label) in new[] {
             (StopwatchOpaqueLayers.Frame, "Frame"), (StopwatchOpaqueLayers.TimeText, "Time text"),
             (StopwatchOpaqueLayers.ProjectName, "Project name"), (StopwatchOpaqueLayers.StateMarkers, "State markers"),
             (StopwatchOpaqueLayers.HoverControls, "Hover controls"), (StopwatchOpaqueLayers.Artwork, "Artwork") })
         {
-            var check = new CheckBox { Name = "StopwatchOpaque" + flag, Content = label,
-                IsChecked = profile.OpaqueLayers.HasFlag(flag), FontSize = 13, MinHeight = 29 };
+            var check = new CheckBox { Name = "StopwatchOpaque" + flag,
+                Content = new TextBlock { Text = label, FontSize = 13, TextWrapping = TextWrapping.Wrap },
+                IsChecked = profile.OpaqueLayers.HasFlag(flag), HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 32 };
             AutomationProperties.SetName(check, "Keep " + label.ToLowerInvariant() + " opaque");
             if (flag == StopwatchOpaqueLayers.Artwork)
             {
@@ -129,7 +140,21 @@ public partial class SettingsWindow
                 else profile.OpaqueLayers &= ~flag;
                 CommitStopwatchAppearance();
             };
-            layers.Children.Add(check);
+            var row = new Border { Tag = flag, Child = check, BorderThickness = new(1.5), CornerRadius = new(4),
+                Padding = new(3, 0), Margin = new(0, 1, 2, 1) };
+            if (_usesStyleGalleries) row.Classes.Add("nikaPart");
+            check.PointerEntered += (_, _) => { if (check.IsEffectivelyEnabled) Locate(hovered = row); };
+            check.PointerExited += (_, _) => { if (hovered == row) { hovered = null; Locate(focused); } };
+            check.GotFocus += (_, _) => Locate(focused = row);
+            check.LostFocus += (_, _) => { if (focused == row) { focused = null; Locate(hovered); } };
+            check.PropertyChanged += (_, e) =>
+            {
+                if (e.Property != InputElement.IsEffectivelyEnabledProperty || check.IsEffectivelyEnabled) return;
+                if (hovered == row) hovered = null;
+                if (focused == row) focused = null;
+                if (highlighted == row) Locate(hovered ?? focused);
+            };
+            layers.Children.Add(row);
         }
         background.Children.Add(layers);
 

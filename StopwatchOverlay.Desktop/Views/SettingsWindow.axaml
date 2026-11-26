@@ -249,6 +249,14 @@
                     <StackPanel x:Name="TodoAppearancePanel" IsVisible="False"/>
                     <StackPanel x:Name="StopwatchAppearancePanel" IsVisible="False">
                         <StackPanel.Styles>
+                            <Style Selector="Border.locatedPart">
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+                            </Style>
+                            <Style Selector="Border.locatedPart.nikaPart">
+                                <Setter Property="BorderBrush" Value="#176E68"/>
+                                <Setter Property="Background" Value="#D6EAE0"/>
+                            </Style>
                             <Style Selector="TabControl#StopwatchAppearanceTabs > TabItem">
                                 <Setter Property="MinWidth" Value="111"/>
                                 <Setter Property="Height" Value="36"/>

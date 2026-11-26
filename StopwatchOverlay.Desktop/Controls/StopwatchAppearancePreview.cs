@@ -15,6 +15,7 @@ public sealed class StopwatchAppearancePreview : UserControl
     private readonly ThemedClockFace unselected=new(){Text=DefaultTime,ProjectName=SampleProject};
     private readonly Border backdrop=new(){Padding=new Thickness(8,7),CornerRadius=new CornerRadius(6)};
     private readonly Border toolbar;
+    private readonly StopwatchPartHighlight highlight;
     private readonly Button[] buttons;
     private readonly TextBlock inactivePercent = new() { FontSize = 12 };
     private readonly Border divider = new() { Height = 1, Margin = new(0,2,0,5) };
@@ -42,6 +43,10 @@ public sealed class StopwatchAppearancePreview : UserControl
         grid.Children.Add(divider);
         grid.Children.Add(inactiveHeader);
         grid.Children.Add(inactive);
+        highlight = new(selected, toolbar) { IsHitTestVisible = false, IsVisible = false };
+        Grid.SetRowSpan(highlight, 5);
+        grid.Children.Add(highlight);
+        active.SizeChanged += (_, _) => { if (highlight.IsVisible) highlight.InvalidateVisual(); };
         backdrop.Child=grid;Content=backdrop;
         Apply(sample);
     }
@@ -66,6 +71,8 @@ public sealed class StopwatchAppearancePreview : UserControl
     public void SetPreviewState(bool isRunning,bool isDarkBackdrop)
     {running=isRunning;darkBackdrop=isDarkBackdrop;Refresh();}
 
+    internal void HighlightLayer(StopwatchOpaqueLayers layer) => highlight.ShowLayer(layer);
+
     internal void SetTypographySample(bool active)
     {
         selected.Text = unselected.Text = active ? TypographyTime : DefaultTime;
@@ -81,6 +88,8 @@ public sealed class StopwatchAppearancePreview : UserControl
         Foreground = Brush.Parse(darkBackdrop ? "#F0E9D6" : "#263B44");
         divider.Background = Brush.Parse(darkBackdrop ? "#49606A" : "#C7C6BB");
         inactivePercent.Text = $"{sample.StopwatchAppearance.UnselectedOpacity:0}%";
+        highlight.Profile = sample.StopwatchAppearance;
+        if (highlight.IsVisible) highlight.InvalidateVisual();
     }
 
     public static Control Thumbnail(string kind,string id)
