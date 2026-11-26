@@ -113,11 +113,33 @@ internal static class SettingsShellNativeChecks
             settings=(SettingsWindow)typeof(ControllerWindow).GetField("_settingsWindow",Hidden)!.GetValue(controller)!;
             ClockOverlayChecks.Pump(30);
             var button=Find<Button>(settings,"SettingsShowOverlay");
+            var footer = settings.FindControl<Button>("DesktopOverlayAction")!;
+            var status = settings.FindControl<TextBlock>("DesktopOverlayStatus")!;
+            void CheckFooter(bool visible) => Require(footer.IsEnabled &&
+                Equals(footer.Content, visible ? "Hide active overlay" : "Show active overlay") &&
+                status.Text == (visible ? "Visible" : "Hidden"), "Settings footer disagrees with overlay visibility.");
+            CheckFooter(true);
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var overlay=(OverlayWindow?)typeof(ControllerWindow).GetField("_herdOverlay",Hidden)!.GetValue(controller);
             Require(overlay!=null&&!overlay.IsVisible,"Show/hide did not hide the active overlay.");
-            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            CheckFooter(false);
+            footer.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Require(overlay!.IsVisible,"Show/hide did not restore the active overlay.");
+            CheckFooter(true);
+            overlay.Close();
+            CheckFooter(false);
+            var manager = (TimerSessionManager)typeof(ControllerWindow).GetField("_timerManager", Hidden)!.GetValue(controller)!;
+            var hidden = manager.Active!;
+            manager.CycleNext();
+            void Update() => typeof(ControllerWindow).GetMethod("UpdateOverlayStates", Hidden)!.Invoke(controller, null);
+            Update(); CheckFooter(true);
+            manager.Activate(hidden);
+            Update(); CheckFooter(false);
+            typeof(ControllerWindow).GetMethod("ShowActiveTimerOverlay", Hidden)!.Invoke(controller, null);
+            CheckFooter(true);
+            foreach (var session in manager.Sessions.ToArray()) manager.Close(session);
+            Update();
+            Require(!footer.IsEnabled && status.Text == "No active timer", "An empty timer list left the overlay action available.");
         }
         finally{settings?.Close();controller.Close();}
     }

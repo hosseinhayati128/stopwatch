@@ -24,6 +24,17 @@ public partial class SettingsWindow
     private StopwatchStyleGallery? _styleGallery;
     private Button? _galleryOpener;
     private bool _usesStyleGalleries;
+    private bool? _activeOverlayVisible;
+
+    internal void SetActiveOverlayVisibility(bool? visible)
+    {
+        if (_activeOverlayVisible == visible) return;
+        _activeOverlayVisible = visible;
+        DesktopOverlayAction.IsEnabled = visible.HasValue;
+        DesktopOverlayAction.Content = visible == true ? "Hide active overlay" : "Show active overlay";
+        DesktopOverlayStatus.Text = visible switch { true => "Visible", false => "Hidden", null => "No active timer" };
+        DesktopOverlayStatus.Classes.Set("shown", visible == true);
+    }
 
     private void LoadStopwatchAppearance()
     {

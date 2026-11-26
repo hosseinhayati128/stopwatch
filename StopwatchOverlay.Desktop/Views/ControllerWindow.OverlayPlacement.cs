@@ -81,6 +81,7 @@ public partial class ControllerWindow
                         var current=source==_herdOverlay?GetActiveHerdSession():session;
                         if(current!=null)_overlayVisibilityOverrides[current.Id]=false;
                         source.Hide();InvalidateOverlayPlacement();
+                        RefreshSettingsOverlayVisibility();
                     };
                 }
                 displays.Add(new(window,targets[i]));

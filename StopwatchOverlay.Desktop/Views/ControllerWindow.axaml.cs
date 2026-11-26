@@ -523,7 +523,10 @@ public partial class ControllerWindow : Window
             _herdOverlay = null;
             ClearDisplayOverlays(overlay);
             if (!_isExiting && GetActiveHerdSession() is { } session)
+            {
                 _overlayVisibilityOverrides[session.Id] = false;
+                RefreshSettingsOverlayVisibility();
+            }
         };
         _herdOverlay.SetSeparateMergeState(false);
         _herdOverlay.SetClickThrough(_settings.ClickThrough);
@@ -549,7 +552,10 @@ public partial class ControllerWindow : Window
             // Merge/delete change membership before closing their old window.
             // A native close hides the overlay while leaving its timer intact.
             if (!_isExiting && session.IsSeparated && _timerManager.Sessions.Contains(session))
+            {
                 _overlayVisibilityOverrides[session.Id] = false;
+                RefreshSettingsOverlayVisibility();
+            }
         };
         overlay.SetTimerName(session.Name);
         overlay.UpdateTime(FormatDisplayTime(session));
@@ -624,9 +630,13 @@ public partial class ControllerWindow : Window
             ApplyTimerOverlayVisibility(overlay, session);
         }
 
+        RefreshSettingsOverlayVisibility();
         if (_activeClocksShelf?.IsVisible == true)
             UpdateActiveClocksShelf();
     }
+
+    private void RefreshSettingsOverlayVisibility() =>
+        _settingsWindow?.SetActiveOverlayVisibility(_timerManager.Active is { } active ? IsTimerOverlayVisible(active) : null);
 
     private void SeparateActiveSession()
     {
@@ -1265,6 +1275,7 @@ public partial class ControllerWindow : Window
             _settingsWindow.SettingsInteractionStarted += () => _settingsInteractionActive=true;
             _settingsWindow.SettingsInteractionCompleted += CompleteSettingsInteraction;
             _settingsWindow.ShowOverlayRequested += ToggleActiveTimerOverlay;
+            RefreshSettingsOverlayVisibility();
             _settingsWindow.PeriodicReviewRequested += OpenPeriodicReview;
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
