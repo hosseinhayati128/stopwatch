@@ -247,7 +247,49 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <Grid Margin="24,20">
                     <StackPanel x:Name="TodoAppearancePanel" IsVisible="False"/>
-                    <StackPanel x:Name="StopwatchAppearancePanel" IsVisible="False"/>
+                    <StackPanel x:Name="StopwatchAppearancePanel" IsVisible="False">
+                        <StackPanel.Styles>
+                            <Style Selector="TabControl#StopwatchAppearanceTabs > TabItem">
+                                <Setter Property="MinWidth" Value="111"/>
+                                <Setter Property="Height" Value="36"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Inter"/>
+                                <Setter Property="FontSize" Value="14"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <Border Name="TabTrack" Background="#F7E9CA" BorderBrush="#C8AD78"
+                                                Padding="2,2,1,2" CornerRadius="6,0,0,6" BorderThickness="1,1,0,1">
+                                            <Border Name="Segment" CornerRadius="4" BorderThickness="1" BorderBrush="Transparent">
+                                                <ContentPresenter Name="HeaderLabel" Content="{TemplateBinding Header}"
+                                                                  ContentTemplate="{TemplateBinding HeaderTemplate}" Foreground="#423E32"
+                                                                  FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}"
+                                                                  FontWeight="{TemplateBinding FontWeight}"
+                                                                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                            </Border>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter>
+                            </Style>
+                            <Style Selector="TabItem:nth-child(2) /template/ Border#TabTrack">
+                                <Setter Property="Padding" Value="1,2,2,2"/>
+                                <Setter Property="CornerRadius" Value="0,6,6,0"/>
+                                <Setter Property="BorderThickness" Value="0,1,1,1"/>
+                            </Style>
+                            <Style Selector="TabItem:pointerover /template/ Border#Segment">
+                                <Setter Property="Background" Value="#EAD5A8"/>
+                            </Style>
+                            <Style Selector="TabItem:selected /template/ Border#Segment">
+                                <Setter Property="Background" Value="#183847"/>
+                            </Style>
+                            <Style Selector="TabItem:selected /template/ ContentPresenter#HeaderLabel">
+                                <Setter Property="Foreground" Value="#FFF3D8"/>
+                            </Style>
+                            <Style Selector="TabItem:focus-visible /template/ Border#Segment">
+                                <Setter Property="BorderBrush" Value="#B17B26"/>
+                            </Style>
+                        </StackPanel.Styles>
+                    </StackPanel>
 
                     <!-- Panel 1: Overlay & Position -->
                     <StackPanel x:Name="OverlayPanel" Spacing="6">
