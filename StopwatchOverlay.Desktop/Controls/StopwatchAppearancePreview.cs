@@ -24,12 +24,19 @@ public sealed class StopwatchAppearancePreview : UserControl
     {
         var buttonPanel=new StackPanel{Orientation=Orientation.Horizontal};foreach(var button in buttons)buttonPanel.Children.Add(button);toolbar.Child=buttonPanel;
         var selectedGroup=new StackPanel{Spacing=0};selectedGroup.Children.Add(selected);selectedGroup.Children.Add(toolbar);
-        var stack=new StackPanel{Spacing=18,VerticalAlignment=VerticalAlignment.Center};
-        stack.Children.Add(new TextBlock{Text="Selected · 100%",FontSize=11,Foreground=Brushes.Gray});
-        stack.Children.Add(new Viewbox{Child=selectedGroup,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxHeight=190});
-        stack.Children.Add(unselectedLabel);
-        stack.Children.Add(new Viewbox{Child=unselected,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxHeight=150});
-        backdrop.Child=stack;Content=backdrop;
+        var grid = new Grid { RowDefinitions = new("Auto,3*,Auto,2*"), MaxHeight = 282,
+            VerticalAlignment = VerticalAlignment.Stretch };
+        var activeLabel = new TextBlock { Text = "Active clock · 100%", FontSize = 11 };
+        var active = new Viewbox { Child = selectedGroup, StretchDirection = StretchDirection.DownOnly };
+        var inactive = new Viewbox { Child = unselected, StretchDirection = StretchDirection.DownOnly };
+        Grid.SetRow(active, 1);
+        Grid.SetRow(unselectedLabel, 2);
+        Grid.SetRow(inactive, 3);
+        grid.Children.Add(activeLabel);
+        grid.Children.Add(active);
+        grid.Children.Add(unselectedLabel);
+        grid.Children.Add(inactive);
+        backdrop.Child=grid;Content=backdrop;
         Apply(sample);
     }
 
@@ -57,8 +64,8 @@ public sealed class StopwatchAppearancePreview : UserControl
         StopwatchOpacity.Apply(unselected,sample.StopwatchAppearance.UnselectedOpacity/100);
         StopwatchToolbarStyler.Apply(toolbar,buttons,sample.StopwatchAppearance,new(true,running,false),1);
         backdrop.Background=Brush.Parse(darkBackdrop?"#152936":"#EDE9DE");
-        foreach(var text in ((StackPanel)backdrop.Child!).Children.OfType<TextBlock>())text.Foreground=Brush.Parse(darkBackdrop?"#D5E0DF":"#43555A");
-        unselectedLabel.Text=$"Unselected · {sample.StopwatchAppearance.UnselectedOpacity:0}%";
+        foreach(var text in ((Grid)backdrop.Child!).Children.OfType<TextBlock>())text.Foreground=Brush.Parse(darkBackdrop?"#D5E0DF":"#43555A");
+        unselectedLabel.Text=$"Inactive clock · {sample.StopwatchAppearance.UnselectedOpacity:0}%";
     }
 
     public static Control Thumbnail(string kind,string id)

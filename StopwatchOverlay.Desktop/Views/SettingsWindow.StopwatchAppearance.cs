@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -77,19 +79,7 @@ public partial class SettingsWindow
                 _settings.TextSize=value;bool loading=_loading;_loading=true;try{TextSizeSlider.Value=value;UpdateValueLabels();}finally{_loading=loading;}
             }," px");
             style.Children.Add(new TextBlock{Name="StopwatchStateSummary",Text="Running / paused marker beside the project name. ACTIVE tab marks the selected clock.",FontSize=12,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,6,0,0)});
-            AddStopwatchSlider(transparency,"StopwatchBackgroundOpacity","Background opacity",p.BackgroundOpacity,0,100,v=>p.BackgroundOpacity=v);
-            AddStopwatchSlider(transparency,"StopwatchUnselectedOpacity","Unselected clocks",p.UnselectedOpacity,10,100,v=>p.UnselectedOpacity=v);
-            transparency.Children.Add(new TextBlock{Text="Selected clocks stay at 100%. The unselected amount applies to the whole clock and its controls.",FontSize=12,TextWrapping=TextWrapping.Wrap});
-            transparency.Children.Add(new TextBlock{Text="Keep opaque",FontSize=14,FontWeight=FontWeight.SemiBold,Margin=new Thickness(0,10,0,0)});
-            transparency.Children.Add(new TextBlock{Text="Checked parts stay opaque. Unchecked parts follow background opacity, before the unselected amount is applied.",FontSize=12,TextWrapping=TextWrapping.Wrap});
-            foreach(var (flag,label) in new[]{(StopwatchOpaqueLayers.Frame,"Frame"),(StopwatchOpaqueLayers.TimeText,"Time text"),(StopwatchOpaqueLayers.ProjectName,"Project name"),(StopwatchOpaqueLayers.StateMarkers,"State markers"),(StopwatchOpaqueLayers.HoverControls,"Hover controls"),(StopwatchOpaqueLayers.Artwork,"Artwork")})
-            {
-                var check=new CheckBox{Name="StopwatchOpaque"+flag,Content=label,IsChecked=p.OpaqueLayers.HasFlag(flag)};
-                AutomationProperties.SetName(check,"Keep "+label.ToLowerInvariant()+" opaque");
-                if(flag==StopwatchOpaqueLayers.Artwork){_stopwatchArtworkOpaque=check;check.IsEnabled=p.Artwork!="clean";}
-                check.IsCheckedChanged+=(_,_)=>{if(_loadingStopwatch||_loading)return;if(check.IsChecked==true)p.OpaqueLayers|=flag;else p.OpaqueLayers&=~flag;CommitStopwatchAppearance();};
-                transparency.Children.Add(check);
-            }
+            BuildStopwatchTransparency(transparency, p);
             var tabs=new TabControl{Name="StopwatchAppearanceTabs",ItemsSource=new[]{new TabItem{Header="Style",Content=style},new TabItem{Header="Transparency",Content=transparency}}};
             StopwatchAppearancePanel.Children.Add(tabs);
             _stopwatchSaveStatus=new TextBlock{Name="StopwatchSaveStatus",Text="Changes apply immediately.",FontSize=11,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,14,0,0)};
@@ -97,6 +87,61 @@ public partial class SettingsWindow
             StopwatchPreviewHost.Content=_stopwatchPreview;RefreshStopwatchAppearancePreview();
         }
         finally{_loadingStopwatch=false;}
+    }
+
+    private void BuildStopwatchTransparency(StackPanel tab, StopwatchAppearanceSettings profile)
+    {
+        var background = new StackPanel { Spacing = 3 };
+        AddStopwatchSlider(background, "StopwatchBackgroundOpacity", "Background opacity", profile.BackgroundOpacity,
+            0, 100, value => profile.BackgroundOpacity = value, showBadge: true);
+        background.Children.Add(new Border { Height = 1, Background = SettingsRule, Margin = new(0, 2, 0, 4) });
+        background.Children.Add(new TextBlock { Text = "Keep opaque", FontSize = 14, FontWeight = FontWeight.SemiBold });
+        background.Children.Add(new TextBlock { Text = "Checked parts ignore background opacity.", FontSize = 12, TextWrapping = TextWrapping.Wrap });
+
+        var layers = new UniformGrid { Columns = 3 };
+        layers.SizeChanged += (_, e) => layers.Columns = Math.Clamp((int)(e.NewSize.Width / 116), 1, 3);
+        foreach (var (flag, label) in new[] {
+            (StopwatchOpaqueLayers.Frame, "Frame"), (StopwatchOpaqueLayers.TimeText, "Time text"),
+            (StopwatchOpaqueLayers.ProjectName, "Project name"), (StopwatchOpaqueLayers.StateMarkers, "State markers"),
+            (StopwatchOpaqueLayers.HoverControls, "Hover controls"), (StopwatchOpaqueLayers.Artwork, "Artwork") })
+        {
+            var check = new CheckBox { Name = "StopwatchOpaque" + flag, Content = label,
+                IsChecked = profile.OpaqueLayers.HasFlag(flag), FontSize = 13, MinHeight = 29 };
+            AutomationProperties.SetName(check, "Keep " + label.ToLowerInvariant() + " opaque");
+            if (flag == StopwatchOpaqueLayers.Artwork)
+            {
+                _stopwatchArtworkOpaque = check;
+                check.IsEnabled = profile.Artwork != "clean";
+            }
+            check.IsCheckedChanged += (_, _) =>
+            {
+                if (_loadingStopwatch || _loading) return;
+                if (check.IsChecked == true) profile.OpaqueLayers |= flag;
+                else profile.OpaqueLayers &= ~flag;
+                CommitStopwatchAppearance();
+            };
+            layers.Children.Add(check);
+        }
+        background.Children.Add(layers);
+
+        var inactive = new StackPanel { Spacing = 3 };
+        AddStopwatchSlider(inactive, "StopwatchUnselectedOpacity", "Inactive clock opacity", profile.UnselectedOpacity,
+            10, 100, value => profile.UnselectedOpacity = value, showBadge: true);
+        inactive.Children.Add(new TextBlock { Text = "Dims the entire inactive clock, including its controls.",
+            FontSize = 12, TextWrapping = TextWrapping.Wrap });
+        foreach (var content in new[] { background, inactive })
+        {
+            var card = SettingsCard(content);
+            card.Padding = new(15, 10);
+            if (_usesStyleGalleries)
+            {
+                card.Background = Brush.Parse("#F7E8C6");
+                card.BorderBrush = Brush.Parse("#CBB084");
+                TextElement.SetFontFamily(content, ClockPickerPresentation.Body);
+                TextElement.SetForeground(content, SettingsInk);
+            }
+            tab.Children.Add(card);
+        }
     }
 
     private void AddGalleryChoice(StackPanel style, StopwatchGalleryLayer layer)
@@ -188,11 +233,20 @@ public partial class SettingsWindow
         parent.Children.Add(combo);
     }
 
-    private void AddStopwatchSlider(StackPanel parent,string name,string title,double value,double min,double max,Action<double> set,string suffix="%")
+    private void AddStopwatchSlider(StackPanel parent,string name,string title,double value,double min,double max,Action<double> set,string suffix="%",bool showBadge=false)
     {
         var row=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,6,0,0)};
-        row.Children.Add(new TextBlock{Text=title,FontSize=12,FontWeight=FontWeight.SemiBold});
-        var label=new TextBlock{Text=$"{value:0}{suffix}",FontSize=12};Grid.SetColumn(label,1);row.Children.Add(label);parent.Children.Add(row);
+        row.Children.Add(new TextBlock{Text=title,FontSize=showBadge ? 16 : 12,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center});
+        var label=new TextBlock{Text=$"{value:0}{suffix}",FontSize=showBadge ? 15 : 12};
+        Control valueDisplay = label;
+        if (showBadge)
+        {
+            label.Foreground = Brush.Parse("#F8EACA");
+            label.FontWeight = FontWeight.SemiBold;
+            valueDisplay = new Border { Child = label, Background = Brush.Parse("#173B49"), CornerRadius = new(4), Padding = new(8,2) };
+            row.Margin = default;
+        }
+        Grid.SetColumn(valueDisplay,1);row.Children.Add(valueDisplay);parent.Children.Add(row);
         var slider=new Slider{Name=name,Minimum=min,Maximum=max,Value=value,TickFrequency=1,IsSnapToTickEnabled=true};AutomationProperties.SetName(slider,title);
         if(name=="StopwatchTextSize"){_stopwatchTextSizeSlider=slider;_stopwatchTextSizeValue=label;}
         slider.PropertyChanged+=(_,e)=>{if(e.Property==Slider.ValueProperty&&!_loadingStopwatch&&!_loading){set(slider.Value);label.Text=$"{slider.Value:0}{suffix}";CommitStopwatchAppearance();}};
