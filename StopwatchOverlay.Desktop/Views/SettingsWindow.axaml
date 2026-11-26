@@ -118,17 +118,72 @@
             <Border x:Name="StopwatchPreviewArea" Grid.Column="0" IsVisible="False" Padding="16"
                     Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource SubtleDividerBrush}" BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,Auto,*,Auto">
-                    <TextBlock Text="Live stopwatch preview" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                    <Grid Grid.Row="1" ColumnDefinitions="*,8,*" Margin="0,12,0,12">
-                        <ComboBox x:Name="StopwatchPreviewState" SelectedIndex="0" HorizontalAlignment="Stretch"
-                                  AutomationProperties.Name="Preview running or paused" SelectionChanged="StopwatchPreviewState_SelectionChanged">
-                            <ComboBoxItem Content="Running"/><ComboBoxItem Content="Paused"/>
-                        </ComboBox>
-                        <ComboBox x:Name="StopwatchPreviewBackdrop" Grid.Column="2" SelectedIndex="0" HorizontalAlignment="Stretch"
-                                  AutomationProperties.Name="Preview backdrop" SelectionChanged="StopwatchPreviewState_SelectionChanged">
-                            <ComboBoxItem Content="Dark"/><ComboBoxItem Content="Light"/>
-                        </ComboBox>
-                    </Grid>
+                    <TextBlock Text="Live stopwatch preview" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                               FontFamily="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Inter"/>
+                    <StackPanel Grid.Row="1" Margin="0,9,0,10" Spacing="4">
+                        <StackPanel.Styles>
+                            <Style Selector="Border.previewTrack">
+                                <Setter Property="Padding" Value="2"/>
+                                <Setter Property="CornerRadius" Value="6"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="#C8AD78"/>
+                                <Setter Property="Background" Value="#F7E9CA"/>
+                            </Style>
+                            <Style Selector="RadioButton">
+                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                <Setter Property="MinHeight" Value="27"/>
+                                <Setter Property="MinWidth" Value="0"/>
+                                <Setter Property="FontSize" Value="13"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FontFamily" Value="avares://StopwatchOverlay.Desktop/Assets/Fonts/Acanthus/#Inter"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="#423E32"/>
+                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <Border CornerRadius="4" Background="{TemplateBinding Background}"
+                                                BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Border Name="Swatch" IsVisible="False" Width="11" Height="11" CornerRadius="3"
+                                                        BorderThickness="1" BorderBrush="#A4B0AA"/>
+                                                <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                                                  FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}"
+                                                                  FontFamily="{TemplateBinding FontFamily}" Foreground="{TemplateBinding Foreground}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter>
+                            </Style>
+                            <Style Selector="RadioButton:checked">
+                                <Setter Property="Background" Value="#183847"/>
+                                <Setter Property="Foreground" Value="#FFF3D8"/>
+                            </Style>
+                            <Style Selector="RadioButton:pointerover:not(:checked)"><Setter Property="Background" Value="#EAD5A8"/></Style>
+                            <Style Selector="RadioButton:focus-visible"><Setter Property="BorderBrush" Value="#B17B26"/></Style>
+                            <Style Selector="RadioButton.dark /template/ Border#Swatch">
+                                <Setter Property="IsVisible" Value="True"/><Setter Property="Background" Value="#152936"/>
+                            </Style>
+                            <Style Selector="RadioButton.light /template/ Border#Swatch">
+                                <Setter Property="IsVisible" Value="True"/><Setter Property="Background" Value="#EDE9DE"/>
+                            </Style>
+                        </StackPanel.Styles>
+                        <Border Classes="previewTrack">
+                            <Grid ColumnDefinitions="*,*">
+                                <RadioButton x:Name="PreviewRunning" Content="Running" IsChecked="True"
+                                             AutomationProperties.Name="Preview running"/>
+                                <RadioButton x:Name="PreviewPaused" Grid.Column="1" Content="Paused"
+                                             AutomationProperties.Name="Preview paused" IsCheckedChanged="PreviewChoiceChanged"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="previewTrack">
+                            <Grid ColumnDefinitions="*,*">
+                                <RadioButton x:Name="PreviewDark" Classes="dark" Content="Dark" IsChecked="True"
+                                             AutomationProperties.Name="Preview dark backdrop"/>
+                                <RadioButton x:Name="PreviewLight" Grid.Column="1" Classes="light" Content="Light"
+                                             AutomationProperties.Name="Preview light backdrop" IsCheckedChanged="PreviewChoiceChanged"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
                     <ContentControl x:Name="StopwatchPreviewHost" Grid.Row="2" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
                     <StackPanel x:Name="StopwatchPreviewFooter" Grid.Row="3" Spacing="10" Margin="0,12,0,0">
                         <TextBlock Text="Sample clocks · Preview controls do not affect your timers." FontSize="11" TextWrapping="Wrap"/>

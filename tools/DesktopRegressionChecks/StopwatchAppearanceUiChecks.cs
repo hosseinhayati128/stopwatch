@@ -56,8 +56,28 @@ internal static class StopwatchAppearanceUiChecks
                 int changes=0;Action<SettingsChangeKind> changed=k=>{Require(k is SettingsChangeKind.OverlayAppearance or SettingsChangeKind.OverlayGeometry,"Wrong appearance event.");changes++;};
                 typeof(SettingsWindow).GetEvent("SettingsChanged",Private)!.GetAddMethod(true)!.Invoke(window,new object[]{changed});
                 string serialized=JsonSerializer.Serialize(settings);
-                Named<ComboBox>(window,"StopwatchPreviewState").SelectedIndex=1;
-                Named<ComboBox>(window,"StopwatchPreviewBackdrop").SelectedIndex=1;
+                var running = Named<RadioButton>(window, "PreviewRunning");
+                var paused = Named<RadioButton>(window, "PreviewPaused");
+                var dark = Named<RadioButton>(window, "PreviewDark");
+                var light = Named<RadioButton>(window, "PreviewLight");
+                var preview = (StopwatchAppearancePreview)previewHost.Content!;
+                var backdrop = (Border)preview.Content!;
+                void CheckSample(bool isRunning, bool isDark)
+                {
+                    Require(running.IsChecked == isRunning && paused.IsChecked == !isRunning &&
+                        dark.IsChecked == isDark && light.IsChecked == !isDark, "Preview switches lost their selection.");
+                    Require(preview.GetVisualDescendants().OfType<Button>().Any(b =>
+                        AutomationProperties.GetName(b) == (isRunning ? "Pause timer" : "Resume timer")),
+                        "The toolbar does not match the preview state.");
+                    Require(backdrop.Background is Avalonia.Media.ISolidColorBrush brush &&
+                        brush.Color == Avalonia.Media.Color.Parse(isDark ? "#152936" : "#EDE9DE"),
+                        "The selected backdrop was not applied.");
+                }
+                CheckSample(true, true);
+                paused.IsChecked = true; CheckSample(false, true);
+                light.IsChecked = true; CheckSample(false, false);
+                running.IsChecked = true; CheckSample(true, false);
+                dark.IsChecked = true; CheckSample(true, true);
                 Require(changes==0&&serialized==JsonSerializer.Serialize(settings),"Preview controls changed application settings.");
                 Named<ComboBox>(window,"StopwatchFrameChoice").SelectedItem=StopwatchAppearanceCatalog.Frames[0];
                 Require(changes==1&&settings.StopwatchAppearance.Frame=="classic-brass","Style did not issue one immediate event.");

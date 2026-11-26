@@ -13,10 +13,11 @@ public sealed class StopwatchAppearancePreview : UserControl
     private const string SampleProject = "Illustration";
     private readonly ThemedClockFace selected=new(){Text=DefaultTime,ProjectName=SampleProject};
     private readonly ThemedClockFace unselected=new(){Text=DefaultTime,ProjectName=SampleProject};
-    private readonly Border backdrop=new(){Padding=new Thickness(8),CornerRadius=new CornerRadius(8)};
+    private readonly Border backdrop=new(){Padding=new Thickness(8,7),CornerRadius=new CornerRadius(6)};
     private readonly Border toolbar;
     private readonly Button[] buttons;
-    private readonly TextBlock unselectedLabel=new(){FontSize=11};
+    private readonly TextBlock inactivePercent = new() { FontSize = 12 };
+    private readonly Border divider = new() { Height = 1, Margin = new(0,2,0,5) };
     private AppSettings sample=new(){OverlayTheme=OverlayThemeCatalog.Nika,TextColor="Theme default"};
     private bool running=true,darkBackdrop=true;
 
@@ -24,20 +25,33 @@ public sealed class StopwatchAppearancePreview : UserControl
     {
         toolbar = CreateSampleToolbar(out buttons);
         var selectedGroup=new StackPanel{Spacing=0};selectedGroup.Children.Add(selected);selectedGroup.Children.Add(toolbar);
-        var grid = new Grid { RowDefinitions = new("Auto,3*,Auto,2*"), MaxHeight = 282,
-            VerticalAlignment = VerticalAlignment.Stretch };
-        var activeLabel = new TextBlock { Text = "Active clock · 100%", FontSize = 11 };
+        VerticalAlignment = VerticalAlignment.Top;
+        FontFamily = ClockPickerPresentation.Body;
+        FontWeight = FontWeight.SemiBold;
+        var grid = new Grid { RowDefinitions = new("Auto,3*,Auto,Auto,2*") };
         var active = new Viewbox { Child = selectedGroup, StretchDirection = StretchDirection.DownOnly };
         var inactive = new Viewbox { Child = unselected, StretchDirection = StretchDirection.DownOnly };
+        var activeHeader = ClockHeader("Active clock", new TextBlock { FontSize = 12, Text = "100%" });
+        var inactiveHeader = ClockHeader("Inactive clock", inactivePercent);
         Grid.SetRow(active, 1);
-        Grid.SetRow(unselectedLabel, 2);
-        Grid.SetRow(inactive, 3);
-        grid.Children.Add(activeLabel);
+        Grid.SetRow(divider, 2);
+        Grid.SetRow(inactiveHeader, 3);
+        Grid.SetRow(inactive, 4);
+        grid.Children.Add(activeHeader);
         grid.Children.Add(active);
-        grid.Children.Add(unselectedLabel);
+        grid.Children.Add(divider);
+        grid.Children.Add(inactiveHeader);
         grid.Children.Add(inactive);
         backdrop.Child=grid;Content=backdrop;
         Apply(sample);
+    }
+
+    private static Grid ClockHeader(string title, TextBlock percentage)
+    {
+        var label = new TextBlock { Text = title, FontSize = 13 };
+        Grid.SetColumn(percentage, 1);
+        percentage.VerticalAlignment = VerticalAlignment.Center;
+        return new Grid { ColumnDefinitions = new("*,Auto"), Children = { label, percentage } };
     }
 
     public void Apply(AppSettings settings)
@@ -64,8 +78,9 @@ public sealed class StopwatchAppearancePreview : UserControl
         StopwatchOpacity.Apply(unselected,sample.StopwatchAppearance.UnselectedOpacity/100);
         StopwatchToolbarStyler.Apply(toolbar,buttons,sample.StopwatchAppearance,new(true,running,false),1);
         backdrop.Background=Brush.Parse(darkBackdrop?"#152936":"#EDE9DE");
-        foreach(var text in ((Grid)backdrop.Child!).Children.OfType<TextBlock>())text.Foreground=Brush.Parse(darkBackdrop?"#D5E0DF":"#43555A");
-        unselectedLabel.Text=$"Inactive clock · {sample.StopwatchAppearance.UnselectedOpacity:0}%";
+        Foreground = Brush.Parse(darkBackdrop ? "#F0E9D6" : "#263B44");
+        divider.Background = Brush.Parse(darkBackdrop ? "#49606A" : "#C7C6BB");
+        inactivePercent.Text = $"{sample.StopwatchAppearance.UnselectedOpacity:0}%";
     }
 
     public static Control Thumbnail(string kind,string id)

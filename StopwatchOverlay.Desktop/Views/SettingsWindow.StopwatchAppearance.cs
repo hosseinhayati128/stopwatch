@@ -25,7 +25,6 @@ public partial class SettingsWindow
     private StopwatchStyleGallery? _styleGallery;
     private Button? _galleryOpener;
     private bool _usesStyleGalleries;
-    private Thickness _previewStatePadding;
 
     private void LoadStopwatchAppearance()
     {
@@ -181,18 +180,13 @@ public partial class SettingsWindow
         if (_styleGallery != null) return;
         _galleryOpener = opener;
         _stopwatchPreview.SetTypographySample(layer == StopwatchGalleryLayer.Typography);
-        _previewStatePadding = StopwatchPreviewState.Padding;
         _styleGallery = new StopwatchStyleGallery(_settings, layer, id =>
         {
             if (layer.Selected(_settings.StopwatchAppearance) == id) return;
             layer.Select(_settings.StopwatchAppearance, id);
             UpdateGalleryButton(opener, layer);
             CommitStopwatchAppearance();
-        }, () => CloseStyleGallery(restoreFocus: true), compact =>
-        {
-            StopwatchPreviewFooter.IsVisible = !compact;
-            StopwatchPreviewState.Padding = compact ? new Thickness(4,2) : _previewStatePadding;
-        }) { Name = $"Stopwatch{layer.Name}Gallery", Margin = new Thickness(18,13,12,4) };
+        }, () => CloseStyleGallery(restoreFocus: true), compact => StopwatchPreviewFooter.IsVisible = !compact) { Name = $"Stopwatch{layer.Name}Gallery", Margin = new Thickness(18,13,12,4) };
         Grid.SetColumn(_styleGallery,Grid.GetColumn(SettingsScrollViewer));
         SettingsScrollViewer.IsVisible = false;
         SettingsColumns.Children.Add(_styleGallery);
@@ -202,7 +196,7 @@ public partial class SettingsWindow
 
     private void StyleGalleryKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Escape || StopwatchPreviewState.IsDropDownOpen || StopwatchPreviewBackdrop.IsDropDownOpen) return;
+        if (e.Key != Key.Escape) return;
         CloseStyleGallery(restoreFocus: true);
         e.Handled = true;
     }
@@ -215,7 +209,6 @@ public partial class SettingsWindow
         _styleGallery = null;
         _stopwatchPreview.SetTypographySample(false);
         SettingsScrollViewer.IsVisible = StopwatchPreviewFooter.IsVisible = true;
-        StopwatchPreviewState.Padding = _previewStatePadding;
         if (restoreFocus) _galleryOpener?.Focus(NavigationMethod.Tab);
         _galleryOpener = null;
     }
@@ -289,9 +282,8 @@ public partial class SettingsWindow
         finally{_loadingStopwatch=loading;}
     }
 
-    private void StopwatchPreviewState_SelectionChanged(object? sender,SelectionChangedEventArgs e)
+    private void PreviewChoiceChanged(object? sender, RoutedEventArgs e)
     {
-        if(StopwatchPreviewState==null||StopwatchPreviewBackdrop==null)return;
-        _stopwatchPreview.SetPreviewState(StopwatchPreviewState.SelectedIndex!=1,StopwatchPreviewBackdrop.SelectedIndex!=1);
+        _stopwatchPreview.SetPreviewState(PreviewPaused?.IsChecked != true, PreviewLight?.IsChecked != true);
     }
 }

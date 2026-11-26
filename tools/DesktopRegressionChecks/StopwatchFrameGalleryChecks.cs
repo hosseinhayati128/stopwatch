@@ -63,7 +63,8 @@ internal static class StopwatchFrameGalleryChecks
                 Require(faces.Length == 3 && original.Distinct().Count() == 3 &&
                     faces.All(f => f.Text == "00:44:27.0" && f.ProjectName == "Illustration"), "Artwork specimens must differ only in the rendered artwork.");
                 var host = Named<ContentControl>("StopwatchPreviewHost");
-                var before = StopwatchAppearanceChecks.Render(host, null);
+                var preview = (StopwatchAppearancePreview)host.Content!;
+                var before = StopwatchAppearanceChecks.Render(preview, null);
                 var expected = settings.StopwatchAppearance.Copy();
                 expected.Artwork = "corner-stamp";
                 cards[2].Focus();
@@ -72,7 +73,7 @@ internal static class StopwatchFrameGalleryChecks
                 Require(commits == 1 && cards[1].IsChecked == true && cards.Count(c => c.IsChecked == true) == 1 &&
                     System.Text.Json.JsonSerializer.Serialize(settings.StopwatchAppearance) == System.Text.Json.JsonSerializer.Serialize(expected),
                     "Arrow selection must change only the artwork.");
-                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "The live preview did not update.");
+                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(preview, null)), "The live preview did not update.");
                 Capture(window, scale, "Artwork");
                 Click("BrowseStopwatchBackgrounds"); Wait();
                 var gallery = Named<ListBox>("GalleryOptions");
@@ -133,7 +134,8 @@ internal static class StopwatchFrameGalleryChecks
                 var host = Named<ContentControl>("StopwatchPreviewHost");
                 var expected = settings.StopwatchAppearance.Copy();
                 expectedChoice(expected);
-                var before = StopwatchAppearanceChecks.Render(host, null);
+                var preview = (StopwatchAppearancePreview)host.Content!;
+                var before = StopwatchAppearanceChecks.Render(preview, null);
                 int expectedCommits = 1;
                 int selectedIndex = count - 1;
                 if (layer is "Frames" or "Toolbars")
@@ -151,7 +153,7 @@ internal static class StopwatchFrameGalleryChecks
                 Require(commits == expectedCommits &&
                     System.Text.Json.JsonSerializer.Serialize(settings.StopwatchAppearance) ==
                     System.Text.Json.JsonSerializer.Serialize(expected), "Selection must commit only the chosen layer.");
-                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "Live preview did not change.");
+                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(preview, null)), "Live preview did not change.");
                 if (layer == "Toolbars")
                 {
                     var activeFace = host.GetVisualDescendants().OfType<ThemedClockFace>().First();
