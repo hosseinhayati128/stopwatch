@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchTextSizeEditor">
+    <UserControl.Styles>
+        <Style Selector="Button.step">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+        <Style Selector="Button.step Path">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Stroke" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="StrokeThickness" Value="1.7"/>
+            <Setter Property="StrokeLineCap" Value="Round"/>
+        </Style>
+        <Style Selector="Button.step:disabled Path"><Setter Property="Opacity" Value="0.4"/></Style>
+        <Style Selector="TextBlock.unit">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+        </Style>
+    </UserControl.Styles>
+    <Border Name="TextSizeCard" Padding="12,8" CornerRadius="6" BorderThickness="1"
+            Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderSoftBrush}">
+        <StackPanel Spacing="2">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Text size" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Foreground="{DynamicResource PrimaryTextBrush}" TextWrapping="Wrap"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3">
+                    <Button Name="DecreaseTextSize" Classes="step" AutomationProperties.Name="Decrease text size by one pixel">
+                        <Path Data="M1,6 L11,6"/>
+                    </Button>
+                    <TextBox Name="TextSizeEntry" Width="72" Height="32" MinHeight="0" MinWidth="0" Padding="3,0"
+                             FontSize="15" FontWeight="SemiBold" TextAlignment="Center" VerticalContentAlignment="Center"
+                             Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource DialogSurfaceBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4"
+                             AutomationProperties.Name="Text size in pixels">
+                        <TextBox.InnerRightContent>
+                            <TextBlock Text="px" Classes="unit" FontSize="12" FontWeight="Normal" Margin="1,0,7,0" VerticalAlignment="Center"/>
+                        </TextBox.InnerRightContent>
+                    </TextBox>
+                    <Button Name="IncreaseTextSize" Classes="step" AutomationProperties.Name="Increase text size by one pixel">
+                        <Path Data="M1,6 L11,6 M6,1 L6,11"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+            <TextBlock Name="TextSizeError" IsVisible="False" TextWrapping="Wrap" FontSize="12"
+                       Text="Enter a whole number from 16 to 120." Foreground="{DynamicResource DangerTextBrush}"/>
+            <Slider Name="StopwatchTextSize" Minimum="16" Maximum="120" SmallChange="1" LargeChange="10"
+                    TickFrequency="1" IsSnapToTickEnabled="True" AutomationProperties.Name="Text size"/>
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="16 px" Classes="unit"/>
+                <TextBlock Grid.Column="1" Text="120 px" Classes="unit"/>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -19,8 +19,7 @@ public partial class SettingsWindow
     private CheckBox? _stopwatchArtworkOpaque;
     private StopwatchArtworkPicker? _artworkPicker;
     private Button? _stopwatchActivateButton;
-    private Slider? _stopwatchTextSizeSlider;
-    private TextBlock? _stopwatchTextSizeValue;
+    private StopwatchTextSizeEditor? _stopwatchTextSize;
     private bool _loadingStopwatch;
     private StopwatchStyleGallery? _styleGallery;
     private Button? _galleryOpener;
@@ -74,10 +73,9 @@ public partial class SettingsWindow
                 AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
                 AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
             }
-            AddStopwatchSlider(style,"StopwatchTextSize","Text size",_settings.TextSize,16,120,value=>
-            {
-                _settings.TextSize=value;bool loading=_loading;_loading=true;try{TextSizeSlider.Value=value;UpdateValueLabels();}finally{_loading=loading;}
-            }," px");
+            _stopwatchTextSize = new StopwatchTextSizeEditor(_settings.TextSize, _usesStyleGalleries);
+            _stopwatchTextSize.ValueChanged += StopwatchTextSizeChanged;
+            style.Children.Add(_stopwatchTextSize);
             style.Children.Add(new TextBlock{Name="StopwatchStateSummary",Text="Running / paused marker beside the project name. ACTIVE tab marks the selected clock.",FontSize=12,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,6,0,0)});
             BuildStopwatchTransparency(transparency, p);
             var tabs=new TabControl{Name="StopwatchAppearanceTabs",ItemsSource=new[]{new TabItem{Header="Style",Content=style},new TabItem{Header="Transparency",Content=transparency}}};
@@ -92,8 +90,8 @@ public partial class SettingsWindow
     private void BuildStopwatchTransparency(StackPanel tab, StopwatchAppearanceSettings profile)
     {
         var background = new StackPanel { Spacing = 3 };
-        AddStopwatchSlider(background, "StopwatchBackgroundOpacity", "Background opacity", profile.BackgroundOpacity,
-            0, 100, value => profile.BackgroundOpacity = value, showBadge: true);
+        AddOpacitySlider(background, "StopwatchBackgroundOpacity", "Background opacity", profile.BackgroundOpacity,
+            0, 100, value => profile.BackgroundOpacity = value);
         background.Children.Add(new Border { Height = 1, Background = SettingsRule, Margin = new(0, 2, 0, 4) });
         background.Children.Add(new TextBlock { Text = "Keep opaque", FontSize = 14, FontWeight = FontWeight.SemiBold });
         background.Children.Add(new TextBlock { Text = "Checked parts ignore background opacity.", FontSize = 12, TextWrapping = TextWrapping.Wrap });
@@ -125,8 +123,8 @@ public partial class SettingsWindow
         background.Children.Add(layers);
 
         var inactive = new StackPanel { Spacing = 3 };
-        AddStopwatchSlider(inactive, "StopwatchUnselectedOpacity", "Inactive clock opacity", profile.UnselectedOpacity,
-            10, 100, value => profile.UnselectedOpacity = value, showBadge: true);
+        AddOpacitySlider(inactive, "StopwatchUnselectedOpacity", "Inactive clock opacity", profile.UnselectedOpacity,
+            10, 100, value => profile.UnselectedOpacity = value);
         inactive.Children.Add(new TextBlock { Text = "Dims the entire inactive clock, including its controls.",
             FontSize = 12, TextWrapping = TextWrapping.Wrap });
         foreach (var content in new[] { background, inactive })
@@ -229,23 +227,15 @@ public partial class SettingsWindow
         parent.Children.Add(combo);
     }
 
-    private void AddStopwatchSlider(StackPanel parent,string name,string title,double value,double min,double max,Action<double> set,string suffix="%",bool showBadge=false)
+    private void AddOpacitySlider(StackPanel parent,string name,string title,double value,double min,double max,Action<double> set)
     {
-        var row=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto"),Margin=new Thickness(0,6,0,0)};
-        row.Children.Add(new TextBlock{Text=title,FontSize=showBadge ? 16 : 12,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center});
-        var label=new TextBlock{Text=$"{value:0}{suffix}",FontSize=showBadge ? 15 : 12};
-        Control valueDisplay = label;
-        if (showBadge)
-        {
-            label.Foreground = Brush.Parse("#F8EACA");
-            label.FontWeight = FontWeight.SemiBold;
-            valueDisplay = new Border { Child = label, Background = Brush.Parse("#173B49"), CornerRadius = new(4), Padding = new(8,2) };
-            row.Margin = default;
-        }
+        var row=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto")};
+        row.Children.Add(new TextBlock{Text=title,FontSize=16,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center});
+        var label=new TextBlock{Text=$"{value:0}%",FontSize=15,FontWeight=FontWeight.SemiBold,Foreground=Brush.Parse("#F8EACA")};
+        var valueDisplay = new Border { Child = label, Background = Brush.Parse("#173B49"), CornerRadius = new(4), Padding = new(8,2) };
         Grid.SetColumn(valueDisplay,1);row.Children.Add(valueDisplay);parent.Children.Add(row);
         var slider=new Slider{Name=name,Minimum=min,Maximum=max,Value=value,TickFrequency=1,IsSnapToTickEnabled=true};AutomationProperties.SetName(slider,title);
-        if(name=="StopwatchTextSize"){_stopwatchTextSizeSlider=slider;_stopwatchTextSizeValue=label;}
-        slider.PropertyChanged+=(_,e)=>{if(e.Property==Slider.ValueProperty&&!_loadingStopwatch&&!_loading){set(slider.Value);label.Text=$"{slider.Value:0}{suffix}";CommitStopwatchAppearance();}};
+        slider.PropertyChanged+=(_,e)=>{if(e.Property==Slider.ValueProperty&&!_loadingStopwatch&&!_loading){set(slider.Value);label.Text=$"{slider.Value:0}%";CommitStopwatchAppearance();}};
         parent.Children.Add(slider);
     }
 
@@ -272,14 +262,22 @@ public partial class SettingsWindow
 
     private void SyncStopwatchTextSizeControl()
     {
-        if(_stopwatchTextSizeSlider==null||_stopwatchTextSizeValue==null)return;
-        bool loading=_loadingStopwatch;_loadingStopwatch=true;
+        if (_stopwatchTextSize != null)
+            _stopwatchTextSize.Value = _settings.TextSize;
+    }
+
+    private void StopwatchTextSizeChanged(double value)
+    {
+        if (_loadingStopwatch || _loading || _settings.TextSize == value) return;
+        _settings.TextSize = value;
+        _loading = true;
         try
         {
-            _stopwatchTextSizeSlider.Value=_settings.TextSize;
-            _stopwatchTextSizeValue.Text=$"{_settings.TextSize:0} px";
+            TextSizeSlider.Value = value;
+            UpdateValueLabels();
         }
-        finally{_loadingStopwatch=loading;}
+        finally { _loading = false; }
+        CommitStopwatchAppearance();
     }
 
     private void PreviewChoiceChanged(object? sender, RoutedEventArgs e)

@@ -143,6 +143,33 @@ internal static class StopwatchAppearanceUiChecks
                 Require(settings.TextSize==80&&sizeChoice.Value==80,"Shared text size is stale after changing the existing appearance slider.");
                 int priorSizeChanges=changes;sizeChoice.Value=81;
                 Require(settings.TextSize==81&&legacySize.Value==81&&changes==priorSizeChanges+1,"New text-size slider did not synchronize exactly once.");
+                var entry = Named<TextBox>(window, "TextSizeEntry");
+                var minus = Named<Button>(window, "DecreaseTextSize");
+                var plus = Named<Button>(window, "IncreaseTextSize");
+                var error = Named<TextBlock>(window, "TextSizeError");
+                void Press(Key key) => entry.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key });
+                void CheckSize(int expected, int expectedChanges)
+                {
+                    Require(settings.TextSize == expected && sizeChoice.Value == expected && legacySize.Value == expected &&
+                        changes == expectedChanges, "Text size controls diverged or emitted duplicate changes.");
+                }
+                int expectedChanges = changes;
+                Require(entry.Text == "81", "The size field did not follow the slider.");
+                Click(minus); CheckSize(80, ++expectedChanges);
+                Click(plus); CheckSize(81, ++expectedChanges);
+                entry.Focus(); entry.Text = "16"; Press(Avalonia.Input.Key.Enter); CheckSize(16, ++expectedChanges);
+                Require(!minus.IsEnabled && plus.IsEnabled, "Incorrect step buttons at the minimum size.");
+                foreach (string invalid in new[] { "", "121", "15", "20.5", "abcd" })
+                {
+                    entry.Text = invalid; Press(Avalonia.Input.Key.Enter); CheckSize(16, expectedChanges);
+                    Require(error.IsVisible, "Invalid size lost its validation message.");
+                    Press(Avalonia.Input.Key.Escape);
+                    Require(!error.IsVisible && entry.Text == "16", "Escape did not restore the saved size.");
+                }
+                entry.Text = "120"; sizeChoice.Focus(); CheckSize(120, ++expectedChanges);
+                Require(minus.IsEnabled && !plus.IsEnabled, "Incorrect step buttons at the maximum size.");
+                entry.Focus(); entry.Text = "0"; sizeChoice.Focus(); CheckSize(120, expectedChanges);
+                Require(entry.Text == "120" && !error.IsVisible, "An invalid size survived a focus change.");
                 Console.WriteLine($"Inspector verified at native render scaling {window.RenderScaling:P0}; live settings bytes unchanged.");
             }
             finally{window.Close();}
