@@ -15,6 +15,7 @@ public partial class SettingsWindow
     private readonly StopwatchAppearancePreview _stopwatchPreview=new();
     private TextBlock? _stopwatchSaveStatus;
     private CheckBox? _stopwatchArtworkOpaque;
+    private StopwatchArtworkPicker? _artworkPicker;
     private Button? _stopwatchActivateButton;
     private Slider? _stopwatchTextSizeSlider;
     private TextBlock? _stopwatchTextSizeValue;
@@ -34,6 +35,7 @@ public partial class SettingsWindow
             CloseStyleGallery();
             _usesStyleGalleries = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;
             var p=_settings.StopwatchAppearance;
+            _artworkPicker = null;
             StopwatchAppearancePanel.Children.Clear();
             StopwatchAppearancePanel.Children.Add(new TextBlock{Text="Stopwatch appearance",Classes={"heading"}});
             StopwatchAppearancePanel.Children.Add(new TextBlock{Text="One shared style for all your clocks.",Classes={"subheading"},TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,10)});
@@ -53,14 +55,22 @@ public partial class SettingsWindow
                 AddGalleryChoice(style, StopwatchGalleryLayer.Background);
                 AddGalleryChoice(style, StopwatchGalleryLayer.Frame);
                 AddGalleryChoice(style, StopwatchGalleryLayer.Typography);
+                style.Children.Add(new TextBlock { Text = "Artwork", FontSize = 12, FontWeight = FontWeight.SemiBold });
+                _artworkPicker = new StopwatchArtworkPicker(_settings, id =>
+                {
+                    if (_loading || _loadingStopwatch || p.Artwork == id) return;
+                    p.Artwork = id;
+                    CommitStopwatchAppearance();
+                });
+                style.Children.Add(_artworkPicker);
             }
             else
             {
                 AddStopwatchChoice(style,"Background",StopwatchAppearanceCatalog.Backgrounds,p.Background,v=>p.Background=v);
                 AddStopwatchChoice(style,"Frame",StopwatchAppearanceCatalog.Frames,p.Frame,v=>p.Frame=v);
                 AddStopwatchChoice(style,"Typography",StopwatchAppearanceCatalog.Typography,p.Typography,v=>p.Typography=v);
+                AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
             }
-            AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
             AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
             AddStopwatchSlider(style,"StopwatchTextSize","Text size",_settings.TextSize,16,120,value=>
             {
@@ -201,6 +211,7 @@ public partial class SettingsWindow
     {
         SyncStopwatchTextSizeControl();
         _stopwatchPreview.Apply(_settings);
+        _artworkPicker?.Apply(_settings);
         if(_stopwatchArtworkOpaque!=null)
         {
             bool loading=_loadingStopwatch;_loadingStopwatch=true;

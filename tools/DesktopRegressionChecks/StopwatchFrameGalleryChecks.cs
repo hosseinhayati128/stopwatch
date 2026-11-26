@@ -16,6 +16,79 @@ internal static class StopwatchFrameGalleryChecks
     internal static void RunBackgrounds() => Run("Backgrounds", 12, "Midnight Chart", p => p.Background = "midnight-chart");
     internal static void RunTypography() => Run("Typography", 10, "Typewriter Log", p => p.Typography = "typewriter-log");
 
+    internal static void RunArtwork()
+    {
+        foreach (int scale in new[] { 70, 90, 125 })
+        {
+            var settings = new AppSettings { TextColor = "Theme default", ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale };
+            settings.StopwatchAppearance.Artwork = "edge-engraving";
+            Call("ThemeResources", "ApplyApplication", settings.ThemeMode);
+            Call("DesktopPageAppearance", "Initialize", settings);
+            var window = new SettingsWindow(settings) { ShowActivated = false, ShowInTaskbar = false };
+            int commits = 0;
+            Action<SettingsChangeKind> changed = kind => { if (kind == SettingsChangeKind.OverlayAppearance) commits++; };
+            typeof(SettingsWindow).GetEvent("SettingsChanged", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetAddMethod(true)!.Invoke(window, [changed]);
+            void Wait() => ClockOverlayChecks.Pump(150);
+            T Named<T>(string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(c => c.Name == name && c.IsEffectivelyVisible);
+            void Click(string name) => Named<Button>(name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            try
+            {
+                window.Show(); Wait();
+                Click("SettingsNav_StopwatchAppearance"); Wait();
+                var picker = window.GetVisualDescendants().OfType<StopwatchArtworkPicker>().Single();
+                picker.BringIntoView(); Wait();
+                var cards = picker.GetVisualDescendants().OfType<RadioButton>().ToArray();
+                var options = StopwatchAppearanceCatalog.Artworks;
+                var viewport = Named<ScrollViewer>("SettingsScrollViewer");
+                Require(cards.Length == 3 && cards[2].IsChecked == true && commits == 0, "Opening lost the saved artwork or wrote settings.");
+                var positions = cards.Select(c => c.TranslatePoint(default, viewport)!.Value).ToArray();
+                for (int i = 0; i < cards.Length; i++)
+                {
+                    var pos = positions[i];
+                    var card = cards[i];
+                    Require(pos.X >= -1 && pos.Y >= -1 && pos.X + card.Bounds.Width <= viewport.Bounds.Width + 1 &&
+                        pos.Y + card.Bounds.Height <= viewport.Bounds.Height + 1, "Artwork card extends outside the viewport.");
+                    Require(Math.Abs(pos.Y - positions[0].Y) < 1 && (i == 0 || pos.X >= positions[i-1].X + cards[i-1].Bounds.Width - 1),
+                        "Artwork cards must fit side by side.");
+                    var label = card.GetVisualDescendants().OfType<TextBlock>().Single(c => c.Name == "Label");
+                    Require(label.Text?.Replace("\n", " ") == options[i].Label && label.Bounds.Height + 1 >= label.TextLayout.Height,
+                        "Artwork label missing or clipped.");
+                }
+                var faces = picker.GetVisualDescendants().OfType<ThemedClockFace>().ToArray();
+                string[] Samples() => faces.Select(face => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    StopwatchAppearanceChecks.Render(face, null)))).ToArray();
+                var original = Samples();
+                Require(faces.Length == 3 && original.Distinct().Count() == 3 &&
+                    faces.All(f => f.Text == "00:44:27.0" && f.ProjectName == "Illustration"), "Artwork specimens must differ only in the rendered artwork.");
+                var host = Named<ContentControl>("StopwatchPreviewHost");
+                var before = StopwatchAppearanceChecks.Render(host, null);
+                var expected = settings.StopwatchAppearance.Copy();
+                expected.Artwork = "corner-stamp";
+                cards[2].Focus();
+                cards[2].RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Left });
+                Wait();
+                Require(commits == 1 && cards[1].IsChecked == true && cards.Count(c => c.IsChecked == true) == 1 &&
+                    System.Text.Json.JsonSerializer.Serialize(settings.StopwatchAppearance) == System.Text.Json.JsonSerializer.Serialize(expected),
+                    "Arrow selection must change only the artwork.");
+                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "The live preview did not update.");
+                Capture(window, scale, "Artwork");
+                Click("BrowseStopwatchBackgrounds"); Wait();
+                var gallery = Named<ListBox>("GalleryOptions");
+                gallery.SelectedIndex = 2; Wait();
+                Click("GalleryBack"); Wait();
+                Require(Samples().Zip(original).All(pair => pair.First != pair.Second) &&
+                    settings.StopwatchAppearance.Artwork == "corner-stamp", "Artwork specimens did not follow the new background.");
+                typeof(RadioButton).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(cards[0], null);
+                Require(settings.StopwatchAppearance.Artwork == "clean" && commits == 3, "Clean must be selectable by clicking.");
+                Named<TabControl>("StopwatchAppearanceTabs").SelectedIndex = 1; Wait();
+                Require(!Named<CheckBox>("StopwatchOpaqueArtwork").IsEnabled, "Clean enabled artwork opacity.");
+                Console.WriteLine($"PASS {scale}%: saved selection, three distinct visible clocks, full labels, keyboard, click, live preview and background refresh.");
+            }
+            finally { window.Close(); Call("DesktopPageAppearance", "Shutdown"); }
+        }
+    }
+
     private static void Run(string layer, int count, string label, Action<StopwatchAppearanceSettings> expectedChoice)
     {
         foreach (int scale in new[] { 70, 90, 125 })

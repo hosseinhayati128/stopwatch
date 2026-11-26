@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchArtworkPicker"
+             Height="100" AutomationProperties.Name="Artwork">
+    <UserControl.Styles>
+        <Style Selector="RadioButton.artworkCard">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Edge" BorderThickness="2" BorderBrush="#C4A472" CornerRadius="5" ClipToBounds="True">
+                        <Grid RowDefinitions="*,Auto">
+                            <Border Background="#213847" Padding="5,3">
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                            </Border>
+                            <Border Grid.Row="1" Name="Caption" Background="#F8EACA" Padding="6,3" Height="30">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Name="Label" Text="{TemplateBinding Tag}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#142E3D" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <Path Grid.Column="1" Name="Check" IsVisible="False" Width="12" Height="12" Stretch="Uniform"
+                                          VerticalAlignment="Center" Stroke="#FFF2D4" StrokeThickness="2" Data="M1,6 L5,10 L12,2"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.artworkCard.compact /template/ Border#Caption"><Setter Property="Height" Value="42"/></Style>
+        <Style Selector="RadioButton.artworkCard.compact /template/ TextBlock#Label"><Setter Property="LineHeight" Value="16"/></Style>
+        <Style Selector="RadioButton.artworkCard:checked /template/ Border#Edge"><Setter Property="BorderBrush" Value="#216B63"/></Style>
+        <Style Selector="RadioButton.artworkCard:checked /template/ Border#Caption"><Setter Property="Background" Value="#216B63"/></Style>
+        <Style Selector="RadioButton.artworkCard:checked /template/ TextBlock#Label"><Setter Property="Foreground" Value="#FFF2D4"/></Style>
+        <Style Selector="RadioButton.artworkCard:checked /template/ Path#Check"><Setter Property="IsVisible" Value="True"/></Style>
+        <Style Selector="RadioButton.artworkCard:pointerover /template/ Border#Edge, RadioButton.artworkCard:focus-visible /template/ Border#Edge">
+            <Setter Property="BorderBrush" Value="#98631E"/>
+        </Style>
+    </UserControl.Styles>
+    <Grid Name="Cards" ColumnDefinitions="*,6,*,6,*"/>
+</UserControl>

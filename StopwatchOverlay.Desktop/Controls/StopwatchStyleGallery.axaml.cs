@@ -21,6 +21,8 @@ internal sealed record StopwatchGalleryLayer(string Name, IReadOnlyList<Stopwatc
 
     internal static readonly StopwatchGalleryLayer Typography = new("Typography", StopwatchAppearanceCatalog.Typography,
         p => p.Typography, (p, id) => p.Typography = id);
+    internal static readonly StopwatchGalleryLayer Artwork = new("Artwork", StopwatchAppearanceCatalog.Artworks,
+        p => p.Artwork, (p, id) => p.Artwork = id);
 
     internal string Label => this == Typography ? "typeface" : Name.ToLowerInvariant();
     internal string BrowseLabel => this == Typography ? "Browse typography" : $"Browse {Label}s";

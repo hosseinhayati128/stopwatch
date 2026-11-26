@@ -74,13 +74,18 @@ public sealed class StopwatchAppearancePreview : UserControl
 
     internal static Viewbox CreateGallerySample(StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
     {
-        var appearance = settings.StopwatchAppearance.Copy();
-        layer.Select(appearance, option.Id);
         var face = new ThemedClockFace { Text = layer == StopwatchGalleryLayer.Typography ? TypographyTime : DefaultTime,
             ProjectName = SampleProject };
+        ApplyGallerySample(face, layer, option, settings);
+        return new Viewbox { Child = face, Stretch = Stretch.Uniform, IsHitTestVisible = false };
+    }
+
+    internal static void ApplyGallerySample(ThemedClockFace face, StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
+    {
+        var appearance = settings.StopwatchAppearance.Copy();
+        layer.Select(appearance, option.Id);
         face.ApplySettings(new AppSettings { ThemeMode = settings.ThemeMode, OverlayTheme = OverlayThemeCatalog.Nika,
             TextSize = settings.TextSize, TextColor = settings.TextColor, StopwatchAppearance = appearance });
         face.SetStopwatchPresentationState(new(false, true, false));
-        return new Viewbox { Child = face, Stretch = Stretch.Uniform, IsHitTestVisible = false };
     }
 }
