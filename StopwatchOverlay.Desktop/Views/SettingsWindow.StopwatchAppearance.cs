@@ -65,6 +65,7 @@ public partial class SettingsWindow
                     CommitStopwatchAppearance();
                 });
                 style.Children.Add(_artworkPicker);
+                AddGalleryChoice(style, StopwatchGalleryLayer.Toolbar);
             }
             else
             {
@@ -72,8 +73,8 @@ public partial class SettingsWindow
                 AddStopwatchChoice(style,"Frame",StopwatchAppearanceCatalog.Frames,p.Frame,v=>p.Frame=v);
                 AddStopwatchChoice(style,"Typography",StopwatchAppearanceCatalog.Typography,p.Typography,v=>p.Typography=v);
                 AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
+                AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
             }
-            AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
             AddStopwatchSlider(style,"StopwatchTextSize","Text size",_settings.TextSize,16,120,value=>
             {
                 _settings.TextSize=value;bool loading=_loading;_loading=true;try{TextSizeSlider.Value=value;UpdateValueLabels();}finally{_loading=loading;}
@@ -146,7 +147,7 @@ public partial class SettingsWindow
 
     private void AddGalleryChoice(StackPanel style, StopwatchGalleryLayer layer)
     {
-        style.Children.Add(SettingsLabel(layer.Name, 12));
+        style.Children.Add(SettingsLabel(layer.DisplayName, 12));
         var button = new Button { Name = layer.ButtonName, Height = 40, Padding = new Thickness(6, 2, 12, 2),
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Background = Brush.Parse("#F8EACA"), BorderBrush = Brush.Parse("#C4A472"), CornerRadius = new CornerRadius(4) };
@@ -158,7 +159,9 @@ public partial class SettingsWindow
     private void UpdateGalleryButton(Button button, StopwatchGalleryLayer layer)
     {
         var option = layer.Options.First(o => o.Id == layer.Selected(_settings.StopwatchAppearance));
-        var sample = StopwatchAppearancePreview.Thumbnail(layer.Name, option.Id);
+        var sample = layer == StopwatchGalleryLayer.Toolbar
+            ? StopwatchAppearancePreview.CreateToolbarThumbnail(_settings.StopwatchAppearance)
+            : StopwatchAppearancePreview.Thumbnail(layer.Name, option.Id);
         sample.Width = 94;
         sample.Height = 32;
         var label = SettingsLabel(option.Label,14,SettingsInk);

@@ -339,14 +339,16 @@ if (args.Contains("--quick-note-native"))
 }
 
 if (args.Contains("--stopwatch-frame-gallery") || args.Contains("--stopwatch-background-gallery") ||
-    args.Contains("--stopwatch-typography-gallery") || args.Contains("--stopwatch-artwork-picker"))
+    args.Contains("--stopwatch-typography-gallery") || args.Contains("--stopwatch-artwork-picker") || args.Contains("--stopwatch-toolbar-gallery"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    if (args.Contains("--stopwatch-artwork-picker"))
+    if (args.Contains("--stopwatch-toolbar-gallery"))
+        Check("Hover controls gallery specimens, navigation and preview", StopwatchFrameGalleryChecks.RunToolbars);
+    else if (args.Contains("--stopwatch-artwork-picker"))
         Check("Inline artwork picker, preview and selection", StopwatchFrameGalleryChecks.RunArtwork);
     else if (args.Contains("--stopwatch-typography-gallery"))
         Check("Typography gallery specimens, navigation and preview", StopwatchFrameGalleryChecks.RunTypography);

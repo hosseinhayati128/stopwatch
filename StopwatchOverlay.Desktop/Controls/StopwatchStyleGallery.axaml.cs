@@ -24,8 +24,12 @@ internal sealed record StopwatchGalleryLayer(string Name, IReadOnlyList<Stopwatc
     internal static readonly StopwatchGalleryLayer Artwork = new("Artwork", StopwatchAppearanceCatalog.Artworks,
         p => p.Artwork, (p, id) => p.Artwork = id);
 
+    internal static readonly StopwatchGalleryLayer Toolbar = new("Toolbar", StopwatchAppearanceCatalog.HoverControls,
+        p => p.HoverControls, (p, id) => p.HoverControls = id);
+
+    internal string DisplayName => this == Toolbar ? "Hover controls" : Name;
     internal string Label => this == Typography ? "typeface" : Name.ToLowerInvariant();
-    internal string BrowseLabel => this == Typography ? "Browse typography" : $"Browse {Label}s";
+    internal string BrowseLabel => this == Typography || this == Toolbar ? $"Browse {DisplayName.ToLowerInvariant()}" : $"Browse {Label}s";
     internal string ButtonName => this == Typography ? "BrowseStopwatchTypography" : $"BrowseStopwatch{Name}s";
 }
 
@@ -48,7 +52,7 @@ public partial class StopwatchStyleGallery : UserControl
         : this()
     {
         _layer = layer;
-        GalleryHeading.Text = $"Choose a {layer.Label}";
+        GalleryHeading.Text = layer == StopwatchGalleryLayer.Toolbar ? layer.DisplayName : $"Choose a {layer.Label}";
         AutomationProperties.SetName(GalleryOptions, $"Clock {layer.Label}s");
         foreach (var option in layer.Options)
         {
@@ -94,11 +98,21 @@ public partial class StopwatchStyleGallery : UserControl
     {
         var size = GalleryOptions.Bounds;
         if (size.Width <= 0 || size.Height <= 0) return;
-        if (_layer == StopwatchGalleryLayer.Typography)
+        bool toolbars = _layer == StopwatchGalleryLayer.Toolbar;
+        if (toolbars || _layer == StopwatchGalleryLayer.Typography)
         {
-            _tiles.Columns = size.Width >= 320 ? 2 : 1;
+            _tiles.Columns = size.Width switch
+            {
+                >= 960 when toolbars => 4,
+                >= 600 when toolbars => 3,
+                >= 320 => 2,
+                _ => 1
+            };
             bool narrow = size.Width < 480;
-            double rowHeight = Math.Clamp(Math.Floor(size.Height / (narrow ? 3 : 5)), 86, 148);
+            int rows = (GalleryOptions.ItemCount + _tiles.Columns - 1) / _tiles.Columns;
+            double rowHeight = toolbars
+                ? Math.Clamp(Math.Floor(size.Height / rows), 139, 186)
+                : Math.Clamp(Math.Floor(size.Height / (narrow ? 3 : 5)), 86, 148);
             foreach (var tile in GalleryOptions.Items.OfType<ListBoxItem>())
             {
                 tile.Height = rowHeight - tile.Margin.Top - tile.Margin.Bottom;

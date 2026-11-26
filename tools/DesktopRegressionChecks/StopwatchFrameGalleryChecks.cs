@@ -14,6 +14,7 @@ internal static class StopwatchFrameGalleryChecks
 {
     internal static void Run() => Run("Frames", 16, "Royal Cartouche", p => p.Frame = "royal-cartouche");
     internal static void RunBackgrounds() => Run("Backgrounds", 12, "Midnight Chart", p => p.Background = "midnight-chart");
+    internal static void RunToolbars() => Run("Toolbars", 12, "Royal Cartouche", p => p.HoverControls = "royal-cartouche");
     internal static void RunTypography() => Run("Typography", 10, "Typewriter Log", p => p.Typography = "typewriter-log");
 
     internal static void RunArtwork()
@@ -95,6 +96,11 @@ internal static class StopwatchFrameGalleryChecks
         {
             string trigger = "BrowseStopwatch" + layer;
             var settings = new AppSettings { TextColor = "Theme default", ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale };
+            if (layer == "Toolbars")
+            {
+                settings.StopwatchAppearance.Frame = "rope-binding";
+                settings.StopwatchAppearance.Background = "midnight-chart";
+            }
             Call("ThemeResources", "ApplyApplication", settings.ThemeMode);
             Call("DesktopPageAppearance", "Initialize", settings);
             var window = new SettingsWindow(settings) { ShowActivated = false, ShowInTaskbar = false };
@@ -119,6 +125,7 @@ internal static class StopwatchFrameGalleryChecks
                 int expectedColumns = layer switch
                 {
                     "Typography" => 2,
+                    "Toolbars" => list.Bounds.Width switch { >= 960 => 4, >= 600 => 3, >= 320 => 2, _ => 1 },
                     "Backgrounds" when scale == 90 => 3,
                     _ => scale == 125 ? 2 : 4
                 };
@@ -129,7 +136,7 @@ internal static class StopwatchFrameGalleryChecks
                 var before = StopwatchAppearanceChecks.Render(host, null);
                 int expectedCommits = 1;
                 int selectedIndex = count - 1;
-                if (layer == "Frames")
+                if (layer is "Frames" or "Toolbars")
                 {
                     KeyPress(original, Avalonia.Input.Key.End);
                 }
@@ -145,6 +152,24 @@ internal static class StopwatchFrameGalleryChecks
                     System.Text.Json.JsonSerializer.Serialize(settings.StopwatchAppearance) ==
                     System.Text.Json.JsonSerializer.Serialize(expected), "Selection must commit only the chosen layer.");
                 Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "Live preview did not change.");
+                if (layer == "Toolbars")
+                {
+                    var activeFace = host.GetVisualDescendants().OfType<ThemedClockFace>().First();
+                    var reference = StopwatchAppearanceChecks.Render(activeFace, null);
+                    var toolbarImages = new HashSet<string>();
+                    foreach (var item in list.Items.Cast<ListBoxItem>())
+                    {
+                        var face = item.GetVisualDescendants().OfType<ThemedClockFace>().Single();
+                        Require(face.Text == activeFace.Text && face.ProjectName == activeFace.ProjectName &&
+                            reference.SequenceEqual(StopwatchAppearanceChecks.Render(face, null)),
+                            "Toolbar clock differs from the active preview with the selected background and frame.");
+                        var artwork = item.GetVisualDescendants().OfType<Control>().Single(c => c.GetType().Name == "StopwatchToolbarArtwork");
+                        toolbarImages.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                            StopwatchAppearanceChecks.Render(artwork, null))));
+                        Require(item.GetVisualDescendants().OfType<Button>().Count() == 3, "Missing toolbar action buttons.");
+                    }
+                    Require(toolbarImages.Count == count, "Some toolbar artworks are missing or duplicated.");
+                }
                 if (layer == "Typography")
                 {
                     var samples = list.GetVisualDescendants().OfType<ThemedClockFace>().ToArray();

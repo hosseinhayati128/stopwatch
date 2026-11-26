@@ -14,15 +14,15 @@ public sealed class StopwatchAppearancePreview : UserControl
     private readonly ThemedClockFace selected=new(){Text=DefaultTime,ProjectName=SampleProject};
     private readonly ThemedClockFace unselected=new(){Text=DefaultTime,ProjectName=SampleProject};
     private readonly Border backdrop=new(){Padding=new Thickness(8),CornerRadius=new CornerRadius(8)};
-    private readonly Border toolbar=new(){HorizontalAlignment=HorizontalAlignment.Center};
-    private readonly Button[] buttons=Enumerable.Range(0,3).Select(_=>new Button{IsHitTestVisible=false,Focusable=false}).ToArray();
+    private readonly Border toolbar;
+    private readonly Button[] buttons;
     private readonly TextBlock unselectedLabel=new(){FontSize=11};
     private AppSettings sample=new(){OverlayTheme=OverlayThemeCatalog.Nika,TextColor="Theme default"};
     private bool running=true,darkBackdrop=true;
 
     public StopwatchAppearancePreview()
     {
-        var buttonPanel=new StackPanel{Orientation=Orientation.Horizontal};foreach(var button in buttons)buttonPanel.Children.Add(button);toolbar.Child=buttonPanel;
+        toolbar = CreateSampleToolbar(out buttons);
         var selectedGroup=new StackPanel{Spacing=0};selectedGroup.Children.Add(selected);selectedGroup.Children.Add(toolbar);
         var grid = new Grid { RowDefinitions = new("Auto,3*,Auto,2*"), MaxHeight = 282,
             VerticalAlignment = VerticalAlignment.Stretch };
@@ -79,20 +79,42 @@ public sealed class StopwatchAppearancePreview : UserControl
         return new Viewbox{Child=face,Width=82,Height=29,Stretch=Stretch.Uniform};
     }
 
+    private static Border CreateSampleToolbar(out Button[] actionButtons)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        actionButtons = Enumerable.Range(0, 3).Select(_ => new Button { Focusable = false, IsHitTestVisible = false }).ToArray();
+        foreach (var button in actionButtons) panel.Children.Add(button);
+        return new Border { Child = panel, HorizontalAlignment = HorizontalAlignment.Center };
+    }
+
+    private static Border CreateStyledToolbar(StopwatchAppearanceSettings appearance)
+    {
+        var bar = CreateSampleToolbar(out var actionButtons);
+        StopwatchToolbarStyler.Apply(bar, actionButtons, appearance, new(true, true, false), 1);
+        return bar;
+    }
+
+    internal static Viewbox CreateToolbarThumbnail(StopwatchAppearanceSettings appearance) =>
+        new() { Child = CreateStyledToolbar(appearance), Stretch = Stretch.Uniform, IsHitTestVisible = false };
+
     internal static Viewbox CreateGallerySample(StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
     {
         var face = new ThemedClockFace { Text = layer == StopwatchGalleryLayer.Typography ? TypographyTime : DefaultTime,
             ProjectName = SampleProject };
-        ApplyGallerySample(face, layer, option, settings);
-        return new Viewbox { Child = face, Stretch = Stretch.Uniform, IsHitTestVisible = false };
+        var appearance = ApplyGallerySample(face, layer, option, settings);
+        Control content = face;
+        if (layer == StopwatchGalleryLayer.Toolbar)
+            content = new StackPanel { Children = { face, CreateStyledToolbar(appearance) } };
+        return new Viewbox { Child = content, Stretch = Stretch.Uniform, IsHitTestVisible = false };
     }
 
-    internal static void ApplyGallerySample(ThemedClockFace face, StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
+    internal static StopwatchAppearanceSettings ApplyGallerySample(ThemedClockFace face, StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
     {
         var appearance = settings.StopwatchAppearance.Copy();
         layer.Select(appearance, option.Id);
         face.ApplySettings(new AppSettings { ThemeMode = settings.ThemeMode, OverlayTheme = OverlayThemeCatalog.Nika,
             TextSize = settings.TextSize, TextColor = settings.TextColor, StopwatchAppearance = appearance });
-        face.SetStopwatchPresentationState(new(false, true, false));
+        face.SetStopwatchPresentationState(new(layer == StopwatchGalleryLayer.Toolbar, true, false));
+        return appearance;
     }
 }
