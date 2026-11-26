@@ -338,14 +338,17 @@ if (args.Contains("--quick-note-native"))
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 
-if (args.Contains("--stopwatch-frame-gallery"))
+if (args.Contains("--stopwatch-frame-gallery") || args.Contains("--stopwatch-background-gallery"))
 {
     AppBuilder.Configure<FrameSizePreviewApp>().UsePlatformDetect()
         .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
         .WithInterFont().SetupWithoutStarting();
     Application.Current!.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
     Application.Current.Styles.Add(new StyleInclude(new Uri("avares://StopwatchOverlay.Desktop/")) { Source=new Uri("avares://StopwatchOverlay.Desktop/Styles/AppStyles.axaml") });
-    Check("Clock frame gallery navigation, selection and preview", StopwatchFrameGalleryChecks.Run);
+    if (args.Contains("--stopwatch-background-gallery"))
+        Check("Clock background gallery navigation, selection and preview", StopwatchFrameGalleryChecks.RunBackgrounds);
+    else
+        Check("Clock frame gallery navigation, selection and preview", StopwatchFrameGalleryChecks.Run);
     Environment.Exit(failures == 0 ? 0 : 1);
 }
 

@@ -64,10 +64,10 @@ public sealed class StopwatchAppearancePreview : UserControl
         return new Viewbox{Child=face,Width=82,Height=29,Stretch=Stretch.Uniform};
     }
 
-    internal static Viewbox CreateFrameSample(StopwatchAppearanceOption frame, AppSettings settings)
+    internal static Viewbox CreateGallerySample(StopwatchGalleryLayer layer, StopwatchAppearanceOption option, AppSettings settings)
     {
         var appearance = settings.StopwatchAppearance.Copy();
-        appearance.Frame = frame.Id;
+        layer.Select(appearance, option.Id);
         var face = new ThemedClockFace { Text = "00:44:27.0", ProjectName = "Illustration" };
         face.ApplySettings(new AppSettings { ThemeMode = settings.ThemeMode, OverlayTheme = OverlayThemeCatalog.Nika,
             TextSize = settings.TextSize, TextColor = settings.TextColor, StopwatchAppearance = appearance });

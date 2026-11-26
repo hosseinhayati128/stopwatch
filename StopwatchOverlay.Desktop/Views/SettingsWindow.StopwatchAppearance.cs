@@ -19,8 +19,9 @@ public partial class SettingsWindow
     private Slider? _stopwatchTextSizeSlider;
     private TextBlock? _stopwatchTextSizeValue;
     private bool _loadingStopwatch;
-    private StopwatchFrameGallery? _frameGallery;
-    private Button? _browseFrames;
+    private StopwatchStyleGallery? _styleGallery;
+    private Button? _galleryOpener;
+    private bool _usesStyleGalleries;
     private Thickness _previewStatePadding;
 
     private void LoadStopwatchAppearance()
@@ -30,8 +31,8 @@ public partial class SettingsWindow
         try
         {
             _settings.StopwatchAppearance.Normalize();
-            CloseFrameGallery();
-            _browseFrames = null;
+            CloseStyleGallery();
+            _usesStyleGalleries = AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika;
             var p=_settings.StopwatchAppearance;
             StopwatchAppearancePanel.Children.Clear();
             StopwatchAppearancePanel.Children.Add(new TextBlock{Text="Stopwatch appearance",Classes={"heading"}});
@@ -47,14 +48,16 @@ public partial class SettingsWindow
             StopwatchAppearancePanel.Children.Add(activate);
             var style=new StackPanel{Spacing=10,Margin=new Thickness(0,12,0,0)};
             var transparency=new StackPanel{Spacing=10,Margin=new Thickness(0,12,0,0)};
-            AddStopwatchChoice(style,"Background",StopwatchAppearanceCatalog.Backgrounds,p.Background,v=>p.Background=v);
-            if (AppThemeCatalog.Normalize(_settings.ThemeMode) == AppThemeCatalog.Nika)
+            if (_usesStyleGalleries)
             {
-                style.Children.Add(SettingsLabel("Frame",12));
-                _browseFrames = BuildBrowseFramesButton();
-                style.Children.Add(_browseFrames);
+                AddGalleryChoice(style, StopwatchGalleryLayer.Background);
+                AddGalleryChoice(style, StopwatchGalleryLayer.Frame);
             }
-            else AddStopwatchChoice(style,"Frame",StopwatchAppearanceCatalog.Frames,p.Frame,v=>p.Frame=v);
+            else
+            {
+                AddStopwatchChoice(style,"Background",StopwatchAppearanceCatalog.Backgrounds,p.Background,v=>p.Background=v);
+                AddStopwatchChoice(style,"Frame",StopwatchAppearanceCatalog.Frames,p.Frame,v=>p.Frame=v);
+            }
             AddStopwatchChoice(style,"Typography",StopwatchAppearanceCatalog.Typography,p.Typography,v=>p.Typography=v);
             AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
             AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
@@ -85,72 +88,75 @@ public partial class SettingsWindow
         finally{_loadingStopwatch=false;}
     }
 
-    private Button BuildBrowseFramesButton()
+    private void AddGalleryChoice(StackPanel style, StopwatchGalleryLayer layer)
     {
-        var button = new Button { Name = "BrowseStopwatchFrames", Height = 40, Padding = new Thickness(6, 2, 12, 2),
+        style.Children.Add(SettingsLabel(layer.Name, 12));
+        var button = new Button { Name = $"BrowseStopwatch{layer.Name}s", Height = 40, Padding = new Thickness(6, 2, 12, 2),
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Background = Brush.Parse("#F8EACA"), BorderBrush = Brush.Parse("#C4A472"), CornerRadius = new CornerRadius(4) };
-        UpdateFrameButton(button);
-        button.Click += (_, _) => OpenFrameGallery();
-        return button;
+        UpdateGalleryButton(button, layer);
+        button.Click += (_, _) => OpenStyleGallery(button, layer);
+        style.Children.Add(button);
     }
 
-    private void UpdateFrameButton(Button button)
+    private void UpdateGalleryButton(Button button, StopwatchGalleryLayer layer)
     {
-        var frame = StopwatchAppearanceCatalog.Frames.First(f => f.Id == _settings.StopwatchAppearance.Frame);
-        var sample = StopwatchAppearancePreview.Thumbnail("Frame", frame.Id);
+        var option = layer.Options.First(o => o.Id == layer.Selected(_settings.StopwatchAppearance));
+        var sample = StopwatchAppearancePreview.Thumbnail(layer.Name, option.Id);
         sample.Width = 94;
         sample.Height = 32;
-        var label = SettingsLabel(frame.Label,14,SettingsInk);
+        var label = SettingsLabel(option.Label,14,SettingsInk);
         label.TextWrapping = TextWrapping.NoWrap;
         label.TextTrimming = TextTrimming.CharacterEllipsis;
         label.FontWeight = FontWeight.SemiBold;
-        var browse = SettingsLabel("Browse frames  ›",13,Brush.Parse("#216B63"));
+        var browse = SettingsLabel($"Browse {layer.Label}s  ›",13,Brush.Parse("#216B63"));
         var row = new Grid { ColumnDefinitions = new("Auto,8,*,8,Auto"), Children = { sample, label, browse } };
         Grid.SetColumn(label,2);
         Grid.SetColumn(browse,4);
         button.Content = row;
-        AutomationProperties.SetName(button, $"Browse frames, current frame {frame.Label}");
+        AutomationProperties.SetName(button, $"Browse {layer.Label}s, current {layer.Label} {option.Label}");
     }
 
-    private void OpenFrameGallery()
+    private void OpenStyleGallery(Button opener, StopwatchGalleryLayer layer)
     {
-        if (_frameGallery != null || _browseFrames == null) return;
+        if (_styleGallery != null) return;
+        _galleryOpener = opener;
         _previewStatePadding = StopwatchPreviewState.Padding;
-        _frameGallery = new StopwatchFrameGallery(_settings, id =>
+        _styleGallery = new StopwatchStyleGallery(_settings, layer, id =>
         {
-            if (_settings.StopwatchAppearance.Frame == id) return;
-            _settings.StopwatchAppearance.Frame = id;
-            UpdateFrameButton(_browseFrames);
+            if (layer.Selected(_settings.StopwatchAppearance) == id) return;
+            layer.Select(_settings.StopwatchAppearance, id);
+            UpdateGalleryButton(opener, layer);
             CommitStopwatchAppearance();
-        }, () => CloseFrameGallery(restoreFocus: true), compact =>
+        }, () => CloseStyleGallery(restoreFocus: true), compact =>
         {
             StopwatchPreviewFooter.IsVisible = !compact;
             StopwatchPreviewState.Padding = compact ? new Thickness(4,2) : _previewStatePadding;
-        }) { Name = "StopwatchFrameGallery", Margin = new Thickness(18,13,12,4) };
-        Grid.SetColumn(_frameGallery,Grid.GetColumn(SettingsScrollViewer));
+        }) { Name = $"Stopwatch{layer.Name}Gallery", Margin = new Thickness(18,13,12,4) };
+        Grid.SetColumn(_styleGallery,Grid.GetColumn(SettingsScrollViewer));
         SettingsScrollViewer.IsVisible = false;
-        SettingsColumns.Children.Add(_frameGallery);
-        AddHandler(KeyDownEvent, FrameGalleryKeyDown, RoutingStrategies.Tunnel);
-        _frameGallery.FocusSelection();
+        SettingsColumns.Children.Add(_styleGallery);
+        AddHandler(KeyDownEvent, StyleGalleryKeyDown, RoutingStrategies.Tunnel);
+        _styleGallery.FocusSelection();
     }
 
-    private void FrameGalleryKeyDown(object? sender, KeyEventArgs e)
+    private void StyleGalleryKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape || StopwatchPreviewState.IsDropDownOpen || StopwatchPreviewBackdrop.IsDropDownOpen) return;
-        CloseFrameGallery(restoreFocus: true);
+        CloseStyleGallery(restoreFocus: true);
         e.Handled = true;
     }
 
-    private void CloseFrameGallery(bool restoreFocus = false)
+    private void CloseStyleGallery(bool restoreFocus = false)
     {
-        if (_frameGallery == null) return;
-        RemoveHandler(KeyDownEvent, FrameGalleryKeyDown);
-        SettingsColumns.Children.Remove(_frameGallery);
-        _frameGallery = null;
+        if (_styleGallery == null) return;
+        RemoveHandler(KeyDownEvent, StyleGalleryKeyDown);
+        SettingsColumns.Children.Remove(_styleGallery);
+        _styleGallery = null;
         SettingsScrollViewer.IsVisible = StopwatchPreviewFooter.IsVisible = true;
         StopwatchPreviewState.Padding = _previewStatePadding;
-        if (restoreFocus) _browseFrames?.Focus(NavigationMethod.Tab);
+        if (restoreFocus) _galleryOpener?.Focus(NavigationMethod.Tab);
+        _galleryOpener = null;
     }
 
     private void AddStopwatchChoice(StackPanel parent,string kind,IReadOnlyList<StopwatchAppearanceOption> options,string selected,Action<string> set,string? label=null)

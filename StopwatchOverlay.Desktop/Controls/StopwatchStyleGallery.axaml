@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchFrameGallery"
+             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchStyleGallery"
              Foreground="#142E3D">
     <UserControl.Styles>
         <Style Selector="ListBoxItem.frameTile">
@@ -31,16 +31,16 @@
     <Grid RowDefinitions="Auto,*">
         <StackPanel Spacing="4" Margin="0,0,0,12">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="Choose a frame" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Name="FrameGalleryBack" Grid.Column="1" Classes="editorAction"
+                <TextBlock Name="GalleryHeading" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <Button Name="GalleryBack" Grid.Column="1" Classes="editorAction"
                         VerticalAlignment="Center" Padding="11,6" AutomationProperties.Name="Back to style">
                     <TextBlock Text="‹  Back to style" FontFamily="{Binding FontFamily, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                FontSize="13" FontWeight="SemiBold" Foreground="#142E3D"/>
                 </Button>
             </Grid>
-            <TextBlock Name="FrameSummary" Foreground="#67563D" FontSize="13" TextWrapping="Wrap"/>
+            <TextBlock Name="GallerySummary" Foreground="#67563D" FontSize="13" TextWrapping="Wrap"/>
         </StackPanel>
-        <ListBox Name="FrameOptions" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0"
+        <ListBox Name="GalleryOptions" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0"
                  AutomationProperties.Name="Clock frames" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
     </Grid>

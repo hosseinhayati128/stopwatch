@@ -45,7 +45,7 @@ public partial class SettingsWindow
         bool nika=AppThemeCatalog.Normalize(_settings.ThemeMode)==AppThemeCatalog.Nika;
         if(nika&&_navigatorSettingsBody==null)BuildNavigatorSettings();
         else if(!nika&&_navigatorSettingsBody!=null)RestoreLegacySettings();
-        if (nika != (_browseFrames != null)) LoadStopwatchAppearance();
+        if (nika != _usesStyleGalleries) LoadStopwatchAppearance();
     }
 
     private void BuildNavigatorSettings()
