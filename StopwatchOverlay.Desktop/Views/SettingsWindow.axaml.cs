@@ -870,6 +870,7 @@ public partial class SettingsWindow : Window
 
         string tag = (NavigationList.SelectedItem as ListBoxItem)?.Tag?.ToString() ?? "Overlay";
         CurrentCategory = tag;
+        if (tag != "StopwatchAppearance") CloseFrameGallery();
         if (tag != "Internet") { CancelInternetCheck(); DismissInternetExport(); }
         if (tag != "ActivityWatch") { CancelActivityWatchConnection(); CancelActivityWatchExport(); }
         else RefreshActivityWatchExport();

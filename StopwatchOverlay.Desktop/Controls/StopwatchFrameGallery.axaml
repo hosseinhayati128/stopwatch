@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchFrameGallery"
+             Foreground="#142E3D">
+    <UserControl.Styles>
+        <Style Selector="ListBoxItem.frameTile">
+            <Setter Property="Margin" Value="0,0,7,8"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="TileEdge" BorderThickness="2" BorderBrush="#C4A472" CornerRadius="4" ClipToBounds="True">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch"
+                                          VerticalContentAlignment="Stretch"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ Border#TileEdge">
+            <Setter Property="BorderBrush" Value="#216B63"/>
+        </Style>
+        <Style Selector="ListBoxItem:pointerover /template/ Border#TileEdge, ListBoxItem:focus-visible /template/ Border#TileEdge">
+            <Setter Property="BorderBrush" Value="#98631E"/>
+        </Style>
+        <Style Selector="Border.frameCaption"><Setter Property="Background" Value="#F8EACA"/></Style>
+        <Style Selector="ListBoxItem:selected Border.frameCaption"><Setter Property="Background" Value="#216B63"/></Style>
+        <Style Selector="TextBlock.frameName"><Setter Property="Foreground" Value="#142E3D"/></Style>
+        <Style Selector="ListBoxItem:selected TextBlock.frameName"><Setter Property="Foreground" Value="#FFF2D4"/></Style>
+        <Style Selector="Path.frameCheck"><Setter Property="IsVisible" Value="False"/></Style>
+        <Style Selector="ListBoxItem:selected Path.frameCheck"><Setter Property="IsVisible" Value="True"/></Style>
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel Spacing="4" Margin="0,0,0,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Choose a frame" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <Button Name="FrameGalleryBack" Grid.Column="1" Classes="editorAction"
+                        VerticalAlignment="Center" Padding="11,6" AutomationProperties.Name="Back to style">
+                    <TextBlock Text="‹  Back to style" FontFamily="{Binding FontFamily, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               FontSize="13" FontWeight="SemiBold" Foreground="#142E3D"/>
+                </Button>
+            </Grid>
+            <TextBlock Name="FrameSummary" Foreground="#67563D" FontSize="13" TextWrapping="Wrap"/>
+        </StackPanel>
+        <ListBox Name="FrameOptions" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0"
+                 AutomationProperties.Name="Clock frames" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+    </Grid>
+</UserControl>

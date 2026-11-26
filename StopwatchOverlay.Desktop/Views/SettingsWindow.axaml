@@ -130,7 +130,7 @@
                         </ComboBox>
                     </Grid>
                     <ContentControl x:Name="StopwatchPreviewHost" Grid.Row="2" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-                    <StackPanel Grid.Row="3" Spacing="10" Margin="0,12,0,0">
+                    <StackPanel x:Name="StopwatchPreviewFooter" Grid.Row="3" Spacing="10" Margin="0,12,0,0">
                         <TextBlock Text="Sample clocks · Preview controls do not affect your timers." FontSize="11" TextWrapping="Wrap"/>
                         <Button Content="Show or hide active overlay" Classes="modern" HorizontalAlignment="Stretch" Click="ShowOverlayButton_Click"/>
                     </StackPanel>
