@@ -12,14 +12,15 @@ using StopwatchOverlay.Desktop.Views;
 
 internal static class StopwatchFrameGalleryChecks
 {
-    internal static void Run() => Run(backgrounds: false);
-    internal static void RunBackgrounds() => Run(backgrounds: true);
+    internal static void Run() => Run("Frames", 16, "Royal Cartouche", p => p.Frame = "royal-cartouche");
+    internal static void RunBackgrounds() => Run("Backgrounds", 12, "Midnight Chart", p => p.Background = "midnight-chart");
+    internal static void RunTypography() => Run("Typography", 10, "Typewriter Log", p => p.Typography = "typewriter-log");
 
-    private static void Run(bool backgrounds)
+    private static void Run(string layer, int count, string label, Action<StopwatchAppearanceSettings> expectedChoice)
     {
         foreach (int scale in new[] { 70, 90, 125 })
         {
-            var trigger = backgrounds ? "BrowseStopwatchBackgrounds" : "BrowseStopwatchFrames";
+            string trigger = "BrowseStopwatch" + layer;
             var settings = new AppSettings { TextColor = "Theme default", ThemeMode = AppThemeCatalog.Nika, UiScalePercent = scale };
             Call("ThemeResources", "ApplyApplication", settings.ThemeMode);
             Call("DesktopPageAppearance", "Initialize", settings);
@@ -39,33 +40,47 @@ internal static class StopwatchFrameGalleryChecks
                 Click(trigger); Wait();
                 var list = Named<ListBox>("GalleryOptions");
                 var original = (ListBoxItem)list.SelectedItem!;
-                Require(list.ItemCount == (backgrounds ? 12 : 16) && original.IsFocused && commits == 0,
+                Require(list.ItemCount == count && original.IsFocused && commits == 0,
                     "Opening must focus the saved choice without committing.");
-                if (backgrounds)
+                var grid = list.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.UniformGrid>().Single();
+                int expectedColumns = layer switch
                 {
-                    var grid = list.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.UniformGrid>().Single();
-                    Require(grid.Columns == (scale == 70 ? 4 : scale == 90 ? 3 : 2), "Incorrect background column count.");
-                    var host = Named<ContentControl>("StopwatchPreviewHost");
-                    var before = StopwatchAppearanceChecks.Render(host, null);
-                    KeyPress(original, Avalonia.Input.Key.Right);
-                    KeyPress((ListBoxItem)list.SelectedItem!, Avalonia.Input.Key.Right);
-                    Wait();
-                    Require(settings.StopwatchAppearance.Background == "midnight-chart" && commits == 2,
-                        "Background selection did not commit once per change.");
-                    Require(settings.StopwatchAppearance.Frame == "engraved-filigree" &&
-                        settings.StopwatchAppearance.Typography == "navigator-bold", "Background selection changed another layer.");
-                    Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "Live preview did not change.");
+                    "Typography" => 2,
+                    "Backgrounds" when scale == 90 => 3,
+                    _ => scale == 125 ? 2 : 4
+                };
+                Require(grid.Columns == expectedColumns, $"Incorrect {layer} column count.");
+                var host = Named<ContentControl>("StopwatchPreviewHost");
+                var expected = settings.StopwatchAppearance.Copy();
+                expectedChoice(expected);
+                var before = StopwatchAppearanceChecks.Render(host, null);
+                int expectedCommits = 1;
+                int selectedIndex = count - 1;
+                if (layer == "Frames")
+                {
+                    KeyPress(original, Avalonia.Input.Key.End);
                 }
                 else
                 {
-                    KeyPress(original, Avalonia.Input.Key.End); Wait();
-                    Require(settings.StopwatchAppearance.Frame == "royal-cartouche" && commits == 1, "Frame selection failed.");
-                    Require(settings.StopwatchAppearance.Background == "navigator-parchment" &&
-                        settings.StopwatchAppearance.Typography == "navigator-bold", "Frame selection changed another layer.");
+                    KeyPress(original, Avalonia.Input.Key.Right);
+                    KeyPress((ListBoxItem)list.SelectedItem!, Avalonia.Input.Key.Right);
+                    selectedIndex = 2;
+                    expectedCommits = 2;
                 }
-                int selectedIndex = backgrounds ? 2 : 15;
-                int expectedCommits = backgrounds ? 2 : 1;
-                var label = backgrounds ? "Midnight Chart" : "Royal Cartouche";
+                Wait();
+                Require(commits == expectedCommits &&
+                    System.Text.Json.JsonSerializer.Serialize(settings.StopwatchAppearance) ==
+                    System.Text.Json.JsonSerializer.Serialize(expected), "Selection must commit only the chosen layer.");
+                Require(!before.SequenceEqual(StopwatchAppearanceChecks.Render(host, null)), "Live preview did not change.");
+                if (layer == "Typography")
+                {
+                    var samples = list.GetVisualDescendants().OfType<ThemedClockFace>().ToArray();
+                    Require(samples.Length == 10 && samples.Concat(host.GetVisualDescendants().OfType<ThemedClockFace>())
+                        .All(face => face.Text == "12:34:56.0" && face.ProjectName == "Illustration"), "Inconsistent type specimens.");
+                    var distinctSamples = samples.Select(face => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                        StopwatchAppearanceChecks.Render(face, null)))).Distinct().Count();
+                    Require(distinctSamples == count, "Some typefaces rendered the same sample.");
+                }
                 Require(list.SelectedIndex == selectedIndex && Named<TextBlock>("GallerySummary").Text!.Contains(label),
                     "Gallery summary or selection did not update.");
                 var selected = (ListBoxItem)list.SelectedItem!;
@@ -73,12 +88,25 @@ internal static class StopwatchFrameGalleryChecks
                 Require(top >= -1 && top + selected.Bounds.Height <= list.Bounds.Height + 1, "Selected option scrolled out of view.");
                 var check = selected.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single(p=>p.Classes.Contains("frameCheck"));
                 Require(check.IsEffectivelyVisible, "Missing selected option checkmark.");
-                Capture(window,scale,backgrounds);
+                Capture(window, scale, layer);
                 KeyPress(selected, Avalonia.Input.Key.Escape); Wait();
                 Require(Named<Button>(trigger).IsFocused && commits == expectedCommits, "Escape must return focus and preserve selection.");
                 Click(trigger); Wait();
                 Require(Named<ListBox>("GalleryOptions").SelectedIndex == selectedIndex, "Reopening lost the selected option.");
+                if (layer == "Typography" && scale == 125)
+                {
+                    var reopened = Named<ListBox>("GalleryOptions");
+                    KeyPress((ListBoxItem)reopened.SelectedItem!, Avalonia.Input.Key.End); Wait();
+                    var last = (ListBoxItem)reopened.SelectedItem!;
+                    var y = last.TranslatePoint(default, reopened)!.Value.Y;
+                    Require(reopened.SelectedIndex == 9 && y >= -1 && y + last.Bounds.Height <= reopened.Bounds.Height + 1,
+                        "The final typeface did not scroll into view.");
+                    Capture(window, scale, layer, "lower");
+                    expectedCommits++;
+                }
                 Click("GalleryBack"); Wait();
+                Require(host.GetVisualDescendants().OfType<ThemedClockFace>().All(face => face.Text == "00:44:27.0"),
+                    "Back must restore the standard preview time.");
                 Click(trigger); Wait();
                 Click("SettingsNav_TodoAppearance"); Wait();
                 Require(window.FindControl<ScrollViewer>("SettingsScrollViewer")!.IsEffectivelyVisible && commits == expectedCommits, "Leaving the gallery hid another page or wrote settings.");
@@ -89,9 +117,9 @@ internal static class StopwatchFrameGalleryChecks
             finally { window.Close(); Call("DesktopPageAppearance", "Shutdown"); }
         }
     }
-    private static void Capture(Window window,int scale,bool backgrounds)
+    private static void Capture(Window window, int scale, string layer, string state = "selected")
     {
-        string directory = Path.Combine("design","one-piece-v2","settings",backgrounds ? "background-gallery-implementation" : "frame-gallery-implementation");
+        string directory = Path.Combine("design","one-piece-v2","settings",layer.ToLowerInvariant().TrimEnd('s') + "-gallery-implementation");
         Directory.CreateDirectory(directory);
         var frame = window.GetVisualDescendants().OfType<StopwatchFrameSurface>().First();
         using var image = new RenderTargetBitmap(PixelSize.FromSize(window.ClientSize,1),new Vector(96,96));
@@ -103,7 +131,7 @@ internal static class StopwatchFrameGalleryChecks
             context.DrawRectangle(new VisualBrush(frame) { Stretch=Stretch.Fill, SourceRect=new RelativeRect(new Rect(frame.Bounds.Size),RelativeUnit.Absolute) },null,new Rect(window.ClientSize));
         }
         finally { frame.SetCurrentValue(Visual.RenderTransformProperty,transform); }
-        image.Save(Path.Combine(directory,$"selected-{scale}.png"));
+        image.Save(Path.Combine(directory,$"{state}-{scale}.png"));
     }
     private static void Call(string type,string method,params object[] args) =>
         typeof(SettingsWindow).Assembly.GetType("StopwatchOverlay.Desktop."+type)!

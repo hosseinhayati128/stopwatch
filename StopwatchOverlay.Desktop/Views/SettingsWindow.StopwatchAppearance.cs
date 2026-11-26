@@ -52,13 +52,14 @@ public partial class SettingsWindow
             {
                 AddGalleryChoice(style, StopwatchGalleryLayer.Background);
                 AddGalleryChoice(style, StopwatchGalleryLayer.Frame);
+                AddGalleryChoice(style, StopwatchGalleryLayer.Typography);
             }
             else
             {
                 AddStopwatchChoice(style,"Background",StopwatchAppearanceCatalog.Backgrounds,p.Background,v=>p.Background=v);
                 AddStopwatchChoice(style,"Frame",StopwatchAppearanceCatalog.Frames,p.Frame,v=>p.Frame=v);
+                AddStopwatchChoice(style,"Typography",StopwatchAppearanceCatalog.Typography,p.Typography,v=>p.Typography=v);
             }
-            AddStopwatchChoice(style,"Typography",StopwatchAppearanceCatalog.Typography,p.Typography,v=>p.Typography=v);
             AddStopwatchChoice(style,"Artwork",StopwatchAppearanceCatalog.Artworks,p.Artwork,v=>p.Artwork=v);
             AddStopwatchChoice(style,"HoverControls",StopwatchAppearanceCatalog.HoverControls,p.HoverControls,v=>p.HoverControls=v,"Hover controls");
             AddStopwatchSlider(style,"StopwatchTextSize","Text size",_settings.TextSize,16,120,value=>
@@ -91,7 +92,7 @@ public partial class SettingsWindow
     private void AddGalleryChoice(StackPanel style, StopwatchGalleryLayer layer)
     {
         style.Children.Add(SettingsLabel(layer.Name, 12));
-        var button = new Button { Name = $"BrowseStopwatch{layer.Name}s", Height = 40, Padding = new Thickness(6, 2, 12, 2),
+        var button = new Button { Name = layer.ButtonName, Height = 40, Padding = new Thickness(6, 2, 12, 2),
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Background = Brush.Parse("#F8EACA"), BorderBrush = Brush.Parse("#C4A472"), CornerRadius = new CornerRadius(4) };
         UpdateGalleryButton(button, layer);
@@ -109,18 +110,19 @@ public partial class SettingsWindow
         label.TextWrapping = TextWrapping.NoWrap;
         label.TextTrimming = TextTrimming.CharacterEllipsis;
         label.FontWeight = FontWeight.SemiBold;
-        var browse = SettingsLabel($"Browse {layer.Label}s  ›",13,Brush.Parse("#216B63"));
+        var browse = SettingsLabel($"{layer.BrowseLabel}  ›",13,Brush.Parse("#216B63"));
         var row = new Grid { ColumnDefinitions = new("Auto,8,*,8,Auto"), Children = { sample, label, browse } };
         Grid.SetColumn(label,2);
         Grid.SetColumn(browse,4);
         button.Content = row;
-        AutomationProperties.SetName(button, $"Browse {layer.Label}s, current {layer.Label} {option.Label}");
+        AutomationProperties.SetName(button, $"{layer.BrowseLabel}, current {layer.Label} {option.Label}");
     }
 
     private void OpenStyleGallery(Button opener, StopwatchGalleryLayer layer)
     {
         if (_styleGallery != null) return;
         _galleryOpener = opener;
+        _stopwatchPreview.SetTypographySample(layer == StopwatchGalleryLayer.Typography);
         _previewStatePadding = StopwatchPreviewState.Padding;
         _styleGallery = new StopwatchStyleGallery(_settings, layer, id =>
         {
@@ -153,6 +155,7 @@ public partial class SettingsWindow
         RemoveHandler(KeyDownEvent, StyleGalleryKeyDown);
         SettingsColumns.Children.Remove(_styleGallery);
         _styleGallery = null;
+        _stopwatchPreview.SetTypographySample(false);
         SettingsScrollViewer.IsVisible = StopwatchPreviewFooter.IsVisible = true;
         StopwatchPreviewState.Padding = _previewStatePadding;
         if (restoreFocus) _galleryOpener?.Focus(NavigationMethod.Tab);

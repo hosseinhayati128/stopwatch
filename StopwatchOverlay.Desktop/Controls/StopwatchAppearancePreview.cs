@@ -8,8 +8,11 @@ namespace StopwatchOverlay.Desktop.Controls;
 /// <summary>Local sample state only: no timer, controller, session or persistence dependencies.</summary>
 public sealed class StopwatchAppearancePreview : UserControl
 {
-    private readonly ThemedClockFace selected=new(){Text="00:44:27.0",ProjectName="Illustration"};
-    private readonly ThemedClockFace unselected=new(){Text="00:44:27.0",ProjectName="Illustration"};
+    private const string DefaultTime = "00:44:27.0";
+    private const string TypographyTime = "12:34:56.0";
+    private const string SampleProject = "Illustration";
+    private readonly ThemedClockFace selected=new(){Text=DefaultTime,ProjectName=SampleProject};
+    private readonly ThemedClockFace unselected=new(){Text=DefaultTime,ProjectName=SampleProject};
     private readonly Border backdrop=new(){Padding=new Thickness(8),CornerRadius=new CornerRadius(8)};
     private readonly Border toolbar=new(){HorizontalAlignment=HorizontalAlignment.Center};
     private readonly Button[] buttons=Enumerable.Range(0,3).Select(_=>new Button{IsHitTestVisible=false,Focusable=false}).ToArray();
@@ -42,6 +45,11 @@ public sealed class StopwatchAppearancePreview : UserControl
     public void SetPreviewState(bool isRunning,bool isDarkBackdrop)
     {running=isRunning;darkBackdrop=isDarkBackdrop;Refresh();}
 
+    internal void SetTypographySample(bool active)
+    {
+        selected.Text = unselected.Text = active ? TypographyTime : DefaultTime;
+    }
+
     private void Refresh()
     {
         selected.SetStopwatchPresentationState(new(true,running,false));
@@ -58,7 +66,7 @@ public sealed class StopwatchAppearancePreview : UserControl
         if(kind=="HoverControls")return new StopwatchToolbarArtwork{Choice=id,Width=82,Height=29};
         var profile=new StopwatchAppearanceSettings();
         switch(kind){case "Background":profile.Background=id;break;case "Frame":profile.Frame=id;break;case "Typography":profile.Typography=id;break;case "Artwork":profile.Artwork=id;break;}
-        var face=new ThemedClockFace{Text=kind=="Typography"?"12:34:56.0":"00:44:27.0",ProjectName="Illustration"};
+        var face=new ThemedClockFace{Text=kind=="Typography"?TypographyTime:DefaultTime,ProjectName=SampleProject};
         face.ApplySettings(new AppSettings{TextColor="Theme default",StopwatchAppearance=profile,OverlayTheme=OverlayThemeCatalog.Nika});
         face.SetStopwatchPresentationState(new(false,true,false));
         return new Viewbox{Child=face,Width=82,Height=29,Stretch=Stretch.Uniform};
@@ -68,7 +76,8 @@ public sealed class StopwatchAppearancePreview : UserControl
     {
         var appearance = settings.StopwatchAppearance.Copy();
         layer.Select(appearance, option.Id);
-        var face = new ThemedClockFace { Text = "00:44:27.0", ProjectName = "Illustration" };
+        var face = new ThemedClockFace { Text = layer == StopwatchGalleryLayer.Typography ? TypographyTime : DefaultTime,
+            ProjectName = SampleProject };
         face.ApplySettings(new AppSettings { ThemeMode = settings.ThemeMode, OverlayTheme = OverlayThemeCatalog.Nika,
             TextSize = settings.TextSize, TextColor = settings.TextColor, StopwatchAppearance = appearance });
         face.SetStopwatchPresentationState(new(false, true, false));

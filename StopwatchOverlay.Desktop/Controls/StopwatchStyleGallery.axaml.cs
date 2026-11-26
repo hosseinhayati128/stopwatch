@@ -19,7 +19,12 @@ internal sealed record StopwatchGalleryLayer(string Name, IReadOnlyList<Stopwatc
     internal static readonly StopwatchGalleryLayer Background = new("Background", StopwatchAppearanceCatalog.Backgrounds,
         p => p.Background, (p, id) => p.Background = id);
 
-    internal string Label => Name.ToLowerInvariant();
+    internal static readonly StopwatchGalleryLayer Typography = new("Typography", StopwatchAppearanceCatalog.Typography,
+        p => p.Typography, (p, id) => p.Typography = id);
+
+    internal string Label => this == Typography ? "typeface" : Name.ToLowerInvariant();
+    internal string BrowseLabel => this == Typography ? "Browse typography" : $"Browse {Label}s";
+    internal string ButtonName => this == Typography ? "BrowseStopwatchTypography" : $"BrowseStopwatch{Name}s";
 }
 
 public partial class StopwatchStyleGallery : UserControl
@@ -61,7 +66,8 @@ public partial class StopwatchStyleGallery : UserControl
             }
         };
         GalleryBack.Click += (_, _) => back();
-        GalleryOptions.SizeChanged += (_, _) => compact(_tiles.Columns <= 2);
+        GalleryOptions.SizeChanged += (_, _) => compact(layer == StopwatchGalleryLayer.Typography
+            ? GalleryOptions.Bounds.Width < 480 : _tiles.Columns <= 2);
     }
 
     private void UpdateSummary()
@@ -86,6 +92,19 @@ public partial class StopwatchStyleGallery : UserControl
     {
         var size = GalleryOptions.Bounds;
         if (size.Width <= 0 || size.Height <= 0) return;
+        if (_layer == StopwatchGalleryLayer.Typography)
+        {
+            _tiles.Columns = size.Width >= 320 ? 2 : 1;
+            bool narrow = size.Width < 480;
+            double rowHeight = Math.Clamp(Math.Floor(size.Height / (narrow ? 3 : 5)), 86, 148);
+            foreach (var tile in GalleryOptions.Items.OfType<ListBoxItem>())
+            {
+                tile.Height = rowHeight - tile.Margin.Top - tile.Margin.Bottom;
+                if (tile.Content is Grid card)
+                    card.RowDefinitions[1].Height = new GridLength(narrow ? 30 : 24);
+            }
+            return;
+        }
         bool backgrounds = _layer == StopwatchGalleryLayer.Background;
         _tiles.Columns = backgrounds && size.Width >= 330
             ? Math.Clamp((int)(size.Width / 218), 2, 4)
@@ -121,6 +140,11 @@ public partial class StopwatchStyleGallery : UserControl
     {
         var clock = StopwatchAppearancePreview.CreateGallerySample(_layer, option, settings);
         var stage = new Border { Padding = new Thickness(8, 4), Background = Brush.Parse("#213847"), Child = clock };
+        if (_layer == StopwatchGalleryLayer.Typography)
+        {
+            clock.RenderTransform = new ScaleTransform(1.25, 1.25);
+            stage.ClipToBounds = true;
+        }
         var label = new TextBlock { Text = option.Label, FontSize = 13, FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
         label.Classes.Add("frameName");
