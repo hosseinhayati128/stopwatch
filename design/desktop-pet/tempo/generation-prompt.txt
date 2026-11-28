@@ -1,0 +1,11 @@
+Create the master animation pose board for an ORIGINAL tiny desktop mascot called Tempo. Output a square, genuine transparent PNG sprite board with exactly 4 rows and exactly 4 columns of separate poses, 16 complete characters. Equal square cells in a perfectly centered 4×4 layout. Each sprite sits within the middle 64% of its cell width and height, with wide fully transparent gutters. Each pose has the same stance baseline at about 77% down its cell. Keep every beak, wing, foot, and prop wholly inside its own cell. No text, numbers, captions, background, lines, grid marks, shadows beneath the feet, or UI. Real alpha outside the sprite.
+
+Character design: friendly little seafaring teal bird, a round chubby teal body, cream face and breast, small amber beak and two little amber feet, a compact rust-red neckerchief, and an oval brass pocket stopwatch on the chest with a simple pale dial and two tiny dark hands. Big dark expressive eyes and consistent light from upper left. Original character, no recognizable franchise costume. Clear silhouette at 64 screen pixels. Clean hand-pixeled game sprite aesthetic with disciplined color clusters, warm navy outlines and no texture speckle. Exact same body proportions, beak, face markings, scarf, watch, camera angle (three-quarter view facing screen left), scale, and palette across every cell. Steady baseline and body center for all stationary poses.
+
+Reading each row left to right:
+1. RESTING LOOP: relaxed open eyes, softened half-lidded eyes, eyes closed in a tiny blink, eyes open again. Tiny settled posture shifts only.
+2. WORKING LOOP: alert posture focused on the pocket watch, one near wing touching the edge of the stopwatch, determined eyes with that wing tapping its crown, back to alert initial posture. Feet planted throughout.
+3. GREETING ONE-SHOT: alert with wings low, lift the nearer wing, raise that wing high in a friendly wave with a smile, lower the wing to its resting position.
+4. CELEBRATION ONE-SHOT: feet planted and body compresses slightly, tiny lift from the floor with both wings spread, happy airborne pose with both wings raised, land with wings tucked. No effects detached from the body.
+
+The result must be a production sprite pose board with precisely four poses per row and visible gaps. Keep identity tightly consistent.

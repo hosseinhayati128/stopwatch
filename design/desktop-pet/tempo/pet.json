@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "name": "Tempo",
+  "sprite_sheet": "sprites.png",
+  "frame_size": [
+    128,
+    128
+  ],
+  "anchor": [
+    64,
+    113
+  ],
+  "animations": {
+    "idle": {
+      "loop": true,
+      "frames": [
+        {
+          "x": 0,
+          "y": 0,
+          "duration_ms": 220
+        },
+        {
+          "x": 128,
+          "y": 0,
+          "duration_ms": 220
+        },
+        {
+          "x": 256,
+          "y": 0,
+          "duration_ms": 220
+        },
+        {
+          "x": 384,
+          "y": 0,
+          "duration_ms": 220
+        }
+      ]
+    },
+    "working": {
+      "loop": true,
+      "frames": [
+        {
+          "x": 0,
+          "y": 128,
+          "duration_ms": 170
+        },
+        {
+          "x": 128,
+          "y": 128,
+          "duration_ms": 170
+        },
+        {
+          "x": 256,
+          "y": 128,
+          "duration_ms": 170
+        },
+        {
+          "x": 384,
+          "y": 128,
+          "duration_ms": 170
+        }
+      ]
+    },
+    "greet": {
+      "loop": false,
+      "frames": [
+        {
+          "x": 0,
+          "y": 256,
+          "duration_ms": 160
+        },
+        {
+          "x": 128,
+          "y": 256,
+          "duration_ms": 160
+        },
+        {
+          "x": 256,
+          "y": 256,
+          "duration_ms": 160
+        },
+        {
+          "x": 384,
+          "y": 256,
+          "duration_ms": 160
+        }
+      ]
+    },
+    "celebrate": {
+      "loop": false,
+      "frames": [
+        {
+          "x": 0,
+          "y": 384,
+          "duration_ms": 175
+        },
+        {
+          "x": 128,
+          "y": 384,
+          "duration_ms": 175
+        },
+        {
+          "x": 256,
+          "y": 384,
+          "duration_ms": 175
+        },
+        {
+          "x": 384,
+          "y": 384,
+          "duration_ms": 175
+        }
+      ]
+    }
+  }
+}
