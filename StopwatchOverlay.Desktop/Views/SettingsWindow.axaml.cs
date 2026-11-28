@@ -111,6 +111,27 @@ public partial class SettingsWindow : Window
         combo.SelectedItem = options.First(option => option.Id == id);
     }
 
+    private void LoadDisplayChoices(OverlayDisplay[] displays)
+    {
+        bool wasLoading = _loading;
+        _loading = true;
+        try
+        {
+            _displays = displays;
+            ScreenCombo.Items.Clear();
+            ScreenCombo.Items.Add("All displays");
+            for (int i = 0; i < displays.Length; i++)
+            {
+                var screen = displays[i];
+                string name = string.IsNullOrWhiteSpace(screen.Name) ? $"Display {i + 1} ({screen.Width}x{screen.Height})" : screen.Name;
+                ScreenCombo.Items.Add(screen.IsPrimary ? $"{name} (Primary)" : name);
+            }
+            ScreenCombo.SelectedIndex = SettingsChangePolicy.ResolveScreenComboIndex(_settings.ScreenIndex, displays.Length);
+            _displaySelector?.SetDisplays(displays, ScreenCombo.SelectedIndex);
+        }
+        finally { _loading = wasLoading; }
+    }
+
     private void LoadControls()
     {
         _loading = true;
@@ -127,20 +148,8 @@ public partial class SettingsWindow : Window
             OverlayThemeCombo.ItemsSource = OverlayThemeCatalog.All;
             OverlayThemeCombo.SelectedItem = OverlayThemeCatalog.Normalize(_settings.OverlayTheme);
 
-            ScreenCombo.Items.Clear();
-            ScreenCombo.Items.Add("All displays");
-            var screens = Screens.All;
-            for (int i = 0; i < screens.Count; i++)
-            {
-                var screen = screens[i];
-                string name = !string.IsNullOrWhiteSpace(screen.DisplayName)
-                    ? screen.DisplayName
-                    : $"Display {i + 1} ({screen.Bounds.Width}x{screen.Bounds.Height})";
-                ScreenCombo.Items.Add(screen.IsPrimary ? $"{name} (Primary)" : name);
-            }
-            ScreenCombo.SelectedIndex = SettingsChangePolicy.ResolveScreenComboIndex(
-                _settings.ScreenIndex,
-                screens.Count);
+            LoadDisplayChoices(Screens.All.Select(screen => new OverlayDisplay(screen.DisplayName,
+                screen.Bounds.Width, screen.Bounds.Height, screen.IsPrimary)).ToArray());
 
             SetItems(PositionCombo, OverlayPositionPicker.Positions, _settings.Position);
             SetItems(TextColorCombo, ["Theme default", "White", "Charcoal", "Yellow", "Cyan", "Lime", "Orange", "Red", "Magenta"], _settings.TextColor);

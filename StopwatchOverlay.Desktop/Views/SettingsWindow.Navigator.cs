@@ -5,7 +5,6 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -23,6 +22,8 @@ public partial class SettingsWindow
     private StackPanel? _navigatorFields,_navigatorPreview;
     private Control? _navigatorHeading,_navigatorPreviewTitle,_navigatorPreviewSubtitle,_navigatorStates;
     private Border? _navigatorPreviewCard,_navigatorClockStage;
+    private OverlayDisplaySelector? _displaySelector;
+    private OverlayDisplay[] _displays = [];
     private OverlayPositionPicker? _positionPicker;
     private TextBlock? _navigatorSaveStatus,_navigatorClickStatus,_navigatorCaptureStatus;
     private ThemedClockFace? _navigatorClock;
@@ -52,20 +53,32 @@ public partial class SettingsWindow
     {
         _legacySettingsRoot=(DockPanel)DesktopPageAppearance.Content(this)!;
         _legacySettingsRoot.Children.Remove(SettingsColumns);Content=null;
-        foreach(var control in new Control[]{ScreenCombo,ClickThroughCheck,HideOverlayCaptureCheck})
+        foreach(var control in new Control[]{ClickThroughCheck,HideOverlayCaptureCheck})
             _navigatorMovedControls.Add((control,(Panel)control.Parent!,((Panel)control.Parent!).Children.IndexOf(control),(control as CheckBox)?.Content,control.Margin));
         foreach(var item in _navigatorMovedControls)item.Parent.Children.Remove(item.Control);
-        ScreenCombo.Height=36;ScreenCombo.MinHeight=0;ScreenCombo.MinWidth=0;ScreenCombo.Padding=new(10,4);ScreenCombo.FontSize=12;ScreenCombo.Margin=new(0);ScreenCombo.Classes.Add("editorField");
-        ScreenCombo.ItemTemplate=new FuncDataTemplate<string>((text,_)=>new TextBlock{Text=text,FontFamily=ClockPickerPresentation.Body,FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis});ScreenCombo.SelectionBoxItemTemplate=ScreenCombo.ItemTemplate;
-        AutomationProperties.SetName(ScreenCombo,"Display");
+        _displaySelector = new OverlayDisplaySelector { Name = "SettingsDisplaySelector" };
+        _displaySelector.SetDisplays(_displays, ScreenCombo.SelectedIndex);
+        _displaySelector.DisplayChosen += index => ScreenCombo.SelectedIndex = index;
         _navigatorHeading=new StackPanel{Spacing=4,Children={SettingsLabel("Overlay & position",23,SettingsInk),SettingsLabel("Choose where your clock appears.",12)}};
         _positionPicker = new OverlayPositionPicker { Name = "SettingsPositionPicker" };
         _positionPicker.SetPosition(_settings.Position);
         _positionPicker.PositionChosen += position => PositionCombo.SelectedItem = position;
-        var display = new StackPanel { Spacing = 6, Children = { SettingsLabel("Display",12,SettingsInk), ScreenCombo } };
+        var display = new StackPanel { Spacing = 6, Children = { SettingsLabel("Display",12,SettingsInk), _displaySelector } };
         var position = new StackPanel { Spacing = 6, Children = { SettingsLabel("Clock position",12,SettingsInk), _positionPicker } };
-        var placement = SettingsCard(new StackPanel { Spacing = 8, Children = {
-            SettingsLabel("PLACEMENT",10), new StackPanel { Spacing = 12, Children = { display, position } } } });
+        var placementFields = new Grid { RowDefinitions = new("Auto,12,Auto"), ColumnDefinitions = new("*"), Children = { display, position } };
+        Grid.SetRow(position, 2);
+        bool sideBySide = false;
+        placementFields.SizeChanged += (_, e) =>
+        {
+            bool fitsBeside = _navigatorCompact == true && e.NewSize.Width >= 470;
+            if (sideBySide == fitsBeside) return;
+            sideBySide = fitsBeside;
+            placementFields.ColumnDefinitions = new(fitsBeside ? "2*,12,3*" : "*");
+            placementFields.RowDefinitions = new(fitsBeside ? "Auto" : "Auto,12,Auto");
+            Grid.SetRow(position, fitsBeside ? 0 : 2);
+            Grid.SetColumn(position, fitsBeside ? 2 : 0);
+        };
+        var placement = SettingsCard(new StackPanel { Spacing = 8, Children = { SettingsLabel("PLACEMENT",10), placementFields } });
         Control Choice(CheckBox check,string title,string detail)
         {
             check.Margin=new(0);check.Content=new StackPanel{Spacing=3,Children={SettingsLabel(title,13,SettingsInk),SettingsLabel(detail,11)}};
@@ -145,17 +158,12 @@ public partial class SettingsWindow
             {
                 check.Content=item.Content;check.ClearValue(HorizontalContentAlignmentProperty);check.ClearValue(VerticalContentAlignmentProperty);
             }
-            if(item.Control is ComboBox combo)
-            {
-                // The original XAML leaves these properties to the current theme.
-                combo.Classes.Remove("editorField");combo.ClearValue(HeightProperty);combo.ClearValue(MinHeightProperty);combo.ClearValue(MinWidthProperty);
-                combo.ClearValue(PaddingProperty);combo.ClearValue(FontSizeProperty);combo.ClearValue(ItemsControl.ItemTemplateProperty);combo.ClearValue(ComboBox.SelectionBoxItemTemplateProperty);combo.ClearValue(ToolTip.TipProperty);
-            }
+
         }
         _navigatorMovedControls.Clear();_navigatorCategories.Clear();
         Content=null;_legacySettingsRoot!.Children.Add(SettingsColumns);Content=_legacySettingsRoot;
         ((Control)NavigationList.Parent!).IsVisible=true;SettingsColumns.IsVisible=true;SettingsScrollViewer.Margin=new(0);
-        _navigatorSettingsBody=null;_positionPicker=null;_navigatorClock=null;_navigatorSaveStatus=null;_navigatorCompact=null;
+        _navigatorSettingsBody=null;_displaySelector=null;_positionPicker=null;_navigatorClock=null;_navigatorSaveStatus=null;_navigatorCompact=null;
         SystemDecorations=SystemDecorations.Full;TransparencyLevelHint=[];RequestedThemeVariant=ThemeVariant.Default;
         this.Bind(BackgroundProperty,this.GetResourceObservable("AppBackgroundBrush"));Resources.Remove("SystemAccentColor");
         _appearanceColumnLayout="";UpdateTodoResponsiveLayout();
@@ -250,6 +258,6 @@ public partial class SettingsWindow
         _navigatorClickStatus!.Text=_settings.ClickThrough?"Click-through on · clicks pass through":"Click-through off · clock is interactive";
         _navigatorCaptureStatus!.Text=_settings.HideOverlayFromCapture?"Screen capture · clock hidden":"Screen capture · clock included";
         _positionPicker?.SetPosition(_settings.Position);
-        ToolTip.SetTip(ScreenCombo,ScreenCombo.SelectedItem?.ToString());
+        _displaySelector?.SetSelection(ScreenCombo.SelectedIndex);
     }
 }

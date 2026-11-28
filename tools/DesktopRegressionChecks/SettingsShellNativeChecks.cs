@@ -61,7 +61,7 @@ internal static class SettingsShellNativeChecks
             scroll.ScrollToEnd();ClockOverlayChecks.Pump(20);Require(done.TranslatePoint(default,window)!.Value.Y==y,"Settings footer scrolls away.");
             Save(window,"compact-controls");
             window.Width=1120;window.Height=720;ClockOverlayChecks.Pump(30);
-            Require(window.FindControl<ComboBox>("ScreenCombo")!.IsEffectivelyVisible,"Resize detached placement controls.");
+            Require(Find<OverlayDisplaySelector>(window,"SettingsDisplaySelector").IsEffectivelyVisible,"Resize detached display selector.");
             Require(window.GetVisualDescendants().OfType<ThemedClockFace>().Any(),"Resize detached the clock preview.");
             Require(changes==0,"Loading, navigation or resizing committed settings.");
             var first=Find<Button>(window,"SettingsNav_Overlay");
@@ -87,6 +87,24 @@ internal static class SettingsShellNativeChecks
             void CheckPosition(string expected) => Require(settings.Position == expected &&
                 Choices().Single(b => b.IsChecked == true) == Choice(expected == "Custom" ? "Custom placement" : expected),
                 "Selected position disagrees with settings: " + expected);
+            var selector = Find<OverlayDisplaySelector>(window,"SettingsDisplaySelector");
+            var displayChoices = selector.GetVisualDescendants().OfType<RadioButton>().ToArray();
+            var screens = window.Screens.All;
+            Require(displayChoices.Length == screens.Count + 1, "Expected one tile per monitor and All displays.");
+            int screenChanges = 0;
+            Action<SettingsChangeKind> displayChanged = kind => { if (kind == SettingsChangeKind.OverlayScreen) screenChanges++; };
+            typeof(SettingsWindow).GetEvent("SettingsChanged",Hidden)!.GetAddMethod(true)!.Invoke(window,[displayChanged]);
+            for (int i = screens.Count; i >= 0; i--)
+            {
+                string name = i == 0 ? "All displays" : $"Display {i}, {(screens[i-1].IsPrimary ? "Primary" : "Secondary")}, {screens[i-1].Bounds.Width} × {screens[i-1].Bounds.Height}";
+                var choice = displayChoices.Single(b => AutomationProperties.GetName(b) == name);
+                int expected = screenChanges + (choice.IsChecked == true ? 0 : 1);
+                typeof(RadioButton).GetMethod("OnClick",Hidden)!.Invoke(choice,null);
+                typeof(RadioButton).GetMethod("OnClick",Hidden)!.Invoke(choice,null);
+                Require(choice.IsChecked == true && displayChoices.Count(b=>b.IsChecked == true) == 1 &&
+                    window.FindControl<ComboBox>("ScreenCombo")!.SelectedIndex == i &&
+                    screenChanges == expected && (expected == 0 || settings.ScreenIndex == i), "Display selection did not synchronize exactly once.");
+            }
             CheckPosition("Top Center");
             foreach (string name in new[]{"Top Left","Top Center","Top Right","Bottom Left","Bottom Center","Bottom Right","Custom placement"})
             {
