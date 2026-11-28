@@ -210,6 +210,7 @@ public partial class SettingsWindow
         if(_navigatorSettingsBody==null)return;
         bool overlay=CurrentCategory=="Overlay";
         bool appearance=CurrentCategory=="Appearance";
+        if (!appearance) CloseBackgroundPicker();
         bool typography=CurrentCategory=="Typography";
         bool behavior=CurrentCategory=="Behavior";
         bool application=CurrentCategory=="Application";

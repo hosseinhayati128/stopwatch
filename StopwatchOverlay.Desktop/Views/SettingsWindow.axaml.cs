@@ -679,8 +679,10 @@ public partial class SettingsWindow : Window
         bool hasPattern = BackgroundCombo.SelectedItem is AppBackgroundChoice
             { IsThemeDefault: false, IsAvailable: true };
         BackgroundStrengthSlider.IsEnabled = hasPattern;
-        RemoveBackgroundButton.IsEnabled = BackgroundCombo.SelectedItem is AppBackgroundChoice
-            { IsCustom: true };
+        var selectedBackground = BackgroundCombo.SelectedItem as AppBackgroundChoice;
+        RemoveBackgroundButton.IsEnabled = selectedBackground?.IsCustom == true;
+        if (_backgroundChoiceName != null) _backgroundChoiceName.Text = selectedBackground?.DisplayLabel ?? "Theme default";
+        _backgroundPicker?.SetSelected(selectedBackground);
 
     }
 
@@ -743,12 +745,13 @@ public partial class SettingsWindow : Window
         _ => Colors.Black
     };
 
-    private void RefreshBackgroundChoices(string? preferredId)
+    private void RefreshBackgroundChoices(string? preferredId, string? managedDirectory = null)
     {
-        var choices = AppBackgroundCatalog.GetAvailableChoices(_settings);
+        var choices = AppBackgroundCatalog.GetAvailableChoices(_settings, managedDirectory);
         BackgroundCombo.ItemsSource = choices;
         BackgroundCombo.SelectedItem = choices.FirstOrDefault(choice =>
             choice.Id.Equals(preferredId, StringComparison.OrdinalIgnoreCase)) ?? choices[0];
+        _backgroundPicker?.SetChoices(choices, BackgroundCombo.SelectedItem as AppBackgroundChoice);
     }
 
     private async void AddBackgroundButton_Click(object? sender, RoutedEventArgs e)
@@ -773,14 +776,19 @@ public partial class SettingsWindow : Window
         if (files.Count == 0) return;
 
         string? filePath = files[0].TryGetLocalPath();
-        if (string.IsNullOrEmpty(filePath)) return;
+        if (_closed || string.IsNullOrEmpty(filePath)) return;
+        await ImportBackgroundAsync(filePath, SettingsStore.SettingsPath, AppBackgroundCatalog.ManagedDirectory);
+    }
+
+    private async Task ImportBackgroundAsync(string filePath, string settingsPath, string managedDirectory)
+    {
 
         string previousSelection = _settings.PanelBackgroundId;
         if (!AppBackgroundCatalog.TryImport(
                 filePath,
                 _settings.CustomBackgrounds,
                 out CustomAppBackground? imported,
-                out string? error)
+                out string? error, managedDirectory)
             || imported == null)
         {
             await ConfirmationDialogWindow.ShowAsync(
@@ -795,12 +803,12 @@ public partial class SettingsWindow : Window
 
         _settings.CustomBackgrounds.Add(imported);
         _settings.PanelBackgroundId = AppBackgroundCatalog.CustomSelectionId(imported.Id);
-        if (!SettingsStore.Save(_settings))
+        if (!SettingsStore.Save(_settings, settingsPath))
         {
             _settings.CustomBackgrounds.RemoveAll(item =>
                 item.Id.Equals(imported.Id, StringComparison.OrdinalIgnoreCase));
             _settings.PanelBackgroundId = previousSelection;
-            AppBackgroundCatalog.DeleteManagedCopy(imported);
+            AppBackgroundCatalog.DeleteManagedCopy(imported, managedDirectory);
             await ConfirmationDialogWindow.ShowAsync(
                 this,
                 "Background",
@@ -814,7 +822,7 @@ public partial class SettingsWindow : Window
         _loading = true;
         try
         {
-            RefreshBackgroundChoices(_settings.PanelBackgroundId);
+            RefreshBackgroundChoices(_settings.PanelBackgroundId, managedDirectory);
             UpdateDependentControlStates();
         }
         finally
@@ -824,7 +832,10 @@ public partial class SettingsWindow : Window
         CommitControls(SettingsChangeKind.BackgroundSelection);
     }
 
-    private async void RemoveBackgroundButton_Click(object? sender, RoutedEventArgs e)
+    private async void RemoveBackgroundButton_Click(object? sender, RoutedEventArgs e) =>
+        await RemoveSelectedBackgroundAsync(SettingsStore.SettingsPath, AppBackgroundCatalog.ManagedDirectory);
+
+    private async Task RemoveSelectedBackgroundAsync(string settingsPath, string managedDirectory)
     {
         if (BackgroundCombo.SelectedItem is not AppBackgroundChoice { IsCustom: true } choice)
             return;
@@ -838,7 +849,7 @@ public partial class SettingsWindow : Window
         _settings.CustomBackgrounds.RemoveAll(item =>
             item.Id.Equals(custom.Id, StringComparison.OrdinalIgnoreCase));
         _settings.PanelBackgroundId = AppBackgroundCatalog.ThemeDefault;
-        if (!SettingsStore.Save(_settings))
+        if (!SettingsStore.Save(_settings, settingsPath))
         {
             _settings.CustomBackgrounds.Add(custom);
             _settings.PanelBackgroundId = previousSelection;
@@ -852,7 +863,7 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        if (!AppBackgroundCatalog.DeleteManagedCopy(custom))
+        if (!AppBackgroundCatalog.DeleteManagedCopy(custom, managedDirectory))
         {
             await ConfirmationDialogWindow.ShowAsync(
                 this,
@@ -866,7 +877,7 @@ public partial class SettingsWindow : Window
         _loading = true;
         try
         {
-            RefreshBackgroundChoices(_settings.PanelBackgroundId);
+            RefreshBackgroundChoices(_settings.PanelBackgroundId, managedDirectory);
             UpdateDependentControlStates();
         }
         finally

@@ -23,7 +23,9 @@ public partial class SettingsWindow
     private Border? _appearanceNikaClock,_appearanceClassicText,_appearanceClassicVisibility,_appearanceParts,_appearanceAppStage,_appearanceClockStage,_appearanceSpecimen;
     private Button? _appearanceAppTab,_appearanceClockTab;
     private TextBlock? _appearancePreviewTitle,_appearancePreviewCaption,_appearanceTypeHeading,_appearanceTypeDigits;
-    private TextBlock? _appearanceBackgroundWarning;
+    private TextBlock? _appearanceBackgroundWarning, _backgroundChoiceName;
+    private Button? _browseBackgrounds;
+    private ApplicationBackgroundPicker? _backgroundPicker;
     private Border? _appearanceNikaSummary;
     private TextBlock? _appearanceStyleSummary,_appearanceOpacitySummary;
     private Image? _appearanceApplicationImage;
@@ -65,7 +67,7 @@ public partial class SettingsWindow
     }
     private void BuildAppearancePage(Grid host)
     {
-        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,ControllerStyleCombo,ControllerDigitsCombo,NikaArtworkCombo,PageScaleStepper,UiScaleSlider,PageScaleError,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundCombo,AddBackgroundButton,RemoveBackgroundButton,BackgroundStrengthSlider})
+        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,ControllerStyleCombo,ControllerDigitsCombo,NikaArtworkCombo,PageScaleStepper,UiScaleSlider,PageScaleError,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundStrengthSlider})
         {
             var parent=(Panel)control.Parent!;
             _appearanceMoved.Add((control,parent,parent.Children.IndexOf(control),control.Margin,Grid.GetColumn(control),Grid.GetRow(control)));
@@ -75,13 +77,16 @@ public partial class SettingsWindow
         foreach(var tab in new[]{_appearanceAppTab,_appearanceClockTab}){tab.Width=146;tab.Height=32;}
         _appearanceAppTab.Click+=(_,_)=>ShowAppearanceSection(false);_appearanceClockTab.Click+=(_,_)=>ShowAppearanceSection(true);
         var tabs=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8,Children={_appearanceAppTab,_appearanceClockTab}};
-        var importRow=new StackPanel{Orientation=Orientation.Horizontal,Spacing=8,Children={AddBackgroundButton,RemoveBackgroundButton}};
-        AddBackgroundButton.Content="Add image…";
+        _browseBackgrounds = SettingsAction("Browse backgrounds…", "BrowseApplicationBackgrounds");
+        _browseBackgrounds.Click += (_, _) => OpenBackgroundPicker();
+        _backgroundChoiceName = SettingsLabel((BackgroundCombo.SelectedItem as AppBackgroundChoice)?.DisplayLabel ?? "Theme default", 13, SettingsInk);
+        var backgroundRow = new Grid { ColumnDefinitions = new("*,8,Auto"), Children = { _backgroundChoiceName, _browseBackgrounds } };
+        Grid.SetColumn(_browseBackgrounds, 2);
         _appearanceBackgroundWarning=SettingsLabel("",11,Brush.Parse("#AD3434"));
         _appearanceAppFields=new StackPanel{Spacing=12,Children={
             AppearanceCard("APPLICATION",AppearanceField("Theme",ThemeCombo),SettingsLabel("Sets the look of the controller and app pages.",11)),
             AppearanceCard("NIKA’S CHRONICLE",AppearanceField("Active timer style",ControllerStyleCombo),AppearanceField("Large Pixel Navy digits",ControllerDigitsCombo),AppearanceField("Background",NikaBackgroundCombo),AppearanceField("Typography",NikaTypographyCombo),AppearanceField("Sidebar artwork",NikaArtworkCombo)),
-            AppearanceCard("SIZE & BACKGROUND",AppearancePageScale(),SettingsLabel("Applied when you finish adjusting. Floating clock text has its own size.",11),AppearanceField("Application background",BackgroundCombo),importRow,AppearanceSlider("Background strength",BackgroundStrengthSlider,"%"),_appearanceBackgroundWarning)}};
+            AppearanceCard("SIZE & BACKGROUND",AppearancePageScale(),SettingsLabel("Applied when you finish adjusting. Floating clock text has its own size.",11),AppearanceField("Application background",backgroundRow),AppearanceSlider("Background strength",BackgroundStrengthSlider,"%"),_appearanceBackgroundWarning)}};
         var open=SettingsAction("Open Stopwatch appearance","AppearanceOpenStopwatch");open.HorizontalAlignment=HorizontalAlignment.Stretch;
         open.Click+=(_,_)=>NavigationList.SelectedItem=NavigationList.Items.OfType<ListBoxItem>().First(i=>Equals(i.Tag,"StopwatchAppearance"));
         _appearanceNikaClock=AppearanceCard("NIKA CLOCK STYLE",SettingsLabel("Frame, background, typography, artwork and hover controls.",12),open,SettingsLabel("Text colors follow your clock background automatically.",11,Brush.Parse("#2D7169")));
@@ -114,6 +119,36 @@ public partial class SettingsWindow
         ShowAppearanceSection(_appearanceShowingClock);
         ResizeAppearancePage((ClientSize.Width>0?ClientSize.Width:Width)/DesktopPageAppearance.Scale(this)<1000);
     }
+    private void OpenBackgroundPicker()
+    {
+        if (_appearancePage == null || _backgroundPicker != null) return;
+        var picker = new ApplicationBackgroundPicker { Name = "ApplicationBackgroundPicker" };
+        _backgroundPicker = picker;
+        picker.Chosen += choice => BackgroundCombo.SelectedItem = choice;
+        picker.Add.Click += AddBackgroundButton_Click;
+        picker.Remove.Click += RemoveBackgroundButton_Click;
+        picker.BackRequested += () => CloseBackgroundPicker(restoreFocus: true);
+        foreach (var child in _appearancePage.Children) child.IsVisible = false;
+        Grid.SetRowSpan(picker, _appearancePage.RowDefinitions.Count);
+        _appearancePage.Children.Add(picker);
+        picker.SetChoices(BackgroundCombo.Items.OfType<AppBackgroundChoice>(), BackgroundCombo.SelectedItem as AppBackgroundChoice);
+        picker.Back.Focus();
+    }
+
+    private void CloseBackgroundPicker(bool restoreFocus = false)
+    {
+        if (_backgroundPicker == null) return;
+        _backgroundPicker.Dispose();
+        _appearancePage!.Children.Remove(_backgroundPicker);
+        _backgroundPicker = null;
+        foreach (var child in _appearancePage.Children) child.IsVisible = true;
+        if (restoreFocus)
+        {
+            RefreshAppearancePreview();
+            _browseBackgrounds?.Focus();
+        }
+    }
+
     private void ShowAppearanceSection(bool clock)
     {
         _appearanceShowingClock=clock;
@@ -142,7 +177,7 @@ public partial class SettingsWindow
     }
     private void RefreshAppearancePreview()
     {
-        if(_closed||_appearancePage==null||CurrentCategory!="Appearance")return;
+        if(_closed||_appearancePage==null||_backgroundPicker!=null||CurrentCategory!="Appearance")return;
         _appearanceBackgroundWarning!.Text=DesktopPageAppearance.BackgroundWarning;_appearanceBackgroundWarning.IsVisible=DesktopPageAppearance.BackgroundWarning!=null;
         string theme=OverlayThemeCatalog.Resolve(_settings.OverlayTheme,_settings.ThemeMode);
         bool nika=theme==OverlayThemeCatalog.Nika;
@@ -173,6 +208,7 @@ public partial class SettingsWindow
     }
     private void ReleaseAppearancePreview()
     {
+        CloseBackgroundPicker();
         if(_appearanceApplicationImage!=null)_appearanceApplicationImage.Source=null;
         _appearanceSnapshot?.Dispose();_appearanceSnapshot=null;_appearanceSnapshotKey=null;
         _appearanceController?.Close();_appearanceController=null;
@@ -190,7 +226,8 @@ public partial class SettingsWindow
             item.Parent.Children.Insert(item.Index,item.Control);item.Control.Margin=item.Margin;Grid.SetColumn(item.Control,item.Column);Grid.SetRow(item.Control,item.Row);
         }
         _appearanceMoved.Clear();
-        AddBackgroundButton.Content="Add";
+        _backgroundChoiceName = null;
+        _browseBackgrounds = null;
         if(_appearancePage?.Parent is Panel host)host.Children.Remove(_appearancePage);
         _appearancePage=null;_appearanceCompact=null;
     }

@@ -148,6 +148,7 @@ if(args.Contains("--settings-typography-regressions")||args.Contains("--settings
     Check("Appearance controls, independent themes and navigation",SettingsAppearanceNativeChecks.LayoutAndActions);
     Check("Appearance native page scale and background application",SettingsAppearanceNativeChecks.Presentation);
     Check("Appearance cached backgrounds and theme restoration",SettingsAppearanceNativeChecks.BackgroundsAndRestoration);
+    Check("Application background picker selection, import, removal and return",SettingsAppearanceNativeChecks.BackgroundPicker);
     Check("Appearance bounded image decoding",SettingsAppearanceNativeChecks.BoundedImages);
     Check("Appearance production metadata and selected-image lookup",SettingsAppearanceNativeChecks.ProductionBackgroundLookup);
     Check("Appearance closes during pending scale without recreating previews",SettingsAppearanceNativeChecks.CloseDuringScaleAdjustment);

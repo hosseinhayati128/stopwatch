@@ -145,6 +145,55 @@ internal static class SettingsAppearanceNativeChecks
         }
         finally{window.Close();Page("Shutdown");}
     }
+    internal static void BackgroundPicker()
+    {
+        var settings = new AppSettings { ThemeMode = AppThemeCatalog.Nika };
+        var window = Open(settings);
+        string root = Path.Combine(Path.GetTempPath(), "stopwatch-picker-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var browse = Find<Button>(window, "BrowseApplicationBackgrounds");
+            browse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            ClockOverlayChecks.Pump(60);
+            var picker = Find<ApplicationBackgroundPicker>(window, "ApplicationBackgroundPicker");
+            RadioButton[] Choices() => picker.GetVisualDescendants().OfType<RadioButton>().ToArray();
+            void Choose(RadioButton tile) => typeof(RadioButton).GetMethod("OnClick", Hidden)!.Invoke(tile, null);
+            Require(Choices().Length == 10 && Choices().Count(t => t.IsChecked == true) == 1, "The initial gallery is incomplete.");
+            foreach (var tile in Choices())
+            {
+                Choose(tile);
+                Require(settings.PanelBackgroundId == ((AppBackgroundChoice)tile.Tag!).Id, "Tile selection did not update Settings.");
+            }
+            string source = Path.Combine(root, "My pattern.jpg");
+            using (var asset = Avalonia.Platform.AssetLoader.Open(new Uri("avares://StopwatchOverlay.Desktop/Assets/Backgrounds/azure-mosaic.jpg")))
+            using (var file = File.Create(source)) asset.CopyTo(file);
+            string library = Path.Combine(root, "library"), saved = Path.Combine(root, "settings.json");
+            Task Invoke(string method, params object[] args) =>
+                (Task)typeof(SettingsWindow).GetMethod(method, Hidden)!.Invoke(window, args)!;
+            Invoke("ImportBackgroundAsync", source, saved, library).GetAwaiter().GetResult();
+            ClockOverlayChecks.Pump(60);
+            var selected = Choices().Single(t => t.IsChecked == true);
+            var imported = (AppBackgroundChoice)selected.Tag!;
+            var remove = picker.FindControl<Button>("Remove")!;
+            Require(Choices().Length == 11 && imported.IsCustom && remove.IsEnabled && File.Exists(imported.FilePath) &&
+                SettingsStore.Load(saved).PanelBackgroundId == imported.Id, "Imported tile or saved selection is missing.");
+            Invoke("RemoveSelectedBackgroundAsync", saved, library).GetAwaiter().GetResult();
+            ClockOverlayChecks.Pump(60);
+            Require(Choices().Length == 10 && ((AppBackgroundChoice)Choices().Single(t => t.IsChecked == true).Tag!).IsThemeDefault &&
+                !remove.IsEnabled && !File.Exists(imported.FilePath) && File.Exists(source) && SettingsStore.Load(saved).CustomBackgrounds.Count == 0,
+                "Removal did not restore the default or touched the import source.");
+            picker.FindControl<Button>("Back")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(browse.IsEffectivelyVisible && !window.GetVisualDescendants().OfType<ApplicationBackgroundPicker>().Any(),
+                "Back did not restore the Appearance controls.");
+        }
+        finally
+        {
+            window.Close();
+            Directory.Delete(root, true);
+        }
+    }
+
     internal static void BoundedImages()
     {
         var decode=typeof(SettingsWindow).Assembly.GetType("StopwatchOverlay.Desktop.DesktopPageAppearance")!.GetMethod("DecodeBackground",BindingFlags.Static|BindingFlags.NonPublic);

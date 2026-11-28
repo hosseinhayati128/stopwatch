@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.ApplicationBackgroundPicker">
+    <UserControl.Resources>
+        <ControlTheme x:Key="backgroundChoice" TargetType="RadioButton">
+            <Setter Property="Background" Value="#F8E9CB"/>
+            <Setter Property="Foreground" Value="#132F40"/>
+            <Setter Property="BorderBrush" Value="#C7AB79"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Surface" CornerRadius="5" BorderThickness="2" ClipToBounds="True"
+                            BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                        <Grid>
+                            <ContentPresenter Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch"/>
+                            <Border Name="Check" IsVisible="False" Width="18" Height="18" Margin="4"
+                                    VerticalAlignment="Top" HorizontalAlignment="Right" CornerRadius="9" Background="#132F40">
+                                <Path Data="M2,7 L5.5,10.5 L13,3" Stroke="#FFF6DF" StrokeThickness="2" Width="15" Height="14"
+                                      VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:checked">
+                <Setter Property="Background" Value="#132F40"/><Setter Property="BorderBrush" Value="#132F40"/>
+                <Setter Property="Foreground" Value="#FFF6DF"/>
+            </Style>
+            <Style Selector="^:checked /template/ Border#Check"><Setter Property="IsVisible" Value="True"/></Style>
+            <Style Selector="^.default /template/ Border#Check"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+            <Style Selector="^:pointerover /template/ Border#Surface"><Setter Property="BorderBrush" Value="#AB772E"/></Style>
+            <Style Selector="^:focus-visible /template/ Border#Surface"><Setter Property="BorderBrush" Value="#C88414"/></Style>
+        </ControlTheme>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Button.action">
+            <Setter Property="FontSize" Value="12"/><Setter Property="MinHeight" Value="27"/>
+            <Setter Property="Padding" Value="8,2"/><Setter Property="Background" Value="#F8E9CB"/>
+            <Setter Property="BorderBrush" Value="#C7AB79"/><Setter Property="Foreground" Value="#132F40"/>
+            <Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Image.thumbnail"><Setter Property="Height" Value="47"/></Style>
+        <Style Selector="Border.tileLabel"><Setter Property="MinHeight" Value="32"/></Style>
+        <Style Selector="Border.short Image.thumbnail"><Setter Property="Height" Value="33"/></Style>
+        <Style Selector="Border.short Border.tileLabel"><Setter Property="MinHeight" Value="25"/></Style>
+    </UserControl.Styles>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Border x:Name="GalleryCard" Padding="14" BorderThickness="1" BorderBrush="#C7AB79" Background="#F1DDB5"
+                CornerRadius="7" VerticalAlignment="Top">
+            <StackPanel Spacing="9">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Application background" Foreground="#132F40" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <Button x:Name="Back" Grid.Column="1" Classes="action" Content="Back to Appearance"/>
+                </Grid>
+                <ContentControl x:Name="DefaultHost" HorizontalContentAlignment="Stretch"/>
+                <Grid x:Name="Columns" ColumnDefinitions="3.25*,14,1*" RowDefinitions="Auto">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Patterns" Foreground="#132F40" FontSize="15" FontWeight="SemiBold"/>
+                        <Grid x:Name="Patterns" ColumnDefinitions="*,6,*,6,*"/>
+                    </StackPanel>
+                    <StackPanel x:Name="ImportedSection" Grid.Column="2" Spacing="6">
+                        <TextBlock Text="Imported images" Foreground="#132F40" FontSize="15" FontWeight="SemiBold"/>
+                        <StackPanel x:Name="Imports" Spacing="6"/>
+                        <WrapPanel>
+                            <Button x:Name="Add" Content="Add image…" Classes="action" Margin="0,0,5,3"/>
+                            <Button x:Name="Remove" Content="Remove" Classes="action" IsEnabled="False"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>
