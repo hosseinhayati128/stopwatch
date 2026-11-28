@@ -181,31 +181,43 @@ internal static class SettingsShellNativeChecks
             var button=Find<Button>(settings,"SettingsShowOverlay");
             var footer = settings.FindControl<Button>("DesktopOverlayAction")!;
             var status = settings.FindControl<TextBlock>("DesktopOverlayStatus")!;
-            void CheckFooter(bool visible) => Require(footer.IsEnabled &&
-                Equals(footer.Content, visible ? "Hide active overlay" : "Show active overlay") &&
-                status.Text == (visible ? "Visible" : "Hidden"), "Settings footer disagrees with overlay visibility.");
-            CheckFooter(true);
+            var previewStatus = Find<TextBlock>(settings, "SettingsActiveOverlayStatus");
+            void CheckActions(bool? visible)
+            {
+                string label = visible == true ? "Hide active overlay" : "Show active overlay";
+                string expected = visible switch { true => "Visible", false => "Hidden", null => "No active timer" };
+                Require(footer.IsEnabled == visible.HasValue && Equals(footer.Content, label) && status.Text == expected,
+                    "Settings footer disagrees with overlay visibility.");
+                Require(button.IsEnabled == visible.HasValue && Equals(button.Content, label) && previewStatus.Text == expected &&
+                    button.Classes.Contains("editorPrimary") == (visible == false), "Live preview disagrees with overlay visibility.");
+            }
+            CheckActions(true);
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var overlay=(OverlayWindow?)typeof(ControllerWindow).GetField("_herdOverlay",Hidden)!.GetValue(controller);
             Require(overlay!=null&&!overlay.IsVisible,"Show/hide did not hide the active overlay.");
-            CheckFooter(false);
+            CheckActions(false);
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(overlay!.IsVisible, "Live preview did not show the hidden overlay.");
+            CheckActions(true);
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            CheckActions(false);
             footer.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Require(overlay!.IsVisible,"Show/hide did not restore the active overlay.");
-            CheckFooter(true);
+            CheckActions(true);
             overlay.Close();
-            CheckFooter(false);
+            CheckActions(false);
             var manager = (TimerSessionManager)typeof(ControllerWindow).GetField("_timerManager", Hidden)!.GetValue(controller)!;
             var hidden = manager.Active!;
             manager.CycleNext();
             void Update() => typeof(ControllerWindow).GetMethod("UpdateOverlayStates", Hidden)!.Invoke(controller, null);
-            Update(); CheckFooter(true);
+            Update(); CheckActions(true);
             manager.Activate(hidden);
-            Update(); CheckFooter(false);
+            Update(); CheckActions(false);
             typeof(ControllerWindow).GetMethod("ShowActiveTimerOverlay", Hidden)!.Invoke(controller, null);
-            CheckFooter(true);
+            CheckActions(true);
             foreach (var session in manager.Sessions.ToArray()) manager.Close(session);
             Update();
-            Require(!footer.IsEnabled && status.Text == "No active timer", "An empty timer list left the overlay action available.");
+            CheckActions(null);
         }
         finally{settings?.Close();controller.Close();}
     }

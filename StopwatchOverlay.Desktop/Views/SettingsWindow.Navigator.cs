@@ -19,8 +19,8 @@ public partial class SettingsWindow
     private DockPanel? _legacySettingsRoot;
     private Grid? _navigatorSettingsBody,_navigatorPage;
     private ScrollViewer? _navigatorSettingsScroll;
-    private StackPanel? _navigatorFields,_navigatorPreview;
-    private Control? _navigatorHeading,_navigatorPreviewTitle,_navigatorPreviewSubtitle;
+    private StackPanel? _navigatorFields;
+    private Control? _navigatorHeading,_navigatorPreviewSubtitle;
     private Border? _navigatorPreviewCard,_navigatorClockStage;
     private OverlayDisplaySelector? _displaySelector;
     private OverlayDisplay[] _displays = [];
@@ -28,6 +28,7 @@ public partial class SettingsWindow
     private TextBlock? _navigatorSaveStatus,_navigatorClickStatus,_navigatorCaptureStatus;
     private ThemedClockFace? _navigatorClock;
     private Button? _navigatorShow;
+    private TextBlock? _navigatorOverlayStatus;
     private readonly List<(Control Control,Panel Parent,int Index,object? Content,Thickness Margin)> _navigatorMovedControls=new();
     private readonly List<(Button Button,TextBlock Text,string Key)> _navigatorCategories=new();
     private bool? _navigatorCompact;
@@ -100,10 +101,25 @@ public partial class SettingsWindow
         _navigatorClock=new ThemedClockFace{Text="00:05:10",ProjectName="Programming"};
         _navigatorClock.SetStopwatchPresentationState(new(true,true,false));
         _navigatorClockStage=new Border{CornerRadius=new(6),Background=Brush.Parse("#192F3E"),Child=new Viewbox{Child=_navigatorClock,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxWidth=286,Margin=new(12),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        _navigatorShow=SettingsAction("Show / hide active overlay","SettingsShowOverlay");_navigatorShow.HorizontalAlignment=HorizontalAlignment.Stretch;_navigatorShow.Click+=ShowOverlayButton_Click;
-        _navigatorPreviewTitle=SettingsLabel("Live preview",18,SettingsInk);_navigatorPreviewSubtitle=SettingsLabel("Sample clock · current appearance",11);
-        _navigatorPreview=new StackPanel{Spacing=10};
-        _navigatorPreviewCard=SettingsCard(_navigatorPreview);_navigatorPreviewCard.VerticalAlignment=VerticalAlignment.Top;
+        _navigatorShow = SettingsAction("", "SettingsShowOverlay");
+        _navigatorShow.MinWidth = 138;
+        _navigatorShow.Height = 36;
+        _navigatorShow.FontSize = 13;
+        _navigatorShow.FontFamily = ClockPickerPresentation.Body;
+        _navigatorShow.Click += ShowOverlayButton_Click;
+        var overlayLabel = SettingsLabel("Desktop overlay", 14, SettingsInk);
+        overlayLabel.FontWeight = FontWeight.SemiBold;
+        _navigatorOverlayStatus = SettingsLabel("", 12);
+        _navigatorOverlayStatus.Name = "SettingsActiveOverlayStatus";
+        var labels = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center,
+            Children = { overlayLabel, _navigatorOverlayStatus } };
+        var actionRow = new Grid { ColumnDefinitions = new("*,10,Auto"), MinHeight = 37, Children = { labels, _navigatorShow } };
+        Grid.SetColumn(_navigatorShow, 2);
+        RefreshActiveOverlayActions();
+        _navigatorPreviewSubtitle = SettingsLabel("Sample clock · current appearance", 11);
+        _navigatorPreviewCard = SettingsCard(new StackPanel { Spacing = 10, Children = {
+            SettingsLabel("Live preview", 18, SettingsInk), _navigatorPreviewSubtitle, _navigatorClockStage, actionRow } });
+        _navigatorPreviewCard.VerticalAlignment = VerticalAlignment.Top;
         _navigatorPage=new Grid{Children={_navigatorFields,_navigatorPreviewCard}};
         _navigatorSettingsScroll=new ScrollViewer{Name="NavigatorSettingsScroll",Content=_navigatorPage,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Padding=new(0,0,5,0)};
         var nav=new StackPanel{Spacing=2};
@@ -173,6 +189,8 @@ public partial class SettingsWindow
             }
 
         }
+        _navigatorShow = null;
+        _navigatorOverlayStatus = null;
         _navigatorMovedControls.Clear();_navigatorCategories.Clear();
         Content=null;_legacySettingsRoot!.Children.Add(SettingsColumns);Content=_legacySettingsRoot;
         ((Control)NavigationList.Parent!).IsVisible=true;SettingsColumns.IsVisible=true;SettingsScrollViewer.Margin=new(0);
@@ -241,21 +259,8 @@ public partial class SettingsWindow
         _navigatorPage.ColumnDefinitions=new(compact?"*":"1.13*,16,1*");_navigatorPage.RowDefinitions=new(compact?"Auto,12,Auto,12,Auto":"Auto");
         Grid.SetRow(_navigatorFields,compact?2:0);Grid.SetColumn(_navigatorPreviewCard!,compact?0:2);Grid.SetRow(_navigatorPreviewCard!,compact?4:0);
         if(compact)_navigatorPage.Children.Add(_navigatorHeading!);else _navigatorFields.Children.Insert(0,_navigatorHeading!);
-        _navigatorPreview!.Children.Clear();
-        // Detach the compact action row before moving its children to the wide card.
-        if(_navigatorShow!.Parent is Grid oldRow)oldRow.Children.Clear();
-        _navigatorClockStage!.Height=compact?84:118;
-        if(compact)
-        {
-            _navigatorShow.Height=30;_navigatorShow.Width=220;Grid.SetColumn(_navigatorShow,2);
-            var actionRow=new Grid{ColumnDefinitions=new("*,12,220"),Children={_navigatorPreviewTitle!,_navigatorShow}};
-            _navigatorPreview.Children.Add(actionRow);_navigatorPreview.Children.Add(_navigatorClockStage);
-        }
-        else
-        {
-            _navigatorShow.Height=34;_navigatorShow.Width=double.NaN;
-            foreach(var child in new[]{_navigatorPreviewTitle!,_navigatorPreviewSubtitle!,_navigatorClockStage,_navigatorShow})_navigatorPreview.Children.Add(child);
-        }
+        _navigatorClockStage!.Height = compact ? 84 : 118;
+        _navigatorPreviewSubtitle!.IsVisible = !compact;
     }
 
     private void RefreshNavigatorSettingsPreview()

@@ -30,10 +30,25 @@ public partial class SettingsWindow
     {
         if (_activeOverlayVisible == visible) return;
         _activeOverlayVisible = visible;
+        RefreshActiveOverlayActions();
+    }
+
+    private void RefreshActiveOverlayActions()
+    {
+        bool? visible = _activeOverlayVisible;
+        string action = visible == true ? "Hide active overlay" : "Show active overlay";
+        string status = visible switch { true => "Visible", false => "Hidden", null => "No active timer" };
         DesktopOverlayAction.IsEnabled = visible.HasValue;
-        DesktopOverlayAction.Content = visible == true ? "Hide active overlay" : "Show active overlay";
-        DesktopOverlayStatus.Text = visible switch { true => "Visible", false => "Hidden", null => "No active timer" };
+        DesktopOverlayAction.Content = action;
+        DesktopOverlayStatus.Text = status;
         DesktopOverlayStatus.Classes.Set("shown", visible == true);
+
+        if (_navigatorShow == null || _navigatorOverlayStatus == null) return;
+        _navigatorShow.IsEnabled = visible.HasValue;
+        _navigatorShow.Content = action;
+        _navigatorShow.Classes.Set("editorPrimary", visible == false);
+        _navigatorOverlayStatus.Text = status;
+        _navigatorOverlayStatus.Foreground = visible == true ? Brush.Parse("#285E54") : SettingsMuted;
     }
 
     private void LoadStopwatchAppearance()
