@@ -635,8 +635,14 @@ public partial class ControllerWindow : Window
             UpdateActiveClocksShelf();
     }
 
-    private void RefreshSettingsOverlayVisibility() =>
-        _settingsWindow?.SetActiveOverlayVisibility(_timerManager.Active is { } active ? IsTimerOverlayVisible(active) : null);
+    private void RefreshSettingsOverlayVisibility()
+    {
+        if (_settingsWindow == null) return;
+        var active = _timerManager.Active;
+        _settingsWindow.SetActiveOverlayVisibility(active != null ? IsTimerOverlayVisible(active) : null);
+        var overlay = active?.IsSeparated == true ? _overlays.GetValueOrDefault(active.Id) : _herdOverlay;
+        _settingsWindow.SetPlacementSource(active, overlay?.Bounds.Size ?? default);
+    }
 
     private void SeparateActiveSession()
     {

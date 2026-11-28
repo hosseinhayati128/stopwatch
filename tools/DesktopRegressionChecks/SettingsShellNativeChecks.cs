@@ -235,6 +235,30 @@ internal static class SettingsShellNativeChecks
         Require(Point("Custom",new(100,2000))==new PixelPoint(-450,882),"Offscreen custom position is not clamped.");
         var oversized=(PixelPoint)place!.Invoke(null,["Bottom Right",default(PixelPoint),new Size(2000,2000),screen])!;
         Require(oversized==screen.WorkingArea.Position,"Oversized overlay escapes work area.");
+
+        var preview = new ClockPlacementPreview();
+        var session = new TimerSession(1) { HasCustomPosition = true, CustomLeft = -1100, CustomTop = 500 };
+        session.CustomPositionsByScreen["-1920,0:1920x1080"] = (-1500,100);
+        var update = typeof(ClockPlacementPreview).GetMethod("Update", Hidden)!;
+        var clock = preview.FindControl<Viewbox>("ClockHost")!;
+        var caption = preview.FindControl<TextBlock>("PlacementCaption")!;
+        void Draw(string position) => update.Invoke(preview, [position, screen, session, size, false]);
+        Draw("Top Left");
+        var upperLeft = new Point(Canvas.GetLeft(clock), Canvas.GetTop(clock));
+        Draw("Bottom Right");
+        var lowerRight = new Point(Canvas.GetLeft(clock), Canvas.GetTop(clock));
+        Draw("Custom");
+        Require(caption.Text!.Contains("-1500, 100 px") && Canvas.GetLeft(clock) > upperLeft.X &&
+            Canvas.GetLeft(clock) < lowerRight.X && Canvas.GetTop(clock) > upperLeft.Y && Canvas.GetTop(clock) < lowerRight.Y,
+            "Custom preview did not use the saved position for this display.");
+        session.CustomPositionsByScreen.Clear();
+        Draw("Custom");
+        Require(caption.Text!.Contains("-1100, 500 px"), "Missing legacy saved-position fallback.");
+        session.HasCustomPosition = false;
+        Draw("Custom");
+        Require(!clock.IsVisible && caption.Text!.Contains("No saved position"), "Preview invented a saved position.");
+        Draw("Top Center");
+        Require(clock.IsVisible, "Returning to a preset did not restore the sample.");
     }
 
     internal static void Mirrors()

@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.ClockPlacementPreview">
+    <StackPanel Spacing="10">
+        <TextBlock x:Name="PlacementCaption" FontSize="11" Foreground="#655539" TextWrapping="Wrap"/>
+        <Border x:Name="MonitorStage" Height="194" Background="#142D3C" Padding="6" CornerRadius="6">
+            <Viewbox Stretch="Uniform">
+                <Border BorderBrush="#637986" BorderThickness="1" CornerRadius="3" ClipToBounds="True">
+                    <Canvas x:Name="MonitorSurface" Background="#122A38">
+                        <Border x:Name="WorkArea">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                    <GradientStop Color="#294F60" Offset="0"/>
+                                    <GradientStop Color="#1C394A" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <Border x:Name="TaskbarHandle" Width="23" Height="2" CornerRadius="1" Background="#71909A"/>
+                        <Viewbox x:Name="ClockHost" Stretch="Uniform"/>
+                    </Canvas>
+                </Border>
+            </Viewbox>
+        </Border>
+    </StackPanel>
+</UserControl>

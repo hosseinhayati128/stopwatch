@@ -20,7 +20,7 @@ public partial class ControllerWindow
     private readonly Dictionary<OverlayWindow,List<DisplayOverlay>> _displayOverlays=new();
     private IReadOnlyList<Screen>? _overlayScreens;
 
-    private static string ScreenPositionKey(Screen screen)=>!string.IsNullOrEmpty(screen.DisplayName)?screen.DisplayName:$"{screen.Bounds.X},{screen.Bounds.Y}:{screen.Bounds.Width}x{screen.Bounds.Height}";
+
 
     private void WireOverlayCommands(OverlayWindow overlay,Func<TimerSession?> getSession)
     {
@@ -37,7 +37,8 @@ public partial class ControllerWindow
             if(screen==null)return;
             session.HasCustomPosition=true;session.LastPresetPosition=_settings.Position;
             session.CustomLeft=overlay.Position.X;session.CustomTop=overlay.Position.Y;
-            session.CustomPositionsByScreen[ScreenPositionKey(screen)]=(overlay.Position.X,overlay.Position.Y);
+            session.CustomPositionsByScreen[OverlayScreenConstraint.ScreenPositionKey(screen)]=(overlay.Position.X,overlay.Position.Y);
+            if (session == _timerManager.Active) _settingsWindow?.RefreshPlacementPreview();
         };
     }
 
@@ -103,11 +104,11 @@ public partial class ControllerWindow
             {
                 session.HasCustomPosition=true;session.LastPresetPosition=_settings.Position;
                 session.CustomLeft=window.Position.X;session.CustomTop=window.Position.Y;
-                session.CustomPositionsByScreen[ScreenPositionKey(display.Screen)]=(window.Position.X,window.Position.Y);
+                session.CustomPositionsByScreen[OverlayScreenConstraint.ScreenPositionKey(display.Screen)]=(window.Position.X,window.Position.Y);
             }
             display.Size=window.Bounds.Size;display.Session=session.Id;
             bool custom=_settings.Position=="Custom"||(session.HasCustomPosition&&session.LastPresetPosition==_settings.Position);
-            var point=session.CustomPositionsByScreen.TryGetValue(ScreenPositionKey(display.Screen),out var saved)?new PixelPoint((int)saved.Left,(int)saved.Top):session.HasCustomPosition?new((int)session.CustomLeft,(int)session.CustomTop):window.Position;
+            var point = OverlayScreenConstraint.SavedPosition(session, display.Screen) ?? window.Position;
             var placed=OverlayScreenConstraint.PlaceOnScreen(custom?"Custom":_settings.Position,point,window.Bounds.Size,display.Screen);
             if(!custom&&session.IsSeparated)
             {

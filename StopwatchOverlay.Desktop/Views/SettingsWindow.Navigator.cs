@@ -20,8 +20,11 @@ public partial class SettingsWindow
     private Grid? _navigatorSettingsBody,_navigatorPage;
     private ScrollViewer? _navigatorSettingsScroll;
     private StackPanel? _navigatorFields;
-    private Control? _navigatorHeading,_navigatorPreviewSubtitle;
-    private Border? _navigatorPreviewCard,_navigatorClockStage;
+    private Control? _navigatorHeading;
+    private Border? _navigatorPreviewCard;
+    private ClockPlacementPreview? _placementPreview;
+    private TimerSession? _placementSession;
+    private Size _placementOverlaySize;
     private OverlayDisplaySelector? _displaySelector;
     private OverlayDisplay[] _displays = [];
     private OverlayPositionPicker? _positionPicker;
@@ -100,7 +103,8 @@ public partial class SettingsWindow
         _navigatorFields=new StackPanel{Spacing=12,Children={placement,interaction}};
         _navigatorClock=new ThemedClockFace{Text="00:05:10",ProjectName="Programming"};
         _navigatorClock.SetStopwatchPresentationState(new(true,true,false));
-        _navigatorClockStage=new Border{CornerRadius=new(6),Background=Brush.Parse("#192F3E"),Child=new Viewbox{Child=_navigatorClock,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxWidth=286,Margin=new(12),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
+        _placementPreview = new ClockPlacementPreview();
+        _placementPreview.ClockHost.Child = _navigatorClock;
         _navigatorShow = SettingsAction("", "SettingsShowOverlay");
         _navigatorShow.MinWidth = 138;
         _navigatorShow.Height = 36;
@@ -116,9 +120,8 @@ public partial class SettingsWindow
         var actionRow = new Grid { ColumnDefinitions = new("*,10,Auto"), MinHeight = 37, Children = { labels, _navigatorShow } };
         Grid.SetColumn(_navigatorShow, 2);
         RefreshActiveOverlayActions();
-        _navigatorPreviewSubtitle = SettingsLabel("Sample clock · current appearance", 11);
         _navigatorPreviewCard = SettingsCard(new StackPanel { Spacing = 10, Children = {
-            SettingsLabel("Live preview", 18, SettingsInk), _navigatorPreviewSubtitle, _navigatorClockStage, actionRow } });
+            SettingsLabel("Live preview", 18, SettingsInk), _placementPreview, actionRow } });
         _navigatorPreviewCard.VerticalAlignment = VerticalAlignment.Top;
         _navigatorPage=new Grid{Children={_navigatorFields,_navigatorPreviewCard}};
         _navigatorSettingsScroll=new ScrollViewer{Name="NavigatorSettingsScroll",Content=_navigatorPage,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Padding=new(0,0,5,0)};
@@ -160,6 +163,7 @@ public partial class SettingsWindow
         Width=1120;Height=720;SystemDecorations=SystemDecorations.None;Background=Brushes.Transparent;TransparencyLevelHint=[WindowTransparencyLevel.Transparent];RequestedThemeVariant=ThemeVariant.Light;
         if(!_navigatorStylesAdded){NavigatorFormStyles.Apply(this);_navigatorStylesAdded=true;}
         Resources["SystemAccentColor"]=Color.Parse("#2D7169");
+        RefreshPlacementPreview();
         ReportPersistenceResult(_settingsSaved);UpdateNavigatorCategory();
     }
 
@@ -189,6 +193,7 @@ public partial class SettingsWindow
             }
 
         }
+        _placementPreview = null;
         _navigatorShow = null;
         _navigatorOverlayStatus = null;
         _navigatorMovedControls.Clear();_navigatorCategories.Clear();
@@ -259,8 +264,25 @@ public partial class SettingsWindow
         _navigatorPage.ColumnDefinitions=new(compact?"*":"1.13*,16,1*");_navigatorPage.RowDefinitions=new(compact?"Auto,12,Auto,12,Auto":"Auto");
         Grid.SetRow(_navigatorFields,compact?2:0);Grid.SetColumn(_navigatorPreviewCard!,compact?0:2);Grid.SetRow(_navigatorPreviewCard!,compact?4:0);
         if(compact)_navigatorPage.Children.Add(_navigatorHeading!);else _navigatorFields.Children.Insert(0,_navigatorHeading!);
-        _navigatorClockStage!.Height = compact ? 84 : 118;
-        _navigatorPreviewSubtitle!.IsVisible = !compact;
+        _placementPreview!.MonitorStage.Height = compact ? 148 : 194;
+    }
+
+    internal void SetPlacementSource(TimerSession? session, Size size)
+    {
+        if (_placementSession == session && _placementOverlaySize == size) return;
+        _placementSession = session;
+        _placementOverlaySize = size;
+        RefreshPlacementPreview();
+    }
+
+    internal void RefreshPlacementPreview()
+    {
+        if (_placementPreview == null) return;
+        var screens = Screens.All;
+        int index = SettingsChangePolicy.ResolveScreenComboIndex(_settings.ScreenIndex, screens.Count);
+        var screen = index > 0 ? screens[index - 1] : Screens.Primary ?? screens.FirstOrDefault();
+        _placementPreview.Update(_settings.Position, screen, _placementSession, _placementOverlaySize,
+            index == 0 && screens.Count > 1);
     }
 
     private void RefreshNavigatorSettingsPreview()
@@ -279,6 +301,7 @@ public partial class SettingsWindow
             ? "Visible on your desktop. Hidden in supported captures." : "The clock appears in screen captures.";
         AutomationProperties.SetHelpText(ClickThroughCheck, _navigatorClickStatus.Text);
         AutomationProperties.SetHelpText(HideOverlayCaptureCheck, _navigatorCaptureStatus.Text);
+        RefreshPlacementPreview();
         _positionPicker?.SetPosition(_settings.Position);
         _displaySelector?.SetSelection(ScreenCombo.SelectedIndex);
     }

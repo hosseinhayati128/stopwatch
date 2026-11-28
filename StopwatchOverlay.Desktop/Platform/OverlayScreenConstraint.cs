@@ -68,6 +68,17 @@ internal sealed class OverlayScreenConstraint
                               Math.Clamp(anchor.Y, area.Y, Math.Max(area.Y, area.Bottom - height)));
     }
 
+    internal static string ScreenPositionKey(Screen screen) => !string.IsNullOrEmpty(screen.DisplayName)
+        ? screen.DisplayName : $"{screen.Bounds.X},{screen.Bounds.Y}:{screen.Bounds.Width}x{screen.Bounds.Height}";
+
+    internal static PixelPoint? SavedPosition(TimerSession? session, Screen screen)
+    {
+        if (session == null) return null;
+        if (session.CustomPositionsByScreen.TryGetValue(ScreenPositionKey(screen), out var saved))
+            return new PixelPoint((int)saved.Left, (int)saved.Top);
+        return session.HasCustomPosition ? new PixelPoint((int)session.CustomLeft, (int)session.CustomTop) : null;
+    }
+
     internal static PixelPoint PlaceOnScreen(string preset, PixelPoint custom, Size logicalSize, Screen screen)
     {
         var area=screen.WorkingArea;
