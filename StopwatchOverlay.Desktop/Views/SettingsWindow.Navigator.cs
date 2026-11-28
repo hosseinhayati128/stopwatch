@@ -20,7 +20,7 @@ public partial class SettingsWindow
     private Grid? _navigatorSettingsBody,_navigatorPage;
     private ScrollViewer? _navigatorSettingsScroll;
     private StackPanel? _navigatorFields,_navigatorPreview;
-    private Control? _navigatorHeading,_navigatorPreviewTitle,_navigatorPreviewSubtitle,_navigatorStates;
+    private Control? _navigatorHeading,_navigatorPreviewTitle,_navigatorPreviewSubtitle;
     private Border? _navigatorPreviewCard,_navigatorClockStage;
     private OverlayDisplaySelector? _displaySelector;
     private OverlayDisplay[] _displays = [];
@@ -79,18 +79,27 @@ public partial class SettingsWindow
             Grid.SetColumn(position, fitsBeside ? 2 : 0);
         };
         var placement = SettingsCard(new StackPanel { Spacing = 8, Children = { SettingsLabel("PLACEMENT",10), placementFields } });
-        Control Choice(CheckBox check,string title,string detail)
+        _navigatorClickStatus = SettingsLabel("", 12, Brush.Parse("#5C4D35"));
+        _navigatorCaptureStatus = SettingsLabel("", 12, Brush.Parse("#5C4D35"));
+        void StyleSwitch(CheckBox check, string title, TextBlock stateText)
         {
-            check.Margin=new(0);check.Content=new StackPanel{Spacing=3,Children={SettingsLabel(title,13,SettingsInk),SettingsLabel(detail,11)}};
-            check.HorizontalContentAlignment=HorizontalAlignment.Stretch;check.VerticalContentAlignment=VerticalAlignment.Top;AutomationProperties.SetName(check,title);return check;
+            var label = SettingsLabel(title, 15, SettingsInk);
+            label.FontWeight = FontWeight.SemiBold;
+            check.Margin = new(0);
+            check.Theme = (ControlTheme)Resources["OverlayInteractionSwitch"]!;
+            check.FontFamily = ClockPickerPresentation.Body;
+            check.Content = new StackPanel { Spacing = 2, Children = { label, stateText } };
+            AutomationProperties.SetName(check, title);
         }
-        var interaction=SettingsCard(new StackPanel{Spacing=12,Children={SettingsLabel("INTERACTION",10),Choice(ClickThroughCheck,"Click-through","Let clicks pass to the windows underneath."),new Border{Height=1,Background=SettingsRule},Choice(HideOverlayCaptureCheck,"Hide from screen capture","The clock stays visible on your screen.")}});
+        StyleSwitch(ClickThroughCheck, "Click-through", _navigatorClickStatus);
+        StyleSwitch(HideOverlayCaptureCheck, "Hide from screen capture", _navigatorCaptureStatus);
+        var interaction = SettingsCard(new StackPanel { Spacing = 12, Children = {
+            SettingsLabel("INTERACTION", 10), ClickThroughCheck,
+            new Border { Height = 1, Background = SettingsRule }, HideOverlayCaptureCheck } });
         _navigatorFields=new StackPanel{Spacing=12,Children={placement,interaction}};
         _navigatorClock=new ThemedClockFace{Text="00:05:10",ProjectName="Programming"};
         _navigatorClock.SetStopwatchPresentationState(new(true,true,false));
         _navigatorClockStage=new Border{CornerRadius=new(6),Background=Brush.Parse("#192F3E"),Child=new Viewbox{Child=_navigatorClock,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxWidth=286,Margin=new(12),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        _navigatorClickStatus=SettingsLabel("",10,Brush.Parse("#2D7169"));_navigatorCaptureStatus=SettingsLabel("",10,SettingsInk);
-        _navigatorStates=new StackPanel{Spacing=3,Children={_navigatorClickStatus,_navigatorCaptureStatus}};
         _navigatorShow=SettingsAction("Show / hide active overlay","SettingsShowOverlay");_navigatorShow.HorizontalAlignment=HorizontalAlignment.Stretch;_navigatorShow.Click+=ShowOverlayButton_Click;
         _navigatorPreviewTitle=SettingsLabel("Live preview",18,SettingsInk);_navigatorPreviewSubtitle=SettingsLabel("Sample clock · current appearance",11);
         _navigatorPreview=new StackPanel{Spacing=10};
@@ -156,7 +165,11 @@ public partial class SettingsWindow
             item.Parent.Children.Insert(item.Index,item.Control);item.Control.Margin=item.Margin;
             if(item.Control is CheckBox check)
             {
-                check.Content=item.Content;check.ClearValue(HorizontalContentAlignmentProperty);check.ClearValue(VerticalContentAlignmentProperty);
+                check.Content = item.Content;
+                check.ClearValue(ThemeProperty);
+                check.ClearValue(FontFamilyProperty);
+                check.ClearValue(AutomationProperties.NameProperty);
+                check.ClearValue(AutomationProperties.HelpTextProperty);
             }
 
         }
@@ -241,7 +254,7 @@ public partial class SettingsWindow
         else
         {
             _navigatorShow.Height=34;_navigatorShow.Width=double.NaN;
-            foreach(var child in new[]{_navigatorPreviewTitle!,_navigatorPreviewSubtitle!,_navigatorClockStage,_navigatorStates!,_navigatorShow})_navigatorPreview.Children.Add(child);
+            foreach(var child in new[]{_navigatorPreviewTitle!,_navigatorPreviewSubtitle!,_navigatorClockStage,_navigatorShow})_navigatorPreview.Children.Add(child);
         }
     }
 
@@ -255,8 +268,12 @@ public partial class SettingsWindow
     private void UpdateNavigatorInteraction()
     {
         if(_navigatorSettingsBody==null)return;
-        _navigatorClickStatus!.Text=_settings.ClickThrough?"Click-through on · clicks pass through":"Click-through off · clock is interactive";
-        _navigatorCaptureStatus!.Text=_settings.HideOverlayFromCapture?"Screen capture · clock hidden":"Screen capture · clock included";
+        _navigatorClickStatus!.Text = _settings.ClickThrough
+            ? "Clicks pass to the window underneath." : "The clock receives clicks.";
+        _navigatorCaptureStatus!.Text = _settings.HideOverlayFromCapture
+            ? "Visible on your desktop. Hidden in supported captures." : "The clock appears in screen captures.";
+        AutomationProperties.SetHelpText(ClickThroughCheck, _navigatorClickStatus.Text);
+        AutomationProperties.SetHelpText(HideOverlayCaptureCheck, _navigatorCaptureStatus.Text);
         _positionPicker?.SetPosition(_settings.Position);
         _displaySelector?.SetSelection(ScreenCombo.SelectedIndex);
     }

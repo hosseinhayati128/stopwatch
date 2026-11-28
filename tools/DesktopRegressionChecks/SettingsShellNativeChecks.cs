@@ -76,7 +76,28 @@ internal static class SettingsShellNativeChecks
         var settings=new AppSettings{ThemeMode=AppThemeCatalog.Nika};var window=Open(settings);
         try
         {
-            window.FindControl<CheckBox>("ClickThroughCheck")!.IsChecked=true;
+            var clicks = window.FindControl<CheckBox>("ClickThroughCheck")!;
+            var capture = window.FindControl<CheckBox>("HideOverlayCaptureCheck")!;
+            int interactionChanges = 0;
+            Action<SettingsChangeKind> interactionChanged = kind => { if (kind == SettingsChangeKind.OverlayInteraction) interactionChanges++; };
+            typeof(SettingsWindow).GetEvent("SettingsChanged",Hidden)!.GetAddMethod(true)!.Invoke(window,[interactionChanged]);
+            void Toggle(CheckBox check) => typeof(CheckBox).GetMethod("OnClick", Hidden)!.Invoke(check, null);
+            void VerifySwitch(CheckBox check, bool enabled, string caption)
+            {
+                var text = check.GetVisualDescendants().OfType<TextBlock>();
+                Require(check.IsChecked == enabled && text.Any(t => t.Text == caption && t.IsEffectivelyVisible) &&
+                    text.Single(t => t.Name == "State").Text == (enabled ? "On" : "Off") &&
+                    AutomationProperties.GetHelpText(check) == caption, "Switch state or caption is stale.");
+            }
+            foreach (var control in new[]{ clicks, capture, clicks, capture, clicks })
+            {
+                int before = interactionChanges;
+                Toggle(control);
+                ClockOverlayChecks.Pump(12);
+                Require(interactionChanges == before + 1, "Switch did not apply exactly one interaction change.");
+                VerifySwitch(clicks, settings.ClickThrough, settings.ClickThrough ? "Clicks pass to the window underneath." : "The clock receives clicks.");
+                VerifySwitch(capture, settings.HideOverlayFromCapture, settings.HideOverlayFromCapture ? "Visible on your desktop. Hidden in supported captures." : "The clock appears in screen captures.");
+            }
             RadioButton[] Choices() => Find<OverlayPositionPicker>(window,"SettingsPositionPicker")
                 .GetVisualDescendants().OfType<RadioButton>().ToArray();
             RadioButton Choice(string name) => Choices().Single(b => AutomationProperties.GetName(b) == name);

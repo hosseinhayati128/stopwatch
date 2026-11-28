@@ -9,6 +9,47 @@
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource AppBackgroundBrush}">
 
+    <Window.Resources>
+        <ControlTheme x:Key="OverlayInteractionSwitch" TargetType="CheckBox">
+            <Setter Property="MinHeight" Value="43"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="Transparent" ColumnDefinitions="*,10,24,6,36">
+                        <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center"
+                                          HorizontalContentAlignment="Stretch"/>
+                        <TextBlock Name="State" Grid.Column="2" Text="Off" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#5C4D35" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <Border Name="Rail" Grid.Column="4" Width="36" Height="22" CornerRadius="11" Padding="3,0"
+                                VerticalAlignment="Center" Background="#F4E6C7" BorderBrush="#8E7956" BorderThickness="1.4">
+                            <Border Name="Thumb" Width="14" Height="14" CornerRadius="7" Background="#887653"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:checked /template/ TextBlock#State">
+                <Setter Property="Text" Value="On"/>
+                <Setter Property="Foreground" Value="#102E3D"/>
+            </Style>
+            <Style Selector="^:checked /template/ Border#Rail">
+                <Setter Property="Background" Value="#163B49"/>
+                <Setter Property="BorderBrush" Value="#163B49"/>
+            </Style>
+            <Style Selector="^:checked /template/ Border#Thumb">
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="Background" Value="#F5CB83"/>
+            </Style>
+            <Style Selector="^:pointerover /template/ Border#Rail">
+                <Setter Property="BorderBrush" Value="#986821"/>
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#Rail">
+                <Setter Property="BorderBrush" Value="#B17519"/>
+                <Setter Property="BorderThickness" Value="2.5"/>
+            </Style>
+        </ControlTheme>
+    </Window.Resources>
+
     <DockPanel>
         <!-- Top Header -->
         <Border x:Name="SettingsHeaderSurface" DockPanel.Dock="Top"
