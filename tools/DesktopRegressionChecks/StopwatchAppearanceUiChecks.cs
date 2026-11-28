@@ -99,6 +99,35 @@ internal static class StopwatchAppearanceUiChecks
                 tabs.SelectedIndex=1;Require(art.IsEnabled&&art.IsChecked==true,"Artwork opacity preference was not remembered.");
                 int prior=changes;background.Value=0;Require(changes==prior+1&&settings.StopwatchAppearance.BackgroundOpacity==0,"Slider lost immediate persistence event.");
                 background.Value=70;unselected.Value=40;
+                foreach (var (slider, other) in new[] { (background, unselected), (unselected, background) })
+                {
+                    var field = Named<TextBox>(window, slider.Name + "Entry");
+                    var decrement = Named<Button>(window, "Decrease" + slider.Name);
+                    var increment = Named<Button>(window, "Increase" + slider.Name);
+                    var validation = Named<TextBlock>(window, slider.Name + "Error");
+                    double original = slider.Value, otherOriginal = other.Value;
+                    int initialChanges = changes;
+                    void KeyPress(Key key) => field.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key });
+                    double Saved() => slider == background ? settings.StopwatchAppearance.BackgroundOpacity : settings.StopwatchAppearance.UnselectedOpacity;
+                    Click(increment);
+                    Require(Saved() == original + 1 && changes == initialChanges + 1, "Opacity increment did not save one point.");
+                    Click(decrement);
+                    Require(Saved() == original && changes == initialChanges + 2, "Opacity decrement did not save one point.");
+                    field.Focus(); field.Text = "53"; KeyPress(Avalonia.Input.Key.Enter);
+                    Require(Saved() == 53 && slider.Value == 53 && changes == initialChanges + 3, "Typed opacity was not committed once.");
+                    field.Text = "101"; KeyPress(Avalonia.Input.Key.Enter);
+                    Require(validation.IsVisible && Saved() == 53, "Out-of-range opacity was accepted.");
+                    KeyPress(Avalonia.Input.Key.Escape);
+                    Require(!validation.IsVisible && field.Text == "53", "Escape did not restore the percentage.");
+                    field.Text = "-1"; slider.Focus();
+                    Require(field.Text == "53" && changes == initialChanges + 3, "Invalid opacity persisted on blur.");
+                    field.Focus(); field.Text = "100"; slider.Focus();
+                    Require(Saved() == 100 && !increment.IsEnabled && changes == initialChanges + 4, "Maximum opacity was not committed on blur.");
+                    slider.Value = slider.Minimum;
+                    Require(!decrement.IsEnabled && increment.IsEnabled && field.Text == slider.Minimum.ToString() &&
+                        other.Value == otherOriginal, "Opacity limits or independent values diverged.");
+                    slider.Value = original;
+                }
                 ClockOverlayChecks.Pump(60);
                 glyphs=previewHost.GetVisualDescendants().OfType<Control>().Where(c=>c.GetType().Name=="StopwatchActionGlyph").ToArray();
                 var previewWithGlyphs=StopwatchAppearanceChecks.Render(previewHost,null);

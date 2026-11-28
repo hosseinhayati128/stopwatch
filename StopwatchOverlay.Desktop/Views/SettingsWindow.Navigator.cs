@@ -18,13 +18,13 @@ public partial class SettingsWindow
 {
     private static readonly IBrush SettingsInk=Brush.Parse("#102B3B"),SettingsMuted=Brush.Parse("#655539"),SettingsRule=Brush.Parse("#509A7B48");
     private DockPanel? _legacySettingsRoot;
-    private Grid? _navigatorSettingsBody,_navigatorPlacement,_navigatorPage,_navigatorPreviewGrid;
+    private Grid? _navigatorSettingsBody,_navigatorPage;
     private ScrollViewer? _navigatorSettingsScroll;
-    private StackPanel? _navigatorFields,_navigatorPreview,_navigatorDiagram;
-    private Control? _navigatorHeading,_navigatorDisplayField,_navigatorPositionField,_navigatorPreviewTitle,_navigatorPreviewSubtitle,_navigatorGuideTitle,_navigatorStates,_navigatorGuideHint;
+    private StackPanel? _navigatorFields,_navigatorPreview;
+    private Control? _navigatorHeading,_navigatorPreviewTitle,_navigatorPreviewSubtitle,_navigatorStates;
     private Border? _navigatorPreviewCard,_navigatorClockStage;
-    private Canvas? _navigatorGuide;
-    private TextBlock? _navigatorSaveStatus,_navigatorGuideLabel,_navigatorGuideCaption,_navigatorClickStatus,_navigatorCaptureStatus;
+    private OverlayPositionPicker? _positionPicker;
+    private TextBlock? _navigatorSaveStatus,_navigatorClickStatus,_navigatorCaptureStatus;
     private ThemedClockFace? _navigatorClock;
     private Button? _navigatorShow;
     private readonly List<(Control Control,Panel Parent,int Index,object? Content,Thickness Margin)> _navigatorMovedControls=new();
@@ -52,20 +52,20 @@ public partial class SettingsWindow
     {
         _legacySettingsRoot=(DockPanel)DesktopPageAppearance.Content(this)!;
         _legacySettingsRoot.Children.Remove(SettingsColumns);Content=null;
-        foreach(var control in new Control[]{ScreenCombo,PositionCombo,ClickThroughCheck,HideOverlayCaptureCheck})
+        foreach(var control in new Control[]{ScreenCombo,ClickThroughCheck,HideOverlayCaptureCheck})
             _navigatorMovedControls.Add((control,(Panel)control.Parent!,((Panel)control.Parent!).Children.IndexOf(control),(control as CheckBox)?.Content,control.Margin));
         foreach(var item in _navigatorMovedControls)item.Parent.Children.Remove(item.Control);
-        foreach(var combo in new[]{ScreenCombo,PositionCombo})
-        {
-            combo.Height=36;combo.MinHeight=0;combo.MinWidth=0;combo.Padding=new(10,4);combo.FontSize=12;combo.Margin=new(0);combo.Classes.Add("editorField");
-            combo.ItemTemplate=new FuncDataTemplate<string>((text,_)=>new TextBlock{Text=text,FontFamily=ClockPickerPresentation.Body,FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis});combo.SelectionBoxItemTemplate=combo.ItemTemplate;
-        }
-        AutomationProperties.SetName(ScreenCombo,"Display");AutomationProperties.SetName(PositionCombo,"Position");
+        ScreenCombo.Height=36;ScreenCombo.MinHeight=0;ScreenCombo.MinWidth=0;ScreenCombo.Padding=new(10,4);ScreenCombo.FontSize=12;ScreenCombo.Margin=new(0);ScreenCombo.Classes.Add("editorField");
+        ScreenCombo.ItemTemplate=new FuncDataTemplate<string>((text,_)=>new TextBlock{Text=text,FontFamily=ClockPickerPresentation.Body,FontSize=12,TextTrimming=TextTrimming.CharacterEllipsis});ScreenCombo.SelectionBoxItemTemplate=ScreenCombo.ItemTemplate;
+        AutomationProperties.SetName(ScreenCombo,"Display");
         _navigatorHeading=new StackPanel{Spacing=4,Children={SettingsLabel("Overlay & position",23,SettingsInk),SettingsLabel("Choose where your clock appears.",12)}};
-        _navigatorDisplayField=new StackPanel{Spacing=6,Children={SettingsLabel("Display",12,SettingsInk),ScreenCombo}};
-        _navigatorPositionField=new StackPanel{Spacing=6,Children={SettingsLabel("Position",12,SettingsInk),PositionCombo}};
-        _navigatorPlacement=new Grid{Children={_navigatorDisplayField,_navigatorPositionField}};
-        var placement=SettingsCard(new StackPanel{Spacing=8,Children={SettingsLabel("PLACEMENT",10),_navigatorPlacement,SettingsLabel("Choose a preset, or keep your custom placement.",11)}});
+        _positionPicker = new OverlayPositionPicker { Name = "SettingsPositionPicker" };
+        _positionPicker.SetPosition(_settings.Position);
+        _positionPicker.PositionChosen += position => PositionCombo.SelectedItem = position;
+        var display = new StackPanel { Spacing = 6, Children = { SettingsLabel("Display",12,SettingsInk), ScreenCombo } };
+        var position = new StackPanel { Spacing = 6, Children = { SettingsLabel("Clock position",12,SettingsInk), _positionPicker } };
+        var placement = SettingsCard(new StackPanel { Spacing = 8, Children = {
+            SettingsLabel("PLACEMENT",10), new StackPanel { Spacing = 12, Children = { display, position } } } });
         Control Choice(CheckBox check,string title,string detail)
         {
             check.Margin=new(0);check.Content=new StackPanel{Spacing=3,Children={SettingsLabel(title,13,SettingsInk),SettingsLabel(detail,11)}};
@@ -76,16 +76,11 @@ public partial class SettingsWindow
         _navigatorClock=new ThemedClockFace{Text="00:05:10",ProjectName="Programming"};
         _navigatorClock.SetStopwatchPresentationState(new(true,true,false));
         _navigatorClockStage=new Border{CornerRadius=new(6),Background=Brush.Parse("#192F3E"),Child=new Viewbox{Child=_navigatorClock,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly,MaxWidth=286,Margin=new(12),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
-        _navigatorGuide=new Canvas{Name="SettingsPlacementGuide",ClipToBounds=true};_navigatorGuide.SizeChanged+=(_,_)=>DrawSettingsPlacement();
-        _navigatorGuideLabel=SettingsLabel("",11,SettingsInk);_navigatorGuideCaption=SettingsLabel("",10);
-        _navigatorGuideTitle=SettingsLabel("PLACEMENT GUIDE",10);
-        _navigatorDiagram=new StackPanel{Spacing=6,Children={_navigatorGuideTitle,_navigatorGuide,_navigatorGuideLabel,_navigatorGuideCaption}};
         _navigatorClickStatus=SettingsLabel("",10,Brush.Parse("#2D7169"));_navigatorCaptureStatus=SettingsLabel("",10,SettingsInk);
         _navigatorStates=new StackPanel{Spacing=3,Children={_navigatorClickStatus,_navigatorCaptureStatus}};
         _navigatorShow=SettingsAction("Show / hide active overlay","SettingsShowOverlay");_navigatorShow.HorizontalAlignment=HorizontalAlignment.Stretch;_navigatorShow.Click+=ShowOverlayButton_Click;
         _navigatorPreviewTitle=SettingsLabel("Live preview",18,SettingsInk);_navigatorPreviewSubtitle=SettingsLabel("Sample clock · current appearance",11);
-        _navigatorGuideHint=SettingsLabel("The guide shows placement, not screen scale.",10);
-        _navigatorPreviewGrid=new Grid();_navigatorPreview=new StackPanel{Spacing=10};
+        _navigatorPreview=new StackPanel{Spacing=10};
         _navigatorPreviewCard=SettingsCard(_navigatorPreview);_navigatorPreviewCard.VerticalAlignment=VerticalAlignment.Top;
         _navigatorPage=new Grid{Children={_navigatorFields,_navigatorPreviewCard}};
         _navigatorSettingsScroll=new ScrollViewer{Name="NavigatorSettingsScroll",Content=_navigatorPage,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Padding=new(0,0,5,0)};
@@ -160,7 +155,7 @@ public partial class SettingsWindow
         _navigatorMovedControls.Clear();_navigatorCategories.Clear();
         Content=null;_legacySettingsRoot!.Children.Add(SettingsColumns);Content=_legacySettingsRoot;
         ((Control)NavigationList.Parent!).IsVisible=true;SettingsColumns.IsVisible=true;SettingsScrollViewer.Margin=new(0);
-        _navigatorSettingsBody=null;_navigatorClock=null;_navigatorSaveStatus=null;_navigatorCompact=null;
+        _navigatorSettingsBody=null;_positionPicker=null;_navigatorClock=null;_navigatorSaveStatus=null;_navigatorCompact=null;
         SystemDecorations=SystemDecorations.Full;TransparencyLevelHint=[];RequestedThemeVariant=ThemeVariant.Default;
         this.Bind(BackgroundProperty,this.GetResourceObservable("AppBackgroundBrush"));Resources.Remove("SystemAccentColor");
         _appearanceColumnLayout="";UpdateTodoResponsiveLayout();
@@ -221,29 +216,25 @@ public partial class SettingsWindow
         SettingsColumns.ColumnDefinitions=new(compact?"200,0,*":"240,0,*");
         if(_navigatorCompact==compact)return;_navigatorCompact=compact;
         _navigatorSettingsBody.ColumnDefinitions=new(compact?"184,14,*":"200,18,*");
-        _navigatorPlacement!.ColumnDefinitions=new(compact?"*,12,*":"*");_navigatorPlacement.RowDefinitions=new(compact?"Auto":"Auto,12,Auto");Grid.SetColumn(_navigatorPositionField!,compact?2:0);Grid.SetRow(_navigatorPositionField!,compact?0:2);
         _navigatorFields!.Children.Remove(_navigatorHeading!);_navigatorPage!.Children.Remove(_navigatorHeading!);
         _navigatorPage.ColumnDefinitions=new(compact?"*":"1.13*,16,1*");_navigatorPage.RowDefinitions=new(compact?"Auto,12,Auto,12,Auto":"Auto");
-        Grid.SetRow(_navigatorFields,compact?4:0);Grid.SetColumn(_navigatorPreviewCard!,compact?0:2);Grid.SetRow(_navigatorPreviewCard!,compact?2:0);
+        Grid.SetRow(_navigatorFields,compact?2:0);Grid.SetColumn(_navigatorPreviewCard!,compact?0:2);Grid.SetRow(_navigatorPreviewCard!,compact?4:0);
         if(compact)_navigatorPage.Children.Add(_navigatorHeading!);else _navigatorFields.Children.Insert(0,_navigatorHeading!);
-        _navigatorPreview!.Children.Clear();_navigatorPreviewGrid!.Children.Clear();
+        _navigatorPreview!.Children.Clear();
         // Detach the compact action row before moving its children to the wide card.
         if(_navigatorShow!.Parent is Grid oldRow)oldRow.Children.Clear();
-        _navigatorClockStage!.Height=compact?84:118;_navigatorGuide!.Height=compact?62:96;
-        _navigatorGuideTitle!.IsVisible=_navigatorGuideCaption!.IsVisible=!compact;
+        _navigatorClockStage!.Height=compact?84:118;
         if(compact)
         {
             _navigatorShow.Height=30;_navigatorShow.Width=220;Grid.SetColumn(_navigatorShow,2);
             var actionRow=new Grid{ColumnDefinitions=new("*,12,220"),Children={_navigatorPreviewTitle!,_navigatorShow}};
-            _navigatorPreviewGrid.ColumnDefinitions=new("1.05*,14,*");_navigatorPreviewGrid.Children.Add(_navigatorClockStage);_navigatorPreviewGrid.Children.Add(_navigatorDiagram!);Grid.SetColumn(_navigatorDiagram!,2);
-            _navigatorPreview.Children.Add(actionRow);_navigatorPreview.Children.Add(_navigatorPreviewGrid);
+            _navigatorPreview.Children.Add(actionRow);_navigatorPreview.Children.Add(_navigatorClockStage);
         }
         else
         {
             _navigatorShow.Height=34;_navigatorShow.Width=double.NaN;
-            foreach(var child in new[]{_navigatorPreviewTitle!,_navigatorPreviewSubtitle!,_navigatorClockStage,_navigatorDiagram!,_navigatorStates!,_navigatorShow,_navigatorGuideHint!})_navigatorPreview.Children.Add(child);
+            foreach(var child in new[]{_navigatorPreviewTitle!,_navigatorPreviewSubtitle!,_navigatorClockStage,_navigatorStates!,_navigatorShow})_navigatorPreview.Children.Add(child);
         }
-        DrawSettingsPlacement();
     }
 
     private void RefreshNavigatorSettingsPreview()
@@ -258,32 +249,7 @@ public partial class SettingsWindow
         if(_navigatorSettingsBody==null)return;
         _navigatorClickStatus!.Text=_settings.ClickThrough?"Click-through on · clicks pass through":"Click-through off · clock is interactive";
         _navigatorCaptureStatus!.Text=_settings.HideOverlayFromCapture?"Screen capture · clock hidden":"Screen capture · clock included";
-        DrawSettingsPlacement();
-    }
-
-    private void DrawSettingsPlacement()
-    {
-        if(_navigatorSettingsBody==null||_navigatorGuide==null)return;
-        _navigatorGuide.Children.Clear();double width=_navigatorGuide.Bounds.Width;if(width<=0)return;
-        var screens=Screens.All;int index=SettingsChangePolicy.ResolveScreenComboIndex(_settings.ScreenIndex,screens.Count);
-        int count=index==0?Math.Max(1,screens.Count):1;double gap=10,screenWidth=(width-gap*(count-1))/count,screenHeight=_navigatorGuide.Height-10;
-        string position=_settings.Position;
-        for(int i=0;i<count;i++)
-        {
-            double left=i*(screenWidth+gap);
-            var monitor=new Border{Width=Math.Max(1,screenWidth),Height=screenHeight,CornerRadius=new(4),BorderThickness=new(1),BorderBrush=Brush.Parse("#69818A"),Background=Brush.Parse("#DBE1D9")};Canvas.SetLeft(monitor,left);_navigatorGuide.Children.Add(monitor);
-            if(screenWidth>=52)
-            {
-                var strip=new Border{Width=screenWidth-10,Height=4,CornerRadius=new(1),Background=Brush.Parse("#ADBDB8")};Canvas.SetLeft(strip,left+5);Canvas.SetTop(strip,screenHeight-8);_navigatorGuide.Children.Add(strip);
-                var label=SettingsLabel($"DISPLAY {(index==0?i+1:index)}",8,Brush.Parse("#647D80"));Canvas.SetLeft(label,left+7);Canvas.SetTop(label,screenHeight/2-5);_navigatorGuide.Children.Add(label);
-            }
-            if(position=="Custom"||screenWidth<52)continue;
-            var marker=new Border{Width=42,Height=17,CornerRadius=new(3),Background=SettingsInk,BorderBrush=ClockPickerPresentation.Gold,BorderThickness=new(1),Child=SettingsLabel("Clock",8,ClockPickerPresentation.Cream)};((TextBlock)marker.Child).HorizontalAlignment=HorizontalAlignment.Center;
-            Canvas.SetLeft(marker,left+(position.EndsWith("Left")?7:position.EndsWith("Right")?screenWidth-49:(screenWidth-42)/2));Canvas.SetTop(marker,position.StartsWith("Bottom")?screenHeight-24:7);_navigatorGuide.Children.Add(marker);
-        }
-        _navigatorGuideLabel!.Text=position=="Custom"?"Custom placement":position;
-        var screen=index>0&&index<=screens.Count?screens[index-1]:null;
-        _navigatorGuideCaption!.Text=position=="Custom"?"Uses your saved overlay position.":index==0?"Same preset on all connected displays.":$"{screen?.Bounds.Width} × {screen?.Bounds.Height}"+(screen?.IsPrimary==true?" · Primary display":"");
+        _positionPicker?.SetPosition(_settings.Position);
         ToolTip.SetTip(ScreenCombo,ScreenCombo.SelectedItem?.ToString());
     }
 }

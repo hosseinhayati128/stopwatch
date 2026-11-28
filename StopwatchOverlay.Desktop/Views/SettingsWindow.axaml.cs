@@ -142,7 +142,7 @@ public partial class SettingsWindow : Window
                 _settings.ScreenIndex,
                 screens.Count);
 
-            SetItems(PositionCombo, ["Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right", "Custom"], _settings.Position);
+            SetItems(PositionCombo, OverlayPositionPicker.Positions, _settings.Position);
             SetItems(TextColorCombo, ["Theme default", "White", "Charcoal", "Yellow", "Cyan", "Lime", "Orange", "Red", "Magenta"], _settings.TextColor);
             SetItems(BorderColorCombo, ["Black", "White", "Dark Gray", "Red", "Blue"], _settings.BorderColor);
             SetItems(FontCombo, ["Consolas", "Cascadia Mono", "Segoe UI", "Arial", "Courier New", "Lucida Console"], _settings.FontFamily);

@@ -263,16 +263,49 @@ public partial class SettingsWindow
         parent.Children.Add(combo);
     }
 
-    private void AddOpacitySlider(StackPanel parent,string name,string title,double value,double min,double max,Action<double> set)
+    private void AddOpacitySlider(StackPanel parent, string name, string title, double value, int min, int max, Action<double> set)
     {
-        var row=new Grid{ColumnDefinitions=new ColumnDefinitions("*,Auto")};
-        row.Children.Add(new TextBlock{Text=title,FontSize=16,FontWeight=FontWeight.SemiBold,VerticalAlignment=VerticalAlignment.Center});
-        var label=new TextBlock{Text=$"{value:0}%",FontSize=15,FontWeight=FontWeight.SemiBold,Foreground=Brush.Parse("#F8EACA")};
-        var valueDisplay = new Border { Child = label, Background = Brush.Parse("#173B49"), CornerRadius = new(4), Padding = new(8,2) };
-        Grid.SetColumn(valueDisplay,1);row.Children.Add(valueDisplay);parent.Children.Add(row);
-        var slider=new Slider{Name=name,Minimum=min,Maximum=max,Value=value,TickFrequency=1,IsSnapToTickEnabled=true};AutomationProperties.SetName(slider,title);
-        slider.PropertyChanged+=(_,e)=>{if(e.Property==Slider.ValueProperty&&!_loadingStopwatch&&!_loading){set(slider.Value);label.Text=$"{slider.Value:0}%";CommitStopwatchAppearance();}};
-        parent.Children.Add(slider);
+        if (_usesStyleGalleries) StopwatchValueStepper.ApplyNikaPalette(parent);
+        var header = new Grid { ColumnDefinitions = new("*,Auto") };
+        header.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeight.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap });
+        var stepper = new StopwatchValueStepper { Margin = new(6, 0, 0, 0) };
+        Grid.SetColumn(stepper, 1);
+        header.Children.Add(stepper);
+        parent.Children.Add(header);
+
+        var error = new TextBlock { Name = name + "Error", Text = $"Enter a whole number from {min} to {max}.",
+            FontSize = 12, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        error.Bind(TextBlock.ForegroundProperty, error.GetResourceObservable("DangerTextBrush"));
+        parent.Children.Add(error);
+
+        var slider = new Slider { Name = name, Minimum = min, Maximum = max, Value = value,
+            TickFrequency = 1, SmallChange = 1, LargeChange = 10, IsSnapToTickEnabled = true };
+        AutomationProperties.SetName(slider, title);
+        var range = new Grid { ColumnDefinitions = new("Auto,*,Auto") };
+        var low = Limit(min, new(0, 0, 7, 0));
+        var high = Limit(max, new(7, 0, 0, 0));
+        Grid.SetColumn(slider, 1);
+        Grid.SetColumn(high, 2);
+        range.Children.Add(low);
+        range.Children.Add(slider);
+        range.Children.Add(high);
+        parent.Children.Add(range);
+
+        stepper.Connect(slider, error, name, title, percent: true);
+        slider.ValueChanged += (_, _) =>
+        {
+            if (_loadingStopwatch || _loading) return;
+            set(slider.Value);
+            CommitStopwatchAppearance();
+        };
+
+        static TextBlock Limit(int percent, Thickness margin)
+        {
+            var label = new TextBlock { Text = $"{percent}%", FontSize = 11, Margin = margin, VerticalAlignment = VerticalAlignment.Center };
+            label.Bind(TextBlock.ForegroundProperty, label.GetResourceObservable("SecondaryTextBrush"));
+            return label;
+        }
     }
 
     private void CommitStopwatchAppearance(bool rebuildControls=false)

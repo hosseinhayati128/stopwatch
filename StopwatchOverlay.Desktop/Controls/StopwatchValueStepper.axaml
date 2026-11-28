@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.StopwatchValueStepper">
+    <UserControl.Styles>
+        <Style Selector="Button.step">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        </Style>
+        <Style Selector="Button.step Path">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Stroke" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="StrokeThickness" Value="1.7"/>
+            <Setter Property="StrokeLineCap" Value="Round"/>
+        </Style>
+        <Style Selector="Button.step:disabled Path"><Setter Property="Opacity" Value="0.4"/></Style>
+    </UserControl.Styles>
+    <StackPanel Orientation="Horizontal" Spacing="3">
+        <Button Name="Decrease" Classes="step">
+            <Path Data="M1,6 L11,6"/>
+        </Button>
+        <TextBox Name="Entry" Width="72" Height="32" MinHeight="0" MinWidth="0" Padding="3,0"
+                 FontSize="15" FontWeight="SemiBold" TextAlignment="Center" VerticalContentAlignment="Center"
+                 Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource DialogSurfaceBrush}"
+                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+            <TextBox.InnerRightContent>
+                <TextBlock Name="Unit" Text="px" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" FontWeight="Normal" Margin="1,0,7,0" VerticalAlignment="Center"/>
+            </TextBox.InnerRightContent>
+        </TextBox>
+        <Button Name="Increase" Classes="step">
+            <Path Data="M1,6 L11,6 M6,1 L6,11"/>
+        </Button>
+    </StackPanel>
+</UserControl>

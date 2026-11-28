@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StopwatchOverlay.Desktop.Controls.OverlayPositionPicker">
+    <UserControl.Resources>
+        <ControlTheme x:Key="positionChoice" TargetType="RadioButton">
+            <Setter Property="MinHeight" Value="35"/>
+            <Setter Property="Padding" Value="2,3"/>
+            <Setter Property="Background" Value="#274655"/>
+            <Setter Property="BorderBrush" Value="#647F8A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#F4E6C9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:checked">
+                <Setter Property="Background" Value="#FFF1CD"/>
+                <Setter Property="BorderBrush" Value="#E5AB4A"/>
+                <Setter Property="Foreground" Value="#102B3B"/>
+            </Style>
+            <Style Selector="^.custom">
+                <Setter Property="MinHeight" Value="44"/>
+                <Setter Property="Padding" Value="10,3"/>
+                <Setter Property="Background" Value="#F6E8C9"/>
+                <Setter Property="Foreground" Value="#102B3B"/>
+                <Setter Property="BorderBrush" Value="#C9AD79"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            </Style>
+            <Style Selector="^.custom:checked">
+                <Setter Property="Background" Value="#F7E1AF"/>
+                <Setter Property="BorderBrush" Value="#A16818"/>
+            </Style>
+            <Style Selector="^:pointerover /template/ Border#Surface">
+                <Setter Property="BorderBrush" Value="#DEAE55"/>
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#Surface">
+                <Setter Property="BorderBrush" Value="#CB820F"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </Style>
+        </ControlTheme>
+    </UserControl.Resources>
+    <StackPanel Spacing="6">
+        <StackPanel Spacing="2">
+            <Border Background="#102B3B" BorderBrush="#526873" BorderThickness="1" CornerRadius="6" Padding="9">
+                <Grid Name="PresetGrid" ColumnDefinitions="*,6,*,6,*" RowDefinitions="Auto,18,Auto"/>
+            </Border>
+            <Border Width="36" Height="3" CornerRadius="2" Background="#69818A" Margin="0,0,0,2" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <RadioButton Name="CustomChoice" Theme="{StaticResource positionChoice}" Classes="custom" AutomationProperties.Name="Custom placement">
+            <Grid ColumnDefinitions="12,9,*">
+                <Border Width="12" Height="12" CornerRadius="6" BorderThickness="1.3" BorderBrush="#806A49" VerticalAlignment="Center">
+                    <Border Margin="2" CornerRadius="4" Background="#102B3B" IsVisible="{Binding IsChecked, ElementName=CustomChoice}"/>
+                </Border>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock Text="Custom placement"/>
+                    <TextBlock Text="Use the clock’s saved desktop position." FontSize="11" FontWeight="Normal"
+                               Foreground="#675337" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Grid>
+        </RadioButton>
+    </StackPanel>
+</UserControl>

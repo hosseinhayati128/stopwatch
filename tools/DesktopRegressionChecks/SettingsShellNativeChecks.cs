@@ -1,6 +1,7 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Automation;
 using Avalonia.Interactivity;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
@@ -40,7 +41,8 @@ internal static class SettingsShellNativeChecks
             {
                 button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ClockOverlayChecks.Pump(15);
                 string key=button.Name![12..];Require((string)category.GetValue(window)! == key,"Navigation did not select "+key);
-                if(key is not ("Overlay" or "Appearance" or "Typography" or "Behavior" or "Application" or "Obsidian" or "Telegram" or "Habitica"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key is not ("Overlay" or "Appearance" or "Typography" or "Behavior" or "Application" or "Obsidian" or "Telegram" or "Habitica" or "ActivityWatch" or "Internet"))Require(window.FindControl<Control>(key+"Panel")!.IsEffectivelyVisible,"Navigation hid "+key+" fields.");
+                if(key is "ActivityWatch" or "Internet")Require(Find<ScrollViewer>(window,key+"Scroll").IsEffectivelyVisible,"Navigation hid "+key+" fields.");
                 if(key=="Habitica")Require(Find<ScrollViewer>(window,"HabiticaScroll").IsEffectivelyVisible,"Navigation hid Habitica fields.");
                 if(key=="Telegram")Require(window.FindControl<TextBox>("TelegramBotTokenTextBox")!.IsEffectivelyVisible,"Navigation hid Telegram fields.");
                 if(key=="Obsidian")Require(window.FindControl<TextBox>("ObsidianFolderTextBox")!.IsEffectivelyVisible,"Navigation hid Obsidian fields.");
@@ -52,7 +54,7 @@ internal static class SettingsShellNativeChecks
             }
             Find<Button>(window,"SettingsNav_Overlay").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             window.Width=840;window.Height=600;ClockOverlayChecks.Pump(40);
-            var scroll=Find<ScrollViewer>(window,"NavigatorSettingsScroll");var position=window.FindControl<ComboBox>("PositionCombo")!;
+            var scroll=Find<ScrollViewer>(window,"NavigatorSettingsScroll");var position=Find<OverlayPositionPicker>(window,"SettingsPositionPicker");
             Require(position.TranslatePoint(default,scroll)!.Value.Y+position.Bounds.Height<=scroll.Viewport.Height,"Compact placement field is below the initial viewport.");
             var done=Find<Button>(window,"SettingsDone");double y=done.TranslatePoint(default,window)!.Value.Y;
             Require(scroll.Extent.Width<=scroll.Viewport.Width+1,"Compact page has horizontal overflow.");Save(window,"compact");
@@ -75,7 +77,31 @@ internal static class SettingsShellNativeChecks
         try
         {
             window.FindControl<CheckBox>("ClickThroughCheck")!.IsChecked=true;
-            window.FindControl<ComboBox>("PositionCombo")!.SelectedItem="Bottom Right";
+            RadioButton[] Choices() => Find<OverlayPositionPicker>(window,"SettingsPositionPicker")
+                .GetVisualDescendants().OfType<RadioButton>().ToArray();
+            RadioButton Choice(string name) => Choices().Single(b => AutomationProperties.GetName(b) == name);
+            int changes = 0;
+            Action<SettingsChangeKind> changed = kind => { if (kind == SettingsChangeKind.OverlayPosition) changes++; };
+            typeof(SettingsWindow).GetEvent("SettingsChanged",Hidden)!.GetAddMethod(true)!.Invoke(window,[changed]);
+            void ClickPosition(string name) => typeof(RadioButton).GetMethod("OnClick",Hidden)!.Invoke(Choice(name),null);
+            void CheckPosition(string expected) => Require(settings.Position == expected &&
+                Choices().Single(b => b.IsChecked == true) == Choice(expected == "Custom" ? "Custom placement" : expected),
+                "Selected position disagrees with settings: " + expected);
+            CheckPosition("Top Center");
+            foreach (string name in new[]{"Top Left","Top Center","Top Right","Bottom Left","Bottom Center","Bottom Right","Custom placement"})
+            {
+                int before = changes;
+                ClickPosition(name); ClickPosition(name);
+                CheckPosition(name == "Custom placement" ? "Custom" : name);
+                Require(changes == before + 1, "Selecting a position must commit exactly once.");
+            }
+            var custom = Choice("Custom placement");
+            custom.Focus(NavigationMethod.Tab);
+            custom.RaiseEvent(new KeyEventArgs{RoutedEvent=InputElement.KeyDownEvent,Key=Avalonia.Input.Key.Up});
+            CheckPosition("Bottom Center");
+            Choice("Bottom Center").RaiseEvent(new KeyEventArgs{RoutedEvent=InputElement.KeyDownEvent,Key=Avalonia.Input.Key.Right});
+            CheckPosition("Bottom Right");
+            Require(Choice("Bottom Right").IsFocused, "Arrow key did not move focus.");
             Require(settings.ClickThrough&&settings.Position=="Bottom Right","First-layer controls do not apply to settings.");
             typeof(SettingsWindow).GetMethod("ReportPersistenceResult",Hidden)!.Invoke(window,[false]);
             Require(Find<TextBlock>(window,"SettingsSaveStatus").Text!.Contains("could not be saved"),"Save failure is absent from the fixed footer.");
@@ -84,7 +110,7 @@ internal static class SettingsShellNativeChecks
             Require(Find<TextBlock>(window,"SettingsSaveStatus").Text!.Contains("could not be saved"),"Navigation erased persistence failure.");
             typeof(SettingsWindow).GetMethod("ReportPersistenceResult",Hidden)!.Invoke(window,[true]);
             window.FindControl<CheckBox>("HideOverlayCaptureCheck")!.IsChecked=true;ClockOverlayChecks.Pump(25);Save(window,"interaction");
-            window.FindControl<ComboBox>("PositionCombo")!.SelectedItem="Custom";ClockOverlayChecks.Pump(20);Save(window,"custom-position");
+            ClickPosition("Custom placement");ClockOverlayChecks.Pump(20);Save(window,"custom-position");
             foreach(string theme in new[]{AppThemeCatalog.Midnight,AppThemeCatalog.Nika,AppThemeCatalog.Pirate,AppThemeCatalog.Nika})
             {
                 typeof(SettingsWindow).Assembly.GetType("StopwatchOverlay.Desktop.ThemeResources")!.GetMethod("ApplyApplication",BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic)!.Invoke(null,[theme]);
@@ -92,6 +118,7 @@ internal static class SettingsShellNativeChecks
                 for(int attempt=0;attempt<20&&(window.Content is StopwatchFrameSurface)!=(theme==AppThemeCatalog.Nika);attempt++)ClockOverlayChecks.Pump(25);
                 Require((window.Content is StopwatchFrameSurface)==(theme==AppThemeCatalog.Nika),$"Theme {theme}, stored {settings.ThemeMode}, root {window.Content?.GetType().Name}: incorrect shell.");
                 Require(window.FindControl<ComboBox>("PositionCombo")!.SelectedItem?.ToString()=="Custom","Theme switch lost settings values.");
+                if(theme==AppThemeCatalog.Nika) CheckPosition("Custom");
                 if(theme!=AppThemeCatalog.Nika)
                 {
                     Require(window.FindControl<CheckBox>("ClickThroughCheck")!.Content is string,"Legacy theme retained Nika checkbox labels.");
