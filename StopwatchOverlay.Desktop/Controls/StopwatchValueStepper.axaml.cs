@@ -22,22 +22,26 @@ public partial class StopwatchValueStepper : UserControl
         control.Resources["DangerTextBrush"] = Brush.Parse("#8B3827");
     }
 
-    internal void Connect(Slider slider, TextBlock error, string key, string title, bool percent)
+    internal void Connect(Slider slider, TextBlock error, string? key, string title, bool percent, int step = 1)
     {
-        Entry.Name = key + "Entry";
-        Decrease.Name = "Decrease" + key;
-        Increase.Name = "Increase" + key;
+        if (key != null)
+        {
+            Entry.Name = key + "Entry";
+            Decrease.Name = "Decrease" + key;
+            Increase.Name = "Increase" + key;
+        }
         Unit.Text = percent ? "%" : "px";
         Entry.Width = percent ? 70 : 72;
         string unit = percent ? "percentage point" : "pixel";
+        string increment = step == 1 ? $"one {unit}" : $"{step} {unit}s";
         string label = title.ToLowerInvariant();
         AutomationProperties.SetName(Entry, percent ? title + " percentage" : title + " in pixels");
-        AutomationProperties.SetName(Decrease, $"Decrease {label} by one {unit}");
-        AutomationProperties.SetName(Increase, $"Increase {label} by one {unit}");
+        AutomationProperties.SetName(Decrease, $"Decrease {label} by {increment}");
+        AutomationProperties.SetName(Increase, $"Increase {label} by {increment}");
 
         slider.ValueChanged += (_, _) => Sync();
-        Decrease.Click += (_, _) => slider.Value = Math.Ceiling(slider.Value) - 1;
-        Increase.Click += (_, _) => slider.Value = Math.Floor(slider.Value) + 1;
+        Decrease.Click += (_, _) => slider.Value = Math.Ceiling(slider.Value) - step;
+        Increase.Click += (_, _) => slider.Value = Math.Floor(slider.Value) + step;
         Entry.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter) Commit(leaving: false);

@@ -48,6 +48,15 @@ public partial class SettingsWindow
         AutomationProperties.SetName(slider,title);
         return new StackPanel{Spacing=3,Children={header,slider}};
     }
+    private Control AppearancePageScale()
+    {
+        var header = new Grid { ColumnDefinitions = new("*,Auto"), Children = { SettingsLabel("Page scale", 12, SettingsInk), PageScaleStepper } };
+        Grid.SetColumn(PageScaleStepper, 1);
+        var field = new StackPanel { Spacing = 3, Children = { header, UiScaleSlider, PageScaleError } };
+        StopwatchValueStepper.ApplyNikaPalette(field);
+        return field;
+    }
+
     private static Border AppearanceCard(string title,params Control[] controls)
     {
         var stack=new StackPanel{Spacing=8,Children={SettingsLabel(title,10)}};
@@ -56,7 +65,7 @@ public partial class SettingsWindow
     }
     private void BuildAppearancePage(Grid host)
     {
-        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,ControllerStyleCombo,ControllerDigitsCombo,NikaArtworkCombo,UiScaleSlider,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundCombo,AddBackgroundButton,RemoveBackgroundButton,BackgroundStrengthSlider})
+        foreach(var control in new Control[]{ThemeCombo,NikaBackgroundCombo,NikaTypographyCombo,ControllerStyleCombo,ControllerDigitsCombo,NikaArtworkCombo,PageScaleStepper,UiScaleSlider,PageScaleError,OverlayThemeCombo,FormatCombo,TextSizeSlider,TextColorCombo,FontCombo,BorderColorCombo,BorderWidthSlider,BackgroundOpacitySlider,InactiveSeparatedOpacitySlider,TransparencyDetailsExpander,BackgroundCombo,AddBackgroundButton,RemoveBackgroundButton,BackgroundStrengthSlider})
         {
             var parent=(Panel)control.Parent!;
             _appearanceMoved.Add((control,parent,parent.Children.IndexOf(control),control.Margin,Grid.GetColumn(control),Grid.GetRow(control)));
@@ -72,7 +81,7 @@ public partial class SettingsWindow
         _appearanceAppFields=new StackPanel{Spacing=12,Children={
             AppearanceCard("APPLICATION",AppearanceField("Theme",ThemeCombo),SettingsLabel("Sets the look of the controller and app pages.",11)),
             AppearanceCard("NIKA’S CHRONICLE",AppearanceField("Active timer style",ControllerStyleCombo),AppearanceField("Large Pixel Navy digits",ControllerDigitsCombo),AppearanceField("Background",NikaBackgroundCombo),AppearanceField("Typography",NikaTypographyCombo),AppearanceField("Sidebar artwork",NikaArtworkCombo)),
-            AppearanceCard("SIZE & BACKGROUND",AppearanceSlider("Page scale",UiScaleSlider,"%"),SettingsLabel("Applied when you finish adjusting. Floating clock text has its own size.",11),AppearanceField("Application background",BackgroundCombo),importRow,AppearanceSlider("Background strength",BackgroundStrengthSlider,"%"),_appearanceBackgroundWarning)}};
+            AppearanceCard("SIZE & BACKGROUND",AppearancePageScale(),SettingsLabel("Applied when you finish adjusting. Floating clock text has its own size.",11),AppearanceField("Application background",BackgroundCombo),importRow,AppearanceSlider("Background strength",BackgroundStrengthSlider,"%"),_appearanceBackgroundWarning)}};
         var open=SettingsAction("Open Stopwatch appearance","AppearanceOpenStopwatch");open.HorizontalAlignment=HorizontalAlignment.Stretch;
         open.Click+=(_,_)=>NavigationList.SelectedItem=NavigationList.Items.OfType<ListBoxItem>().First(i=>Equals(i.Tag,"StopwatchAppearance"));
         _appearanceNikaClock=AppearanceCard("NIKA CLOCK STYLE",SettingsLabel("Frame, background, typography, artwork and hover controls.",12),open,SettingsLabel("Text colors follow your clock background automatically.",11,Brush.Parse("#2D7169")));

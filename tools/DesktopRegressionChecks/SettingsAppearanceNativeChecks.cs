@@ -49,6 +49,29 @@ internal static class SettingsAppearanceNativeChecks
             Find<Button>(window,"AppearanceOpenStopwatch").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Require((string)typeof(SettingsWindow).GetProperty("CurrentCategory",Hidden)!.GetValue(window)! == "StopwatchAppearance","Detailed clock style link did not navigate.");
             Require(changes==3,"Section navigation persisted settings.");
+            var stepper = window.FindControl<StopwatchValueStepper>("PageScaleStepper")!;
+            var entry = stepper.FindControl<TextBox>("Entry")!;
+            var increase = stepper.FindControl<Button>("Increase")!;
+            var decrease = stepper.FindControl<Button>("Decrease")!;
+            var error = window.FindControl<TextBlock>("PageScaleError")!;
+            void Submit(string value)
+            {
+                entry.Text = value;
+                entry.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Enter });
+            }
+            Submit("93");
+            increase.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(settings.UiScalePercent == 98 && entry.Text == "98", "A five-point step lost the typed scale.");
+            Submit("126");
+            Require(error.IsVisible && settings.UiScalePercent == 98, "An invalid scale changed the settings.");
+            entry.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape });
+            Require(!error.IsVisible && entry.Text == "98", "Escape did not restore the current page scale.");
+            Submit("72");
+            decrease.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(settings.UiScalePercent == 70 && !decrease.IsEnabled, "The page scale goes below its minimum.");
+            Submit("124");
+            increase.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(settings.UiScalePercent == 125 && !increase.IsEnabled, "The page scale exceeds its maximum.");
         }
         finally{window.Close();}
     }

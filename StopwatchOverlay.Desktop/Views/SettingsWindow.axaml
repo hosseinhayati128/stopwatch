@@ -411,10 +411,12 @@
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
                                     <TextBlock Text="Page scale" Classes="sectionHeader" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding #UiScaleSlider.Value, StringFormat={}{0:0}%}"
-                                               Classes="subheading" VerticalAlignment="Center"/>
+                                    <controls:StopwatchValueStepper x:Name="PageScaleStepper" Grid.Column="1"/>
                                 </Grid>
-                                <Slider x:Name="UiScaleSlider" Minimum="70" Maximum="125" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                                <Slider x:Name="UiScaleSlider" Minimum="70" Maximum="125" TickFrequency="5" IsSnapToTickEnabled="True"
+                                        AutomationProperties.Name="Page scale"/>
+                                <TextBlock x:Name="PageScaleError" IsVisible="False" FontSize="12" TextWrapping="Wrap"
+                                           Text="Enter a whole number from 70 to 125." Foreground="{DynamicResource DangerTextBrush}"/>
                                 <TextBlock Text="Resize text, controls and artwork on every page. Applied when you finish adjusting. Floating timer text has its own size below."
                                            Classes="subheading" TextWrapping="Wrap" Margin="0,-4,0,8"/>
 

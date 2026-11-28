@@ -271,6 +271,7 @@ public partial class SettingsWindow : Window
         };
 
         WireSlider(TextSizeSlider, SettingsChangeKind.OverlayGeometry);
+        PageScaleStepper.Connect(UiScaleSlider, PageScaleError, null, "Page scale", percent: true, step: 5);
         WireSlider(UiScaleSlider, SettingsChangeKind.ApplicationScale);
         WireSlider(BorderWidthSlider, SettingsChangeKind.OverlayAppearance);
         WireSlider(BackgroundOpacitySlider, SettingsChangeKind.OverlayAppearance);
@@ -368,20 +369,23 @@ public partial class SettingsWindow : Window
             if (se.Property == Slider.ValueProperty)
                 CommitControls(change);
         };
-        slider.PointerPressed += (_, _) => BeginSliderInteraction();
-        slider.PointerReleased += (_, _) => EndSliderInteraction();
+        // Page scaling must start deferral before the thumb or track handles the gesture.
+        bool pageScale = change == SettingsChangeKind.ApplicationScale;
+        var beginRoute = pageScale ? RoutingStrategies.Tunnel : RoutingStrategies.Bubble;
+        slider.AddHandler(PointerPressedEvent, (_, _) => BeginSliderInteraction(), beginRoute, handledEventsToo: pageScale);
+        slider.AddHandler(PointerReleasedEvent, (_, _) => EndSliderInteraction(), RoutingStrategies.Bubble, handledEventsToo: pageScale);
         slider.PointerCaptureLost += (_, _) => EndSliderInteraction();
         slider.LostFocus += (_, _) => EndSliderInteraction();
-        slider.KeyDown += (_, e) =>
+        slider.AddHandler(KeyDownEvent, (_, e) =>
         {
             if (IsSliderAdjustmentKey(e.Key))
                 BeginSliderInteraction();
-        };
-        slider.KeyUp += (_, e) =>
+        }, beginRoute, handledEventsToo: pageScale);
+        slider.AddHandler(KeyUpEvent, (_, e) =>
         {
             if (IsSliderAdjustmentKey(e.Key))
                 EndSliderInteraction();
-        };
+        }, RoutingStrategies.Bubble, handledEventsToo: pageScale);
     }
 
     private void WireCheckBox(CheckBox checkBox, SettingsChangeKind change)
